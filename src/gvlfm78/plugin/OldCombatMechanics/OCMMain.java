@@ -22,7 +22,7 @@ public class OCMMain extends JavaPlugin{
 		PluginDescriptionFile pdfFile = this.getDescription();
 		//Listeners and stuff
 		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);//Firing event listener
-		getCommand("Hotels").setExecutor(new OCMCommandHandler(this));//Firing commands listener
+		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));//Firing commands listener
 
 		//Logging to console the correct enabling of OCM
 		getLogger().info(pdfFile.getName()+" v"+pdfFile.getVersion()+ " has been enabled correctly");
