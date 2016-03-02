@@ -14,7 +14,6 @@ import org.w3c.dom.NodeList;
 public class OCMUpdateChecker {
 
 	private OCMMain plugin;
-
 	public OCMUpdateChecker(OCMMain OUC)
 	{
 		this.plugin = OUC;
