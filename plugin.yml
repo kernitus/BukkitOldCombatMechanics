@@ -1,0 +1,12 @@
+main: gvlfm78.plugin.OldCombatMechanics.OCMMain
+name: OldCombatMechanics
+version: 0.1
+author: gvlfm78
+description: Reverts to the old combat system.
+website: http://www.spigotmc.org/resources/hotels.2047/
+load: POSTWORLD
+
+commands:
+  OldCombatMechanics:
+   description: OldCombatMechanics's main command
+   aliases: ocm
