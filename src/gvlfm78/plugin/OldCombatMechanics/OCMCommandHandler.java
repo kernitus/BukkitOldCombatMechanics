@@ -23,7 +23,7 @@ public class OCMCommandHandler implements CommandExecutor{
 			sender.sendMessage(ChatColor.GOLD+"OldCombatMechanics by gvlfm78 version "+pdf.getVersion());
 
 			//Update check
-			this.updateChecker = new OCMUpdateChecker(plugin, "http://dev.bukkit.org/bukkit-plugins/old-combat-mechanics/files.rss");
+			this.updateChecker = new OCMUpdateChecker(plugin, "http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/files.rss");
 			this.updateChecker.updateNeeded();
 			if(plugin.getConfig().getBoolean("settings.checkForUpdates")){
 				if(this.updateChecker.updateNeeded()){
