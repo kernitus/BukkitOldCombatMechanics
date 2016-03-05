@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 
+import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_9_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -36,49 +37,81 @@ public class OCMListener implements Listener{
 		}
 	}
 	@EventHandler
-	public void onWeaponEquip(PlayerItemHeldEvent e){
+	public void onItemEquip(PlayerItemHeldEvent e){
 		Player p = e.getPlayer();
-		ItemStack is = p.getInventory().getItemInMainHand();
-		NBTTagCompound tags = new NBTTagCompound();
-		net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(is);
-		tags = nmsStack.getTag();
-		if(tags!=null){
-		String stuff = String.valueOf(tags.getString(("generic.attackSpeed")));
-		NBTTagList list = tags.getList("", 0);
-		p.sendMessage(list.toString());
-		if(stuff!=null)
-		p.sendMessage(stuff);
-		else
-			p.sendMessage("Stuff is null!");
+		ItemStack item = p.getInventory().getLeggings();
+
+		if(item!=null){
+			//Give attributes to item in leggings slot
+			ItemStack newItem = addNBTTags(p,item);
+			if(newItem!=null)
+			p.getInventory().setLeggings(newItem);
 		}
-		else
-			p.sendMessage("No NBT tags on this item");
-		/*ItemStack item = p.getInventory().getHelmet();
-		if(item==null){
+		else{
 			//Place wooden button with attributes
 			item = new ItemStack(Material.WOOD_BUTTON);
-			addNBTTags(p,item);
-			p.getInventory().setHelmet(addNBTTags(p,item));
+			item.setAmount(-1);
+			ItemStack newItem = addNBTTags(p,item);
+			if(newItem!=null)
+			p.getInventory().setLeggings(addNBTTags(p,item));
+		}
+	}
+
+	public boolean hasTags(ItemStack item){
+		net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(item);
+		NBTTagCompound compound = nmsStack.getTag();
+		if(compound==null){
+			return false;
+		}
+			
+		if(compound.hasKey("AttributeModifiers")){
+
+			NBTTagCompound attributes = compound.getCompound("AttributeModifiers");
+
+			if(attributes.hasKey("AttributeName")){
+				String name = attributes.getString("AttributeName");
+				if(name.equals("generic.attackSpeed"))
+					return true;
+				else{
+					System.out.println("YEE2");
+					return false;
+				}
+			}
+			else
+				return false;
 		}
 		else
-		{
-			//Give attributes to helmet
-			p.getInventory().setHelmet(addNBTTags(p,item));
-		}*/
+			return false;
 	}
-	public ItemStack addNBTTags(Player p, ItemStack is){
-		net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(is);
 
-		NBTTagCompound tags = new NBTTagCompound();
-		tags.setString("AttributeName", "generic.attackSpeed");
-		tags.setString("Name", "generic.attackSpeed");
-		tags.setInt("Amount", 99999999);
-		tags.setInt("Operation", 0);
-		tags.setInt("UUIDMost", 90498);
-		tags.setInt("UUIDLeast", 161150);
-		nmsStack.setTag(tags);
-		return CraftItemStack.asBukkitCopy(nmsStack);
-		
-		//{AttributeModifiers:[{AttributeName:"generic.attackSpeed",Name:generic.attackSpeed,Amount:99999999,Operation:0,UUIDMost:90498,UUIDLeast:161150}]}
+	public ItemStack addNBTTags(Player p, ItemStack is){
+		if(!hasTags(is)){
+			net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(is);
+			NBTTagCompound compound = nmsStack.getTag();
+			if (compound == null) {
+				compound = new NBTTagCompound();
+				nmsStack.setTag(compound);
+				compound = nmsStack.getTag();
+			}
+
+			NBTTagList list = new NBTTagList();
+			NBTTagCompound tags = new NBTTagCompound();
+
+			tags.setString("AttributeName", "generic.attackSpeed");
+			tags.setString("Name", "generic.attackSpeed");
+			tags.setDouble("Amount", 99999999);
+			tags.setInt("Operation", 0);
+			tags.setLong("UUIDMost", 90498);
+			tags.setLong("UUIDLeast", 161150);
+
+			list.add(tags);
+			compound.set("AttributeModifiers", list);
+
+			nmsStack.setTag(compound);
+			return CraftItemStack.asBukkitCopy(nmsStack);
+
+			//{AttributeModifiers:[{AttributeName:"generic.attackSpeed",Name:generic.attackSpeed,Amount:99999999,Operation:0,UUIDMost:90498,UUIDLeast:161150}]}
+		}
+		return null;
 	}
 }
