@@ -3,7 +3,7 @@ name: OldCombatMechanics
 version: 0.1
 author: gvlfm78
 description: Reverts to the old combat system.
-website: http://www.spigotmc.org/resources/hotels.2047/
+website: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics
 load: POSTWORLD
 
 commands:
