@@ -1,17 +1,14 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 public class OCMUpdateChecker {
 
@@ -50,7 +47,7 @@ public class OCMUpdateChecker {
 			if(versionCompare(plugin.getDescription().getVersion(),this.version)<0){
 				return true;
 			}
-		} catch (SAXException | IOException | ParserConfigurationException uhe){
+		} catch (Exception uhe){
 			plugin.getServer().getLogger().severe("OCM Could not check for updates");
 		}
 		return false;
