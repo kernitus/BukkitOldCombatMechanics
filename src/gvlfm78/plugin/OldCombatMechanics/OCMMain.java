@@ -11,7 +11,7 @@ public class OCMMain extends JavaPlugin{
 
 	@Override
 	public void onEnable(){
-		this.updateChecker = new OCMUpdateChecker(this, "http://dev.bukkit.org/bukkit-plugins/old-combat-mechanics/files.rss");
+		this.updateChecker = new OCMUpdateChecker(this, "http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/files.rss");
 		this.updateChecker.updateNeeded();
 		if(getConfig().getBoolean("settings.checkForUpdates")){
 			if(this.updateChecker.updateNeeded()){
