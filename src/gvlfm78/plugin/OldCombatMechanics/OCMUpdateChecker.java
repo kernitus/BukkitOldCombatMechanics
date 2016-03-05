@@ -1,15 +1,17 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class OCMUpdateChecker {
 
@@ -30,7 +32,7 @@ public class OCMUpdateChecker {
 		try{
 			this.filesFeed = new URL(url);
 		}catch (MalformedURLException e){
-			e.printStackTrace();
+			plugin.getServer().getLogger().severe("OCM Could not check for updates");
 		}
 	}
 
@@ -48,13 +50,9 @@ public class OCMUpdateChecker {
 			if(versionCompare(plugin.getDescription().getVersion(),this.version)<0){
 				return true;
 			}
-		} catch (UnknownHostException uhe){
-			plugin.getServer().getLogger().severe("OCM Could not establish a connection to the bukit servers");
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (SAXException | IOException | ParserConfigurationException uhe){
+			plugin.getServer().getLogger().severe("OCM Could not check for updates");
 		}
-
-
 		return false;
 	}
 
