@@ -61,13 +61,15 @@ public class OCMListener implements Listener{
 			if(type==null)
 				type = "wood_button";
 			Material material = Material.matchMaterial(type.toUpperCase());
+			if(material==null)
+				material = Material.WOOD_BUTTON;
 			ItemStack newItem = new ItemStack(material,-1);
 			
 			newItem = NBTTags(p,newItem);
 			if(newItem!=null){
 			
 			ItemMeta im = newItem.getItemMeta();
-			if(customName!=null)
+			if(customName!=null&&!customName.isEmpty())
 				im.setDisplayName(customName.replaceAll("(?i)&([a-fk-r0-9])", "\u00A7$1"));
 			List<String> lores = new ArrayList<String>();
 			if(lore1!=null)
