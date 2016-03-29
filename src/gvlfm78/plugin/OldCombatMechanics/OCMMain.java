@@ -7,11 +7,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class OCMMain extends JavaPlugin{
 
-	protected OCMUpdateChecker updateChecker;
+	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
+	private OCMConfigHandler CH = new OCMConfigHandler(this);
 
 	@Override
 	public void onEnable(){
-		this.updateChecker = new OCMUpdateChecker(this, "http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/files.rss");
 		this.updateChecker.updateNeeded();
 		if(getConfig().getBoolean("settings.checkForUpdates")){
 			if(this.updateChecker.updateNeeded()){
@@ -24,6 +24,9 @@ public class OCMMain extends JavaPlugin{
 		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);//Firing event listener
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));//Firing commands listener
 
+		//Setting up config.yml
+		CH.setupConfigyml();
+		
 		//Logging to console the correct enabling of OCM
 		getLogger().info(pdfFile.getName()+" v"+pdfFile.getVersion()+ " has been enabled correctly");
 		//Metrics
