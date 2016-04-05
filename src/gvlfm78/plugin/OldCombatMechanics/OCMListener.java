@@ -106,7 +106,7 @@ public class OCMListener implements Listener{
 
 					if(attributeName.equals("generic.attackSpeed")){
 						int attackSpeed = cc.getInt("Amount");
-						if(attackSpeed==1024){
+						if(attackSpeed==1025){
 							return true;
 						}
 					}
@@ -134,7 +134,7 @@ public class OCMListener implements Listener{
 			NBTTagCompound tags = new NBTTagCompound();
 			tags.setString("AttributeName", "generic.attackSpeed");
 			tags.setString("Name", "generic.attackSpeed");
-			tags.setDouble("Amount", 1024);
+			tags.setDouble("Amount", 1025);
 			tags.setInt("Operation", 0);
 			tags.setLong("UUIDMost", 90498);
 			tags.setLong("UUIDLeast", 161150);
@@ -142,17 +142,29 @@ public class OCMListener implements Listener{
 
 			list.add(tags);
 
-			//Setting armour defence points and toughness
+			//Setting armour defence points
 			NBTTagCompound defs = new NBTTagCompound();
 			defs.setString("AttributeName", "generic.armor");
 			defs.setString("Name", "generic.armor");
-			defs.setDouble("Amount", getArmourAmount(is));
+			defs.setDouble("Amount", getArmourDP(is));
 			defs.setInt("Operation", 0);
 			defs.setLong("UUIDMost", 666);
 			defs.setLong("UUIDLeast", 6666);
 			defs.setString("Slot", "legs");
 			
 			list.add(defs);
+			
+			//Setting armour toughness
+			NBTTagCompound toughs = new NBTTagCompound();
+			toughs.setString("AttributeName", "generic.armorToughness");
+			toughs.setString("Name", "generic.armorToughness");
+			toughs.setDouble("Amount", getArmourT(is));
+			toughs.setInt("Operation", 0);
+			toughs.setLong("UUIDMost", 666);
+			toughs.setLong("UUIDLeast", 6666);
+			toughs.setString("Slot", "legs");
+			
+			list.add(toughs);
 			
 			compound.set("AttributeModifiers", list);
 			nmsStack.setTag(compound);
@@ -163,7 +175,7 @@ public class OCMListener implements Listener{
 			return null;
 		}
 	}
-	public int getArmourAmount(ItemStack is){
+	public int getArmourDP(ItemStack is){
 		switch(is.getType().name().toLowerCase()){
 		case "leather_leggings":
 			return 2;
@@ -175,6 +187,13 @@ public class OCMListener implements Listener{
 			return 5;
 		case "diamond_leggings":
 			return 6;
+		default: return 0;
+		}
+	}
+	public int getArmourT(ItemStack is){
+		switch(is.getType().name().toLowerCase()){
+		case "diamond_leggings":
+			return 2;
 		default: return 0;
 		}
 	}
