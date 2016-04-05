@@ -24,17 +24,16 @@ public class OCMListener implements Listener{
 		this.plugin = instance;
 	}
 
-	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
-
 	@EventHandler
 	public void onPlayerLogin(PlayerLoginEvent e){
+		OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
 		Player p = e.getPlayer();
 		if(p.isOp()){
-			this.updateChecker.updateNeeded();
+			updateChecker.updateNeeded();
 			if(plugin.getConfig().getBoolean("settings.checkForUpdates")){
-				if(this.updateChecker.updateNeeded()){
-					p.sendMessage("An update for OldCombatMechanics to version " + this.updateChecker.getVersion()+"is available!");
-					p.sendMessage("Click here to download it:"+this.updateChecker.getLink());
+				if(updateChecker.updateNeeded()){
+					p.sendMessage("An update for OldCombatMechanics to version " + updateChecker.getVersion()+"is available!");
+					p.sendMessage("Click here to download it:"+updateChecker.getLink());
 				}
 			}
 		}
