@@ -24,6 +24,6 @@ public class OCMConfigHandler {
 		return YamlConfiguration.loadConfiguration(getFile(fileName));
 	}
 	public File getFile(String fileName){
-		return new File(plugin.getDataFolder()+fileName);
+		return new File(plugin.getDataFolder()+File.separator+fileName);
 	}
 }
