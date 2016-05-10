@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_9_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_9_R2.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,8 +14,8 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import net.minecraft.server.v1_9_R1.NBTTagCompound;
-import net.minecraft.server.v1_9_R1.NBTTagList;
+import net.minecraft.server.v1_9_R2.NBTTagCompound;
+import net.minecraft.server.v1_9_R2.NBTTagList;
 
 public class OCMListener implements Listener{
 	
@@ -85,7 +85,7 @@ public class OCMListener implements Listener{
 	}
 
 	public boolean hasTags(ItemStack item){
-		net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(item);
+		net.minecraft.server.v1_9_R2.ItemStack nmsStack = CraftItemStack.asNMSCopy(item);
 
 		//Checking if there are already tags present
 		NBTTagCompound compound = nmsStack.getTag();
@@ -120,7 +120,7 @@ public class OCMListener implements Listener{
 
 	public ItemStack NBTTags(Player p, ItemStack is){
 		if(!hasTags(is)){
-			net.minecraft.server.v1_9_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(is);
+			net.minecraft.server.v1_9_R2.ItemStack nmsStack = CraftItemStack.asNMSCopy(is);
 			NBTTagCompound compound = nmsStack.getTag();
 			if(compound==null){
 				compound = new NBTTagCompound();

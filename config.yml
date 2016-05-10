@@ -1,6 +1,6 @@
 # OldCombatMechanics Plugin by kernitus
 # This is to disable the update checker if for whatever reason you deemed it unneccessary
-# Although keep in mind this plugin will need updating for every Minecraft update
+# Although keep in mind this plugin will need updating for almost every Minecraft update
 update-checker: true
 # This is the item that will be placed in the legs slot when no armour is present
 item:
