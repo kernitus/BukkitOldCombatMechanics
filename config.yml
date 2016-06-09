@@ -8,3 +8,15 @@ plugin-active: true
 
 # This is to toggle the update checker
 update-checker: true
+
+# This is to disable player collisions
+disable-player-collisions: false
+
+# This is to set the axe damage as in pre-1.9
+old-axe-damage: false
+
+# This is to disable the special sword attack that knocks back
+disable-knockback-attack: false
+
+# This is to disable the use of shields
+disable-shields: false
