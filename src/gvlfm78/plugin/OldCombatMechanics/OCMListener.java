@@ -35,6 +35,7 @@ public class OCMListener implements Listener {
 				}
 			}
 		}
+
 		if (config.getBoolean("plugin-active")) {// Setting to no cooldown
 			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 			double baseValue = attribute.getBaseValue();
@@ -50,16 +51,6 @@ public class OCMListener implements Listener {
 				p.saveData();
 			}
 		}
-		
-		if (config.getBoolean("disable-player-collisions")) {
-			
-			p.setCollidable(false);
-		
-		} else {
-			
-			p.setCollidable(true);
-			
-		}
-		
+
 	}
 }
