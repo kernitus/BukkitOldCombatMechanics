@@ -2,5 +2,9 @@
 #Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/
 #Spigot Page: https://www.spigotmc.org/resources/oldcombatmechanics.19510/
 #GitHub Page: https://github.com/gvlfm78/BukkitOldCombatMechanics/
-# This is to disable the update checker
+
+# This is to toggle the plugin's main functionality on/off
+plugin-active: true
+
+# This is to toggle the update checker
 update-checker: true
