@@ -1,14 +1,6 @@
 # OldCombatMechanics Plugin by kernitus
-# This is to disable the update checker if for whatever reason you deemed it unneccessary
-# Although keep in mind this plugin will need updating for almost every Minecraft update
+#Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/
+#Spigot Page: https://www.spigotmc.org/resources/oldcombatmechanics.19510/
+#GitHub Page: https://github.com/kernitus/BukkitOldCombatMechanics/
+# This is to disable the update checker
 update-checker: true
-# This is the item that will be placed in the legs slot when no armour is present
-item:
-    #The item type, you can place lever or stone_button etc. here
-    type: wood_button
-    #The custom name for the replacement item. Put '' if you don't want to set any
-    custom-name: '&5Attack Speed Fixer'
-    #The first line of the lore for the replacement item. You can use colour codes here like such as &a and &4
-    lore1:
-    #Second line, same as above. If you don't want to set these just leave them empty
-    lore2:
