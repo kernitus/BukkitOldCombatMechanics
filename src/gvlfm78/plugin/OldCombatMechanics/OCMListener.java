@@ -25,15 +25,7 @@ public class OCMListener implements Listener {
 
 		// Checking for updates
 		if (p.isOp()) {
-			if (config.getBoolean("update-checker")) {
-				if (plugin.getConfig().getBoolean("settings.checkForUpdates")) {
-					if (updateChecker.updateNeeded()) {
-						p.sendMessage("An update for OldCombatMechanics to version " + updateChecker.getVersion()
-								+ " is available!");
-						p.sendMessage("Click here to download it: " + updateChecker.getLink());
-					}
-				}
-			}
+			updateChecker.sendUpdateMessages(p);
 		}
 
 		if (config.getBoolean("plugin-active")) {// Setting to no cooldown

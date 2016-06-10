@@ -24,18 +24,16 @@ public class OCMCommandHandler implements CommandExecutor {
 
 		if (label.equalsIgnoreCase("oldcombatmechanics") || label.equalsIgnoreCase("ocm")) {
 
-			if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {// Reloads
-																		// config
+			if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {// Reloads config
+
 				plugin.reloadConfig();
 
 				for (World world : Bukkit.getServer().getWorlds()) {
 
 					for (Player player : world.getPlayers()) {
 
-						if (plugin.getConfig().getBoolean("plugin-active")) {// Setting
-																				// to
-							// no
-							// cooldown
+						if (plugin.getConfig().getBoolean("plugin-active")) {// Setting to no cooldown
+
 							AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 							double baseValue = attribute.getBaseValue();
 							if (baseValue != 1024) {
