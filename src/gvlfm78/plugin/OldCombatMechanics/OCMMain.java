@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -9,32 +10,20 @@ public class OCMMain extends JavaPlugin {
 
 	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
+	Logger logger = getLogger();
 
 	@Override
 	public void onEnable() {
 
-		// this.updateChecker.updateNeeded(); We don't need this, right?
-
-		// if (getConfig().getBoolean("settings.checkForUpdates")) {
-
-		if (this.updateChecker.updateNeeded()) {
-			getLogger().info(
-					"An update of OldCombatMechanics to version " + this.updateChecker.getVersion() + "is available!");
-			getLogger().info("Click here to download it:" + this.updateChecker.getLink());
-		}
-
-		// }
+		//Checking for updates
+		updateChecker.sendUpdateMessages(logger);
 
 		PluginDescriptionFile pdfFile = this.getDescription();
 
 		// Listeners and stuff
-		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing
-																						// event
-																						// listener
+		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
 
-		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing
-																					// commands
-																					// listener
+		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
 		// Setting up config.yml
 		CH.setupConfigyml();
@@ -48,7 +37,7 @@ public class OCMMain extends JavaPlugin {
 		}
 
 		// Logging to console the correct enabling of OCM
-		getLogger().info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
 	}
 
@@ -57,7 +46,7 @@ public class OCMMain extends JavaPlugin {
 
 		PluginDescriptionFile pdfFile = this.getDescription();
 		// Logging to console the disabling of Hotels
-		getLogger().info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
 	}
 
 }
