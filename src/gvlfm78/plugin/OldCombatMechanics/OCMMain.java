@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+@SuppressWarnings("unused")
 public class OCMMain extends JavaPlugin {
 
     protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
