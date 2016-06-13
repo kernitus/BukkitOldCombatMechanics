@@ -2,3 +2,6 @@
 bin
 .project
 .classpath
+.idea
+BukkitOldCombatMechanics.eml
+BukkitOldCombatMechanics.iml
