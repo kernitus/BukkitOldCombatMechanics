@@ -1,52 +1,52 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
+import java.util.logging.Logger;
+
 public class OCMMain extends JavaPlugin {
 
-	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
-	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	Logger logger = getLogger();
+    protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
+    private OCMConfigHandler CH = new OCMConfigHandler(this);
+    Logger logger = getLogger();
 
-	@Override
-	public void onEnable() {
+    @Override
+    public void onEnable() {
 
-		//Checking for updates
-		updateChecker.sendUpdateMessages(logger);
+        //Checking for updates
+        updateChecker.sendUpdateMessages(logger);
 
-		PluginDescriptionFile pdfFile = this.getDescription();
+        PluginDescriptionFile pdfFile = this.getDescription();
 
-		// Listeners and stuff
-		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
+        // Listeners and stuff
+        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
 
-		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
-		// Setting up config.yml
-		CH.setupConfigyml();
+        // Setting up config.yml
+        CH.setupConfigyml();
 
-		// Metrics
-		try {
-			MetricsLite metrics = new MetricsLite(this);
-			metrics.start();
-		} catch (IOException e) {
-			// Failed to submit the stats :-(
-		}
+        // Metrics
+        try {
+            MetricsLite metrics = new MetricsLite(this);
+            metrics.start();
+        } catch (IOException e) {
+            // Failed to submit the stats :-(
+        }
 
-		// Logging to console the correct enabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+        // Logging to console the correct enabling of OCM
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
-	}
+    }
 
-	@Override
-	public void onDisable() {
+    @Override
+    public void onDisable() {
 
-		PluginDescriptionFile pdfFile = this.getDescription();
-		// Logging to console the disabling of Hotels
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
-	}
+        PluginDescriptionFile pdfFile = this.getDescription();
+        // Logging to console the disabling of Hotels
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+    }
 
 }
