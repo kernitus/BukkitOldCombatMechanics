@@ -32,7 +32,7 @@ public class OCMListener implements Listener {
 		World world = p.getWorld();
 
 		// Checking for updates
-		if (p.hasPermission("OldCombatMechanics.notify")) {
+		if (p.hasPermission("OldCombatMechanics.notify")||p.isOp()) {
 			updateChecker.sendUpdateMessages(p);
 		}
 
