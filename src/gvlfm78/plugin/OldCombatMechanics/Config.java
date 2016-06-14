@@ -56,8 +56,8 @@ public class Config {
 
     }
 
-    public static boolean moduleEnabled(String name) {
+    /*public static boolean moduleEnabled(String name) {
         return moduleEnabled(name, null);
-    }
+    }*/
 
 }
