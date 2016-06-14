@@ -22,23 +22,39 @@ public class OCMCommandHandler implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
-		if (label.equalsIgnoreCase("oldcombatmechanics") || label.equalsIgnoreCase("ocm")) {
+		// Using cmd.getLabel() will always return the main label,
+		// even if you're using an alias.
+		if (cmd.getLabel().equalsIgnoreCase("OldCombatMechanics")) {
 
 			if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {// Reloads config
 
 				plugin.reloadConfig();
 
+				boolean plugin_active = plugin.getConfig().getBoolean("plugin-active");
+
 				for (World world : Bukkit.getServer().getWorlds()) {
 
 					for (Player player : world.getPlayers()) {
 
-						if (plugin.getConfig().getBoolean("plugin-active")) {// Setting to no cooldown
+						AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+						double baseValue = attribute.getBaseValue();
 
-							AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-							double baseValue = attribute.getBaseValue();
-							if (baseValue != 1024) {
+						if (plugin_active) { // Setting to no cooldown
+
+				    		if (baseValue != 1024) {
+
 								attribute.setBaseValue(1024);
 								player.saveData();
+
+							}
+
+						} else { // Re-enabling cooldown
+
+							if (baseValue == 1024) {
+
+								attribute.setBaseValue(4);
+								player.saveData();
+
 							}
 
 						}
