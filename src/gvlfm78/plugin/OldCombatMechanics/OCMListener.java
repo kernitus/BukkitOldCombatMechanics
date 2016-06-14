@@ -43,7 +43,7 @@ public class OCMListener implements Listener {
         } else {// Re-enabling cooldown
             AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
             double baseValue = attribute.getBaseValue();
-            if (baseValue != 4) {
+            if (baseValue == 1024) {
                 attribute.setBaseValue(4);
                 p.saveData();
             }
