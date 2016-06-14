@@ -13,7 +13,7 @@ commands:
    permission: OldCombatMechanics.commands
    
 permissions:
-  OldCOmbatMechanics.*:
+  OldCombatMechanics.*:
     description: Gives access to all OCM permissions
     default: op
     children:
