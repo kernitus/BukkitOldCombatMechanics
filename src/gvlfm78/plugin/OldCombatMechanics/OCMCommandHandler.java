@@ -71,7 +71,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
 				PluginDescriptionFile pdf = plugin.getDescription();
 
-				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics by gvlfm78 version " + pdf.getVersion());
+				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics by gvlfm78 and Rayzr522 version " + pdf.getVersion());
 				sender.sendMessage(ChatColor.GREEN + "You can use " + ChatColor.ITALIC + "/ocm reload "
 						+ ChatColor.RESET + ChatColor.GREEN + "to reload the config file");
 
