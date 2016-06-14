@@ -35,23 +35,18 @@ public class Config {
             return false;
         }
 
-        System.out.println("section.getBoolean(\"enabled\") = " + section.getBoolean("enabled"));
-
         if (section.getBoolean("enabled")) {
 
             if (world != null && section.getList("worlds").size() > 0 && !section.getList("worlds").contains(world.getName())) {
 
-                System.out.println("one");
                 return false;
 
             }
 
-            System.out.println("two");
             return true;
 
         }
 
-        System.out.println("three");
         return false;
 
     }
