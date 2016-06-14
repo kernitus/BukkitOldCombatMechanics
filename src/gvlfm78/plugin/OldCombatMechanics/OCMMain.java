@@ -6,7 +6,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-@SuppressWarnings("unused")
 public class OCMMain extends JavaPlugin {
 
     protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
@@ -34,7 +33,7 @@ public class OCMMain extends JavaPlugin {
             MetricsLite metrics = new MetricsLite(this);
             metrics.start();
         } catch (IOException e) {
-            // Failed to submit the stats :-(
+            // Failed to submit the stats
         }
 
         // Logging to console the correct enabling of OCM
