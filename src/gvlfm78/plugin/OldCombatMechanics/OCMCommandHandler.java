@@ -30,9 +30,9 @@ public class OCMCommandHandler implements CommandExecutor {
 
 				Config.reload();
 
-				boolean plugin_active = Config.moduleEnabled("disable-attack-cooldown");
-
 				for (World world : Bukkit.getServer().getWorlds()) {
+					
+					boolean plugin_active = Config.moduleEnabled("disable-attack-cooldown",world);
 
 					for (Player player : world.getPlayers()) {
 
