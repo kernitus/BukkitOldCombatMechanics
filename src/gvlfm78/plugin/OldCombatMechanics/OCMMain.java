@@ -28,6 +28,9 @@ public class OCMMain extends JavaPlugin {
         // Setting up config.yml
         CH.setupConfigyml();
 
+        // Initialize Config utility
+        Config.Initialize(this);
+
         // Metrics
         try {
             MetricsLite metrics = new MetricsLite(this);

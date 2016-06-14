@@ -33,7 +33,7 @@ public class OCMListener implements Listener {
             updateChecker.sendUpdateMessages(p);
         }
 
-        if (moduleEnabled("plugin-active")) {// Setting to no cooldown
+        if (Config.moduleEnabled("disable-attack-cooldown")) {// Setting to no cooldown
             AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
             double baseValue = attribute.getBaseValue();
             if (baseValue != 1024) {
@@ -56,7 +56,7 @@ public class OCMListener implements Listener {
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
 
         // Add '|| !moduleEnabled("disable-knockback-attack")' when you add that feature
-        if (!moduleEnabled("old-axe-damage")) {
+        if (!Config.moduleEnabled("old-axe-damage")) {
             return;
         }
 
@@ -81,10 +81,6 @@ public class OCMListener implements Listener {
 
     private boolean isHolding(Player p, String type) {
         return p.getInventory().getItemInMainHand().getType().toString().endsWith("_" + type.toUpperCase());
-    }
-
-    private boolean moduleEnabled(String name) {
-        return config.getBoolean(name);
     }
 
 }
