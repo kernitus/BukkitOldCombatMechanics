@@ -51,9 +51,9 @@ public class OCMListener implements Listener {
 
     }
 
-    // Add when finished: @EventHandler(priority = EventPriority.HIGH)
+    // Add when finished:
+    // @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
-
 
         // Add '|| !moduleEnabled("disable-knockback-attack")' when you add that feature
         if (!moduleEnabled("old-axe-damage")) {
@@ -80,9 +80,7 @@ public class OCMListener implements Listener {
     }
 
     private boolean isHolding(Player p, String type) {
-
-        return p.getItemOnCursor().getType().toString().endsWith("_" + type.toUpperCase());
-
+        return p.getInventory().getItemInMainHand().getType().toString().endsWith("_" + type.toUpperCase());
     }
 
     private boolean moduleEnabled(String name) {
