@@ -33,7 +33,7 @@ public class OCMListener implements Listener {
             updateChecker.sendUpdateMessages(p);
         }
 
-        if (config.getBoolean("plugin-active")) {// Setting to no cooldown
+        if (moduleEnabled("plugin-active")) {// Setting to no cooldown
             AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
             double baseValue = attribute.getBaseValue();
             if (baseValue != 1024) {
@@ -86,9 +86,7 @@ public class OCMListener implements Listener {
     }
 
     private boolean moduleEnabled(String name) {
-
         return config.getBoolean(name);
-
     }
 
 }
