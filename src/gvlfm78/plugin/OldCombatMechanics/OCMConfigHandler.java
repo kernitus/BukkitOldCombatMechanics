@@ -32,4 +32,8 @@ public class OCMConfigHandler {
 	public File getFile(String fileName) {
 		return new File(plugin.getDataFolder() + File.separator + fileName);
 	}
+	public boolean doesConfigymlExist(){
+		File file = getFile("config.yml");
+		return file.exists() ? true : false;
+	}
 }
