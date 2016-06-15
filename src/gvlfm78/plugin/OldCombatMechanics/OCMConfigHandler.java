@@ -1,14 +1,18 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.io.File;
-
 import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
 
 public class OCMConfigHandler {
 	private OCMMain plugin;
 
 	public OCMConfigHandler(OCMMain instance) {
 		this.plugin = instance;
+	}
+
+	public void upgradeConfig() {
+		plugin.saveDefaultConfig();
 	}
 
 	public void setupConfigyml() {

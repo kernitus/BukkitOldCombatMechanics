@@ -1,32 +1,50 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.HashMap;
 
 /**
  * Created by Rayzr522 on 6/14/16.
  */
-public enum WeaponDamages {
-    GOLD_AXE(4),
-    WOOD_AXE(4),
-    STONE_AXE(5),
-    IRON_AXE(6),
-    DIAMOND_AXE(7);
+public class WeaponDamages {
 
-    private int damage;
+    private static HashMap<String, Double> damages = new HashMap<String, Double>();
 
-    WeaponDamages(int damage) {
-        this.damage = damage;
+    private static OCMMain plugin;
+    private static FileConfiguration config;
+
+    public static void Initialize(OCMMain plugin) {
+
+        WeaponDamages.plugin = plugin;
+        reload();
+
     }
 
-    public int getDamage() {
-        return damage;
+    public static void reload() {
+
+        config = plugin.getConfig();
+
+        ConfigurationSection section = config.getConfigurationSection("old-tool-damage.damages");
+
+        for (String key : section.getKeys(false)) {
+
+            damages.put(key, section.getDouble(key));
+
+        }
+
     }
 
-    public int getDamage(Material mat) {
-        try {
-            return valueOf(mat.name()).damage;
-        } catch (Exception e) {
+
+    public double getDamage(Material mat) {
+
+        if (!damages.containsKey(mat.name())) {
             return -1;
         }
+
+        return damages.get(mat.name());
+
     }
 }
