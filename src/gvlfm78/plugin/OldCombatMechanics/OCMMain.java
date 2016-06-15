@@ -52,10 +52,10 @@ public class OCMMain extends JavaPlugin {
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
     }
 
-    public void upgradeConfig() {
-
+    public void upgradeConfig(){
         CH.upgradeConfig();
-
     }
-
+    public boolean doesConfigymlExist(){
+    	return CH.doesConfigymlExist();
+    }
 }
