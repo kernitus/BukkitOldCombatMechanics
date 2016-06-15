@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -91,16 +92,25 @@ public class OCMListener implements Listener {
 			return;
 		}
 
-		if (isHolding((Player) e.getDamager(), "axe")) {
+		Player p = (Player) e.getDamager();
+		
+		if (isHolding(p, "axe")) {
 
-			onAxeAttack(e);
+			onAxeAttack(e,p);
 
 		}
 
 	}
 
-	private void onAxeAttack(EntityDamageByEntityEvent e) {
-
+	private void onAxeAttack(EntityDamageByEntityEvent e, Player p) {
+		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+		double baseValue = attribute.getBaseValue();
+		//Get item in main hand, check if one of following types and set new base value accordingly
+		//Stone 4
+		//Iron 5
+		//Diamond 6
+		//Gold,wood 3
+	    attribute.setBaseValue(6);
 	}
 
 	private void onSwordAttack() {
