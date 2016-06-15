@@ -1,4 +1,4 @@
-config-version: 1
+
 ############# OldCombatMechanics Plugin by gvlfm78 and Rayzr522 #############
 #                                                                           #
 # Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/     #
@@ -19,10 +19,35 @@ disable-attack-cooldown:
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
 ################################################################
 
-old-axe-damage:
+old-tool-damage:
   # This is to set the axe damage as in pre-1.9
   enabled: false
   worlds: []
+  damages:
+    # Shovel damages (default for 1.8)
+    GOLD_SPADE: 2
+    WOOD_SPADE: 2
+    STONE_SPADE: 3
+    IRON_SPADE: 4
+    DIAMOND_SPADE: 5
+    # Pickaxe damages (default for 1.8)
+    GOLD_PICKAXE: 3
+    WOOD_PICKAXE: 3
+    STONE_PICKAXE: 4
+    IRON_PICKAXE: 5
+    DIAMOND_PICKAXE: 6
+    # Axe damages (default for 1.8)
+    GOLD_AXE: 4
+    WOOD_AXE: 4
+    STONE_AXE: 5
+    IRON_AXE: 6
+    DIAMOND_AXE: 7
+    # Sword damages (default for 1.8)
+    GOLD_SWORD: 5
+    WOOD_SWORD: 5
+    STONE_SWORD: 6
+    IRON_SWORD: 7
+    DIAMOND_SWORD: 8
 
 disable-player-collisions:
   # This is to disable player collisions
@@ -38,3 +63,8 @@ disable-shields:
   # This is to disable the use of shields
   enabled: false
   worlds: []
+
+
+
+# DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
+config-version: 1
