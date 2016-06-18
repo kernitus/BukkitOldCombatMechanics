@@ -1,20 +1,19 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
 	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
+    private OCMTask task = new OCMTask(this);
 	Logger logger = getLogger();
 
 	@Override
@@ -36,16 +35,15 @@ public class OCMMain extends JavaPlugin {
 		// Initialize Config utility
 		Config.Initialize(this);
 
+        // Initialize the team if it doesn't already exist
+        createTeam();
+
 		// Disabling player collisions
 		if(Config.moduleEnabled("disable-player-collisions")){
 
-			OCMTask task = new OCMTask(this);
-			double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
+            // Even though it says "restart", it works for just starting it too
+			restartTask();
 
-			if(minutes>0)
-				task.runTaskTimerAsynchronously(this, 0, (long) minutes*60*20);
-			else
-				task.runTaskTimerAsynchronously(this, 0, 60*20);
 		}
 
 		// Metrics
@@ -65,7 +63,10 @@ public class OCMMain extends JavaPlugin {
 	public void onDisable() {
 
 		PluginDescriptionFile pdfFile = this.getDescription();
-		// Logging to console the disabling of Hotels
+
+        task.cancel();
+
+		// Logging to console the disabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
 	}
 
@@ -97,4 +98,17 @@ public class OCMMain extends JavaPlugin {
 	public boolean doesConfigymlExist(){
 		return CH.doesConfigymlExist();
 	}
+
+    public void restartTask() {
+
+        task.cancel();
+
+        double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
+
+        if(minutes>0)
+            task.runTaskTimerAsynchronously(this, 0, (long) minutes*60*20);
+        else
+            task.runTaskTimerAsynchronously(this, 0, 60*20);
+
+    }
 }
