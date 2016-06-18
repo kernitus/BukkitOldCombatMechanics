@@ -29,7 +29,8 @@ public class OCMTask extends BukkitRunnable {
 		List<?> worlds = Config.getWorlds("disable-player-collisions");
 		if(worlds.isEmpty()||worlds.contains(w.getName())) {
 			Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
-			if (!team.getEntries().contains(name)) {
+			if (!team.getEntries().contains(name)){
+				if(p.getScoreboard().getEntryTeam(p.getName()) != null) return;
 				team.addEntry(name);
 			}
 		}
