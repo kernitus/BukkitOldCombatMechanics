@@ -89,6 +89,7 @@ public class OCMMain extends JavaPlugin {
 		}
 
 		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+		team.setAllowFriendlyFire(true);
 
 	}
 

@@ -70,4 +70,4 @@ disable-shields:
 
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 1
+config-version: 2
