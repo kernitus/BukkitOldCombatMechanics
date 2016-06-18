@@ -72,7 +72,7 @@ public class OCMMain extends JavaPlugin {
 
 	private void createTeam() {
 
-		String name = "oldCombatMechanicsInternal";
+		String name = "ocmInternal";
 		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
 		Team team = null;
@@ -102,6 +102,7 @@ public class OCMMain extends JavaPlugin {
 
     public void restartTask() {
 
+        if (Bukkit.getScheduler().isCurrentlyRunning(task.getTaskId()))
         task.cancel();
 
         double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
