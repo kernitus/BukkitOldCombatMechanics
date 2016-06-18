@@ -4,6 +4,8 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.List;
+
 /**
  * Created by Rayzr522 on 6/14/16.
  */
@@ -69,5 +71,7 @@ public class Config {
     public static boolean moduleEnabled(String name) {
         return moduleEnabled(name, null);
     }
+
+    public static List<?> getWorlds(String moduleName) { return config.getList(moduleName + ".worlds"); }
 
 }

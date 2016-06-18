@@ -78,8 +78,12 @@ public class OCMListener implements Listener {
 				player.saveData();
 			}
 		}
-		if(Config.moduleEnabled("disable-player-collisions"))
+
+		if(Config.moduleEnabled("disable-player-collisions", world))
 			task.addPlayerToScoreboard(player);
+		else {
+			task.removePlayerFromScoreboard(player);
+		}
 	}
 	
 	// Add when finished:
