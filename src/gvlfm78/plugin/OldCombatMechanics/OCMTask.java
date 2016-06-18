@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Team;
 
 public class OCMTask extends BukkitRunnable {
 
@@ -14,7 +15,7 @@ public class OCMTask extends BukkitRunnable {
 	public OCMTask(OCMMain instance) {
 		this.plugin = instance;
 	}
-	
+
 	@Override
 	public void run(){
 		Collection<? extends Player> players = Bukkit.getServer().getOnlinePlayers();
@@ -26,7 +27,9 @@ public class OCMTask extends BukkitRunnable {
 		World w = p.getWorld();
 		List<?> worlds = plugin.getConfig().getList("disable-player-collisions.worlds");
 		if(worlds.contains(w.getName())){
-			//Add player to scoreboard
+			Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("oldCombatMechanicsInternal");
+			if(!team.getPlayers().contains(p))
+				team.addPlayer(p);
 		}
 	}
 }
