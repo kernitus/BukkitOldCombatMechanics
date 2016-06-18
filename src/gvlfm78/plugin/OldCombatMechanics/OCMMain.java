@@ -1,86 +1,100 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
-    protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
-    private OCMConfigHandler CH = new OCMConfigHandler(this);
-    Logger logger = getLogger();
+	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
+	private OCMConfigHandler CH = new OCMConfigHandler(this);
+	Logger logger = getLogger();
 
-    @Override
-    public void onEnable() {
+	@Override
+	public void onEnable() {
 
-        //Checking for updates
-        updateChecker.sendUpdateMessages(logger);
+		//Checking for updates
+		updateChecker.sendUpdateMessages(logger);
 
-        PluginDescriptionFile pdfFile = this.getDescription();
+		PluginDescriptionFile pdfFile = this.getDescription();
 
-        // Listeners and stuff
-        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
+		// Listeners and stuff
+		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
 
-        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
+		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
-        // Setting up config.yml
-        CH.setupConfigyml();
+		// Setting up config.yml
+		CH.setupConfigyml();
 
-        // Initialize Config utility
-        Config.Initialize(this);
+		// Initialize Config utility
+		Config.Initialize(this);
 
-        // Metrics
-        try {
-            MetricsLite metrics = new MetricsLite(this);
-            metrics.start();
-        } catch (IOException e) {
-            // Failed to submit the stats
-        }
+		// Disabling player collisions
+		if(Config.moduleEnabled("disable-player-collisions")){
 
-        // Logging to console the correct enabling of OCM
-        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+			OCMTask task = new OCMTask(this);
+			double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
 
-    }
+			if(minutes>0)
+				task.runTaskTimerAsynchronously(this, 0, (long) minutes*60*20);
+			else
+				task.runTaskTimerAsynchronously(this, 0, 60*20);
+		}
 
-    @Override
-    public void onDisable() {
+		// Metrics
+		try {
+			MetricsLite metrics = new MetricsLite(this);
+			metrics.start();
+		} catch (IOException e) {
+			// Failed to submit the stats
+		}
 
-        PluginDescriptionFile pdfFile = this.getDescription();
-        // Logging to console the disabling of Hotels
-        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
-    }
+		// Logging to console the correct enabling of OCM
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
-    private void createTeam() {
+	}
 
-        String name = "oldCombatMechanicsInternal";
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+	@Override
+	public void onDisable() {
 
-        Team team = null;
+		PluginDescriptionFile pdfFile = this.getDescription();
+		// Logging to console the disabling of Hotels
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+	}
 
-        for (Team t : scoreboard.getTeams()) {
-            if (t.getName().equals(name)) {
-                team = t;
-                break;
-            }
-        }
+	private void createTeam() {
 
-        if (team == null) {
-            team = scoreboard.registerNewTeam(name);
-        }
+		String name = "oldCombatMechanicsInternal";
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+		Team team = null;
 
-    }
+		for (Team t : scoreboard.getTeams()) {
+			if (t.getName().equals(name)) {
+				team = t;
+				break;
+			}
+		}
 
-    public void upgradeConfig(){
-        CH.upgradeConfig();
-    }
-    public boolean doesConfigymlExist(){
-    	return CH.doesConfigymlExist();
-    }
+		if (team == null) {
+			team = scoreboard.registerNewTeam(name);
+		}
+
+		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+
+	}
+
+	public void upgradeConfig(){
+		CH.upgradeConfig();
+	}
+	public boolean doesConfigymlExist(){
+		return CH.doesConfigymlExist();
+	}
 }

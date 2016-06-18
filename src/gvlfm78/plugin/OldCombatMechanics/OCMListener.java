@@ -1,6 +1,5 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -24,6 +23,8 @@ public class OCMListener implements Listener {
 		this.config = plugin.getConfig();
 
 	}
+	
+	OCMTask task = new OCMTask(plugin);
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {
@@ -52,7 +53,8 @@ public class OCMListener implements Listener {
 				p.saveData();
 			}
 		}
-
+		if(Config.moduleEnabled("disable-player-collisions"))
+			task.addPlayerToScoreboard(p);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -76,15 +78,17 @@ public class OCMListener implements Listener {
 				player.saveData();
 			}
 		}
+		if(Config.moduleEnabled("disable-player-collisions"))
+			task.addPlayerToScoreboard(player);
 	}
-
+	
 	// Add when finished:
 	// @EventHandler(priority = EventPriority.HIGH)
 	public void onEntityDamaged(EntityDamageByEntityEvent e) {
 		World world = e.getDamager().getWorld();
 
 		// Add '|| !moduleEnabled("disable-knockback-attack")' when you add that feature
-		if (!Config.moduleEnabled("old-axe-damage", world)) {
+		if (!Config.moduleEnabled("old-tool-damage", world)) {
 			return;
 		}
 
