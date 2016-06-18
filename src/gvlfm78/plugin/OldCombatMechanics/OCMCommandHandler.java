@@ -45,7 +45,7 @@ public class OCMCommandHandler implements CommandExecutor {
 						if (plugin_active) { // Setting to no cooldown
 
 							System.out.println("Enabling cooldown for " + player.getName());
-							int GAS = plugin.getConfig().getInt("disable-attack-cooldown.general-atack-speed");
+							double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 				    		if (baseValue!=GAS){
 								attribute.setBaseValue(GAS);
 								player.saveData();

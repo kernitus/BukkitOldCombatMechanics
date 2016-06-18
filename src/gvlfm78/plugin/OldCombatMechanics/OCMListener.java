@@ -38,7 +38,7 @@ public class OCMListener implements Listener {
             updateChecker.sendUpdateMessages(p);
         }
 
-        int GAS = plugin.getConfig().getInt("disable-attack-cooldown.general-atack-speed");
+        double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
         if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
             AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
@@ -72,7 +72,7 @@ public class OCMListener implements Listener {
 
         if (Config.moduleEnabled("disable-attack-cooldown", world)) {//Disabling cooldown
 
-            int GAS = plugin.getConfig().getInt("disable-attack-cooldown.general-atack-speed");
+            double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
             if (baseValue != GAS) {
                 attribute.setBaseValue(GAS);
