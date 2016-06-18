@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 2;
+    public static final int CONFIG_VERSION = 1;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
@@ -22,7 +22,7 @@ public class Config {
         config = plugin.getConfig();
 
         if (config.getInt("config-version") != CONFIG_VERSION) {
-            plugin.getLogger().warning("Config version does not match, resetting config to default values");
+            plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
             plugin.upgradeConfig();
             reload();
         }

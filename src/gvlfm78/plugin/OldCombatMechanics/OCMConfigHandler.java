@@ -11,7 +11,11 @@ public class OCMConfigHandler {
 		this.plugin = instance;
 	}
 
-	public void upgradeConfig() {
+	public void upgradeConfig(){
+		if(doesConfigymlExist()){
+			File backup = getFile("config-backup.yml");
+			getFile("config.yml").renameTo(backup);
+		}
 		plugin.saveDefaultConfig();
 	}
 
