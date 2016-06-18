@@ -64,7 +64,8 @@ public class OCMMain extends JavaPlugin {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
-        task.cancel();
+        if (task != null)
+            task.cancel();
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");

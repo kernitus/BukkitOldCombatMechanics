@@ -1,13 +1,13 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
+
+import java.util.Collection;
+import java.util.List;
 
 public class OCMTask extends BukkitRunnable {
 
@@ -27,9 +27,9 @@ public class OCMTask extends BukkitRunnable {
 		World w = p.getWorld();
 		String name = p.getName();
 		List<?> worlds = plugin.getConfig().getList("disable-player-collisions.worlds");
-		if(worlds.isEmpty()||worlds.contains(w.getName())){
+		if(worlds.isEmpty()||worlds.contains(w.getName())) {
 			Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
-			if(!team.getEntries().contains(name)){
+			if (!team.getEntries().contains(name)) {
 				team.addEntry(name);
 			}
 		}
