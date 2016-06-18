@@ -44,6 +44,9 @@ public class OCMTask extends BukkitRunnable {
     }
 
     public void removePlayerFromScoreboard(Player p) {
+
+        if (p.getScoreboard().getEntryTeam(p.getName()) != null) return;
+
         Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
         if (team.getEntries().contains(p.getName())) {
             team.removeEntry(p.getName());
