@@ -11,106 +11,111 @@ import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
-	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
-	private OCMConfigHandler CH = new OCMConfigHandler(this);
-    private OCMTask task = new OCMTask(this);
-	Logger logger = getLogger();
+    protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
+    private OCMConfigHandler CH = new OCMConfigHandler(this);
+    private OCMTask task = null;
+    Logger logger = getLogger();
 
-	@Override
-	public void onEnable() {
+    @Override
+    public void onEnable() {
 
-		//Checking for updates
-		updateChecker.sendUpdateMessages(logger);
+        //Checking for updates
+        updateChecker.sendUpdateMessages(logger);
 
-		PluginDescriptionFile pdfFile = this.getDescription();
+        PluginDescriptionFile pdfFile = this.getDescription();
 
-		// Listeners and stuff
-		getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
+        // Listeners and stuff
+        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
 
-		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
-		// Setting up config.yml
-		CH.setupConfigyml();
+        // Setting up config.yml
+        CH.setupConfigyml();
 
-		// Initialize Config utility
-		Config.Initialize(this);
+        // Initialize Config utility
+        Config.Initialize(this);
 
         // Initialize the team if it doesn't already exist
         createTeam();
 
-		// Disabling player collisions
-		if(Config.moduleEnabled("disable-player-collisions")){
+        // Disabling player collisions
+        if (Config.moduleEnabled("disable-player-collisions")) {
 
             // Even though it says "restart", it works for just starting it too
-			restartTask();
+            restartTask();
 
-		}
+        }
 
-		// Metrics
-		try {
-			MetricsLite metrics = new MetricsLite(this);
-			metrics.start();
-		} catch (IOException e) {
-			// Failed to submit the stats
-		}
+        // Metrics
+        try {
+            MetricsLite metrics = new MetricsLite(this);
+            metrics.start();
+        } catch (IOException e) {
+            // Failed to submit the stats
+        }
 
-		// Logging to console the correct enabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+        // Logging to console the correct enabling of OCM
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
-	}
+    }
 
-	@Override
-	public void onDisable() {
+    @Override
+    public void onDisable() {
 
-		PluginDescriptionFile pdfFile = this.getDescription();
+        PluginDescriptionFile pdfFile = this.getDescription();
 
         task.cancel();
 
-		// Logging to console the disabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
-	}
+        // Logging to console the disabling of OCM
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+    }
 
-	private void createTeam() {
+    private void createTeam() {
 
-		String name = "ocmInternal";
-		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String name = "ocmInternal";
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-		Team team = null;
+        Team team = null;
 
-		for (Team t : scoreboard.getTeams()) {
-			if (t.getName().equals(name)) {
-				team = t;
-				break;
-			}
-		}
+        for (Team t : scoreboard.getTeams()) {
+            if (t.getName().equals(name)) {
+                team = t;
+                break;
+            }
+        }
 
-		if (team == null) {
-			team = scoreboard.registerNewTeam(name);
-		}
+        if (team == null) {
+            team = scoreboard.registerNewTeam(name);
+        }
 
-		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
-		team.setAllowFriendlyFire(true);
+        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        team.setAllowFriendlyFire(true);
 
-	}
+    }
 
-	public void upgradeConfig(){
-		CH.upgradeConfig();
-	}
-	public boolean doesConfigymlExist(){
-		return CH.doesConfigymlExist();
-	}
+    public void upgradeConfig() {
+        CH.upgradeConfig();
+    }
+
+    public boolean doesConfigymlExist() {
+        return CH.doesConfigymlExist();
+    }
 
     public void restartTask() {
 
-        if (Bukkit.getScheduler().isCurrentlyRunning(task.getTaskId()))
-        task.cancel();
+        if (task == null) {
+            task = new OCMTask(this);
+        } else {
+            task.cancel();
+            task = new OCMTask(this);
+        }
 
         double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
 
-        if(minutes>0)
-            task.runTaskTimerAsynchronously(this, 0, (long) minutes*60*20);
+        if (minutes > 0)
+            task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
         else
-            task.runTaskTimerAsynchronously(this, 0, 60*20);
+            task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
     }
 }
