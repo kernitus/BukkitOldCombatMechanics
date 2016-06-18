@@ -38,17 +38,19 @@ public class OCMListener implements Listener {
 			updateChecker.sendUpdateMessages(p);
 		}
 
+		int GAS = plugin.getConfig().getInt("disable-attack-cooldown.general-atack-speed");
+		
 		if (Config.moduleEnabled("disable-attack-cooldown",world)) {// Setting to no cooldown
 			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 			double baseValue = attribute.getBaseValue();
-			if (baseValue != 1024) {
-				attribute.setBaseValue(1024);
+			if (baseValue!=GAS) {
+				attribute.setBaseValue(GAS);
 				p.saveData();
 			}
 		} else {// Re-enabling cooldown
 			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 			double baseValue = attribute.getBaseValue();
-			if (baseValue == 1024) {
+			if (baseValue!=4) {
 				attribute.setBaseValue(4);
 				p.saveData();
 			}
@@ -67,8 +69,10 @@ public class OCMListener implements Listener {
 
 		if (Config.moduleEnabled("disable-attack-cooldown",world)){//Disabling cooldown
 
-			if (baseValue!=1024){
-				attribute.setBaseValue(1024);
+			int GAS = plugin.getConfig().getInt("disable-attack-cooldown.general-atack-speed");
+			
+			if (baseValue!=GAS){
+				attribute.setBaseValue(GAS);
 				player.saveData();
 			}
 		}

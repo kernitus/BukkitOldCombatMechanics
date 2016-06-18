@@ -14,6 +14,16 @@ disable-attack-cooldown:
   # This is to disable the attack cooldown
   enabled: true
   worlds: []
+  # What to set the attack speed to. Default for 1.9 is 4, at least 64 is needed for no cooldown.
+  general-attack-speed: 1024
+  
+disable-player-collisions:
+  # This is to disable player collisions
+  enabled: false
+  worlds: []
+  # How often the plugin should check that all players have no collisions applied to them
+  # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
+  collision-check-frequency: 1
 
 ################################################################
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
@@ -49,16 +59,8 @@ old-tool-damage:
     IRON_SWORD: 7
     DIAMOND_SWORD: 8
 
-disable-player-collisions:
-  # This is to disable player collisions
-  enabled: false
-  worlds: []
-  # How often the plugin should check that all players have no collisions applied to them
-  # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
-  collision-check-frequency: 1
-
-disable-knockback-attack:
-  # This is to disable the special sword attack that knocks back
+disable-aoe:
+  # This is to disable the area of effect for swords
   enabled: false
   worlds: []
 
@@ -70,4 +72,4 @@ disable-shields:
 
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 2
+config-version: 1
