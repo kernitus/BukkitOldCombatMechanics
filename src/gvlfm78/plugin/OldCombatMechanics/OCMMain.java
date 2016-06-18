@@ -1,7 +1,10 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -50,6 +53,28 @@ public class OCMMain extends JavaPlugin {
         PluginDescriptionFile pdfFile = this.getDescription();
         // Logging to console the disabling of Hotels
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+    }
+
+    private void createTeam() {
+
+        String name = "oldCombatMechanicsInternal";
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+
+        Team team = null;
+
+        for (Team t : scoreboard.getTeams()) {
+            if (t.getName().equals(name)) {
+                team = t;
+                break;
+            }
+        }
+
+        if (team == null) {
+            team = scoreboard.registerNewTeam(name);
+        }
+
+        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+
     }
 
     public void upgradeConfig(){
