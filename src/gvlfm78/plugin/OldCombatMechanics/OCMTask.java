@@ -26,12 +26,19 @@ public class OCMTask extends BukkitRunnable {
 	public void addPlayerToScoreboard(Player p){
 		World w = p.getWorld();
 		String name = p.getName();
-		List<?> worlds = plugin.getConfig().getList("disable-player-collisions.worlds");
+		List<?> worlds = Config.getWorlds("disable-player-collisions");
 		if(worlds.isEmpty()||worlds.contains(w.getName())) {
 			Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
 			if (!team.getEntries().contains(name)) {
 				team.addEntry(name);
 			}
+		}
+	}
+
+	public void removePlayerFromScoreboard(Player p) {
+		Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
+		if (team.getEntries().contains(p.getName())) {
+			team.removeEntry(p.getName());
 		}
 	}
 }
