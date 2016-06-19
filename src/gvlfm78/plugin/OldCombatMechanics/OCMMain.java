@@ -33,7 +33,7 @@ public class OCMMain extends JavaPlugin {
         CH.setupConfigyml();
 
         // Initialize Config utility
-        Config.Initialize(this);
+        Config.Initialise(this);
 
         // Initialize the team if it doesn't already exist
         createTeam();
