@@ -15,8 +15,12 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
     private static FileConfiguration config;
+    
+    public WeaponDamages(OCMMain instance) {
+		WeaponDamages.plugin = instance;
+	}
 
-    public static void Initialize(OCMMain plugin) {
+    public static void Initialise(OCMMain plugin) {
 
         WeaponDamages.plugin = plugin;
         reload();
