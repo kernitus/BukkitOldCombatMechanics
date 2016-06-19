@@ -11,12 +11,12 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 1;
+    public static final int CONFIG_VERSION = 2;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
 
-    public static void Initialize(OCMMain plugin) {
+    public static void Initialise(OCMMain plugin) {
 
         Config.plugin = plugin;
         config = plugin.getConfig();
@@ -27,7 +27,7 @@ public class Config {
             reload();
         }
 
-        WeaponDamages.Initialize(plugin);
+        WeaponDamages.Initialise(plugin);
 
     }
 
@@ -39,8 +39,8 @@ public class Config {
         } else
             plugin.upgradeConfig();
 
-        plugin.restartTask();
-
+        plugin.restartTask(); //Restart no-collisions check
+        WeaponDamages.Initialise(plugin); //Reload Weapon damages from config
     }
 
     public static boolean moduleEnabled(String name, World world) {

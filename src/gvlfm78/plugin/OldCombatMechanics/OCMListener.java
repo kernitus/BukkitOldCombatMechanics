@@ -1,9 +1,9 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,16 +15,13 @@ import org.bukkit.event.player.PlayerJoinEvent;
 public class OCMListener implements Listener {
 
     private OCMMain plugin;
-    private FileConfiguration config;
 
     public OCMListener(OCMMain instance) {
-
         this.plugin = instance;
-        this.config = plugin.getConfig();
-
     }
 
     OCMTask task = new OCMTask(plugin);
+    WeaponDamages WD = new WeaponDamages(plugin);
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogin(PlayerJoinEvent e) {
@@ -93,11 +90,11 @@ public class OCMListener implements Listener {
     }
 
     // Add when finished:
-    // @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         World world = e.getDamager().getWorld();
 
-        // Add '|| !moduleEnabled("disable-knockback-attack")' when you add that feature
+        // Add '|| !moduleEnabled("disable-aoe")' when you add that feature
         if (!Config.moduleEnabled("old-tool-damage", world)) {
             return;
         }
@@ -107,31 +104,39 @@ public class OCMListener implements Listener {
         }
 
         Player p = (Player) e.getDamager();
+        Material mat = p.getInventory().getItemInMainHand().getType();
+        String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
 
-        if (isHolding(p, "axe")) {
-
-            onAxeAttack(e, p);
-
+        if(isHolding(mat, "sword")) {
+            onSwordAttack(e, p, mat);
         }
-
+        else if(isHolding(mat,weapons)){
+        	onAttack(e,p,mat);
+        }
     }
 
-    private void onAxeAttack(EntityDamageByEntityEvent e, Player p) {
-        AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-        double baseValue = attribute.getBaseValue();
-        //Get item in main hand, check if one of following types and set new base value accordingly
-        //Stone 4
-        //Iron 5
-        //Diamond 6
-        //Gold,wood 3
-        attribute.setBaseValue(6);
+    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat){
+    	double baseDamage = e.getDamage();
+    	double divider = WD.getDamage(mat);
+        double newDamage = baseDamage / divider;
+        e.setDamage(newDamage);
+        p.sendMessage("Item "+mat.toString()+" Base damage: "+baseDamage+" Divider: "+divider+" Afterwards damage: "+e.getFinalDamage());
     }
 
-    private void onSwordAttack() {
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat){//To disable AOE
+    	//Disable AOE
+    	onAttack(e,p,mat);
     }
 
-    private boolean isHolding(Player p, String type) {
-        return p.getInventory().getItemInMainHand().getType().toString().endsWith("_" + type.toUpperCase());
+    private boolean isHolding(Material mat, String type){
+        return mat.toString().endsWith("_" + type.toUpperCase());
     }
-
+    private boolean isHolding(Material mat, String[] types){
+    	boolean hasAny = false;
+    	for(String type : types){
+    		if(isHolding(mat,type))
+    			hasAny = true;
+    	}
+        return hasAny;
+    }
 }

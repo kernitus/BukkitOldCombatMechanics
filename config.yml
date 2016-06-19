@@ -24,44 +24,86 @@ disable-player-collisions:
   # How often the plugin should check that all players have no collisions applied to them
   # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
   collision-check-frequency: 1
+  
+old-tool-damage:
+  # This is to set the tool damage as in pre-1.9
+  enabled: true
+  worlds: []
+  # This will allow you to set the damage divider
+  # The default values below are obtained by doing (1.8 value)/(1.9 value)
+  # Only axes and shovel values changed between the versions, so all others here have a divier of 1
+  # We put them here anyway in case you wished to change them
+  # The plugin divides the damage done while holding the weapon by the following values:
+  damages:
+    # Axe damages
+    GOLD_AXE: 2.333333
+    WOOD_AXE: 2.333333
+    STONE_AXE: 2.25
+    IRON_AXE: 1.8
+    DIAMOND_AXE: 1.5
+    # Shovel damages
+    GOLD_SPADE: 2.5
+    WOOD_SPADE: 2.5
+    STONE_SPADE: 1.75
+    IRON_SPADE: 1.5
+    DIAMOND_SPADE: 1.375
+    # Sword damages
+    GOLD_SWORD: 1
+    WOOD_SWORD: 1
+    STONE_SWORD: 1
+    IRON_SWORD: 1
+    DIAMOND_SWORD: 1
+    # Pickaxe damages
+    GOLD_PICKAXE: 1
+    WOOD_PICKAXE: 1
+    STONE_PICKAXE: 1
+    IRON_PICKAXE: 1
+    DIAMOND_PICKAXE: 1
+    # Hoe damages
+    GOLD_HOE: 1
+    WOOD_HOE: 1
+    STONE_HOE: 1
+    IRON_HOE: 1
+    DIAMOND_HOE: 1
 
 ################################################################
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
 ################################################################
 
-old-tool-damage:
-  # This is to set the axe damage as in pre-1.9
-  enabled: false
+old-armour-strength:
+  # This is to set armour strength values as in pre-1.9
+  enabled: true
   worlds: []
-  damages:
-    # Shovel damages (default for 1.8)
-    GOLD_SPADE: 2
-    WOOD_SPADE: 2
-    STONE_SPADE: 3
-    IRON_SPADE: 4
-    DIAMOND_SPADE: 5
-    # Pickaxe damages (default for 1.8)
-    GOLD_PICKAXE: 3
-    WOOD_PICKAXE: 3
-    STONE_PICKAXE: 4
-    IRON_PICKAXE: 5
-    DIAMOND_PICKAXE: 6
-    # Axe damages (default for 1.8)
-    GOLD_AXE: 4
-    WOOD_AXE: 4
-    STONE_AXE: 5
-    IRON_AXE: 6
-    DIAMOND_AXE: 7
-    # Sword damages (default for 1.8)
-    GOLD_SWORD: 5
-    WOOD_SWORD: 5
-    STONE_SWORD: 6
-    IRON_SWORD: 7
-    DIAMOND_SWORD: 8
+  strength:
+    # Leather armour
+    LEATHER_HELMET: 
+    LEATHER_CHESTPLATE: 
+    LEATHER_LEGGINGS: 
+    LEATHER_BOOTS: 
+    # Chainmail armour
+    CHAINMAIL_HELMET: 
+    CHAINMAIL_CHESTPLATE: 
+    CHAINMAIL_LEGGINGS: 
+    CHAINMAIL_BOOTS: 
+    # Golden armour
+    GOLDEN_HELMET: 
+    GOLDEN_CHESTPLATE: 
+    GOLDEN_LEGGINGS: 
+    GOLDEN_BOOTS: 
+    # Iron armour
+    IRON_HELMET: 
+    IRON_CHESTPLATE: 
+    IRON_LEGGINGS: 
+    IRON_BOOTS: 
+    # Diamond armour
+    DIAMOND_HELMET: 
+    DIAMOND_CHESTPLATE: 
+    DIAMOND_LEGGINGS: 
+    DIAMOND_BOOTS: 
 
 disable-aoe:
   # This is to disable the area of effect for swords
-  enabled: false
+  enabled: true
   worlds: []
 
 disable-shields:
@@ -72,4 +114,4 @@ disable-shields:
 
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 1
+config-version: 2
