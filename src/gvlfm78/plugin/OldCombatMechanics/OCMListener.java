@@ -94,7 +94,7 @@ public class OCMListener implements Listener {
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         World world = e.getDamager().getWorld();
 
-        // Add '|| !moduleEnabled("disable-aoe")' when you add that feature
+        // Add '|| !moduleEnabled("disable-sword-sweep")' when you add that feature
         if (!Config.moduleEnabled("old-tool-damage", world)) {
             return;
         }
@@ -123,8 +123,8 @@ public class OCMListener implements Listener {
         p.sendMessage("Item "+mat.toString()+" Base damage: "+baseDamage+" Divider: "+divider+" Afterwards damage: "+e.getFinalDamage());
     }
 
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat){//To disable AOE
-    	//Disable AOE
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat){
+    	//Disable sword sweep
     	onAttack(e,p,mat);
     }
 

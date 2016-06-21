@@ -32,10 +32,10 @@ public class OCMMain extends JavaPlugin {
         // Setting up config.yml
         CH.setupConfigyml();
 
-        // Initialize Config utility
+        // Initialise Config utility
         Config.Initialise(this);
 
-        // Initialize the team if it doesn't already exist
+        // Initialise the team if it doesn't already exist
         createTeam();
 
         // Disabling player collisions
