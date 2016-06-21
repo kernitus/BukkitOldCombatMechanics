@@ -101,8 +101,8 @@ old-armour-strength:
     DIAMOND_LEGGINGS: 
     DIAMOND_BOOTS: 
 
-disable-aoe:
-  # This is to disable the area of effect for swords
+disable-sword-sweep:
+  # This is to disable the sword sweep attack
   enabled: true
   worlds: []
 
