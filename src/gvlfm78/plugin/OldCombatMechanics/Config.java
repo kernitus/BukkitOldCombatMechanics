@@ -40,7 +40,7 @@ public class Config {
             plugin.upgradeConfig();
 
         plugin.restartTask(); //Restart no-collisions check
-        WeaponDamages.Initialise(plugin); //Reload Weapon damages from config
+        WeaponDamages.Initialise(plugin); //Reload weapon damages from config
     }
 
     public static boolean moduleEnabled(String name, World world) {
