@@ -71,6 +71,10 @@ public class Config {
     public static boolean moduleEnabled(String name) {
         return moduleEnabled(name, null);
     }
+    
+    public static boolean debugEnabled(){
+    	return moduleEnabled("debug",null);
+    }
 
     public static List<?> getWorlds(String moduleName) { return config.getList(moduleName + ".worlds"); }
 
