@@ -1,7 +1,5 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.util.Map;
-
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -112,75 +110,70 @@ public class OCMListener implements Listener {
         Material mat = p.getInventory().getItemInMainHand().getType();
         String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
 
-        if(isHolding(mat, "sword")) {
+        if (isHolding(mat, "sword")) {
             onSwordAttack(e, p, mat);
-        }
-        else if(isHolding(mat,weapons)){
-        	onAttack(e,p,mat);
+        } else if (isHolding(mat, weapons)) {
+            onAttack(e, p, mat);
         }
     }
 
-    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat){
-    	ItemStack item = p.getInventory().getItemInMainHand();
-    	EntityType entity = e.getEntityType();
-    	
-    	double baseDamage = e.getDamage();
-    	double oldDamage = baseDamage; //DEBUG, remove later
-    	double enchantmentDamage = 0;
+    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat) {
+        ItemStack item = p.getInventory().getItemInMainHand();
+        EntityType entity = e.getEntityType();
 
-        Map<Enchantment, Integer> enchants = item.getEnchantments();
-        
-        for(Enchantment ench : enchants.keySet()){
-        	p.sendMessage("Enchantment tested: "+ench.getName());
-        	if(ench.equals(Enchantment.DAMAGE_ALL)){//Sharpness
-        		enchantmentDamage += getSharpnessDamage(enchants.get(ench));
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-        	if(ench.equals(Enchantment.DAMAGE_UNDEAD)){//Smite
-        		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-        	if(ench.equals(Enchantment.DAMAGE_ARTHROPODS)){//Bane of Arthropods
-        		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-        }
-        
-        baseDamage -= enchantmentDamage;//Remove damage from enchantments
-        
-    	double divider = WD.getDamage(mat);
+        double baseDamage = e.getDamage();
+        double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage) + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
+//        double baseDamage = e.getDamage();
+//    	double oldDamage = baseDamage; //DEBUG, remove later
+//    	double enchantmentDamage = 0;
+//
+//        Map<Enchantment, Integer> enchants = item.getEnchantments();
+//
+//        for(Enchantment ench : enchants.keySet()){
+//        	p.sendMessage("Enchantment tested: "+ench.getName());
+//        	if(ench.equals(Enchantment.DAMAGE_ALL)){//Sharpness
+//        		enchantmentDamage += getSharpnessDamage(enchants.get(ench));
+//        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
+//        	}
+//        	if(ench.equals(Enchantment.DAMAGE_UNDEAD)){//Smite
+//        		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
+//        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
+//        	}
+//        	if(ench.equals(Enchantment.DAMAGE_ARTHROPODS)){//Bane of Arthropods
+//        		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
+//        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
+//        	}
+//        }
+//
+//        baseDamage -= enchantmentDamage;//Remove damage from enchantments
+
+
+        double divider = WD.getDamage(mat);
         double newDamage = baseDamage / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
         e.setDamage(newDamage);
-        p.sendMessage("Item "+mat.toString()+" Old damage: "+oldDamage+" Enchantment Damage: "+enchantmentDamage+" Divider: "+divider+" Afterwards damage: "+e.getFinalDamage());//DEBUG
+        p.sendMessage("Item " + mat.toString() + /*" Old damage: " + oldDamage +*/ " Enchantment Damage: " + enchantmentDamage + " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage());//DEBUG
     }
 
-    private double getSharpnessDamage(int level){
-    	//Adds 1 extra damage for the first level, and 0.5 for each additional level
-    	switch (level){
-    	case 1 : return 1; 
-    	case 2 : return 1.5; 
-    	case 3 : return 2; 
-    	case 4 : return 2.5; 
-    	case 5 : return 3;
-    	default : return 1;
-    	}
-    }
-    
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat){
-    	//Disable sword sweep
-    	onAttack(e,p,mat);
+    private double getSharpnessDamage(int level) {
+        return level >= 1 ? 1 + 0.5 * (level - 1) : 0;
     }
 
-    private boolean isHolding(Material mat, String type){
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat) {
+        //Disable sword sweep
+        onAttack(e, p, mat);
+    }
+
+    private boolean isHolding(Material mat, String type) {
         return mat.toString().endsWith("_" + type.toUpperCase());
     }
-    private boolean isHolding(Material mat, String[] types){
-    	boolean hasAny = false;
-    	for(String type : types){
-    		if(isHolding(mat,type))
-    			hasAny = true;
-    	}
+
+    private boolean isHolding(Material mat, String[] types) {
+        boolean hasAny = false;
+        for (String type : types) {
+            if (isHolding(mat, type))
+                hasAny = true;
+        }
         return hasAny;
     }
 }
