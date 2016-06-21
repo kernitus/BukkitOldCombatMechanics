@@ -149,10 +149,11 @@ public class OCMListener implements Listener {
 
 
         double divider = WD.getDamage(mat);
-        double newDamage = baseDamage / divider;
+        double newDamage = (baseDamage - enchantmentDamage) / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
         e.setDamage(newDamage);
-        p.sendMessage("Item " + mat.toString() + /*" Old damage: " + oldDamage +*/ " Enchantment Damage: " + enchantmentDamage + " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage());//DEBUG
+        if(Config.debugEnabled())
+        	p.sendMessage("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage + " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage());
     }
 
     private double getSharpnessDamage(int level) {
