@@ -28,6 +28,7 @@ public class Config {
         }
 
         WeaponDamages.Initialise(plugin);
+        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
 
     }
 
@@ -41,6 +42,7 @@ public class Config {
 
         plugin.restartTask(); //Restart no-collisions check
         WeaponDamages.Initialise(plugin); //Reload weapon damages from config
+        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
     }
 
     public static boolean moduleEnabled(String name, World world) {
