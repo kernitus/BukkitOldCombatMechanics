@@ -54,7 +54,7 @@ public class OCMMain extends JavaPlugin {
             // Failed to submit the stats
         }
 
-        // Logging to console the correct enabling of OCM
+        // Logging to console the enabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
     }
@@ -89,7 +89,7 @@ public class OCMMain extends JavaPlugin {
             team = scoreboard.registerNewTeam(name);
         }
 
-        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
         team.setAllowFriendlyFire(true);
 
     }
