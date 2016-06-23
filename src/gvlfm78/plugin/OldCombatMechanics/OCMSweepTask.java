@@ -1,9 +1,9 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import org.bukkit.scheduler.BukkitRunnable;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class OCMSweepTask extends BukkitRunnable {
 
@@ -14,7 +14,7 @@ public class OCMSweepTask extends BukkitRunnable {
 	@Override
 	public void run() {
 		//Clearing buffer
-		swordLocations = null;
+		swordLocations.clear();
 		
 	}
 
