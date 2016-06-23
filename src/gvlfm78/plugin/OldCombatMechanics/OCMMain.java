@@ -1,6 +1,10 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
@@ -44,10 +48,10 @@ public class OCMMain extends JavaPlugin {
             // Even though it says "restart", it works for just starting it too
             restartTask();
         }
-        
-        if(Config.moduleEnabled("disable-sword-sweep")){
-        //Start up anti sword sweep attack task
-        restartSweepTask();
+
+        if (Config.moduleEnabled("disable-sword-sweep")) {
+            //Start up anti sword sweep attack task
+            restartSweepTask();
         }
 
         // Metrics
@@ -57,6 +61,9 @@ public class OCMMain extends JavaPlugin {
         } catch (IOException e) {
             // Failed to submit the stats
         }
+
+        // Register crafting recipes
+        registerCrafting();
 
         // Logging to console the enabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
@@ -123,17 +130,28 @@ public class OCMMain extends JavaPlugin {
             task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
     }
-    public void restartSweepTask(){
-    	if (sweepTask == null) {
+
+    public void restartSweepTask() {
+        if (sweepTask == null) {
             sweepTask = new OCMSweepTask();
         } else {
             sweepTask.cancel();
             sweepTask = new OCMSweepTask();
         }
-    	sweepTask.runTaskTimer(this, 0, 1);
+        sweepTask.runTaskTimer(this, 0, 1);
     }
 
     public OCMSweepTask sweepTask() {
         return sweepTask;
     }
+
+    private void registerCrafting() {
+
+        ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
+        Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+
+        Bukkit.addRecipe(r);
+
+    }
+
 }
