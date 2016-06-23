@@ -14,6 +14,7 @@ public class OCMMain extends JavaPlugin {
     protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this);
     private OCMConfigHandler CH = new OCMConfigHandler(this);
     private OCMTask task = null;
+    private OCMSweepTask sweepTask = null;
     Logger logger = getLogger();
 
     @Override
@@ -40,10 +41,13 @@ public class OCMMain extends JavaPlugin {
 
         // Disabling player collisions
         if (Config.moduleEnabled("disable-player-collisions")) {
-
             // Even though it says "restart", it works for just starting it too
             restartTask();
-
+        }
+        
+        if(Config.moduleEnabled("disable-sword-sweep")){
+        //Start up anti sword sweep attack task
+        restartSweepTask();
         }
 
         // Metrics
@@ -118,5 +122,14 @@ public class OCMMain extends JavaPlugin {
         else
             task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
+    }
+    public void restartSweepTask(){
+    	if (sweepTask == null) {
+            sweepTask = new OCMSweepTask();
+        } else {
+            sweepTask.cancel();
+            sweepTask = new OCMSweepTask();
+        }
+    	sweepTask.runTaskTimer(this, 0, 1);
     }
 }
