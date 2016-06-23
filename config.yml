@@ -14,7 +14,7 @@ disable-attack-cooldown:
   # This is to disable the attack cooldown
   enabled: true
   worlds: []
-  # What to set the attack speed to. Default for 1.9 is 4, at least 64 is needed for no cooldown.
+  # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
   general-attack-speed: 1024
   
 disable-player-collisions:
@@ -25,15 +25,23 @@ disable-player-collisions:
   # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
   collision-check-frequency: 1
   
+disable-sword-sweep:
+  # This is to disable the sword sweep attack
+  # The particle effect will still be present but will not affect surrounding entities
+  enabled: true
+  worlds: []
+  
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   enabled: true
   worlds: []
   # This will allow you to set the damage divider
   # The default values below are obtained by doing (1.8 value)/(1.9 value)
-  # Only axes and shovel values changed between the versions, so all others here have a divier of 1
+  # Only axes and shovel values changed between the versions, so all others here have a divider of 1
   # We put them here anyway in case you wished to change them
-  # The plugin divides the damage done while holding the weapon by the following values:
+  # The plugin subtracts the enchantment-added damage,
+  # divides the damage done while holding the weapon by the following values,
+  # and adds back on the enchantment-added damage.
   damages:
     # Axe damages
     GOLD_AXE: 2.333333
@@ -101,17 +109,16 @@ old-armour-strength:
     DIAMOND_LEGGINGS: 
     DIAMOND_BOOTS: 
 
-disable-sword-sweep:
-  # This is to disable the sword sweep attack
-  enabled: true
-  worlds: []
-
 disable-shields:
   # This is to disable the use of shields
   enabled: false
   worlds: []
 
 
+################################
+#### SPECIAL SETTINGS BELOW ####
+################################
+  
 # This enables debug messages, only enable when troubleshooting
 debug:
     enabled: false
