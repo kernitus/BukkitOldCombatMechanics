@@ -41,6 +41,7 @@ public class Config {
             plugin.upgradeConfig();
 
         plugin.restartTask(); //Restart no-collisions check
+        plugin.restartSweepTask(); //Restart sword sweep check
         WeaponDamages.Initialise(plugin); //Reload weapon damages from config
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
     }

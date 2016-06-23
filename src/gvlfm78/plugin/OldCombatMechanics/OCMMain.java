@@ -132,4 +132,8 @@ public class OCMMain extends JavaPlugin {
         }
     	sweepTask.runTaskTimer(this, 0, 1);
     }
+
+    public OCMSweepTask sweepTask() {
+        return sweepTask;
+    }
 }

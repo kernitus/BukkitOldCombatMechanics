@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 public class OCMListener implements Listener {
 
 	private OCMMain plugin;
+    private String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
 
 	public OCMListener(OCMMain instance) {
 		this.plugin = instance;
@@ -97,22 +98,16 @@ public class OCMListener implements Listener {
 	public void onEntityDamaged(EntityDamageByEntityEvent e) {
 		World world = e.getDamager().getWorld();
 
-		// Add '|| !moduleEnabled("disable-sword-sweep")' when you add that feature
-		if (!Config.moduleEnabled("old-tool-damage", world)) {
-			return;
-		}
-
 		if (!(e.getDamager() instanceof Player)) {
 			return;
 		}
 
 		Player p = (Player) e.getDamager();
 		Material mat = p.getInventory().getItemInMainHand().getType();
-		String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
 
-		if (isHolding(mat, "sword")) {
+		if (isHolding(mat, "sword") && Config.moduleEnabled("disable-sword-sweep", world)) {
 			onSwordAttack(e, p, mat);
-		} else if (isHolding(mat, weapons)) {
+		} else if (isHolding(mat, weapons) && Config.moduleEnabled("old-tool-damage", world)) {
 			onAttack(e, p, mat);
 		}
 	}
@@ -123,30 +118,6 @@ public class OCMListener implements Listener {
 
 		double baseDamage = e.getDamage();
 		double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage) + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
-		/*        double baseDamage = e.getDamage();
-    	double oldDamage = baseDamage; //DEBUG, remove later
-    	double enchantmentDamage = 0;
-
-        Map<Enchantment, Integer> enchants = item.getEnchantments();
-
-        for(Enchantment ench : enchants.keySet()){
-        	p.sendMessage("Enchantment tested: "+ench.getName());
-        	if(ench.equals(Enchantment.DAMAGE_ALL)){//Sharpness
-        		enchantmentDamage += getSharpnessDamage(enchants.get(ench));
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-       	if(ench.equals(Enchantment.DAMAGE_UNDEAD)){//Smite
-         		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-        	if(ench.equals(Enchantment.DAMAGE_ARTHROPODS)){//Bane of Arthropods
-        		enchantmentDamage += MobDamage.applyEntityBasedDamage(entity, item, baseDamage);
-        		p.sendMessage("Enchantment damage: "+enchantmentDamage);
-        	}
-        }
-
-        baseDamage -= enchantmentDamage;//Remove damage from enchantments*/
-
 
 		double divider = WD.getDamage(mat);
 		double newDamage = (baseDamage - enchantmentDamage) / divider;
@@ -163,17 +134,16 @@ public class OCMListener implements Listener {
 	private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat) {
 		//Disable sword sweep
 
-		/*	final int locHashCode = p.getLocation().hashCode(loc); // ATTACKER
-    	if (e.getDamage() == 1.0) {
-    	// Possibly a sword sweep attack
-    	if (tick == data.sweepTick && locHashCode == e.getEntity()sweepLocationHashCode) {
-    	return cancelled;
-    	}
+		int locHashCode = p.getLocation().hashCode(); // ATTACKER
+        if (e.getDamage() == 1.0) {
+    		// Possibly a sword sweep attack
+    		if (sweepTask().swordLocations.contains(locHashCode)) {
+    			e.setCancelled(true);
+            }
     	}
     	else {
-    	data.sweepTick = tick;
-    	data.sweepLocationHashCode = locHashCode;
-    	}*/
+            sweepTask().swordLocations.add(locHashCode);
+    	}
 
 		onAttack(e, p, mat);
 	}
@@ -190,4 +160,8 @@ public class OCMListener implements Listener {
 		}
 		return hasAny;
 	}
+
+    private OCMSweepTask sweepTask() {
+        return plugin.sweepTask();
+    }
 }
