@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 2;
+    public static final int CONFIG_VERSION = 3;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
@@ -74,11 +74,26 @@ public class Config {
     public static boolean moduleEnabled(String name) {
         return moduleEnabled(name, null);
     }
-    
-    public static boolean debugEnabled(){
-    	return moduleEnabled("debug",null);
+
+    public static boolean debugEnabled() {
+        return moduleEnabled("debug", null);
     }
 
-    public static List<?> getWorlds(String moduleName) { return config.getList(moduleName + ".worlds"); }
+    public static List<?> getWorlds(String moduleName) {
+        return config.getList(moduleName + ".worlds");
+    }
+
+    public static boolean moduleSettingEnabled(String moduleName, String moduleSettingName) {
+
+        return config.getBoolean(moduleName + "." + moduleSettingName);
+
+    }
+
+    public static void setModuleSetting(String moduleName, String moduleSettingName, boolean value) {
+
+        config.set(moduleName + "." + moduleSettingName, value);
+        plugin.saveConfig();
+
+    }
 
 }

@@ -74,6 +74,15 @@ old-tool-damage:
     IRON_HOE: 1
     DIAMOND_HOE: 1
 
+old-golden-apples:
+  # This is to change the behaviour / crafting of golden apples to how it was in 1.8
+  enabled: true
+  # Disable this if another plugin adds a crafting recipe for enchanted golden apples
+  enchant-golden-apple-crafting: true
+  # Disable this if you want the potion effects gained by eating a golden apple to
+  old-potion-effects: true
+  worlds: []
+
 ################################################################
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
 ################################################################
@@ -124,4 +133,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 2
+config-version: 3
