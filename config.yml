@@ -10,6 +10,10 @@
 # This is to toggle the update checker
 update-checker: true
 
+# To use the per-world feature you specifiy a list of the worlds in the []
+# For example: worlds: [world,survival,crative,skywars]
+# Another example (1 world): worlds: [bestworld]
+
 disable-attack-cooldown:
   # This is to disable the attack cooldown
   enabled: true
