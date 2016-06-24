@@ -1,6 +1,6 @@
 main: gvlfm78.plugin.OldCombatMechanics.OCMMain
 name: OldCombatMechanics
-version: 0.8
+version: 0.9
 authors: [gvlfm78, Rayzr522]
 description: Reverts to pre-1.9 combat mechanics
 website: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics
