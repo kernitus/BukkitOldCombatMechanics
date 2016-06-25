@@ -2,8 +2,6 @@ package gvlfm78.plugin.OldCombatMechanics;
 
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -12,7 +10,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
@@ -36,43 +33,21 @@ public class OCMListener implements Listener {
     OCMTask task = new OCMTask(plugin);
     WeaponDamages WD = new WeaponDamages(plugin);
 
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogin(PlayerJoinEvent e) {
 
         OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
         Player p = e.getPlayer();
-        World world = p.getWorld();
 
         // Checking for updates
         if (p.hasPermission("OldCombatMechanics.notify")) {
             updateChecker.sendUpdateMessages(p);
         }
 
-        double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
-
-        if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
-            AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-            double baseValue = attribute.getBaseValue();
-            if (baseValue != GAS) {
-                attribute.setBaseValue(GAS);
-                p.saveData();
-            }
-        } else {// Re-enabling cooldown
-            AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-            double baseValue = attribute.getBaseValue();
-            if (baseValue != 4) {
-                attribute.setBaseValue(4);
-                p.saveData();
-            }
-        }
-        if (Config.moduleEnabled("disable-player-collisions")) {
-            task.addPlayerToScoreboard(p);
-        } else {
-            task.removePlayerFromScoreboard(p);
-        }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareItemCraft(PrepareItemCraftEvent e) {
 
         ItemStack item = e.getInventory().getResult();
@@ -89,7 +64,7 @@ public class OCMListener implements Listener {
 
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onItemConsume(PlayerItemConsumeEvent e) {
 
         if (e.getItem().getType() != Material.GOLDEN_APPLE) {
@@ -121,38 +96,8 @@ public class OCMListener implements Listener {
 
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e) {
-        Player player = e.getPlayer();
-        World world = player.getWorld();
-
-        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-        double baseValue = attribute.getBaseValue();
-
-        if (Config.moduleEnabled("disable-attack-cooldown", world)) {//Disabling cooldown
-
-            double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
-
-            if (baseValue != GAS) {
-                attribute.setBaseValue(GAS);
-                player.saveData();
-            }
-        } else {//Re-enabling cooldown
-            if (baseValue != 4) {
-                attribute.setBaseValue(4);
-                player.saveData();
-            }
-        }
-
-        if (Config.moduleEnabled("disable-player-collisions", world))
-            task.addPlayerToScoreboard(player);
-        else {
-            task.removePlayerFromScoreboard(player);
-        }
-    }
-
     // Add when finished:
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         World world = e.getDamager().getWorld();
 
