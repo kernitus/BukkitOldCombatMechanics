@@ -2,7 +2,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.Config;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.OCMUpdateChecker;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -24,14 +23,8 @@ public class ModuleAttackCooldown extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogin(PlayerJoinEvent e) {
 
-        OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
         Player p = e.getPlayer();
         World world = p.getWorld();
-
-        // Checking for updates
-        if (p.hasPermission("OldCombatMechanics.notify")) {
-            updateChecker.sendUpdateMessages(p);
-        }
 
         double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
