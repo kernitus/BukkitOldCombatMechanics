@@ -1,5 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
+import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -30,7 +32,9 @@ public class OCMMain extends JavaPlugin {
         PluginDescriptionFile pdfFile = this.getDescription();
 
         // Listeners and stuff
-        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);// Firing event listener
+        getServer().getPluginManager().registerEvents((new OCMListener(this)), this); // Main listener
+        getServer().getPluginManager().registerEvents(new ModuleAttackCooldown(this), this); // Module listener
+        getServer().getPluginManager().registerEvents(new ModulePlayerCollisions(this), this); // Module listener
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
