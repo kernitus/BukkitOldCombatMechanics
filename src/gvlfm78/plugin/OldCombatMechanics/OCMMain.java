@@ -1,7 +1,6 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
+import kernitus.plugin.OldCombatMechanics.module.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -31,10 +30,15 @@ public class OCMMain extends JavaPlugin {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
-        // Listeners and stuff
-        getServer().getPluginManager().registerEvents((new OCMListener(this)), this); // Main listener
-        getServer().getPluginManager().registerEvents(new ModuleAttackCooldown(this), this); // Module listener
-        getServer().getPluginManager().registerEvents(new ModulePlayerCollisions(this), this); // Module listener
+        // Global listener
+        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);
+
+        // Module listeners
+        getServer().getPluginManager().registerEvents(new ModuleAttackCooldown(this), this);
+        getServer().getPluginManager().registerEvents(new ModulePlayerCollisions(this), this);
+        getServer().getPluginManager().registerEvents(new ModuleOldToolDamage(this), this);
+        getServer().getPluginManager().registerEvents(new ModuleGoldenApple(this), this);
+        getServer().getPluginManager().registerEvents(new ModuleSwordSweep(this), this);
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
