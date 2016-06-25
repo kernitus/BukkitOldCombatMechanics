@@ -16,19 +16,27 @@ public class Config {
     private static OCMMain plugin;
     private static FileConfiguration config;
 
+    /*
+    private static HashMap<String, Boolean> moduleStatus = null;
+    private static List<String> modules = Arrays.asList("disable-attack-cooldown", "disable-player-collisions", "disable-sword-sweep", "old-tool-damage", "old-golden-apples");
+    */
+
     public static void Initialise(OCMMain plugin) {
 
         Config.plugin = plugin;
         config = plugin.getConfig();
 
         if (config.getInt("config-version") != CONFIG_VERSION) {
+
             plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
             plugin.upgradeConfig();
             reload();
-        }
 
-        WeaponDamages.Initialise(plugin);
-        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+        } else {
+
+            load();
+
+        }
 
     }
 
@@ -42,8 +50,15 @@ public class Config {
 
         plugin.restartTask(); //Restart no-collisions check
         plugin.restartSweepTask(); //Restart sword sweep check
+        load();
+
+    }
+
+    private static void load() {
+
         WeaponDamages.Initialise(plugin); //Reload weapon damages from config
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+
     }
 
     public static boolean moduleEnabled(String name, World world) {
