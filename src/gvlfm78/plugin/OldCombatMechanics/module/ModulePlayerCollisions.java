@@ -27,8 +27,6 @@ public class ModulePlayerCollisions extends Module {
         Player p = e.getPlayer();
         World world = p.getWorld();
 
-        System.out.println("Config.moduleEnabled(\"disable-player-collisions\") = " + Config.moduleEnabled("disable-player-collisions"));
-
         if (Config.moduleEnabled("disable-player-collisions", world)) {
             task.addPlayerToScoreboard(p);
         } else {
