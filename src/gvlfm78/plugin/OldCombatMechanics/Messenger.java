@@ -7,22 +7,21 @@ import java.util.logging.Logger;
  */
 public class Messenger {
 
-    private static OCMMain plugin;
     public static boolean DEBUG_ENABLED = false;
 
-    public static void info(String msg) {
+    public static void info(String msg, OCMMain plugin) {
 
         plugin.getLogger().info(msg);
 
     }
 
-    public static void err(String msg) {
+    public static void err(String msg, OCMMain plugin) {
 
         plugin.getLogger().warning(msg);
 
     }
 
-    public static void severe(String msg) {
+    public static void severe(String msg, OCMMain plugin) {
 
         Logger logger = plugin.getLogger();
 
@@ -33,7 +32,7 @@ public class Messenger {
 
     }
 
-    public static void debug(String msg) {
+    public static void debug(String msg, OCMMain plugin) {
 
         if (!DEBUG_ENABLED) {
             return;
