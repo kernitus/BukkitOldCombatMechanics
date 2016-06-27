@@ -30,39 +30,52 @@ public class Config {
         Config.plugin = plugin;
         config = plugin.getConfig();
 
-        if (config.getInt("config-version") != CONFIG_VERSION) {
+        if (!checkConfigVersion()) {
+            load();
+        }
+    }
 
+
+    private static boolean checkConfigVersion() {
+
+        if (config.getInt("config-version") != CONFIG_VERSION) {
             plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
             plugin.upgradeConfig();
             reload();
+            return true;
+        }
 
-        } else { load(); }
+        return false;
+
     }
-    
+
 
     public static void reload() {
 
         if (plugin.doesConfigymlExist()) {
             plugin.reloadConfig();
             config = plugin.getConfig();
-        } else
+        } else {
             plugin.upgradeConfig();
+        }
+
+        checkConfigVersion();
 
         plugin.restartTask(); //Restart no-collisions check
         plugin.restartSweepTask(); //Restart sword sweep check
         load();
-        
+
         // Listeners checks
-    	ArrayList<RegisteredListener> rls = HandlerList.getRegisteredListeners(plugin);
-    	
-    	for(RegisteredListener rl : rls){
-    		Listener l = rl.getListener();
-    		//Check if l is any of our module listeners
-    		//If so, check if it should be enabled
-    		//If so, check if it is disabled and enabled it
-    		//If the module should be disabled check if it is enabled and disabled it
-    		// by doing     		HandlerList.unregisterAll(listener);
-    	}
+        ArrayList<RegisteredListener> rls = HandlerList.getRegisteredListeners(plugin);
+
+        for (RegisteredListener rl : rls) {
+            Listener l = rl.getListener();
+            //Check if l is any of our module listeners
+            //If so, check if it should be enabled
+            //If so, check if it is disabled and enabled it
+            //If the module should be disabled check if it is enabled and disabled it
+            // by doing     		HandlerList.unregisterAll(listener);
+        }
 
     }
 
