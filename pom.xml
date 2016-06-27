@@ -7,15 +7,15 @@
     <description>Removes weapon cooldown in 1.9 and above</description>
     <repositories>
         <repository>
-            <id>craftbukkit</id>
+            <id>bukkit</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
     <dependencies>
         <dependency>
             <groupId>org.bukkit</groupId>
-            <artifactId>craftbukkit</artifactId>
-            <version>1.9.4-R0.1-SNAPSHOT</version>
+            <artifactId>bukkit</artifactId>
+            <version>1.10-R0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>
