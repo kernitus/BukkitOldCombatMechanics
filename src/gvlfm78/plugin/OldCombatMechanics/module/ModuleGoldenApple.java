@@ -19,8 +19,8 @@ import java.util.List;
  */
 public class ModuleGoldenApple extends Module {
 
-    private List<PotionEffect> enchantedGoldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 30*20, 4), new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 300*20, 0), new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300*20, 0), new PotionEffect(PotionEffectType.ABSORPTION, 120*20, 0));
-    private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5*20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120*20, 0));
+    private List<PotionEffect> enchantedGoldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 4), new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
+    private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
 
     public ModuleGoldenApple(OCMMain plugin) {
         super(plugin, "old-golden-apples");
@@ -37,11 +37,16 @@ public class ModuleGoldenApple extends Module {
 
             World world = e.getView().getPlayer().getWorld();
 
-            if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
+            if (isSettingEnabled("no-conflict-mode")) {
+
+                return;
+            }
+
+            if (!isEnabled(world)) {
 
                 e.getInventory().setResult(null);
 
-            } else if (!isEnabled(world) && !RECIPE_ALREADY_EXISTED) {
+            } else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
 
                 e.getInventory().setResult(null);
 
@@ -58,7 +63,7 @@ public class ModuleGoldenApple extends Module {
             return;
         }
 
-        if (!isEnabled() || !isSettingEnabled("old-potion-effects")) {
+        if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) {
             return;
         }
 

@@ -21,7 +21,11 @@ public class OCMMain extends JavaPlugin {
     private OCMConfigHandler CH = new OCMConfigHandler(this);
     private OCMTask task = null;
     private OCMSweepTask sweepTask = null;
+
     Logger logger = getLogger();
+
+    private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
+    private Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
 
     @Override
     public void onEnable() {
@@ -169,12 +173,15 @@ public class OCMMain extends JavaPlugin {
 
     private void registerCrafting() {
 
-        ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
-        Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+        if (!Config.moduleSettingEnabled("old-golden-apples", "no-conflict-mode")) {
 
-        ModuleGoldenApple.RECIPE_ALREADY_EXISTED = Bukkit.getRecipesFor(gapple).size() > 0;
+            if (Bukkit.getRecipesFor(gapple).size() == 0) {
 
-        Bukkit.addRecipe(r);
+                Bukkit.addRecipe(r);
+
+            }
+
+        }
 
     }
 
