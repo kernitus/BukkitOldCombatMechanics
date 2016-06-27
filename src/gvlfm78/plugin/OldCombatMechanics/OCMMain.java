@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -30,17 +31,8 @@ public class OCMMain extends JavaPlugin {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
-        // Global listener
-        getServer().getPluginManager().registerEvents((new OCMListener(this)), this);
-
-        // Module listeners
-        getServer().getPluginManager().registerEvents(new ModuleAttackCooldown(this), this);
-        getServer().getPluginManager().registerEvents(new ModulePlayerCollisions(this), this);
-        getServer().getPluginManager().registerEvents(new ModuleSwordSweep(this), this); // Registering this before OldToolDamage should prevent any problems
-        getServer().getPluginManager().registerEvents(new ModuleOldToolDamage(this), this);
-        getServer().getPluginManager().registerEvents(new ModuleGoldenApple(this), this);
-
-        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
+        // Register every event class (as well as our command handler)
+        registerAllEvents();
 
         // Setting up config.yml
         CH.setupConfigyml();
@@ -88,6 +80,25 @@ public class OCMMain extends JavaPlugin {
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+    }
+
+    private void registerAllEvents() {
+
+        PluginManager pm = getServer().getPluginManager();
+
+        // Global listener
+        pm.registerEvents((new OCMListener(this)), this);
+
+        // Module listeners
+        pm.registerEvents(new ModuleAttackCooldown(this), this);
+        pm.registerEvents(new ModulePlayerCollisions(this), this);
+        pm.registerEvents(new ModuleSwordSweep(this), this); // Registering this before OldToolDamage should prevent any problems
+        pm.registerEvents(new ModuleOldToolDamage(this), this);
+        pm.registerEvents(new ModuleGoldenApple(this), this);
+        pm.registerEvents(new ModuleFishingKnockback(this), this);
+
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
+
     }
 
     private void createTeam() {
