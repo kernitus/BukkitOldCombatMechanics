@@ -1,6 +1,5 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.Config;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.OCMSweepTask;
 import org.bukkit.Material;
@@ -16,7 +15,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 public class ModuleSwordSweep extends Module {
 
     public ModuleSwordSweep(OCMMain plugin) {
-        super(plugin);
+        super(plugin, "disable-sword-sweep");
     }
 
     // Add when finished:
@@ -31,7 +30,7 @@ public class ModuleSwordSweep extends Module {
         Player p = (Player) e.getDamager();
         Material mat = p.getInventory().getItemInMainHand().getType();
 
-        if (isHolding(mat, "sword") && Config.moduleEnabled("disable-sword-sweep", world)) {
+        if (isHolding(mat, "sword") && isEnabled(world)) {
             onSwordAttack(e, p, mat);
         }
 

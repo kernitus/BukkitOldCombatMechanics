@@ -1,6 +1,5 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.Config;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.OCMTask;
 import org.bukkit.World;
@@ -18,7 +17,7 @@ public class ModulePlayerCollisions extends Module {
     OCMTask task = new OCMTask(plugin);
 
     public ModulePlayerCollisions(OCMMain plugin) {
-        super(plugin);
+        super(plugin, "disable-player-collisions");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -27,7 +26,7 @@ public class ModulePlayerCollisions extends Module {
         Player p = e.getPlayer();
         World world = p.getWorld();
 
-        if (Config.moduleEnabled("disable-player-collisions", world)) {
+        if (isEnabled(world)) {
             task.addPlayerToScoreboard(p);
         } else {
             task.removePlayerFromScoreboard(p);
@@ -40,7 +39,7 @@ public class ModulePlayerCollisions extends Module {
         Player player = e.getPlayer();
         World world = player.getWorld();
 
-       if (Config.moduleEnabled("disable-player-collisions", world))
+       if (isEnabled(world))
 
             task.addPlayerToScoreboard(player);
 
