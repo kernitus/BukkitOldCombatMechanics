@@ -80,16 +80,17 @@ old-tool-damage:
     DIAMOND_HOE: 1
 
 old-golden-apples:
-  # This is to change the behaviour / crafting of golden apples to how it was in 1.8
+  # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
   enabled: true
-  # Disable this if another plugin adds a crafting recipe for enchanted golden apples
-  enchant-golden-apple-crafting: true
-  # Disable this if you want the potion effects gained by eating a golden apple to
+  # If you don't want enchanted golden apples to be craftable, set this to false
+  enchanted-golden-apple-crafting: true
+  # Enabling this makes the potion effects gained by eating golden apples
+  # and enchanted golden apples the same as it was in pre-1.9
   old-potion-effects: true
   worlds: []
 
 old-fishing-knockback:
-  # Makes the knockback of players the same as it was pre-1.9
+  # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
   # Credit to HyKurtis for the original code, optimized by Rayzr522
   enabled: true
   worlds: []
