@@ -17,7 +17,7 @@ public class ModuleLoader {
     private static List<Module> modules = new ArrayList<>();
     private static HashMap<Module, Boolean> enabledModules = null;
 
-    public static void Initialize(OCMMain plugin) {
+    public static void Initialise(OCMMain plugin) {
         ModuleLoader.plugin = plugin;
     }
 
