@@ -23,6 +23,12 @@ public class ModuleSwordSweep extends Module {
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         World world = e.getDamager().getWorld();
 
+        System.out.println("ModuleSwordSweep.onEntityDamaged");
+
+        if (!isEnabled(world)) {
+            return;
+        }
+
         if (!(e.getDamager() instanceof Player)) {
             return;
         }
@@ -30,7 +36,7 @@ public class ModuleSwordSweep extends Module {
         Player p = (Player) e.getDamager();
         Material mat = p.getInventory().getItemInMainHand().getType();
 
-        if (isHolding(mat, "sword") && isEnabled(world)) {
+        if (isHolding(mat, "sword")) {
             onSwordAttack(e, p, mat);
         }
 
