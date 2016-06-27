@@ -36,9 +36,9 @@ public class OCMMain extends JavaPlugin {
         // Module listeners
         getServer().getPluginManager().registerEvents(new ModuleAttackCooldown(this), this);
         getServer().getPluginManager().registerEvents(new ModulePlayerCollisions(this), this);
+        getServer().getPluginManager().registerEvents(new ModuleSwordSweep(this), this); // Registering this before OldToolDamage should prevent any problems
         getServer().getPluginManager().registerEvents(new ModuleOldToolDamage(this), this);
         getServer().getPluginManager().registerEvents(new ModuleGoldenApple(this), this);
-        getServer().getPluginManager().registerEvents(new ModuleSwordSweep(this), this);
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 

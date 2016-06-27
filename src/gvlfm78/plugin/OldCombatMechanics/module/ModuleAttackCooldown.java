@@ -17,7 +17,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 public class ModuleAttackCooldown extends Module {
 
     public ModuleAttackCooldown(OCMMain plugin) {
-        super(plugin);
+        super(plugin, "disable-attack-cooldown");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -55,9 +55,9 @@ public class ModuleAttackCooldown extends Module {
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         double baseValue = attribute.getBaseValue();
 
-        if (Config.moduleEnabled("disable-attack-cooldown", world)) {//Disabling cooldown
+        if (isEnabled(world)) {//Disabling cooldown
 
-            double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+            double GAS = module().getDouble("disable-attack-cooldown.general-attack-speed");
 
             if (baseValue != GAS) {
                 attribute.setBaseValue(GAS);

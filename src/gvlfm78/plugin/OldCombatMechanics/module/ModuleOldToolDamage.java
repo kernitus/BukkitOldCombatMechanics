@@ -25,7 +25,7 @@ public class ModuleOldToolDamage extends Module {
     private static ModuleOldToolDamage INSTANCE;
 
     public ModuleOldToolDamage(OCMMain plugin) {
-        super(plugin);
+        super(plugin, "old-tool-damage");
         INSTANCE = this;
     }
 
@@ -41,7 +41,7 @@ public class ModuleOldToolDamage extends Module {
         Player p = (Player) e.getDamager();
         Material mat = p.getInventory().getItemInMainHand().getType();
 
-        if (isHolding(mat, weapons) && Config.moduleEnabled("old-tool-damage", world)) {
+        if (isHolding(mat, weapons) && isEnabled(world)) {
             onAttack(e, p, mat);
         }
     }
