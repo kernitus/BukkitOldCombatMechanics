@@ -8,7 +8,7 @@
     <repositories>
         <repository>
             <id>spigot-api</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/releases/</url>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
     <dependencies>
