@@ -31,6 +31,9 @@ public class OCMMain extends JavaPlugin {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
+        // Initialise ModuleLoader utility
+        ModuleLoader.Initialise(this);
+
         // Register every event class (as well as our command handler)
         registerAllEvents();
 
@@ -90,12 +93,12 @@ public class OCMMain extends JavaPlugin {
         pm.registerEvents((new OCMListener(this)), this);
 
         // Module listeners
-        pm.registerEvents(new ModuleAttackCooldown(this), this);
-        pm.registerEvents(new ModulePlayerCollisions(this), this);
-        pm.registerEvents(new ModuleSwordSweep(this), this); // Registering this before OldToolDamage should prevent any problems
-        pm.registerEvents(new ModuleOldToolDamage(this), this);
-        pm.registerEvents(new ModuleGoldenApple(this), this);
-        pm.registerEvents(new ModuleFishingKnockback(this), this);
+        ModuleLoader.AddModule(new ModuleAttackCooldown(this));
+        ModuleLoader.AddModule(new ModulePlayerCollisions(this));
+        ModuleLoader.AddModule(new ModuleSwordSweep(this)); // Registering this before OldToolDamage should prevent any problems
+        ModuleLoader.AddModule(new ModuleOldToolDamage(this));
+        ModuleLoader.AddModule(new ModuleGoldenApple(this));
+        ModuleLoader.AddModule(new ModuleFishingKnockback(this));
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 

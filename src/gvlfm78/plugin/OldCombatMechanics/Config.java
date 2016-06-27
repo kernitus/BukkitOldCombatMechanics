@@ -1,14 +1,14 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -70,6 +70,7 @@ public class Config {
 
         WeaponDamages.Initialise(plugin); //Reload weapon damages from config
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+        ModuleLoader.ToggleModules();
 
     }
 
