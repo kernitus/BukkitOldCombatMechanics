@@ -14,7 +14,7 @@ public class ModuleLoader {
 
     private static OCMMain plugin;
 
-    private static List<Module> modules = new ArrayList<>();
+    private static List<Module> modules = new ArrayList<Module>();
     private static HashMap<Module, Boolean> enabledModules = null;
 
     public static void Initialise(OCMMain plugin) {
@@ -25,7 +25,7 @@ public class ModuleLoader {
 
         if (enabledModules == null) {
 
-            enabledModules = new HashMap<>();
+            enabledModules = new HashMap<Module, Boolean>();
 
             for (Module module : modules) {
 

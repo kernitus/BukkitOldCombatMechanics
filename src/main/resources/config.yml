@@ -1,0 +1,153 @@
+
+############# OldCombatMechanics Plugin by kernitus and Rayzr522 #############
+#                                                                           #
+# Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/     #
+# Spigot Page: https://www.spigotmc.org/resources/oldcombatmechanics.19510/ #
+# GitHub Page: https://github.com/kernitus/BukkitOldCombatMechanics/         #
+#                                                                           #
+#############################################################################
+
+# This is to toggle the update checker
+update-checker: true
+
+# To use the per-world feature you specifiy a list of the worlds in the []
+# For example: 
+# worlds: [world,survival,crative,skywars]
+# Another example (for 1 world): 
+# worlds: [bestworld]
+
+disable-attack-cooldown:
+  # This is to disable the attack cooldown
+  enabled: true
+  worlds: []
+  # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
+  general-attack-speed: 1024
+  
+disable-player-collisions:
+  # This is to disable player collisions
+  enabled: false
+  worlds: []
+  # How often the plugin should check that all players have no collisions applied to them
+  # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
+  collision-check-frequency: 1
+  
+disable-sword-sweep:
+  # This is to disable the sword sweep attack
+  # The particle effect will still be present but will not affect surrounding entities
+  enabled: true
+  worlds: []
+  
+old-tool-damage:
+  # This is to set the tool damage as in pre-1.9
+  # NOTE: this will modify the damage, however on the tooltip of items it will still show the old damage
+  enabled: true
+  worlds: []
+  # This will allow you to set the damage divider
+  # The default values below are obtained by doing (1.8 value)/(1.9 value)
+  # Only axes and shovel values changed between the versions, so all others here have a divider of 1
+  # We put them here anyway in case you wished to change them
+  # The plugin subtracts the enchantment-added damage,
+  # divides the damage done while holding the weapon by the following values,
+  # and adds back on the enchantment-added damage.
+  damages:
+    # Axe damages
+    GOLD_AXE: 2.333333
+    WOOD_AXE: 2.333333
+    STONE_AXE: 2.25
+    IRON_AXE: 1.8
+    DIAMOND_AXE: 1.5
+    # Shovel damages
+    GOLD_SPADE: 2.5
+    WOOD_SPADE: 2.5
+    STONE_SPADE: 1.75
+    IRON_SPADE: 1.5
+    DIAMOND_SPADE: 1.375
+    # Sword damages
+    GOLD_SWORD: 1
+    WOOD_SWORD: 1
+    STONE_SWORD: 1
+    IRON_SWORD: 1
+    DIAMOND_SWORD: 1
+    # Pickaxe damages
+    GOLD_PICKAXE: 1
+    WOOD_PICKAXE: 1
+    STONE_PICKAXE: 1
+    IRON_PICKAXE: 1
+    DIAMOND_PICKAXE: 1
+    # Hoe damages
+    GOLD_HOE: 1
+    WOOD_HOE: 1
+    STONE_HOE: 1
+    IRON_HOE: 1
+    DIAMOND_HOE: 1
+
+old-golden-apples:
+  # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
+  enabled: true
+  # If you don't want enchanted golden apples to be craftable, set this to false
+  enchanted-golden-apple-crafting: true
+  # Enabling this makes the potion effects gained by eating golden apples
+  # and enchanted golden apples the same as it was in pre-1.9
+  old-potion-effects: true
+  # Enable this if you have another plugin which adds a crafting recipe for
+  # enchanted golden apples (requires server restart)
+  no-conflict-mode: false
+  worlds: []
+
+old-fishing-knockback:
+  # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
+  # Credit to HyKurtis for the original code, optimized by Rayzr522
+  enabled: true
+  worlds: []
+
+################################################################
+##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
+################################################################
+
+old-armour-strength:
+  # This is to set armour strength values as in pre-1.9
+  enabled: true
+  worlds: []
+  strength:
+    # Leather armour
+    LEATHER_HELMET: 
+    LEATHER_CHESTPLATE: 
+    LEATHER_LEGGINGS: 
+    LEATHER_BOOTS: 
+    # Chainmail armour
+    CHAINMAIL_HELMET: 
+    CHAINMAIL_CHESTPLATE: 
+    CHAINMAIL_LEGGINGS: 
+    CHAINMAIL_BOOTS: 
+    # Golden armour
+    GOLDEN_HELMET: 
+    GOLDEN_CHESTPLATE: 
+    GOLDEN_LEGGINGS: 
+    GOLDEN_BOOTS: 
+    # Iron armour
+    IRON_HELMET: 
+    IRON_CHESTPLATE: 
+    IRON_LEGGINGS: 
+    IRON_BOOTS: 
+    # Diamond armour
+    DIAMOND_HELMET: 
+    DIAMOND_CHESTPLATE: 
+    DIAMOND_LEGGINGS:
+    DIAMOND_BOOTS: 
+
+disable-shields:
+  # This is to disable the use of shields
+  enabled: false
+  worlds: []
+
+
+################################
+#### SPECIAL SETTINGS BELOW ####
+################################
+  
+# This enables debug messages, only enable when troubleshooting
+debug:
+    enabled: false
+
+# DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
+config-version: 3

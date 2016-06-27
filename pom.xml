@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>0.6</version>
+    <version>0.9</version>
     <name>OldCombatMechanics</name>
     <description>Removes weapon cooldown in 1.9 and above</description>
     <repositories>
@@ -19,7 +19,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${project.artifactId}</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
         <resources>
             <resource>
