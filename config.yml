@@ -37,6 +37,7 @@ disable-sword-sweep:
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
+  # NOTE: this will modify the damage, however on the tooltip of items it will still show the old damage
   enabled: true
   worlds: []
   # This will allow you to set the damage divider
@@ -87,6 +88,12 @@ old-golden-apples:
   old-potion-effects: true
   worlds: []
 
+old-fishing-knockback:
+  # Makes the knockback of players the same as it was pre-1.9
+  # Credit to HyKurtis for the original code, optimized by Rayzr522
+  enabled: true
+  worlds: []
+
 ################################################################
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
 ################################################################
@@ -119,7 +126,7 @@ old-armour-strength:
     # Diamond armour
     DIAMOND_HELMET: 
     DIAMOND_CHESTPLATE: 
-    DIAMOND_LEGGINGS: 
+    DIAMOND_LEGGINGS:
     DIAMOND_BOOTS: 
 
 disable-shields:
