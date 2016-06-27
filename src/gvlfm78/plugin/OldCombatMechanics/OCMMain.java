@@ -172,6 +172,8 @@ public class OCMMain extends JavaPlugin {
         ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
         Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
 
+        ModuleGoldenApple.RECIPE_ALREADY_EXISTED = Bukkit.getRecipesFor(gapple).size() > 0;
+
         Bukkit.addRecipe(r);
 
     }

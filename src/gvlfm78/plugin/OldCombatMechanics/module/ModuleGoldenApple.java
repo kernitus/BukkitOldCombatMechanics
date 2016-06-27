@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
@@ -25,6 +26,8 @@ public class ModuleGoldenApple extends Module {
         super(plugin, "old-golden-apples");
     }
 
+    public static boolean RECIPE_ALREADY_EXISTED = false;
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareItemCraft(PrepareItemCraftEvent e) {
 
@@ -32,7 +35,13 @@ public class ModuleGoldenApple extends Module {
 
         if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
 
-            if (isEnabled() && !isSettingEnabled("enchant-golden-apple-crafting")) {
+            World world = e.getView().getPlayer().getWorld();
+
+            if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
+
+                e.getInventory().setResult(null);
+
+            } else if (!isEnabled(world) && !RECIPE_ALREADY_EXISTED) {
 
                 e.getInventory().setResult(null);
 
