@@ -19,25 +19,25 @@ public class Module implements Listener {
         this.configName = configName;
     }
 
-    protected boolean isEnabled(World world) {
+    public boolean isEnabled(World world) {
 
         return Config.moduleEnabled(configName, world);
 
     }
 
-    protected boolean isEnabled() {
+    public boolean isEnabled() {
 
         return isEnabled(null);
 
     }
 
-    protected boolean isSettingEnabled(String name) {
+    public boolean isSettingEnabled(String name) {
 
         return plugin.getConfig().getBoolean(configName + "." + name);
 
     }
 
-    protected ConfigurationSection module() {
+    public ConfigurationSection module() {
 
         return plugin.getConfig().getConfigurationSection(configName);
 
