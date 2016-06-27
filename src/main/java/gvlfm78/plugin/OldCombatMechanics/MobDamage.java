@@ -11,7 +11,7 @@ import java.util.HashMap;
  */
 public class MobDamage {
 
-    private static HashMap<EntityType, Enchantment> enchants = new HashMap<>();
+    private static HashMap<EntityType, Enchantment> enchants = new HashMap<EntityType, Enchantment>();
 
     static {
 
