@@ -63,11 +63,12 @@ public class ModuleLoader {
         if (state) {
 
             plugin.getServer().getPluginManager().registerEvents(module, plugin);
+            Messenger.debug("Enabled "+module.getClass().getSimpleName(), plugin);
 
         } else {
 
             HandlerList.unregisterAll(module);
-
+            Messenger.debug("Disabled "+module.getClass().getSimpleName(), plugin);
         }
 
     }
