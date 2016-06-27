@@ -23,8 +23,6 @@ public class ModuleSwordSweep extends Module {
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         World world = e.getDamager().getWorld();
 
-        System.out.println("ModuleSwordSweep.onEntityDamaged");
-
         if (!isEnabled(world)) {
             return;
         }
