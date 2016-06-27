@@ -17,7 +17,6 @@ public class OCMTask extends BukkitRunnable {
         this.plugin = instance;
     }
 
-    @Override
     public void run() {
         Collection<? extends Player> players = Bukkit.getServer().getOnlinePlayers();
         for (Player p : players) {
