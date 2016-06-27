@@ -19,7 +19,6 @@ public class OCMCommandHandler implements CommandExecutor {
 		this.plugin = instance;
 	}
 
-	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
 		// Using cmd.getLabel() will always return the main label,
