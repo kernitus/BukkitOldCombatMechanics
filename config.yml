@@ -89,6 +89,9 @@ old-golden-apples:
   # Enabling this makes the potion effects gained by eating golden apples
   # and enchanted golden apples the same as it was in pre-1.9
   old-potion-effects: true
+  # Enable this if you have another plugin which adds a crafting recipe for
+  # enchanted golden apples (requires server restart)
+  no-conflict-mode: false
   worlds: []
 
 old-fishing-knockback:
