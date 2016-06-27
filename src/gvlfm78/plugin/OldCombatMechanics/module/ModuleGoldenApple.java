@@ -1,6 +1,5 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.Config;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
@@ -23,7 +22,7 @@ public class ModuleGoldenApple extends Module {
     private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5*20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120*20, 0));
 
     public ModuleGoldenApple(OCMMain plugin) {
-        super(plugin);
+        super(plugin, "old-golden-apples");
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -33,7 +32,7 @@ public class ModuleGoldenApple extends Module {
 
         if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
 
-            if (Config.moduleEnabled("old-golden-apples") && !Config.moduleSettingEnabled("old-golden-apples", "enchant-golden-apple-crafting")) {
+            if (isEnabled() && !isSettingEnabled("enchant-golden-apple-crafting")) {
 
                 e.getInventory().setResult(null);
 
@@ -50,7 +49,7 @@ public class ModuleGoldenApple extends Module {
             return;
         }
 
-        if (!Config.moduleEnabled("old-golden-apples") || !Config.moduleSettingEnabled("old-golden-apples", "old-potion-effects")) {
+        if (!isEnabled() || !isSettingEnabled("old-potion-effects")) {
             return;
         }
 
