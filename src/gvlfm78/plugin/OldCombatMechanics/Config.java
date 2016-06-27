@@ -1,14 +1,10 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import java.util.List;
+
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.RegisteredListener;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -64,18 +60,6 @@ public class Config {
         plugin.restartTask(); //Restart no-collisions check
         plugin.restartSweepTask(); //Restart sword sweep check
         load();
-
-        // Listeners checks
-        ArrayList<RegisteredListener> rls = HandlerList.getRegisteredListeners(plugin);
-
-        for (RegisteredListener rl : rls) {
-            Listener l = rl.getListener();
-            //Check if l is any of our module listeners
-            //If so, check if it should be enabled
-            //If so, check if it is disabled and enabled it
-            //If the module should be disabled check if it is enabled and disabled it
-            // by doing     		HandlerList.unregisterAll(listener);
-        }
 
     }
 
