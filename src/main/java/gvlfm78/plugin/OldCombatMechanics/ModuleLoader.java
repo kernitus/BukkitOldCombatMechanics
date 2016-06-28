@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.event.HandlerList;
 
 import java.util.ArrayList;

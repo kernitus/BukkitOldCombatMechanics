@@ -1,4 +1,4 @@
-package kernitus.plugin.OldCombatMechanics;
+package kernitus.plugin.OldCombatMechanics.utilities;
 
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;

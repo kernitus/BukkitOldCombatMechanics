@@ -1,9 +1,9 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.Config;
-import kernitus.plugin.OldCombatMechanics.MobDamage;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.WeaponDamages;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.MobDamage;
+import kernitus.plugin.OldCombatMechanics.utilities.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;

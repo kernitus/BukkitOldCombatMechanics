@@ -1,4 +1,6 @@
-package kernitus.plugin.OldCombatMechanics;
+package kernitus.plugin.OldCombatMechanics.utilities;
+
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 
 import java.util.logging.Logger;
 

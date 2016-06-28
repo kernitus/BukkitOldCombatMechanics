@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

@@ -1,7 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.Config;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.Listener;

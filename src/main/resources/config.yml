@@ -100,6 +100,12 @@ old-fishing-knockback:
   enabled: true
   worlds: []
 
+old-player-regen:
+  # This is to make players' regeneration act mostly like it did in pre-1.9
+  # It's hard to get it exactly like before, but this is for most parts correct
+  enabled: true
+  worlds: []
+
 ################################################################
 ##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
 ################################################################

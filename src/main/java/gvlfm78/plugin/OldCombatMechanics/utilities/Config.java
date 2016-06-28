@@ -1,10 +1,12 @@
-package kernitus.plugin.OldCombatMechanics;
+package kernitus.plugin.OldCombatMechanics.utilities;
 
-import java.util.List;
-
+import kernitus.plugin.OldCombatMechanics.ModuleLoader;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.

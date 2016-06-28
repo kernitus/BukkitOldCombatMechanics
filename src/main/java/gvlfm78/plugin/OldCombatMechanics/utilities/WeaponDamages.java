@@ -1,5 +1,6 @@
-package kernitus.plugin.OldCombatMechanics;
+package kernitus.plugin.OldCombatMechanics.utilities;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
