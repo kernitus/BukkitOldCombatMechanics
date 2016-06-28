@@ -74,19 +74,7 @@ public class OCMCommandHandler implements CommandExecutor {
 						+ ChatColor.RESET + ChatColor.GREEN + "to reload the config file");
 
 				// Update check
-				if (plugin.getConfig().getBoolean("update-checker")) {
-
-					if (updateChecker.updateNeeded()) {
-
-						sender.sendMessage(ChatColor.BLUE + "An update of OldCombatMechanics to version "
-								+ updateChecker.getVersion() + " is available!");
-
-						sender.sendMessage(
-								ChatColor.BLUE + "Link to download it: " + ChatColor.GRAY + updateChecker.getLink());
-					}
-
-				}
-
+		        updateChecker.sendUpdateMessages(sender);
 			}
 
 		}
