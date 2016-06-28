@@ -1,9 +1,9 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.Config;
-import gvlfm78.plugin.OldCombatMechanics.MobDamage;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.WeaponDamages;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.MobDamage;
+import gvlfm78.plugin.OldCombatMechanics.utilities.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;

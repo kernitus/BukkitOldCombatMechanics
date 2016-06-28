@@ -1,5 +1,6 @@
-package gvlfm78.plugin.OldCombatMechanics;
+package gvlfm78.plugin.OldCombatMechanics.utilities;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;

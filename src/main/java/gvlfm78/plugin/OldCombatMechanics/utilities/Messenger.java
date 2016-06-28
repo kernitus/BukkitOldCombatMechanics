@@ -1,4 +1,6 @@
-package gvlfm78.plugin.OldCombatMechanics;
+package gvlfm78.plugin.OldCombatMechanics.utilities;
+
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 
 import java.util.logging.Logger;
 
