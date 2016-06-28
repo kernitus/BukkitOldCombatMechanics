@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 3;
+    public static final int CONFIG_VERSION = 4;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
