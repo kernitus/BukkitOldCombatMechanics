@@ -21,10 +21,6 @@ public class OCMListener implements Listener {
         Player p = e.getPlayer();
 
         // Checking for updates
-        if (p.hasPermission("OldCombatMechanics.notify")) {
             updateChecker.sendUpdateMessages(p);
-        }
-
     }
-
 }
