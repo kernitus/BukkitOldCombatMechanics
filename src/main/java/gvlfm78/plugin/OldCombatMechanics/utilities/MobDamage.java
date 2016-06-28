@@ -1,4 +1,4 @@
-package gvlfm78.plugin.OldCombatMechanics;
+package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;

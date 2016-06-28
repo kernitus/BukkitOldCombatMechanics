@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 import gvlfm78.plugin.OldCombatMechanics.module.Module;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.event.HandlerList;
 
 import java.util.ArrayList;

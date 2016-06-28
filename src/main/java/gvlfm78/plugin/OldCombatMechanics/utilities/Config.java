@@ -1,10 +1,12 @@
-package gvlfm78.plugin.OldCombatMechanics;
+package gvlfm78.plugin.OldCombatMechanics.utilities;
 
-import java.util.List;
-
+import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.

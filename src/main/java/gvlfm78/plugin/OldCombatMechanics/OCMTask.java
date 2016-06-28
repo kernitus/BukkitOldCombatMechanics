@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

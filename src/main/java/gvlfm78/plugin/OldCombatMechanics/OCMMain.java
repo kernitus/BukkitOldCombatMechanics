@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 import gvlfm78.plugin.OldCombatMechanics.module.*;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -103,6 +104,9 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.AddModule(new ModuleOldToolDamage(this));
         ModuleLoader.AddModule(new ModuleGoldenApple(this));
         ModuleLoader.AddModule(new ModuleFishingKnockback(this));
+        System.out.println("before");
+        pm.registerEvents(new ModulePlayerRegen(this), this);
+        System.out.println("after");
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
