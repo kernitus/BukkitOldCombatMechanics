@@ -104,9 +104,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.AddModule(new ModuleOldToolDamage(this));
         ModuleLoader.AddModule(new ModuleGoldenApple(this));
         ModuleLoader.AddModule(new ModuleFishingKnockback(this));
-        System.out.println("before");
-        pm.registerEvents(new ModulePlayerRegen(this), this);
-        System.out.println("after");
+        ModuleLoader.AddModule(new ModulePlayerRegen(this));
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
