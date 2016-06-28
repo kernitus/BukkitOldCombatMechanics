@@ -156,4 +156,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 3
+config-version: 4
