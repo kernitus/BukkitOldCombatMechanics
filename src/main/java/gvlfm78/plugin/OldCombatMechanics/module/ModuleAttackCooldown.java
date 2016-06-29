@@ -57,7 +57,7 @@ public class ModuleAttackCooldown extends Module {
 
         if (isEnabled(world)) {//Disabling cooldown
 
-            double GAS = module().getDouble("disable-attack-cooldown.general-attack-speed");
+            double GAS = module().getDouble("general-attack-speed");
 
             if (baseValue != GAS) {
                 attribute.setBaseValue(GAS);
