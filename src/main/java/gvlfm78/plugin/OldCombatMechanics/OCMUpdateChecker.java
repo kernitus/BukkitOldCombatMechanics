@@ -44,8 +44,8 @@ public class OCMUpdateChecker {
 	}
 	public void sendUpdateMessages(Logger l){//Sends messages to console
 		for(String message : getUpdateMessages()){
+			message = ChatColor.stripColor(message);
 			if(message!=null&&!message.isEmpty())//If there was no update/check is disabled message will be null
-				message = ChatColor.stripColor(message);
 				l.info(message);
 		}
 	}
