@@ -70,12 +70,10 @@ public class BukkitUpdateChecker {
 
 		FileConfiguration config = plugin.getConfig();
 		if (config.getBoolean("update-checker")) {
-			if (config.getBoolean("settings.checkForUpdates")) {
 				if (updateNeeded()) {
 					updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + getVersion() + " is available!";
 					updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + getLink();
 				}
-			}
 		}
 		return updateMessages;
 	}
