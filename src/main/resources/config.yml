@@ -39,7 +39,7 @@ disable-sword-sweep:
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
-  # NOTE: this will modify the damage, however on the tooltip of items it will still show the old damage
+  # NOTE: this will modify the damage, however on the tooltip of items it will still show the damage as it is in 1.9+
   enabled: true
   worlds: []
   # This will allow you to set the damage divider
