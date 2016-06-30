@@ -1,3 +1,4 @@
+![OldCombatMechanics Icon](https://github.com/Rayzr522/ProjectResources/raw/master/icons/SpamClicker.png)
 # Old Combat Mechanics
 #### by kernitus and Rayzr522
 Bukkit/Spigot plugin to have combat mechanics like in pre-1.9
