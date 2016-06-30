@@ -12,7 +12,7 @@ public class OCMUpdateChecker {
 	private OCMMain plugin;
 	private final BukkitUpdateChecker BUC;
 	private final SpigotUpdateChecker SUC;
-	
+
 	public OCMUpdateChecker(OCMMain plugin){
 		this.plugin = plugin;
 		BUC = new BukkitUpdateChecker(plugin);
@@ -35,11 +35,9 @@ public class OCMUpdateChecker {
 	}
 
 	public void sendUpdateMessages(Player p){//Sends messages to a player
-		if(p.hasPermission("OldCombatMechanics.notify")){//Only send if they have notify permission
-			for(String message : getUpdateMessages()){
-				if(message!=null&&!message.isEmpty())//If there was no update/check is disabled message will be null
-					p.sendMessage(message);
-			}
+		for(String message : getUpdateMessages()){
+			if(message!=null&&!message.isEmpty())//If there was no update/check is disabled message will be null
+				p.sendMessage(message);
 		}
 	}
 	public void sendUpdateMessages(Logger l){//Sends messages to console

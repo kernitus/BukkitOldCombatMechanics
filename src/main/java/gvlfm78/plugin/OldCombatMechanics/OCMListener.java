@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -8,19 +9,25 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 public class OCMListener implements Listener {
 
-    private OCMMain plugin;
+	private OCMMain plugin;
 
-    public OCMListener(OCMMain instance) {
-        this.plugin = instance;
-    }
+	public OCMListener(OCMMain instance) {
+		this.plugin = instance;
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogin(PlayerJoinEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerLogin(PlayerJoinEvent e) {
+		final Player p = e.getPlayer();
+		if(p.hasPermission("OldCombatMechanics.notify")){
+			Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, new Runnable () {
+				public void run() {
 
-        OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
-        Player p = e.getPlayer();
+					OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
 
-        // Checking for updates
-            updateChecker.sendUpdateMessages(p);
-    }
+					// Checking for updates
+					updateChecker.sendUpdateMessages(p);
+				}
+			},20L);
+		}
+	}
 }
