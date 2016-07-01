@@ -9,6 +9,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -68,18 +69,31 @@ public class ModuleGoldenApple extends Module {
             return;
         }
 
-        ItemStack item = e.getItem();
-
         e.setCancelled(true);
 
+        ItemStack item = e.getItem();
+
         Player p = e.getPlayer();
-        
+
+        PlayerInventory inv = p.getInventory();
+
+        boolean mainHand = item.equals(inv.getItemInMainHand());
+
         int foodLevel = p.getFoodLevel();
         foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
 
         item.setAmount(item.getAmount() - 1);
-        
-        p.getInventory().setItemInMainHand(item);
+
+        if (item.getAmount() <= 0) {
+            item = null;
+        }
+
+        if (mainHand) {
+            inv.setItemInMainHand(item);
+        } else {
+            inv.setItemInOffHand(item);
+        }
+
         p.setFoodLevel(foodLevel);
 
         if (item.getDurability() == (short) 1) {
