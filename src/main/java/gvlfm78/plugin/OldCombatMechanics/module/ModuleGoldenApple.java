@@ -3,6 +3,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
@@ -71,10 +72,15 @@ public class ModuleGoldenApple extends Module {
 
         e.setCancelled(true);
 
-        int foodLevel = e.getPlayer().getFoodLevel();
+        Player p = e.getPlayer();
+        
+        int foodLevel = p.getFoodLevel();
         foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
 
         item.setAmount(item.getAmount() - 1);
+        
+        p.getInventory().setItemInMainHand(item);
+        p.setFoodLevel(foodLevel);
 
         if (item.getDurability() == (short) 1) {
 
