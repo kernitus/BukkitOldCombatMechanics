@@ -74,7 +74,6 @@ public class OCMMain extends JavaPlugin {
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
 		//Checking for updates
-		logger.info("Starting update check");
 		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable () {
 			public void run() {
 				updateChecker.sendUpdateMessages(logger);
