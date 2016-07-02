@@ -38,12 +38,21 @@ public class ModulePlayerRegen extends Module {
 
         e.setCancelled(true);
 
+        System.out.println("ModulePlayerRegen.onRegen");
+
         long currentTime = Ticks.current();
         long lastHealTime = getLastHealTime(p);
+
+        System.out.println("currentTime = " + currentTime);
+        System.out.println("lastHealTime = " + lastHealTime);
 
         if (currentTime - lastHealTime < 60) {
             return;
         }
+
+        System.out.println("Regening the player...");
+
+        System.out.println("(p.getHealth()<p.getMaxHealth()) = " + (p.getHealth() < p.getMaxHealth()));
 
         if (p.getHealth() < p.getMaxHealth()) {
             p.setHealth(MathHelper.clamp(p.getHealth() + 1, 0.0, 20.0));
