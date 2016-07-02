@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -48,6 +49,15 @@ public class ModulePlayerRegen extends Module {
         if (p.getHealth() < p.getMaxHealth()) {
             p.setHealth(MathHelper.clamp(p.getHealth() + 1, 0.0, 20.0));
             healTimes.put(p.getUniqueId(), currentTime);
+        }
+
+    }
+
+    @EventHandler(priority =  EventPriority.HIGH)
+    public void onWorldChange(PlayerChangedWorldEvent e) {
+
+        if (healTimes.containsKey(e.getPlayer().getUniqueId())) {
+            healTimes.remove(e.getPlayer().getUniqueId());
         }
 
     }
