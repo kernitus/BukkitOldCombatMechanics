@@ -21,91 +21,90 @@ import java.util.List;
  */
 public class ModuleGoldenApple extends Module {
 
-    private List<PotionEffect> enchantedGoldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 4), new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
-    private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
+	private List<PotionEffect> enchantedGoldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 4), new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
+	private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
 
-    public ModuleGoldenApple(OCMMain plugin) {
-        super(plugin, "old-golden-apples");
-    }
+	public ModuleGoldenApple(OCMMain plugin) {
+		super(plugin, "old-golden-apples");
+	}
 
-    public static boolean RECIPE_ALREADY_EXISTED = false;
+	public static boolean RECIPE_ALREADY_EXISTED = false;
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPrepareItemCraft(PrepareItemCraftEvent e) {
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onPrepareItemCraft(PrepareItemCraftEvent e) {
 
-        ItemStack item = e.getInventory().getResult();
+		ItemStack item = e.getInventory().getResult();
 
-        if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
+		if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
 
-            World world = e.getView().getPlayer().getWorld();
+			World world = e.getView().getPlayer().getWorld();
 
-            if (isSettingEnabled("no-conflict-mode")) {
+			if (isSettingEnabled("no-conflict-mode")) {
 
-                return;
-            }
+				return;
+			}
 
-            if (!isEnabled(world)) {
+			if (!isEnabled(world)) {
 
-                e.getInventory().setResult(null);
+				e.getInventory().setResult(null);
 
-            } else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
+			} else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
 
-                e.getInventory().setResult(null);
+				e.getInventory().setResult(null);
 
-            }
+			}
 
-        }
+		}
 
-    }
+	}
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onItemConsume(PlayerItemConsumeEvent e) {
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onItemConsume(PlayerItemConsumeEvent e) {
 
-        if (e.getItem().getType() != Material.GOLDEN_APPLE) {
-            return;
-        }
+		if (e.getItem().getType() != Material.GOLDEN_APPLE) {
+			return;
+		}
 
-        if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) {
-            return;
-        }
+		if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) {
+			return;
+		}
 
-        e.setCancelled(true);
+		e.setCancelled(true);
 
-        ItemStack item = e.getItem();
+		ItemStack item = e.getItem();
 
-        Player p = e.getPlayer();
+		Player p = e.getPlayer();
 
-        PlayerInventory inv = p.getInventory();
+		PlayerInventory inv = p.getInventory();
 
-        boolean mainHand = item.equals(inv.getItemInMainHand());
+		boolean mainHand = item.equals(inv.getItemInMainHand());
 
-        int foodLevel = p.getFoodLevel();
-        foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
+		int foodLevel = p.getFoodLevel();
+		foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
 
-        item.setAmount(item.getAmount() - 1);
+		item.setAmount(item.getAmount() - 1);
 
-        if (item.getAmount() <= 0) {
-            item = null;
-        }
+		p.setFoodLevel(foodLevel);
 
-        if (mainHand) {
-            inv.setItemInMainHand(item);
-        } else {
-            inv.setItemInOffHand(item);
-        }
+		if (item.getDurability() == (short) 1) {
 
-        p.setFoodLevel(foodLevel);
+			e.getPlayer().addPotionEffects(enchantedGoldenAppleEffects);
 
-        if (item.getDurability() == (short) 1) {
+		} else {
 
-            e.getPlayer().addPotionEffects(enchantedGoldenAppleEffects);
+			e.getPlayer().addPotionEffects(goldenAppleEffects);
 
-        } else {
+		}
+		if (item.getAmount() <= 0) {
+			item = null;
+		}
 
-            e.getPlayer().addPotionEffects(goldenAppleEffects);
+		if (mainHand) {
+			inv.setItemInMainHand(item);
+		} else {
+			inv.setItemInOffHand(item);
+		}
 
-        }
-
-    }
+	}
 
 }
