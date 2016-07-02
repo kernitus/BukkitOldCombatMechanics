@@ -42,6 +42,9 @@ public class ModulePlayerRegen extends Module {
         long currentTime = Ticks.current(p);
         long lastHealTime = getLastHealTime(p);
 
+        System.out.println("currentTime = " + currentTime);
+        System.out.println("lastHealTime = " + lastHealTime);
+
         if (currentTime - lastHealTime < 60) {
             return;
         }
