@@ -50,6 +50,7 @@ public class ModulePlayerRegen extends Module {
         }
 
         if (p.getHealth() < p.getMaxHealth()) {
+            System.out.println("ModulePlayerRegen.onRegen");
             p.setHealth(MathHelper.clamp(p.getHealth() + 1, 0.0, 20.0));
             healTimes.put(p.getUniqueId(), currentTime);
         }
