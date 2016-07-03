@@ -1,17 +1,16 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.MathHelper;
-import kernitus.plugin.OldCombatMechanics.utilities.Ticks;
+import java.util.HashMap;
+import java.util.UUID;
+
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 
-import java.util.HashMap;
-import java.util.UUID;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.MathHelper;
 
 /**
  * Created by Rayzr522 on 6/28/16.
@@ -39,41 +38,23 @@ public class ModulePlayerRegen extends Module {
 
         e.setCancelled(true);
 
-        long currentTime = Ticks.current(p);
+        long currentTime = System.currentTimeMillis()/1000;
         long lastHealTime = getLastHealTime(p);
 
-        System.out.println("currentTime = " + currentTime);
-        System.out.println("lastHealTime = " + lastHealTime);
-
-        if (currentTime - lastHealTime < 60) {
+        if(currentTime - lastHealTime < 3)
             return;
-        }
 
         if (p.getHealth() < p.getMaxHealth()) {
-            System.out.println("ModulePlayerRegen.onRegen");
             p.setHealth(MathHelper.clamp(p.getHealth() + 1, 0.0, 20.0));
             healTimes.put(p.getUniqueId(), currentTime);
         }
 
     }
 
-    @EventHandler(priority =  EventPriority.HIGH)
-    public void onWorldChange(PlayerChangedWorldEvent e) {
-
-        System.out.println("onWorldChange");
-
-        if (healTimes.containsKey(e.getPlayer().getUniqueId())) {
-            healTimes.remove(e.getPlayer().getUniqueId());
-        }
-
-    }
-
     private long getLastHealTime(Player p) {
 
-        if (!healTimes.containsKey(p.getUniqueId())) {
-            System.out.println("getLastHealTime");
-            healTimes.put(p.getUniqueId(), Ticks.current(p));
-        }
+        if (!healTimes.containsKey(p.getUniqueId()))
+            healTimes.put(p.getUniqueId(), System.currentTimeMillis()/1000);
 
         return healTimes.get(p.getUniqueId());
 
