@@ -59,6 +59,8 @@ public class ModulePlayerRegen extends Module {
     @EventHandler(priority =  EventPriority.HIGH)
     public void onWorldChange(PlayerChangedWorldEvent e) {
 
+        System.out.println("onWorldChange");
+
         if (healTimes.containsKey(e.getPlayer().getUniqueId())) {
             healTimes.remove(e.getPlayer().getUniqueId());
         }
@@ -68,6 +70,7 @@ public class ModulePlayerRegen extends Module {
     private long getLastHealTime(Player p) {
 
         if (!healTimes.containsKey(p.getUniqueId())) {
+            System.out.println("getLastHealTime");
             healTimes.put(p.getUniqueId(), Ticks.current(p));
         }
 
