@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
@@ -61,7 +62,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
 				}
 
-				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics " + ChatColor.GREEN + "Config file reloaded");
+				Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
 
 			} else {// Tells user about available commands
 
@@ -69,9 +70,16 @@ public class OCMCommandHandler implements CommandExecutor {
 
 				PluginDescriptionFile pdf = plugin.getDescription();
 
-				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics by gvlfm78 and Rayzr522 version " + pdf.getVersion());
-				sender.sendMessage(ChatColor.GREEN + "You can use " + ChatColor.ITALIC + "/ocm reload "
-						+ ChatColor.RESET + ChatColor.GREEN + "to reload the config file");
+				Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
+
+//				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics by gvlfm78 and Rayzr522 version " + pdf.getVersion());
+//				sender.sendMessage(ChatColor.GREEN + "You can use " + ChatColor.ITALIC + "/ocm reload "
+//						+ ChatColor.RESET + ChatColor.GREEN + "to reload the config file");
+
+				Chatter.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6" + pdf.getVersion());
+				Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
+
+				Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
 				// Update check
 		        updateChecker.sendUpdateMessages(sender);
