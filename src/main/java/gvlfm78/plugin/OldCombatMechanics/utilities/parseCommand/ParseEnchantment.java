@@ -33,7 +33,7 @@ public class ParseEnchantment extends ParseCommand {
                     level = Integer.parseInt(separate[separate.length - 1]);
                     customLevel = true;
                 } catch (Exception e) {
-
+                    level = 1;
                 }
             } else {
                 level = 1;

@@ -20,6 +20,8 @@ import java.util.UUID;
  */
 public class ModuleSwordBlocking extends Module {
 
+    private static final ItemStack SHIELD = ItemUtils.makeItem("shield, named &0, with enchant durability 10 & silk touch 10");
+
     private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
 
     public ModuleSwordBlocking(OCMMain plugin) {
@@ -37,9 +39,9 @@ public class ModuleSwordBlocking extends Module {
             return;
         }
 
-//        if (e.getItem().getType() == Material.DIAMOND) {
-//            e.getPlayer().getInventory().addItem(ItemUtils.makeItem("shield, named &7Sturdy &6Shield, with enchantment durability 10 and damage all 5"));
-//        }
+        if (e.getItem().getType() == Material.DIAMOND) {
+            e.getPlayer().getInventory().addItem(ItemUtils.makeItem("5 diamond, named &bShining Crystals, enchanted with silk touch"));
+        }
 
         Player p = e.getPlayer();
         World world = p.getWorld();
@@ -65,7 +67,7 @@ public class ModuleSwordBlocking extends Module {
 
         storedOffhandItems.put(id, inv.getItemInOffHand());
 
-        inv.setItemInOffHand(ItemUtils.makeItem("shield, named &0, with enchant durability 10 & silk touch 10"));
+        inv.setItemInOffHand(SHIELD);
 
     }
 
