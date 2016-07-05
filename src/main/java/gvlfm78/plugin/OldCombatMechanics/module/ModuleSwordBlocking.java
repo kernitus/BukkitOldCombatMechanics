@@ -9,11 +9,15 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -21,12 +25,15 @@ import java.util.UUID;
  */
 public class ModuleSwordBlocking extends Module {
 
+    private static ModuleSwordBlocking INSTANCE;
+
     private static final ItemStack SHIELD = ItemUtils.makeItem("shield, named &0, with enchant durability 10 & silk touch 10");
 
     private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
+        INSTANCE = this;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -74,12 +81,37 @@ public class ModuleSwordBlocking extends Module {
 
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onWorldChange(PlayerChangedWorldEvent e) {
+        restore(e.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerLogout(PlayerQuitEvent e) {
+        restore(e.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent e) {
+
+        if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) {
+            return;
+        }
+
+        Player p = e.getEntity();
+        UUID id = p.getUniqueId();
+
+        e.getDrops().remove(SHIELD);
+        e.getDrops().add(storedOffhandItems.get(id));
+
+        storedOffhandItems.remove(id);
+
+    }
+
     private void scheduleRestore(final Player p) {
 
-        System.out.println("ModuleSwordBlocking.scheduleRestore");
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             public void run() {
-                System.out.println("Scheduling restore for " + p.getName());
                 restore(p);
             }
         }, 60);
@@ -96,6 +128,27 @@ public class ModuleSwordBlocking extends Module {
 
         p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
         storedOffhandItems.remove(id);
+
+    }
+
+    public static void RestoreAll() {
+
+        INSTANCE.restoreAll();
+
+    }
+
+    public void restoreAll() {
+
+        for (Map.Entry<UUID, ItemStack> entry : storedOffhandItems.entrySet()) {
+
+            UUID id = entry.getKey();
+            Player p = Bukkit.getPlayer(id);
+
+            p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+
+            storedOffhandItems.remove(id);
+
+        }
 
     }
 
