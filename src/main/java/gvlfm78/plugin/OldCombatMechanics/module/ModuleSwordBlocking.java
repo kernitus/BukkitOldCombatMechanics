@@ -3,6 +3,7 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -51,7 +52,7 @@ public class ModuleSwordBlocking extends Module {
         }
 
         UUID id = p.getUniqueId();
-        Chatter.send(p, "Clicky clicky!!");
+//        Chatter.send(p, "Clicky clicky!!");
 
         if (storedOffhandItems.containsKey(id)) {
             return;
@@ -68,6 +69,33 @@ public class ModuleSwordBlocking extends Module {
         storedOffhandItems.put(id, inv.getItemInOffHand());
 
         inv.setItemInOffHand(SHIELD);
+
+        scheduleRestore(p);
+
+    }
+
+    private void scheduleRestore(final Player p) {
+
+        System.out.println("ModuleSwordBlocking.scheduleRestore");
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            public void run() {
+                System.out.println("Scheduling restore for " + p.getName());
+                restore(p);
+            }
+        }, 60);
+
+    }
+
+    private void restore(Player p) {
+
+        UUID id = p.getUniqueId();
+
+        if (!storedOffhandItems.containsKey(id)) {
+            return;
+        }
+
+        p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+        storedOffhandItems.remove(id);
 
     }
 
