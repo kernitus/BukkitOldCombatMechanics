@@ -88,9 +88,17 @@ public class ModuleGoldenApple extends Module {
 
 		if (item.getDurability() == (short) 1) {
 
+			for (PotionEffect effect : enchantedGoldenAppleEffects) {
+				e.getPlayer().removePotionEffect(effect.getType());
+			}
+
 			e.getPlayer().addPotionEffects(enchantedGoldenAppleEffects);
 
 		} else {
+
+			for (PotionEffect effect : goldenAppleEffects) {
+				e.getPlayer().removePotionEffect(effect.getType());
+			}
 
 			e.getPlayer().addPotionEffects(goldenAppleEffects);
 
