@@ -81,6 +81,11 @@ old-tool-damage:
     IRON_HOE: 1
     DIAMOND_HOE: 1
 
+sword-blocking:
+  # This is to allow players block with swords again by getting a shield while they hold right click with a sword
+  enabled: true
+  world: []
+    
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
   enabled: true
@@ -96,18 +101,13 @@ old-golden-apples:
 
 old-fishing-knockback:
   # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
-  # Credit to HyKurtis for the original code, optimized by Rayzr522
+  # Credit to HyKurtis for the original code, optimised by Rayzr522
   enabled: true
   worlds: []
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
   # It's hard to make it behave exactly like before, but in general this makes it work like in 1.8 and below
-  enabled: true
-  worlds: []
-
-sword-blocking:
-  # This is to allow players to block with swords again by giving them a shield when they right-click with a sword
   enabled: true
   worlds: []
 
@@ -161,4 +161,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING
-config-version: 4
+config-version: 5
