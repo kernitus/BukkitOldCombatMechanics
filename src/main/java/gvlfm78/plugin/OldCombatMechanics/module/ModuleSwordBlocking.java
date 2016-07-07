@@ -47,10 +47,6 @@ public class ModuleSwordBlocking extends Module {
             return;
         }
 
-        if (e.getItem().getType() == Material.DIAMOND) {
-            e.getPlayer().getInventory().addItem(ItemUtils.makeItem("5 diamond, named &bShining Crystals, enchanted with silk touch"));
-        }
-
         Player p = e.getPlayer();
         World world = p.getWorld();
 
@@ -59,7 +55,6 @@ public class ModuleSwordBlocking extends Module {
         }
 
         UUID id = p.getUniqueId();
-//        Chatter.send(p, "Clicky clicky!!");
 
         if (storedOffhandItems.containsKey(id)) {
             return;
