@@ -1,20 +1,27 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import kernitus.plugin.OldCombatMechanics.module.*;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import java.io.IOException;
+import java.util.logging.Logger;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import java.io.IOException;
-import java.util.logging.Logger;
+import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
+import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
+import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 
 public class OCMMain extends JavaPlugin {
 
@@ -74,12 +81,15 @@ public class OCMMain extends JavaPlugin {
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
 		//Checking for updates
-		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable () {
-			public void run() {
-				updateChecker.sendUpdateMessages(logger);
-			}
-		},20L);
+		if(getConfig().getBoolean("update-checker")){
+			getServer().getPluginManager().registerEvents((new OCMListener(this)), this);
 
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable (){
+				public void run() {
+					updateChecker.sendUpdateMessages(logger);
+				}
+			},20L);
+		}
 	}
 
 	@Override
@@ -95,11 +105,6 @@ public class OCMMain extends JavaPlugin {
 	}
 
 	private void registerAllEvents() {
-
-		PluginManager pm = getServer().getPluginManager();
-
-		// Global listener
-		pm.registerEvents((new OCMListener(this)), this);
 
 		// Module listeners
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
