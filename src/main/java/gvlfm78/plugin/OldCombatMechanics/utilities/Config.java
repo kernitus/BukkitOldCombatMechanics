@@ -48,9 +48,8 @@ public class Config {
         if (plugin.doesConfigymlExist()) {
             plugin.reloadConfig();
             config = plugin.getConfig();
-        } else {
+        } else
             plugin.upgradeConfig();
-        }
 
         checkConfigVersion();
 
