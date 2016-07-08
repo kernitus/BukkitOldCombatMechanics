@@ -13,15 +13,10 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 4;
+    public static final int CONFIG_VERSION = 5;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
-
-    /*
-    private static HashMap<String, Boolean> moduleStatus = null;
-    private static List<String> modules = Arrays.asList("disable-attack-cooldown", "disable-player-collisions", "disable-sword-sweep", "old-tool-damage", "old-golden-apples");
-    */
 
     public static void Initialise(OCMMain plugin) {
 
