@@ -85,7 +85,7 @@ old-tool-damage:
 sword-blocking:
   # This is to allow players block with swords again by getting a shield while they hold right click with a sword
   enabled: true
-  world: []
+  worlds: []
     
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
