@@ -8,7 +8,8 @@
 #############################################################################
 
 # This is to toggle the update checker
-update-checker: true
+update-checker:
+  enabled: true
 
 # To use the per-world feature you specifiy a list of the worlds in the []
 # For example: 
@@ -144,12 +145,7 @@ old-armour-strength:
     DIAMOND_HELMET: 
     DIAMOND_CHESTPLATE: 
     DIAMOND_LEGGINGS:
-    DIAMOND_BOOTS: 
-
-disable-shields:
-  # This is to disable the use of shields
-  enabled: false
-  worlds: []
+    DIAMOND_BOOTS:
 
 
 ################################
