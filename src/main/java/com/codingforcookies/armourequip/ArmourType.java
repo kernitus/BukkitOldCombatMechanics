@@ -1,4 +1,4 @@
-package com.codingforcookies.armorequip;
+package com.codingforcookies.armourequip;
 
 import org.bukkit.inventory.ItemStack;
 
@@ -8,22 +8,22 @@ import org.bukkit.inventory.ItemStack;
  * @Website http://codingforcookies.com/
  * @Since Jul 30, 2015 6:46:16 PM
  */
-public enum ArmorType{
+public enum ArmourType{
 	HELMET(5), CHESTPLATE(6), LEGGINGS(7), BOOTS(8);
 
 	private final int slot;
 
-	ArmorType(int slot){
+	ArmourType(int slot){
 		this.slot = slot;
 	}
 
 	/**
-	 * Attempts to match the ArmorType for the specified ItemStack.
+	 * Attempts to match the ArmourType for the specified ItemStack.
 	 *
 	 * @param itemStack The ItemStack to parse the type of.
-	 * @return The parsed ArmorType. (null if none were found.)
+	 * @return The parsed ArmourType. (null if none were found.)
 	 */
-	public final static ArmorType matchType(final ItemStack itemStack){
+	public final static ArmourType matchType(final ItemStack itemStack){
 		if(itemStack == null) { return null; }
 		switch (itemStack.getType()){
 			case DIAMOND_HELMET:
