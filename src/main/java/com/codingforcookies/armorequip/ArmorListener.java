@@ -73,16 +73,16 @@ public class ArmorListener implements Listener{
 			ItemStack newArmorPiece = e.getCursor();
 			ItemStack oldArmorPiece = e.getCurrentItem();
 			if(numberkey){
-				if(e.getClickedInventory().getType().equals(InventoryType.PLAYER)){// Prevents shit in the 2by2 crafting
-					// e.getClickedInventory() == The players inventory
+				if(e.getInventory().getType().equals(InventoryType.PLAYER)){// Prevents s**t in the 2by2 crafting
+					// e.getInventory() == The players inventory
 					// e.getHotBarButton() == key people are pressing to equip or unequip the item to or from.
 					// e.getRawSlot() == The slot the item is going to.
 					// e.getSlot() == Armor slot, can't use e.getRawSlot() as that gives a hotbar slot ;-;
-					ItemStack hotbarItem = e.getClickedInventory().getItem(e.getHotbarButton());
+					ItemStack hotbarItem = e.getInventory().getItem(e.getHotbarButton());
 					if(hotbarItem != null){// Equipping
 						newArmorType = ArmorType.matchType(hotbarItem);
 						newArmorPiece = hotbarItem;
-						oldArmorPiece = e.getClickedInventory().getItem(e.getSlot());
+						oldArmorPiece = e.getInventory().getItem(e.getSlot());
 					}else{// Unequipping
 						newArmorType = ArmorType.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR ? e.getCurrentItem() : e.getCursor());
 					}
