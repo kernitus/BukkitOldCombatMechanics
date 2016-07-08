@@ -13,6 +13,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -89,9 +90,7 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent e) {
 
-        if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) {
-            return;
-        }
+        if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) return;
 
         Player p = e.getEntity();
         UUID id = p.getUniqueId();
@@ -100,6 +99,14 @@ public class ModuleSwordBlocking extends Module {
         e.getDrops().add(storedOffhandItems.get(id));
 
         storedOffhandItems.remove(id);
+
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
+    	Player p = e.getPlayer();
+    	if (storedOffhandItems.containsKey(p.getUniqueId()))
+    		e.setCancelled(true);
 
     }
 
