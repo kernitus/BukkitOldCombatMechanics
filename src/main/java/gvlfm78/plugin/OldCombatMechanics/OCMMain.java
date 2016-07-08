@@ -1,8 +1,7 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-
+import kernitus.plugin.OldCombatMechanics.module.*;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -13,15 +12,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
-import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
-import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
-import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen;
-import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
-import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
@@ -80,16 +72,6 @@ public class OCMMain extends JavaPlugin {
 		// Logging to console the enabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
-		//Checking for updates
-		if(getConfig().getBoolean("update-checker")){
-			getServer().getPluginManager().registerEvents((new OCMListener(this)), this);
-
-			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable (){
-				public void run() {
-					updateChecker.sendUpdateMessages(logger);
-				}
-			},20L);
-		}
 	}
 
 	@Override
@@ -105,6 +87,9 @@ public class OCMMain extends JavaPlugin {
 	}
 
 	private void registerAllEvents() {
+
+		// Main listener (also a module so we can use the dynamic registering/unregistering)
+		ModuleLoader.AddModule(new OCMListener(this));
 
 		// Module listeners
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
