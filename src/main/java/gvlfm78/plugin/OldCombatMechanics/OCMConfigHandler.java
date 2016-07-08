@@ -14,6 +14,7 @@ public class OCMConfigHandler {
 	public void upgradeConfig(){
 		if(doesConfigymlExist()){
 			File backup = getFile("config-backup.yml");
+			if(backup.exists()) backup.delete();
 			getFile("config.yml").renameTo(backup);
 		}
 		plugin.saveDefaultConfig();
@@ -38,6 +39,6 @@ public class OCMConfigHandler {
 	}
 	public boolean doesConfigymlExist(){
 		File file = getFile("config.yml");
-		return file.exists() ? true : false;
+		return file.exists();
 	}
 }
