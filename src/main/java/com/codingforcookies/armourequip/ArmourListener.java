@@ -1,7 +1,5 @@
 package com.codingforcookies.armourequip;
 
-import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -50,6 +48,7 @@ public class ArmourListener extends Module implements Listener {
         }
         if ((e.getSlotType() != SlotType.ARMOR || e.getSlotType() != SlotType.QUICKBAR) && !e.getInventory().getType().equals(InventoryType.CRAFTING))
             return;
+
         if (!(e.getWhoClicked() instanceof Player)) return;
         if (e.getCurrentItem() == null) return;
         ArmourType newArmourType = ArmourType.matchType(shift ? e.getCurrentItem() : e.getCursor());
@@ -98,6 +97,7 @@ public class ArmourListener extends Module implements Listener {
             if (newArmourType != null && e.getRawSlot() == newArmourType.getSlot()) {
                 EquipMethod method = EquipMethod.DRAG;
                 if (e.getAction().equals(InventoryAction.HOTBAR_SWAP) || numberkey) method = EquipMethod.HOTBAR_SWAP;
+                
                 ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent((Player) e.getWhoClicked(), method, newArmourType, oldArmourPiece, newArmourPiece);
                 Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
                 if (armourEquipEvent.isCancelled()) {
@@ -107,14 +107,14 @@ public class ArmourListener extends Module implements Listener {
         }
     }
 
-    @EventHandler
+    @SuppressWarnings("deprecation")
+	@EventHandler
     public void playerInteractEvent(PlayerInteractEvent e) {
         if (e.getAction() == Action.PHYSICAL) return;
         if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
             final Player player = e.getPlayer();
             if (e.getClickedBlock() != null && e.getAction() == Action.RIGHT_CLICK_BLOCK) {// Having both of these checks is useless, might as well do it though.
                 // Some blocks have actions when you right click them which stops the client from equipping the armour in hand.
-                Material mat = e.getClickedBlock().getType();
             }
             ArmourType newArmourType = ArmourType.matchType(e.getItem());
             if (newArmourType != null) {

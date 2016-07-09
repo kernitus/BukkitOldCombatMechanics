@@ -1,8 +1,9 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.Chatter;
-import kernitus.plugin.OldCombatMechanics.utilities.ItemUtils;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,9 +18,8 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.ItemUtils;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -151,12 +151,6 @@ public class ModuleSwordBlocking extends Module {
             storedOffhandItems.remove(id);
 
         }
-
-    }
-
-    private boolean inMainHand(ItemStack item, Player p) {
-
-        return item.equals(p.getInventory().getItemInMainHand());
 
     }
 
