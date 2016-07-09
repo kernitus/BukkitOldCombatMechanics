@@ -1,8 +1,8 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-
+import com.codingforcookies.armourequip.ArmourListener;
+import gvlfm78.plugin.OldCombatMechanics.module.*;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -13,18 +13,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import com.codingforcookies.armourequip.ArmourListener;
-
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerRegen;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordSweep;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
@@ -101,6 +91,7 @@ public class OCMMain extends JavaPlugin {
 
 		// Main listener (also a module so we can use the dynamic registering/unregistering)
 		ModuleLoader.AddModule(new OCMListener(this));
+		ModuleLoader.AddModule(new ArmourListener(this));
 
 		// Module listeners
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
@@ -112,7 +103,6 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModulePlayerRegen(this));
 		ModuleLoader.AddModule(new ModuleSwordBlocking(this));
 		ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
-		ModuleLoader.AddModule(new ArmourListener(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
