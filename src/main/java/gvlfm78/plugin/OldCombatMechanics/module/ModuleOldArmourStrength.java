@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import org.bukkit.Material;
+import org.bukkit.event.EventHandler;
 import org.bukkit.inventory.ItemStack;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent;
@@ -16,6 +17,7 @@ public class ModuleOldArmourStrength extends Module{
 		INSTANCE = this;
 	}
 	
+	@EventHandler
 	public void onArmourEquip(ArmourEquipEvent e){
 		e.getPlayer().sendMessage("Test999");
 		ItemStack newPiece = e.getNewArmourPiece();
