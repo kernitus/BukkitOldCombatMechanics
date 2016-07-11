@@ -69,6 +69,7 @@ public class ArmourListener extends Module implements Listener {
                     if (armourEquipEvent.isCancelled()) {
                         e.setCancelled(true);
                     }
+                    e.setCurrentItem(armourEquipEvent.getNewArmourPiece());
                 }
             }
         } else {

@@ -1,6 +1,8 @@
 package kernitus.plugin.OldCombatMechanics.utilities;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.util.logging.Logger;
 
@@ -31,6 +33,18 @@ public class Messenger {
         logger.severe("OldCombatMechanics has encountered a serious problem:");
         logger.severe(msg);
         logger.severe("------------------------------------------------------------");
+
+    }
+
+    public static void send(Player p, String msg) {
+
+        p.sendMessage(TextUtils.colorize(msg));
+
+    }
+
+    public static void send(CommandSender s, String msg) {
+
+        s.sendMessage(TextUtils.stripColor(msg));
 
     }
 
