@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>0.9</version>
+    <version>0.9.2</version>
     <name>OldCombatMechanics</name>
     <description>Removes weapon cooldown in 1.9 and above</description>
     <repositories>
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.10-R0.1-SNAPSHOT</version>
+            <version>1.10.2-R0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>
