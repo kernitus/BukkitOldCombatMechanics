@@ -3,6 +3,7 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 import com.codingforcookies.armourequip.ArmourEquipEvent;
 import com.comphenix.example.Attributes;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ArmorValues;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,10 +13,12 @@ import org.bukkit.inventory.ItemStack;
 public class ModuleOldArmourStrength extends Module {
 
     private static ModuleOldArmourStrength INSTANCE;
+    private ArmorValues armorValues;
 
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
         INSTANCE = this;
+        armorValues = new ArmorValues(plugin);
 
     }
 
@@ -48,7 +51,7 @@ public class ModuleOldArmourStrength extends Module {
         }
 
         Attributes attributes = new Attributes(is);
-        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(20).build());
+        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(armorValues.getValue(is.getType())).build());
         is = attributes.getStack();
 
         ItemData.mark(is, "ArmorModifier");
