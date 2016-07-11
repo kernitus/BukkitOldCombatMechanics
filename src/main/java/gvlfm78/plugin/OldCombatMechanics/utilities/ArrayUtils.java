@@ -65,4 +65,10 @@ public class ArrayUtils {
 
 	}
 
+	public static <T> T last(T[] arr) {
+
+        return arr[arr.length-1];
+
+    }
+
 }

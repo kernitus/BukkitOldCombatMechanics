@@ -79,7 +79,7 @@ public final class ArmourEquipEvent extends PlayerEvent implements Cancellable{
 	}
 
 	/**
-	 * Returns the last equipped armour piece, could be a piece of armour, {@link Material#Air}, or null.
+	 * Returns the last equipped armour piece, could be a piece of armour, {@link Material#AIR}, or null.
 	 */
 	public final ItemStack getOldArmourPiece(){
 		return oldArmourPiece;
@@ -90,7 +90,7 @@ public final class ArmourEquipEvent extends PlayerEvent implements Cancellable{
 	}
 
 	/**
-	 * Returns the newly equipped armour, could be a piece of armour, {@link Material#Air}, or null.
+	 * Returns the newly equipped armour, could be a piece of armour, {@link Material#AIR}, or null.
 	 */
 	public final ItemStack getNewArmourPiece(){
 		return newArmourPiece;
