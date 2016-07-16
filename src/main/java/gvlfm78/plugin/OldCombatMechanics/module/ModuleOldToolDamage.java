@@ -68,7 +68,7 @@ public class ModuleOldToolDamage extends Module {
     }
 
     private double getSharpnessDamage(int level) {
-        return level >= 1 ? 1 + 0.5 * (level - 1) : 0;
+        return level >= 1 ? level*1.25 : 0;
     }
 
     private boolean isHolding(Material mat, String type) {

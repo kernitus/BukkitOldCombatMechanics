@@ -120,33 +120,6 @@ old-armour-strength:
   # This is to set armour strength values as in pre-1.9
   enabled: true
   worlds: []
-  strength:
-    # Leather armour
-    LEATHER_HELMET: 
-    LEATHER_CHESTPLATE: 
-    LEATHER_LEGGINGS: 
-    LEATHER_BOOTS: 
-    # Chainmail armour
-    CHAINMAIL_HELMET: 
-    CHAINMAIL_CHESTPLATE: 
-    CHAINMAIL_LEGGINGS: 
-    CHAINMAIL_BOOTS: 
-    # Golden armour
-    GOLDEN_HELMET: 
-    GOLDEN_CHESTPLATE: 
-    GOLDEN_LEGGINGS: 
-    GOLDEN_BOOTS: 
-    # Iron armour
-    IRON_HELMET: 
-    IRON_CHESTPLATE: 
-    IRON_LEGGINGS: 
-    IRON_BOOTS: 
-    # Diamond armour
-    DIAMOND_HELMET: 
-    DIAMOND_CHESTPLATE: 
-    DIAMOND_LEGGINGS:
-    DIAMOND_BOOTS:
-
 
 ################################
 #### SPECIAL SETTINGS BELOW ####

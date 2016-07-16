@@ -1,13 +1,5 @@
 package com.comphenix.example;
 
-import java.io.BufferedInputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -21,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -33,10 +23,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
-import com.google.common.io.Closeables;
-import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
-import com.google.common.io.OutputSupplier;
 import com.google.common.primitives.Primitives;
 
 public class NbtFactory {   
@@ -99,9 +85,9 @@ public class NbtFactory {
     private Field CRAFT_HANDLE;
     private Field STACK_TAG;
     
-    // Loading/saving compounds
+    /* Loading/saving compounds
     private Method LOAD_COMPOUND;
-    private Method SAVE_COMPOUND;
+    private Method SAVE_COMPOUND;*/
     
     // Shared instance
     private static NbtFactory INSTANCE;
@@ -764,7 +750,6 @@ public class NbtFactory {
      * converts entries of its type and another exposed type.
      * @author Kristian
      */
-    @SuppressWarnings("Since15")
     private class ConvertedMap extends AbstractMap<String, Object> implements Wrapper {
         private final Object handle;
         private final Map<String, Object> original;

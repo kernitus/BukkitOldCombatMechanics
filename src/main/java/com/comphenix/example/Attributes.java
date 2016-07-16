@@ -46,8 +46,10 @@ public class Attributes {
         public static final AttributeType GENERIC_ATTACK_DAMAGE = new AttributeType("generic.attackDamage").register();
         public static final AttributeType GENERIC_MOVEMENT_SPEED = new AttributeType("generic.movementSpeed").register();
         public static final AttributeType GENERIC_KNOCKBACK_RESISTANCE = new AttributeType("generic.knockbackResistance").register();
-        // Added by me (Rayzr522)
+        // Added by Rayzr522
         public static final AttributeType GENERIC_ARMOR = new AttributeType("generic.armor").register();
+        // Added by kernitus
+        public static final AttributeType GENERIC_ARMOR_TOUGHNESS = new AttributeType("generic.armorToughness").register();
 
         private final String minecraftId;
 
@@ -112,6 +114,7 @@ public class Attributes {
             setAttributeType(builder.type);
             setName(builder.name);
             setUUID(builder.uuid);
+            setSlot(builder.slot);
         }
 
         private Attribute(NbtCompound data) {
@@ -162,6 +165,13 @@ public class Attributes {
             data.put("UUIDLeast", id.getLeastSignificantBits());
             data.put("UUIDMost", id.getMostSignificantBits());
         }
+        public String getSlot() {
+            return data.getString("Slot", null);
+        }
+        public void setSlot(String slot) {
+            Preconditions.checkNotNull(slot, "slot cannot be NULL.");
+            data.put("Slot", slot);
+        }
 
         /**
          * A simple little method added by Rayzr522
@@ -190,6 +200,7 @@ public class Attributes {
             private AttributeType type;
             private String name;
             private UUID uuid;
+            private String slot;
 
             private Builder() {
                 // Don't make this accessible
@@ -218,6 +229,11 @@ public class Attributes {
             public Builder uuid(UUID uuid) {
                 this.uuid = uuid;
                 return this;
+            }
+            
+            public Builder slot(String slot) {
+            	this.slot = slot;
+            	return this;
             }
 
             public Attribute build() {

@@ -1,25 +1,21 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.codingforcookies.armourequip.ArmourEquipEvent;
-import com.comphenix.example.Attributes;
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.ArmorValues;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.inventory.ItemStack;
 
+import com.codingforcookies.armourequip.ArmourEquipEvent;
+import com.comphenix.example.Attributes;
+
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.ItemData;
+
 public class ModuleOldArmourStrength extends Module {
 
-    private static ModuleOldArmourStrength INSTANCE;
-    private ArmorValues armorValues;
 
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
-        INSTANCE = this;
-        armorValues = new ArmorValues(plugin);
-
     }
 
     @EventHandler
@@ -34,13 +30,6 @@ public class ModuleOldArmourStrength extends Module {
 
             e.setNewArmourPiece(apply(newPiece));
 
-
-            //They equipped a valid new piece of armour
-
-            // Check if there is armour toughness on piece, if so, remove it
-
-            // Check if the armour strength on the piece is the same as in the config for that piece
-            // if not, set the amour strength to the value in the config
         }
     }
 
@@ -50,9 +39,20 @@ public class ModuleOldArmourStrength extends Module {
             return is;
         }
 
+        //head torso legs feet
+        String slot = "legs";
+        String type = is.getType().toString().toLowerCase();
+        if(type.contains("helmet"))
+        	slot = "head";
+        else if(type.contains("chestplate"))
+        	slot = "torso";
+        else if(type.contains("leggings"))
+        	slot = "legs";
+        else if(type.contains("boots"))
+        	slot = "feet";
+        
         Attributes attributes = new Attributes(is);
-        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(armorValues.getValue(is.getType())).build());
-        is = attributes.getStack();
+        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(999999D).slot(slot).build());
 
         ItemData.mark(is, "ArmorModifier");
 

@@ -7,7 +7,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@SuppressWarnings("Since15")
 public class OCMUpdateChecker {
 
 	private OCMMain plugin;

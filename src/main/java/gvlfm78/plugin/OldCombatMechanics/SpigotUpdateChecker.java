@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-@SuppressWarnings("Since15")
 public class SpigotUpdateChecker {
 
 	//Taken from https://www.spigotmc.org/threads/resource-updater-for-your-plugins-v1-1.37315/page-2#post-1272537
