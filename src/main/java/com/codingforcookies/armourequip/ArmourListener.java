@@ -45,8 +45,9 @@ public class ArmourListener extends Module implements Listener {
         }
         if (e.getClick().equals(ClickType.NUMBER_KEY)) {
             numberkey = true;
-        }
-        if ((e.getSlotType() != SlotType.ARMOR || e.getSlotType() != SlotType.QUICKBAR) && !e.getInventory().getType().equals(InventoryType.CRAFTING))
+        }    
+        
+        if (!(e.getSlotType() == SlotType.ARMOR || e.getSlotType() == SlotType.QUICKBAR) && !e.getInventory().getType().equals(InventoryType.CRAFTING))
             return;
 
         if (!(e.getWhoClicked() instanceof Player)) return;

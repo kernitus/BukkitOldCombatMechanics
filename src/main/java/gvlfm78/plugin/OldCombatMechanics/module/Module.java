@@ -1,16 +1,14 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ArrayUtils;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
-import java.util.Arrays;
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ArrayUtils;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 
 /**
  * Created by Rayzr522 on 6/25/16.
