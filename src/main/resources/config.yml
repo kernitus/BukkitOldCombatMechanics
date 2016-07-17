@@ -108,18 +108,43 @@ old-fishing-knockback:
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
-  # It's hard to make it behave exactly like before, but in general this makes it work like in 1.8 and below
+  # It's hard to make it behave exactly like before, but in general this makes it work like in pre-1.9
   enabled: true
   worlds: []
-
-################################################################
-##### EVERYTHING BELOW THIS COMMENT IS NOT YET IMPLEMENTED #####
-################################################################
 
 old-armour-strength:
   # This is to set armour strength values as in pre-1.9
   enabled: true
   worlds: []
+  # The higher the armour toughness value the closer the damage done while wearing armour is to pre-1.9 values
+  toughness: 9999
+  # This is to change the armour strength values if you so wish
+  strength:
+    # Leather armour
+    LEATHER_HELMET: 1
+    LEATHER_CHESTPLATE: 3
+    LEATHER_LEGGINGS: 2
+    LEATHER_BOOTS: 1
+    # Chainmail armour
+    CHAINMAIL_HELMET: 2
+    CHAINMAIL_CHESTPLATE: 5
+    CHAINMAIL_LEGGINGS: 4
+    CHAINMAIL_BOOTS: 1
+    # Golden armour
+    GOLDEN_HELMET: 2
+    GOLDEN_CHESTPLATE: 5
+    GOLDEN_LEGGINGS: 3
+    GOLDEN_BOOTS: 1
+    # Iron armour
+    IRON_HELMET: 2
+    IRON_CHESTPLATE: 6
+    IRON_LEGGINGS: 5
+    IRON_BOOTS: 2
+    # Diamond armour
+    DIAMOND_HELMET: 3
+    DIAMOND_CHESTPLATE: 8
+    DIAMOND_LEGGINGS: 6
+    DIAMOND_BOOTS: 3
 
 ################################
 #### SPECIAL SETTINGS BELOW ####
