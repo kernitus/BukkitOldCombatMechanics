@@ -9,14 +9,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockDispenseEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemBreakEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent.EquipMethod;
@@ -70,7 +68,6 @@ public class ArmourListener extends Module implements Listener {
                     if (armourEquipEvent.isCancelled()) {
                         e.setCancelled(true);
                     }
-                    e.setCurrentItem(armourEquipEvent.getNewArmourPiece());
                 }
             }
         } else {
@@ -154,41 +151,6 @@ public class ArmourListener extends Module implements Listener {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    @EventHandler
-    public void itemBreakEvent(PlayerItemBreakEvent e) {
-        ArmourType type = ArmourType.matchType(e.getBrokenItem());
-        if (type != null) {
-            Player p = e.getPlayer();
-            ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent(p, EquipMethod.BROKE, type, e.getBrokenItem(), null);
-            Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
-            if (armourEquipEvent.isCancelled()) {
-                ItemStack i = e.getBrokenItem().clone();
-                i.setAmount(1);
-                i.setDurability((short) (i.getDurability() - 1));
-                if (type.equals(ArmourType.HELMET)) {
-                    p.getInventory().setHelmet(i);
-                } else if (type.equals(ArmourType.CHESTPLATE)) {
-                    p.getInventory().setChestplate(i);
-                } else if (type.equals(ArmourType.LEGGINGS)) {
-                    p.getInventory().setLeggings(i);
-                } else if (type.equals(ArmourType.BOOTS)) {
-                    p.getInventory().setBoots(i);
-                }
-            }
-        }
-    }
-
-    @EventHandler
-    public void playerDeathEvent(PlayerDeathEvent e) {
-        Player p = e.getEntity();
-        for (ItemStack i : p.getInventory().getArmorContents()) {
-            if (i != null && !i.getType().equals(Material.AIR)) {
-                Bukkit.getServer().getPluginManager().callEvent(new ArmourEquipEvent(p, EquipMethod.DEATH, ArmourType.matchType(i), i, null));
-                // No way to cancel a death event.
             }
         }
     }
