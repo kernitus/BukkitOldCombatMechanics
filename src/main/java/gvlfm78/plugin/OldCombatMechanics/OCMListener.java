@@ -14,6 +14,7 @@ public class OCMListener extends Module implements Listener {
 
 	public OCMListener(OCMMain plugin) {
 		super(plugin, "update-checker");
+		this.plugin = plugin;
 	}
 
 //	public OCMListener(OCMMain instance) {

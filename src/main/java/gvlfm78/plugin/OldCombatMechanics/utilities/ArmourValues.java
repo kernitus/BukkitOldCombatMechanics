@@ -10,20 +10,20 @@ import java.util.HashMap;
 /**
  * Created by Rayzr522 on 6/14/16.
  */
-public class ArmorValues {
+public class ArmourValues {
 
     private static HashMap<String, Double> values = new HashMap<String, Double>();
 
     private static OCMMain plugin;
     private static FileConfiguration config;
 
-    public ArmorValues(OCMMain instance) {
-		ArmorValues.plugin = instance;
+    public ArmourValues(OCMMain instance) {
+		ArmourValues.plugin = instance;
 	}
 
     public static void Initialise(OCMMain plugin) {
 
-        ArmorValues.plugin = plugin;
+        ArmourValues.plugin = plugin;
         reload();
 
     }

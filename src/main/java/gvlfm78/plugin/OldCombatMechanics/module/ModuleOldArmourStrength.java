@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.inventory.ItemStack;
@@ -9,13 +10,15 @@ import com.codingforcookies.armourequip.ArmourEquipEvent;
 import com.comphenix.example.Attributes;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.ArmourValues;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 
 public class ModuleOldArmourStrength extends Module {
 
-
+	private OCMMain plugin;
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
+        this.plugin = plugin;
     }
 
     @EventHandler
@@ -39,20 +42,27 @@ public class ModuleOldArmourStrength extends Module {
             return is;
         }
 
-        //head torso legs feet
-        String slot = "legs";
+        String slot = "";
         String type = is.getType().toString().toLowerCase();
         if(type.contains("helmet"))
         	slot = "head";
         else if(type.contains("chestplate"))
-        	slot = "torso";
+        	slot = "chest";
         else if(type.contains("leggings"))
         	slot = "legs";
         else if(type.contains("boots"))
         	slot = "feet";
         
+        FileConfiguration config = plugin.getConfig();
+        Double toughness = config.getDouble("old-armour-strength.toughness");
+        
+        ArmourValues av = new ArmourValues(plugin);
+        double strength = av.getValue(is.getType());
+        
         Attributes attributes = new Attributes(is);
-        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(999999D).slot(slot).build());
+
+        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
+        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
 
         ItemData.mark(is, "ArmorModifier");
 

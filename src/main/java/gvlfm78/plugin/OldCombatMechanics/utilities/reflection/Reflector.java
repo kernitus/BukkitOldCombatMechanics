@@ -30,8 +30,6 @@ public class Reflector {
     private static Method SERVER_HANDLE;
     private static Method WORLD_HANDLE;
 
-    private static Object[] NO_ARGS = new Object[0];
-
     static {
 
         try {
