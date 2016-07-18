@@ -19,7 +19,6 @@ import org.bukkit.inventory.ItemStack;
  */
 public class ModuleOldToolDamage extends Module {
 
-    WeaponDamages WD = new WeaponDamages(plugin);
     private String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
 
     private static ModuleOldToolDamage INSTANCE;
@@ -53,7 +52,7 @@ public class ModuleOldToolDamage extends Module {
         double baseDamage = e.getDamage();
         double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage) + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
 
-        double divider = WD.getDamage(mat);
+        double divider = WeaponDamages.getDamage(mat);
         double newDamage = (baseDamage - enchantmentDamage) / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
         e.setDamage(newDamage);

@@ -12,20 +12,25 @@ import java.util.logging.Logger;
 public class Messenger {
 
     public static boolean DEBUG_ENABLED = false;
+    public static OCMMain plugin;
 
-    public static void info(String msg, OCMMain plugin) {
+    public static void Initialise(OCMMain plugin) {
+        Messenger.plugin = plugin;
+    }
+
+    public static void info(String msg) {
 
         plugin.getLogger().info(msg);
 
     }
 
-    public static void err(String msg, OCMMain plugin) {
+    public static void err(String msg) {
 
         plugin.getLogger().warning(msg);
 
     }
 
-    public static void severe(String msg, OCMMain plugin) {
+    public static void severe(String msg) {
 
         Logger logger = plugin.getLogger();
 
@@ -48,7 +53,7 @@ public class Messenger {
 
     }
 
-    public static void debug(String msg, OCMMain plugin) {
+    public static void debug(String msg) {
 
         if (!DEBUG_ENABLED) {
             return;

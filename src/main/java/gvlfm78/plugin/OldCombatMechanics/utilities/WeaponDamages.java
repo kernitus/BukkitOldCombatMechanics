@@ -12,14 +12,10 @@ import java.util.HashMap;
  */
 public class WeaponDamages {
 
-    private static HashMap<String, Double> damages = new HashMap<String, Double>();
+    private static HashMap<String, Double> damages;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
-    
-    public WeaponDamages(OCMMain instance) {
-		WeaponDamages.plugin = instance;
-	}
 
     public static void Initialise(OCMMain plugin) {
 
@@ -34,7 +30,12 @@ public class WeaponDamages {
 
         ConfigurationSection section = config.getConfigurationSection("old-tool-damage.damages");
 
+        damages = new HashMap<String, Double>();
+
         for (String key : section.getKeys(false)) {
+
+            double val = section.getDouble(key);
+            Messenger.debug("[WeaponDamages] Loading damage '" + val + "' for type '" + key + "'");
 
             damages.put(key, section.getDouble(key));
 
@@ -43,7 +44,7 @@ public class WeaponDamages {
     }
 
 
-    public double getDamage(Material mat) {
+    public static double getDamage(Material mat) {
 
         if (!damages.containsKey(mat.name())) {
             return -1;

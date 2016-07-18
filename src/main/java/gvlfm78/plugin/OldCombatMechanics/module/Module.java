@@ -52,7 +52,7 @@ public class Module implements Listener {
 
     protected void debug(String text) {
 
-        Messenger.debug("[DEBUG][" + moduleName + "] " + text, plugin);
+        Messenger.debug("[DEBUG][" + moduleName + "] " + text);
 
     }
 

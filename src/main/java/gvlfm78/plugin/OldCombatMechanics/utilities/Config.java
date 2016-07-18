@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class Config {
 
-    public static final int CONFIG_VERSION = 5;
+    public static final int CONFIG_VERSION = 6;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
@@ -61,8 +61,11 @@ public class Config {
 
     private static void load() {
 
-        WeaponDamages.Initialise(plugin); //Reload weapon damages from config
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+
+        WeaponDamages.Initialise(plugin); //Reload weapon damages from config
+        ArmourValues.Initialise(plugin); //Reload armour values from config
+
         ModuleLoader.ToggleModules();
 
     }

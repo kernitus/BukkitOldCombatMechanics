@@ -24,12 +24,13 @@ public class ModuleOldArmourStrength extends Module {
     @EventHandler
     public void onArmourEquip(ArmourEquipEvent e) {
 
-        debug("Test999", e.getPlayer());
+        debug("OnArmourEquip was called", e.getPlayer());
         ItemStack newPiece = e.getNewArmourPiece();
 
         if (newPiece != null && newPiece.getType() != Material.AIR) {
+
             Player p = e.getPlayer();
-            debug("Test123", p);
+            debug("Attempting to apply armour value to new armour piece", p);
 
             e.setNewArmourPiece(apply(newPiece));
 
@@ -55,13 +56,12 @@ public class ModuleOldArmourStrength extends Module {
         
         FileConfiguration config = plugin.getConfig();
         Double toughness = config.getDouble("old-armour-strength.toughness");
-        
-        ArmourValues av = new ArmourValues(plugin);
-        double strength = av.getValue(is.getType());
+
+        double strength = ArmourValues.getValue(is.getType());
         
         Attributes attributes = new Attributes(is);
 
-        attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
+        attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
         attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
 
         ItemData.mark(is, "ArmorModifier");

@@ -44,9 +44,7 @@ public class ModuleLoader {
                     enabledModules.put(module, module.isEnabled());
                     SetState(module, module.isEnabled());
 
-                }
-
-                else if (module.isEnabled() != enabledModules.get(module)) {
+                } else if (module.isEnabled() != enabledModules.get(module)) {
 
                     enabledModules.put(module, module.isEnabled());
                     SetState(module, module.isEnabled());
@@ -64,12 +62,13 @@ public class ModuleLoader {
         if (state) {
 
             plugin.getServer().getPluginManager().registerEvents(module, plugin);
-            Messenger.debug("Enabled "+module.getClass().getSimpleName(), plugin);
+            Messenger.debug("Enabled " + module.getClass().getSimpleName());
 
         } else {
 
             HandlerList.unregisterAll(module);
-            Messenger.debug("Disabled "+module.getClass().getSimpleName(), plugin);
+            Messenger.debug("Disabled " + module.getClass().getSimpleName());
+            
         }
 
     }
