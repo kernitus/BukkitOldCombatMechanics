@@ -12,14 +12,10 @@ import java.util.HashMap;
  */
 public class ArmourValues {
 
-    private static HashMap<String, Double> values = new HashMap<String, Double>();
+    private static HashMap<String, Double> values;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
-
-    public ArmourValues(OCMMain instance) {
-		ArmourValues.plugin = instance;
-	}
 
     public static void Initialise(OCMMain plugin) {
 
@@ -34,7 +30,12 @@ public class ArmourValues {
 
         ConfigurationSection section = config.getConfigurationSection("old-armour-strength.strength");
 
+        values = new HashMap<String, Double>();
+
         for (String key : section.getKeys(false)) {
+
+            double val = section.getDouble(key);
+            Messenger.debug("[ArmourValues] Loading value '" + val + "' for type '" + key + "'");
 
             values.put(key, section.getDouble(key));
 
@@ -43,7 +44,7 @@ public class ArmourValues {
     }
 
 
-    public double getValue(Material mat) {
+    public static double getValue(Material mat) {
 
         if (!values.containsKey(mat.name())) {
             return -1;
