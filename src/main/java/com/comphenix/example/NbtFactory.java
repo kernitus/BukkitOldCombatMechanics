@@ -528,7 +528,7 @@ public class NbtFactory {
         if (stack == null)
             throw new IllegalArgumentException("Stack cannot be NULL.");
         if (!get().CRAFT_STACK.isAssignableFrom(stack.getClass()))
-            throw new IllegalArgumentException("Stack must be a CraftItemStack.");
+            throw new IllegalArgumentException("Stack must be a CraftItemStack, found " + stack.getClass().getSimpleName());
         if (stack.getType() == Material.AIR)
             throw new IllegalArgumentException("ItemStacks representing air cannot store NMS information.");
     }
