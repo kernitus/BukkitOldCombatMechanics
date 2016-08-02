@@ -36,6 +36,7 @@ public class ArmourListener extends Module implements Listener {
 
     @EventHandler
     public final void onInventoryClick(final InventoryClickEvent e) {
+        System.out.println("e.getCursor().getClass().getName() = " + e.getCursor().getClass().getName());
         boolean shift = false, numberkey = false;
         if (e.isCancelled()) return;
         if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) {
@@ -43,13 +44,13 @@ public class ArmourListener extends Module implements Listener {
         }
         if (e.getClick().equals(ClickType.NUMBER_KEY)) {
             numberkey = true;
-        }    
-        
+        }
+
         if (!(e.getSlotType() == SlotType.ARMOR || e.getSlotType() == SlotType.QUICKBAR) && !e.getInventory().getType().equals(InventoryType.CRAFTING))
             return;
 
         if (!(e.getWhoClicked() instanceof Player)) return;
-        if (e.getCurrentItem() == null) return;
+        if (e.getCurrentItem() == null && e.getCursor() == null) return;
         ArmourType newArmourType = ArmourType.matchType(shift ? e.getCurrentItem() : e.getCursor());
         if (!shift && newArmourType != null && e.getRawSlot() != newArmourType.getSlot()) {
             // Used for drag and drop checking to make sure you aren't trying to place a helmet in the boots place.
@@ -96,7 +97,7 @@ public class ArmourListener extends Module implements Listener {
             if (newArmourType != null && e.getRawSlot() == newArmourType.getSlot()) {
                 EquipMethod method = EquipMethod.DRAG;
                 if (e.getAction().equals(InventoryAction.HOTBAR_SWAP) || numberkey) method = EquipMethod.HOTBAR_SWAP;
-                
+
                 ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent((Player) e.getWhoClicked(), method, newArmourType, oldArmourPiece, newArmourPiece);
                 Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
                 if (armourEquipEvent.isCancelled()) {

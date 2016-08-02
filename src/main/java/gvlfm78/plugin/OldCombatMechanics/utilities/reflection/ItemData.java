@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities.reflection;
 
 import com.comphenix.example.NbtFactory;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -22,6 +23,9 @@ public class ItemData {
 
     public static boolean hasMark(ItemStack is, String marker) {
 
+        if (is == null || is.getType() == Material.AIR){
+            return false;
+        }
         return NbtFactory.fromItemTag(is).get("[OCM]" + marker) != null;
 
     }
