@@ -7,11 +7,14 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -26,140 +29,169 @@ import kernitus.plugin.OldCombatMechanics.utilities.ItemUtils;
  */
 public class ModuleSwordBlocking extends Module {
 
-    private static ModuleSwordBlocking INSTANCE;
+	private static ModuleSwordBlocking INSTANCE;
 
-    private static final ItemStack SHIELD = ItemUtils.makeItem("shield, named &0, with enchant durability 10 & silk touch 10");
+	private static final ItemStack SHIELD = ItemUtils.makeItem("shield");
 
-    private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
+	private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
 
-    public ModuleSwordBlocking(OCMMain plugin) {
-        super(plugin, "sword-blocking");
-        INSTANCE = this;
-    }
+	public ModuleSwordBlocking(OCMMain plugin) {
+		super(plugin, "sword-blocking");
+		INSTANCE = this;
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onRightClick(PlayerInteractEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onRightClick(PlayerInteractEvent e) {
 
-        if (!e.getAction().toString().startsWith("RIGHT_CLICK")) {
-            return;
-        }
+		if (!e.getAction().toString().startsWith("RIGHT_CLICK")) {
+			return;
+		}
 
-        if (e.getItem() == null) {
-            return;
-        }
+		if (e.getItem() == null) {
+			return;
+		}
 
-        Player p = e.getPlayer();
-        World world = p.getWorld();
+		Player p = e.getPlayer();
+		World world = p.getWorld();
 
-        if (!isEnabled(world)) {
-            return;
-        }
+		if (!isEnabled(world)) {
+			return;
+		}
 
-        UUID id = p.getUniqueId();
+		UUID id = p.getUniqueId();
 
-        if (storedOffhandItems.containsKey(id)) {
-            return;
-        }
+		if (storedOffhandItems.containsKey(id)) {
+			return;
+		}
 
-        ItemStack item = e.getItem();
+		ItemStack item = e.getItem();
 
-        if (!isHolding(item.getType(), "sword") || hasShield(p)) {
-            return;
-        }
+		if (!isHolding(item.getType(), "sword") || hasShield(p)) {
+			return;
+		}
 
-        PlayerInventory inv = p.getInventory();
+		PlayerInventory inv = p.getInventory();
 
-        storedOffhandItems.put(id, inv.getItemInOffHand());
+		storedOffhandItems.put(id, inv.getItemInOffHand());
 
-        inv.setItemInOffHand(SHIELD);
+		inv.setItemInOffHand(SHIELD);
 
-        scheduleRestore(p);
+		scheduleRestore(p);
 
-    }
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e) {
-        restore(e.getPlayer());
-    }
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onWorldChange(PlayerChangedWorldEvent e) {
+		restore(e.getPlayer());
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogout(PlayerQuitEvent e) {
-        restore(e.getPlayer());
-    }
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerLogout(PlayerQuitEvent e) {
+		restore(e.getPlayer());
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerDeath(PlayerDeathEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerDeath(PlayerDeathEvent e) {
 
-        if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) return;
+		if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) return;
 
-        Player p = e.getEntity();
-        UUID id = p.getUniqueId();
+		Player p = e.getEntity();
+		UUID id = p.getUniqueId();
 
-        e.getDrops().remove(SHIELD);
-        e.getDrops().add(storedOffhandItems.get(id));
+		e.getDrops().remove(SHIELD);
+		e.getDrops().add(storedOffhandItems.get(id));
 
-        storedOffhandItems.remove(id);
+		storedOffhandItems.remove(id);
 
-    }
-    
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
-    	Player p = e.getPlayer();
-    	if (storedOffhandItems.containsKey(p.getUniqueId()))
-    		e.setCancelled(true);
+	}
 
-    }
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
+		Player p = e.getPlayer();
+		if (storedOffhandItems.containsKey(p.getUniqueId()))
+			e.setCancelled(true);
 
-    private void scheduleRestore(final Player p) {
+	}
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                restore(p);
-            }
-        }, 60);
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onInventoryClick(InventoryClickEvent e){
 
-    }
+		if(e.getWhoClicked() instanceof Player){
+			Player p = (Player) e.getWhoClicked();
 
-    private void restore(Player p) {
+			if (storedOffhandItems.containsKey(p.getUniqueId())){
+				if(e.getCursor().getType().equals(Material.SHIELD) || e.getCurrentItem().getType().equals(Material.SHIELD)){
+					e.setCancelled(true);
+					restore(p);
+				}
+			}
+		}
+	}
 
-        UUID id = p.getUniqueId();
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onItemDrop(PlayerDropItemEvent e){
+		Item is = e.getItemDrop();
 
-        if (!storedOffhandItems.containsKey(id)) {
-            return;
-        }
+			Player p = e.getPlayer();
 
-        p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
-        storedOffhandItems.remove(id);
+			if (storedOffhandItems.containsKey(p.getUniqueId())){
+				if(is.getType().equals(Material.SHIELD)){
+					e.setCancelled(true);
+					restore(p);
+				}
+		}
+	}
 
-    }
+	private void scheduleRestore(final Player p) {
 
-    public static void RestoreAll() {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+			public void run() {
+				restore(p);
+			}
+		}, 60);
 
-        INSTANCE.restoreAll();
+	}
 
-    }
+	private void restore(Player p) {
 
-    public void restoreAll() {
+		UUID id = p.getUniqueId();
 
-        for (Map.Entry<UUID, ItemStack> entry : storedOffhandItems.entrySet()) {
+		if (!storedOffhandItems.containsKey(id)) {
+			return;
+		}
 
-            UUID id = entry.getKey();
-            Player p = Bukkit.getPlayer(id);
+		p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+		storedOffhandItems.remove(id);
 
-            p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+	}
 
-            storedOffhandItems.remove(id);
+	public static void RestoreAll() {
 
-        }
+		INSTANCE.restoreAll();
 
-    }
+	}
 
-    private boolean hasShield(Player p) {
-        return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
-    }
+	public void restoreAll() {
 
-    private boolean isHolding(Material mat, String type) {
-        return mat.toString().endsWith("_" + type.toUpperCase());
-    }
+		for (Map.Entry<UUID, ItemStack> entry : storedOffhandItems.entrySet()) {
+
+			UUID id = entry.getKey();
+			Player p = Bukkit.getPlayer(id);
+
+			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+
+			storedOffhandItems.remove(id);
+
+		}
+
+	}
+
+	private boolean hasShield(Player p) {
+		return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
+	}
+
+	private boolean isHolding(Material mat, String type) {
+		return mat.toString().endsWith("_" + type.toUpperCase());
+	}
 
 }
