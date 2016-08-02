@@ -36,7 +36,6 @@ public class ArmourListener extends Module implements Listener {
 
     @EventHandler
     public final void onInventoryClick(final InventoryClickEvent e) {
-        System.out.println("e.getCursor().getClass().getName() = " + e.getCursor().getClass().getName());
         boolean shift = false, numberkey = false;
         if (e.isCancelled()) return;
         if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) {
@@ -56,6 +55,7 @@ public class ArmourListener extends Module implements Listener {
             // Used for drag and drop checking to make sure you aren't trying to place a helmet in the boots place.
             return;
         }
+
         if (shift) {
             newArmourType = ArmourType.matchType(e.getCurrentItem());
             if (newArmourType != null) {
@@ -72,15 +72,25 @@ public class ArmourListener extends Module implements Listener {
                 }
             }
         } else {
+
             ItemStack newArmourPiece = e.getCursor();
             ItemStack oldArmourPiece = e.getCurrentItem();
             if (numberkey) {
-                if (e.getInventory().getType().equals(InventoryType.PLAYER)) {// Prevents s**t in the 2by2 crafting
+
                     // e.getInventory() == The players inventory
                     // e.getHotBarButton() == key people are pressing to equip or unequip the item to or from.
                     // e.getRawSlot() == The slot the item is going to.
                     // e.getSlot() == Armour slot, can't use e.getRawSlot() as that gives a hotbar slot ;-;
+  	
                     ItemStack hotbarItem = e.getInventory().getItem(e.getHotbarButton());
+                    
+                    //All of the following #getItem() return null
+                   /* System.out.println("hotbar: "+e.getInventory().getItem(e.getHotbarButton()));
+                    System.out.println("raw: "+e.getInventory().getItem(e.getRawSlot()));
+                    System.out.println("slot: "+e.getInventory().getItem(e.getSlot()));
+                    System.out.println("current: "+e.getCurrentItem());
+                    System.out.println("current: "+e.getCursor());*/
+                    
                     if (hotbarItem != null) {// Equipping
                         newArmourType = ArmourType.matchType(hotbarItem);
                         newArmourPiece = hotbarItem;
@@ -88,7 +98,6 @@ public class ArmourListener extends Module implements Listener {
                     } else {// Unequipping
                         newArmourType = ArmourType.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR ? e.getCurrentItem() : e.getCursor());
                     }
-                }
             } else {
                 // e.getCurrentItem() == Unequip
                 // e.getCursor() == Equip
