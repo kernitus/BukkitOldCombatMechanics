@@ -1,6 +1,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
+import java.util.Arrays;
+import java.util.List;
+
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -13,8 +15,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.Arrays;
-import java.util.List;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 
 /**
  * Created by Rayzr522 on 6/25/16.
@@ -71,13 +72,12 @@ public class ModuleGoldenApple extends Module {
 
 		e.setCancelled(true);
 
+		ItemStack originalItem = e.getItem();
+
 		ItemStack item = e.getItem();
 
 		Player p = e.getPlayer();
-
 		PlayerInventory inv = p.getInventory();
-
-		boolean mainHand = item.equals(inv.getItemInMainHand());
 
 		int foodLevel = p.getFoodLevel();
 		foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
@@ -103,16 +103,26 @@ public class ModuleGoldenApple extends Module {
 			e.getPlayer().addPotionEffects(goldenAppleEffects);
 
 		}
-		if (item.getAmount() <= 0) {
+		if (item.getAmount() <= 0)
 			item = null;
-		}
 
-		if (mainHand) {
+		ItemStack mainHand = inv.getItemInMainHand();
+		ItemStack offHand = inv.getItemInOffHand();
+
+		if(mainHand.equals(originalItem))
 			inv.setItemInMainHand(item);
-		} else {
+
+		else if(offHand.equals(originalItem))
 			inv.setItemInOffHand(item);
+
+		else{//The bug occurs here, so we must check which hand has the apples
+			// A player can't eat food in the offhand if there is any in the main hand
+			// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
+			if(mainHand.getType().equals(Material.GOLDEN_APPLE))
+				inv.setItemInMainHand(item);
+
+			else
+				p.sendMessage("4: "+originalItem.getAmount()+" "+item.getAmount());
 		}
-
 	}
-
 }
