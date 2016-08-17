@@ -11,35 +11,35 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+
 public class BukkitUpdateChecker {
 
-	private OCMMain plugin;
 	private URL url;
+	private OCMMain plugin;
 	private String version;
 	private String link;
 
-	public BukkitUpdateChecker(OCMMain instance){
-		this.plugin = instance;
+	public BukkitUpdateChecker(OCMMain plugin){
+		this.plugin = plugin;
 	}
 
 	public boolean updateNeeded(){
-		if(plugin.getConfig().getBoolean("update-checker")){
-			try {
-				url = new URL("http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/files.rss");
-				InputStream input = this.url.openConnection().getInputStream();
-				Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(input);
+		try {
+			url = new URL("https://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/files.rss");
+			InputStream input = this.url.openConnection().getInputStream();
+			Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(input);
 
-				Node latestFile = document.getElementsByTagName("item").item(0);
-				NodeList children = latestFile.getChildNodes();
+			Node latestFile = document.getElementsByTagName("item").item(0);
+			NodeList children = latestFile.getChildNodes();
 
-				this.version = children.item(1).getTextContent().replaceAll("[a-zA-Z ]", "");
-				this.link = children.item(3).getTextContent();
-				if(versionCompare(plugin.getDescription().getVersion(),this.version)<0){
-					return true;
-				}
-			} catch (Exception uhe){
-				plugin.getServer().getLogger().severe("OCM Could not check for updates");
+			this.version = children.item(1).getTextContent().replaceAll("[a-zA-Z ]", "");
+			this.link = children.item(3).getTextContent();
+
+			if(versionCompare(plugin.getDescription().getVersion(),this.version)<0){
+				return true;
 			}
+		} catch (Exception uhe){
+			plugin.getServer().getLogger().severe("OCM Could not check for updates error: "+uhe.getMessage()+uhe.getCause());
 		}
 		return false;
 	}
@@ -69,11 +69,14 @@ public class BukkitUpdateChecker {
 		String[] updateMessages = new String[2];
 
 		FileConfiguration config = plugin.getConfig();
-		if (config.getBoolean("update-checker")) {
-				if (updateNeeded()) {
-					updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + getVersion() + " is available!";
-					updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + getLink();
-				}
+
+		if (config.getBoolean("update-checker.enabled")) {
+			if (updateNeeded()) {
+				System.out.println("An updeyt is aktuali nedded");
+				updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + getVersion() + " is available!";
+				updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + getLink();
+			}
+			System.out.println("Oy vey");
 		}
 		return updateMessages;
 	}

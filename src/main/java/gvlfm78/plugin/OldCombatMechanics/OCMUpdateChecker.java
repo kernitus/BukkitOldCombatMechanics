@@ -12,7 +12,7 @@ public class OCMUpdateChecker {
 	private OCMMain plugin;
 	private final BukkitUpdateChecker BUC;
 	private final SpigotUpdateChecker SUC;
-
+	
 	public OCMUpdateChecker(OCMMain plugin){
 		this.plugin = plugin;
 		BUC = new BukkitUpdateChecker(plugin);
@@ -29,8 +29,10 @@ public class OCMUpdateChecker {
 				updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + "https://www.spigotmc.org/resources/oldcombatmechanics.19510/updates";
 			}
 		}
-		else//Get messages from bukkit update checker
+		else{//Get messages from bukkit update checker
 			updateMessages = BUC.updateMessages();
+			System.out.println("rglkieruigr: "+updateMessages[0]+" "+updateMessages[1]);
+		}
 		return updateMessages;
 	}
 

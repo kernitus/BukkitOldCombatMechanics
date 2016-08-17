@@ -65,7 +65,8 @@ public class ModuleFishingKnockback extends Module {
 
     }
 
-    private EntityDamageByEntityEvent makeEvent(Player rodder, Player player) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	private EntityDamageByEntityEvent makeEvent(Player rodder, Player player) {
 
         return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Double.valueOf(0.2))), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(Double.valueOf(0.2)))));
 
