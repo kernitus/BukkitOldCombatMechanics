@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>OldCombatMechanics</name>
     <description>Removes weapon cooldown in 1.9 and above</description>
     <repositories>

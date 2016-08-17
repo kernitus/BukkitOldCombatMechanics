@@ -17,10 +17,6 @@ public class OCMListener extends Module implements Listener {
 		this.plugin = plugin;
 	}
 
-//	public OCMListener(OCMMain instance) {
-//		this.plugin = instance;
-//	}
-
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {
 		final Player p = e.getPlayer();
