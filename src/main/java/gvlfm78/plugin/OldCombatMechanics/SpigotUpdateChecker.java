@@ -10,14 +10,11 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
 public class SpigotUpdateChecker {
 
 	//Taken from https://www.spigotmc.org/threads/resource-updater-for-your-plugins-v1-1.37315/page-2#post-1272537
 	//and modified by gvlfm78 to better fit with this plugin
 
-	private JavaPlugin plugin;
 	private final String API_KEY = "98BE0FE67F88AB82B4C197FAF1DC3B69206EFDCC4D3B80FC83A00037510B99B4";
 	private final String REQUEST_METHOD = "POST";
 	private String RESOURCE_ID = "";
@@ -36,11 +33,9 @@ public class SpigotUpdateChecker {
 		NO_UPDATE, FAIL_SPIGOT, FAIL_NOVERSION, BAD_RESOURCEID, UPDATE_AVAILABLE
 	}
 
-	public SpigotUpdateChecker(JavaPlugin plugin, Integer resourceId)
-	{
+	public SpigotUpdateChecker(OCMMain plugin, Integer resourceId){
 		RESOURCE_ID = resourceId + "";
-		this.plugin = plugin;
-		oldVersion = this.plugin.getDescription().getVersion();
+		oldVersion = plugin.getDescription().getVersion();
 
 		try{
 			connection = (HttpURLConnection) new URL(HOST + QUERY).openConnection();

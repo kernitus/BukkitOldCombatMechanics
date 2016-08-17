@@ -8,8 +8,8 @@
 #############################################################################
 
 # This is to toggle the update checker
-update-checker:
-  enabled: true
+update-checker: 
+    enabled: true
 
 # To use the per-world feature you specifiy a list of the worlds in the []
 # For example: 
