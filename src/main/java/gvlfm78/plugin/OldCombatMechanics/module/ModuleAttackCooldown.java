@@ -1,7 +1,5 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -11,68 +9,70 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+
 /**
  * Created by Rayzr522 on 6/25/16.
  */
 public class ModuleAttackCooldown extends Module {
 
-    public ModuleAttackCooldown(OCMMain plugin) {
-        super(plugin, "disable-attack-cooldown");
-    }
+	public ModuleAttackCooldown(OCMMain plugin) {
+		super(plugin, "disable-attack-cooldown");
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogin(PlayerJoinEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerLogin(PlayerJoinEvent e) {
 
-        Player p = e.getPlayer();
-        World world = p.getWorld();
+		Player p = e.getPlayer();
+		World world = p.getWorld();
 
-        double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+		double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
-        if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
-            AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-            double baseValue = attribute.getBaseValue();
-            if (baseValue != GAS) {
-                attribute.setBaseValue(GAS);
-                p.saveData();
-            }
-        } else {// Re-enabling cooldown
-            AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-            double baseValue = attribute.getBaseValue();
-            if (baseValue != 4) {
-                attribute.setBaseValue(4);
-                p.saveData();
-            }
-        }
+		if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
+			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			double baseValue = attribute.getBaseValue();
+			if (baseValue != GAS) {
+				attribute.setBaseValue(GAS);
+				p.saveData();
+			}
+		} else {// Re-enabling cooldown
+			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			double baseValue = attribute.getBaseValue();
+			if (baseValue != 4) {
+				attribute.setBaseValue(4);
+				p.saveData();
+			}
+		}
+	}
 
-    }
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onWorldChange(PlayerChangedWorldEvent e) {
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e) {
+		Player player = e.getPlayer();
+		World world = player.getWorld();
 
-        Player player = e.getPlayer();
-        World world = player.getWorld();
+		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+		double baseValue = attribute.getBaseValue();
 
-        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-        double baseValue = attribute.getBaseValue();
+		if (isEnabled(world)) {//Disabling cooldown
 
-        if (isEnabled(world)) {//Disabling cooldown
+			double GAS = module().getDouble("general-attack-speed");
 
-            double GAS = module().getDouble("general-attack-speed");
+			if (baseValue != GAS) {
+				attribute.setBaseValue(GAS);
+				player.saveData();
+			}
 
-            if (baseValue != GAS) {
-                attribute.setBaseValue(GAS);
-                player.saveData();
-            }
+		} else {//Re-enabling cooldown
 
-        } else {//Re-enabling cooldown
+			if (baseValue != 4) {
+				attribute.setBaseValue(4);
+				player.saveData();
+			}
 
-            if (baseValue != 4) {
-                attribute.setBaseValue(4);
-                player.saveData();
-            }
+		}
 
-        }
-
-    }
+	}
 
 }
