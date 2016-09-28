@@ -31,7 +31,6 @@ public class OCMUpdateChecker {
 		}
 		else{//Get messages from bukkit update checker
 			updateMessages = BUC.updateMessages();
-			System.out.println("rglkieruigr: "+updateMessages[0]+" "+updateMessages[1]);
 		}
 		return updateMessages;
 	}
