@@ -72,11 +72,9 @@ public class BukkitUpdateChecker {
 
 		if (config.getBoolean("update-checker.enabled")) {
 			if (updateNeeded()) {
-				System.out.println("An updeyt is aktuali nedded");
 				updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + getVersion() + " is available!";
 				updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + getLink();
 			}
-			System.out.println("Oy vey");
 		}
 		return updateMessages;
 	}
