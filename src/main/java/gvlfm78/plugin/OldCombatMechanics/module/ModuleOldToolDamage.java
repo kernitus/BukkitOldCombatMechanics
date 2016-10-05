@@ -53,11 +53,13 @@ public class ModuleOldToolDamage extends Module {
         double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage) + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
 
         double divider = WeaponDamages.getDamage(mat);
+        divider = divider > 0 ? divider : 1;
         double newDamage = (baseDamage - enchantmentDamage) / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
+        newDamage = newDamage < 0 ? 0 : newDamage;
         e.setDamage(newDamage);
         if (Config.debugEnabled())
-            p.sendMessage("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage + " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage());
+            p.sendMessage("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage + " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== new damage: "+newDamage);
     }
 
     public static void onAttack(EntityDamageByEntityEvent e) {

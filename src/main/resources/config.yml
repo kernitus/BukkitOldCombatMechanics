@@ -13,7 +13,7 @@ update-checker:
 
 # To use the per-world feature you specifiy a list of the worlds in the []
 # For example: 
-# worlds: [world,survival,crative,skywars]
+# worlds: [world,survival,creative,skywars]
 # Another example (for 1 world): 
 # worlds: [bestworld]
 
