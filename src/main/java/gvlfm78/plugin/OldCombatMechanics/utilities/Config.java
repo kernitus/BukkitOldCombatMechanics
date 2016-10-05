@@ -3,7 +3,6 @@ package kernitus.plugin.OldCombatMechanics.utilities;
 import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -63,28 +62,32 @@ public class Config {
 		plugin.restartSweepTask(); //Restart sword sweep check
 		load();
 
-		OfflinePlayer[] pleyas = Bukkit.getOfflinePlayers();
-		Player playa = pleyas[1].getPlayer();
-		//World world = playa.getWorld();
+		for(World world : Bukkit.getWorlds()){
 
-		double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+			List<Player> players = world.getPlayers();
 
-		//if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
-			AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-			double baseValue = attribute.getBaseValue();
-			if (baseValue != GAS) {
-				attribute.setBaseValue(GAS);
-				playa.saveData();
-		/*	}
-		} else {// Re-enabling cooldown
-			AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-			double baseValue = attribute.getBaseValue();
-			if (baseValue != 4) {
-				attribute.setBaseValue(4);
-				playa.saveData();
-			}*/
+			double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+
+			if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
+				for(Player playa : players){
+					AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+					double baseValue = attribute.getBaseValue();
+					if (baseValue != GAS) {
+						attribute.setBaseValue(GAS);
+						playa.saveData();
+					}
+				}
+			} else {// Re-enabling cooldown
+				for(Player playa : players){
+					AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+					double baseValue = attribute.getBaseValue();
+					if (baseValue != 4) {
+						attribute.setBaseValue(4);
+						playa.saveData();
+					}
+				}
+			}
 		}
-
 	}
 
 	private static void load() {
