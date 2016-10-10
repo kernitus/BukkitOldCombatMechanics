@@ -33,8 +33,15 @@ public class ModuleGoldenApple extends Module {
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onPrepareItemCraft(PrepareItemCraftEvent e) {
-
+	    
+	        if (e.getInventory() == null) {
+	            return;
+	        }
 		ItemStack item = e.getInventory().getResult();
+		if (item == null) {
+		    // This should never ever ever ever run. If it does then you probably screwed something up.
+		    return;
+		}
 
 		if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
 
