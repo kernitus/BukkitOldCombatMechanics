@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
@@ -43,6 +44,17 @@ public class ModuleAttackCooldown extends Module {
 				attribute.setBaseValue(4);
 				p.saveData();
 			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerQuit(PlayerQuitEvent e){
+		Player player = e.getPlayer();
+		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+		double baseValue = attribute.getBaseValue();
+		if (baseValue != 4){ //If basevalues is not 1.9 default, set it back
+			attribute.setBaseValue( 4 );
+			player.saveData();
 		}
 	}
 
