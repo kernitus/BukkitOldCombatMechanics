@@ -18,7 +18,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
  */
 public class Config {
 
-	public static final int CONFIG_VERSION = 6;
+	public static final int CONFIG_VERSION = 7;
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
