@@ -1,11 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -14,6 +10,10 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
+
+import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 
 public class OCMCommandHandler implements CommandExecutor {
 
