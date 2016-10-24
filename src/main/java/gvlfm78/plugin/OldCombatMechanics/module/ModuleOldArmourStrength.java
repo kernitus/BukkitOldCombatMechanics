@@ -3,8 +3,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent;
@@ -36,7 +34,8 @@ public class ModuleOldArmourStrength extends Module {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	//This won't actually work because armour pieces won't necessarily be worn, they could be in chets etc.
+	/*@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerQuit(PlayerQuitEvent e){
 		Player player = e.getPlayer();
 		debug("OnPlayerQuit armour event was called", player);
@@ -54,7 +53,7 @@ public class ModuleOldArmourStrength extends Module {
 			}
 			player.getInventory().setArmorContents(armours);
 		}
-	}
+	}*/
 
 	private ItemStack apply(ItemStack is){
 		return apply(is, plugin.getConfig().getDouble("old-armour-strength.toughness"));
