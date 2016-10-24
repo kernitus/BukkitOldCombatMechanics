@@ -5,6 +5,7 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -16,79 +17,104 @@ import org.bukkit.plugin.PluginDescriptionFile;
 
 public class OCMCommandHandler implements CommandExecutor {
 
-    private OCMMain plugin;
+	private OCMMain plugin;
 
-    public OCMCommandHandler(OCMMain instance) {
-        this.plugin = instance;
-    }
+	public OCMCommandHandler(OCMMain instance) {
+		this.plugin = instance;
+	}
 
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
-        // Using cmd.getLabel() will always return the main label,
-        // even if you're using an alias.
-        if (cmd.getLabel().equalsIgnoreCase("OldCombatMechanics")) {
+		// Using cmd.getLabel() will always return the main label,
+		// even if you're using an alias.
+		if (cmd.getLabel().equalsIgnoreCase("OldCombatMechanics")) {
 
-            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {// Reloads config
+			if (args.length > 0 && args[0].equalsIgnoreCase("reload") && sender.hasPermission("oldcombatmechanics.reload")) {// Reloads config
 
-                Config.reload();
+				Config.reload();
 
-                for (World world : Bukkit.getServer().getWorlds()) {
+				for (World world : Bukkit.getServer().getWorlds()) {
 
-                    boolean plugin_active = Config.moduleEnabled("disable-attack-cooldown", world);
+					boolean plugin_active = Config.moduleEnabled("disable-attack-cooldown", world);
 
-                    for (Player player : world.getPlayers()) {
+					for (Player player : world.getPlayers()) {
 
-                        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-                        double baseValue = attribute.getBaseValue();
+						AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+						double baseValue = attribute.getBaseValue();
 
-                        if (plugin_active) { // Setting to no cooldown
+						if (plugin_active) { // Setting to no cooldown
 
-                            Messenger.debug("Enabling cooldown for " + player.getName());
-                            double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
-                            if (baseValue != GAS) {
-                                attribute.setBaseValue(GAS);
-                                player.saveData();
-                            }
-                        } else { // Re-enabling cooldown
-                            Messenger.debug("Disabling cooldown for " + player.getName());
-                            if (baseValue != 4) {
-                                attribute.setBaseValue(4);
-                                player.saveData();
-                            }
+							Messenger.debug("Enabling cooldown for " + player.getName());
+							double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+							if (baseValue != GAS) {
+								attribute.setBaseValue(GAS);
+								player.saveData();
+							}
+						} else { // Re-enabling cooldown
+							Messenger.debug("Disabling cooldown for " + player.getName());
+							if (baseValue != 4) {
+								attribute.setBaseValue(4);
+								player.saveData();
+							}
 
-                        }
+						}
 
-                    }
+					}
 
-                }
+				}
 
-                Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
+				Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
 
-            } else {// Tells user about available commands
+			} else if( (args.length > 0 && args[0].equalsIgnoreCase("toggle")) && plugin.getConfig().getBoolean("enableIndividualToggle")
+					&& sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player){
+				//Toggle their cooldown
+				Player p = (Player) sender;
+				World world = p.getWorld();
+				double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+				
+				boolean enabled = false;
 
-                OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
+				if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
+					AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+					double baseValue = attribute.getBaseValue();
+					if (baseValue != GAS) {
+						attribute.setBaseValue(GAS);
+						p.saveData();
+						enabled = true;
+					}
+				} else {// Re-enabling cooldown
+					AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+					double baseValue = attribute.getBaseValue();
+					if (baseValue != 4) {
+						attribute.setBaseValue(4);
+						p.saveData();
+					}
+				}
+				if(enabled)
+					Chatter.send(p, "&aAttack cooldown enabled");
+				else
+					Chatter.send(p, "&4Attack cooldown disabled");
 
-                PluginDescriptionFile pdf = plugin.getDescription();
+			} else { //Tell them about available commands
+				OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
 
-                Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
+				PluginDescriptionFile pdf = plugin.getDescription();
 
-//				sender.sendMessage(ChatColor.GOLD + "OldCombatMechanics by gvlfm78 and Rayzr522 version " + pdf.getVersion());
-//				sender.sendMessage(ChatColor.GREEN + "You can use " + ChatColor.ITALIC + "/ocm reload "
-//						+ ChatColor.RESET + ChatColor.GREEN + "to reload the config file");
+				Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
-                Chatter.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6" + pdf.getVersion());
-                Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
+				Chatter.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6" + pdf.getVersion());
+				Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
 
-                Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
+				Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
-                // Update check
-                updateChecker.sendUpdateMessages(sender);
-            }
+				// Update check
+				updateChecker.sendUpdateMessages(sender);
+			}
 
-        }
+		}
 
-        return false;
+		return false;
 
-    }
+	}
 
 }
