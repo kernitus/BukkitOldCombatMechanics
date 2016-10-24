@@ -12,7 +12,7 @@ update-checker:
     enabled: true
     
 # Enable the oldcombatmechanics.toggle permission
-# for players to /ocm toggle their cooldown
+# for players to individually /ocm toggle their cooldown
 enableIndividualToggle: false
 
 # To use the per-world feature you specify a list of the worlds in the []
@@ -44,13 +44,13 @@ disable-sword-sweep:
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
-  # NOTE: this will modify the damage, however on the tooltip of items it will still show the damage as it is in 1.9+
+  # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damagr
   enabled: true
   worlds: []
   # This will allow you to set the damage divider
   # The default values below are obtained by doing (1.8 value)/(1.9 value)
   # Only axes and shovel values changed between the versions, so all others here have a divider of 1
-  # We put them here anyway in case you wished to change them
+  # We put them here anyway in case you wished to change them.
   # The plugin subtracts the enchantment-added damage,
   # divides the damage done while holding the weapon by the following values,
   # and adds back on the enchantment-added damage.
@@ -87,7 +87,7 @@ old-tool-damage:
     DIAMOND_HOE: 1
 
 sword-blocking:
-  # This is to allow players block with swords again by getting a shield while they hold right click with a sword
+  # This is to allow players to block with swords again by getting a shield while they hold right click with a sword
   enabled: true
   worlds: []
     
