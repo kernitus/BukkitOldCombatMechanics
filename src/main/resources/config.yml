@@ -10,8 +10,12 @@
 # This is to toggle the update checker
 update-checker: 
     enabled: true
+    
+# Enable the oldcombatmechanics.toggle permission
+# for players to /ocm toggle their cooldown
+enableIndividualToggle: false
 
-# To use the per-world feature you specifiy a list of the worlds in the []
+# To use the per-world feature you specify a list of the worlds in the []
 # For example: 
 # worlds: [world,survival,creative,skywars]
 # Another example (for 1 world): 
@@ -155,4 +159,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 6
+config-version: 7
