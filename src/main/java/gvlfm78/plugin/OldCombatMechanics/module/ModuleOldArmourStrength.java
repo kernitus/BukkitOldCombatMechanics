@@ -55,11 +55,7 @@ public class ModuleOldArmourStrength extends Module {
 		}
 	}*/
 
-	private ItemStack apply(ItemStack is){
-		return apply(is, plugin.getConfig().getDouble("old-armour-strength.toughness"));
-	}
-
-	private ItemStack apply(ItemStack is, double toughness) {
+	private ItemStack apply(ItemStack is) {
 
 		if (ItemData.hasMark(is, "ArmorModifier"))
 			return is;
@@ -78,6 +74,8 @@ public class ModuleOldArmourStrength extends Module {
 		double strength = ArmourValues.getValue(is.getType());
 
 		Attributes attributes = new Attributes(is);
+
+		double toughness = plugin.getConfig().getDouble("old-armour-strength.toughness");
 
 		attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
 		attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());

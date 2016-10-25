@@ -77,10 +77,10 @@ public class OCMCommandHandler implements CommandExecutor {
 
 				if (baseValue == GAS) {// They're enabled, let's disable it
 					GAS = 4;
-					message = "&1[OCM] &4Attack cooldown disabled";
+					message = "&1[OCM] &aAttack cooldown enabled";
 				}
 				else
-					message = "&1[OCM] &aAttack cooldown enabled";
+					message = "&1[OCM] &4Attack cooldown disabled";
 
 				attribute.setBaseValue(GAS);
 				p.saveData();
