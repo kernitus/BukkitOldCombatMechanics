@@ -42,6 +42,10 @@ disable-sword-sweep:
   enabled: true
   worlds: []
   
+disable-shield-craft:
+  # Disable the carft of shield
+  enabled: true
+  
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damagr
