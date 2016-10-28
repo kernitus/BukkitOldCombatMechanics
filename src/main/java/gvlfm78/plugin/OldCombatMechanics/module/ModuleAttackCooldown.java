@@ -30,20 +30,15 @@ public class ModuleAttackCooldown extends Module {
 
 		double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
-		if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
-			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-			double baseValue = attribute.getBaseValue();
-			if (baseValue != GAS) {
-				attribute.setBaseValue(GAS);
-				p.saveData();
-			}
-		} else {// Re-enabling cooldown
-			AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-			double baseValue = attribute.getBaseValue();
-			if (baseValue != 4) {
-				attribute.setBaseValue(4);
-				p.saveData();
-			}
+		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+		double baseValue = attribute.getBaseValue();
+
+		if (!Config.moduleEnabled("disable-attack-cooldown", world))
+			GAS = 4; //If module is disabled, set attack speed to 1.9 default
+
+		if(baseValue!=GAS){
+			attribute.setBaseValue(GAS);
+			p.saveData();
 		}
 	}
 
@@ -52,39 +47,27 @@ public class ModuleAttackCooldown extends Module {
 		Player player = e.getPlayer();
 		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
-		if (baseValue != 4){ //If basevalues is not 1.9 default, set it back
-			attribute.setBaseValue( 4 );
+		if (baseValue != 4){ //If basevalue is not 1.9 default, set it back
+			attribute.setBaseValue(4);
 			player.saveData();
 		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onWorldChange(PlayerChangedWorldEvent e) {
-
 		Player player = e.getPlayer();
 		World world = player.getWorld();
 
-		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-		double baseValue = attribute.getBaseValue();
+		if (isEnabled(world)){
 
-		if (isEnabled(world)) {//Disabling cooldown
-
+			AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			double baseValue = attribute.getBaseValue();
 			double GAS = module().getDouble("general-attack-speed");
 
-			if (baseValue != GAS) {
+			if(baseValue!=GAS){
 				attribute.setBaseValue(GAS);
 				player.saveData();
 			}
-
-		} else {//Re-enabling cooldown
-
-			if (baseValue != 4) {
-				attribute.setBaseValue(4);
-				player.saveData();
-			}
-
 		}
-
 	}
-
 }

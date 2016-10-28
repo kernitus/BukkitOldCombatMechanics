@@ -105,6 +105,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.AddModule(new ModulePlayerRegen(this));
         ModuleLoader.AddModule(new ModuleSwordBlocking(this));
         ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
+        ModuleLoader.AddModule(new ModuleShieldCrafting(this));
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
