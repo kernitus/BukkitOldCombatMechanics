@@ -16,6 +16,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 /**
  * Created by Rayzr522 on 6/14/16.
  */
+
 public class Config {
 
 	public static final int CONFIG_VERSION = 7;
@@ -28,9 +29,8 @@ public class Config {
 		Config.plugin = plugin;
 		config = plugin.getConfig();
 
-		if (!checkConfigVersion()) {
+		if (!checkConfigVersion())
 			load();
-		}
 	}
 
 
@@ -44,7 +44,6 @@ public class Config {
 		}
 
 		return false;
-
 	}
 
 
@@ -68,23 +67,16 @@ public class Config {
 
 			double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
-			if (Config.moduleEnabled("disable-attack-cooldown", world)) {// Setting to no cooldown
-				for(Player playa : players){
-					AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-					double baseValue = attribute.getBaseValue();
-					if (baseValue != GAS) {
-						attribute.setBaseValue(GAS);
-						playa.saveData();
-					}
-				}
-			} else {// Re-enabling cooldown
-				for(Player playa : players){
-					AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-					double baseValue = attribute.getBaseValue();
-					if (baseValue != 4) {
-						attribute.setBaseValue(4);
-						playa.saveData();
-					}
+			for(Player playa : players){
+				AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+				double baseValue = attribute.getBaseValue();
+
+				if (!Config.moduleEnabled("disable-attack-cooldown", world))
+					GAS = 4; //If module is disabled, set attack speed to 1.9 default
+
+				if(baseValue!=GAS){
+					attribute.setBaseValue(GAS);
+					playa.saveData();
 				}
 			}
 		}
@@ -112,18 +104,13 @@ public class Config {
 
 		if (section.getBoolean("enabled")) {
 
-			if (world != null && section.getList("worlds").size() > 0 && !section.getList("worlds").contains(world.getName())) {
-
+			if (world != null && section.getList("worlds").size() > 0 && !section.getList("worlds").contains(world.getName()))
 				return false;
 
-			}
-
 			return true;
-
 		}
 
 		return false;
-
 	}
 
 	public static boolean moduleEnabled(String name) {
