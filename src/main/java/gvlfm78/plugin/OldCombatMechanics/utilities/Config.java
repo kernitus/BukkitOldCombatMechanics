@@ -19,7 +19,7 @@ import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 
 public class Config {
 
-	public static final int CONFIG_VERSION = 7;
+	public static final int CONFIG_VERSION = 8;
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
