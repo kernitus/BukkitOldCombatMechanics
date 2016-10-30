@@ -33,24 +33,17 @@ public class ModuleGoldenApple extends Module {
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onPrepareItemCraft(PrepareItemCraftEvent e) {
-	    
-	        if (e.getInventory() == null) {
-	            return;
-	        }
+
+		if (e.getInventory() == null) return;
+
 		ItemStack item = e.getInventory().getResult();
-		if (item == null) {
-		    // This should never ever ever ever run. If it does then you probably screwed something up.
-		    return;
-		}
+		if (item == null) return; // This should never ever ever ever run. If it does then you probably screwed something up.
 
 		if (item.getType() == Material.GOLDEN_APPLE && item.getDurability() == (short) 1) {
 
 			World world = e.getView().getPlayer().getWorld();
 
-			if (isSettingEnabled("no-conflict-mode")) {
-
-				return;
-			}
+			if (isSettingEnabled("no-conflict-mode")) return;
 
 			if (!isEnabled(world)) {
 
@@ -69,13 +62,9 @@ public class ModuleGoldenApple extends Module {
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onItemConsume(PlayerItemConsumeEvent e) {
 
-		if (e.getItem().getType() != Material.GOLDEN_APPLE) {
-			return;
-		}
+		if (e.getItem().getType() != Material.GOLDEN_APPLE) return;
 
-		if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) {
-			return;
-		}
+		if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) return;
 
 		e.setCancelled(true);
 

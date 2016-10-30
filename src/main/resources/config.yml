@@ -45,6 +45,23 @@ disable-sword-sweep:
 disable-shield-craft:
   # Disable the crafting of shields
   enabled: true
+  worlds: []
+  
+disable-offhand:
+  # Disable the usage of the offhand
+  # Won't affect sword-blocking module
+  enabled: true
+  worlds: []
+  
+old-brewing-stand:
+  # Automatically adds a blaze powder to brewing stand upon opening
+  enabled: true
+  worlds: []
+  
+disable-elytra:
+  # As players attempt to move around elytra items they get destroyed
+  enabled: false
+  worlds: []
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
@@ -163,4 +180,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 7
+config-version: 8

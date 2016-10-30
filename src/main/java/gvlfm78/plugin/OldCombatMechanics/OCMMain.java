@@ -34,16 +34,16 @@ public class OCMMain extends JavaPlugin {
 
         // Initialise ModuleLoader utility
         ModuleLoader.Initialise(this);
-
+        
         // Register every event class (as well as our command handler)
         registerAllEvents();
 
         // Setting up config.yml
         CH.setupConfigyml();
-
+        
         // Initialise the Messenger utility
         Messenger.Initialise(this);
-
+        
         // Initialise Config utility
         Config.Initialise(this);
 
@@ -106,7 +106,10 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.AddModule(new ModuleSwordBlocking(this));
         ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
         ModuleLoader.AddModule(new ModuleShieldCrafting(this));
-
+        ModuleLoader.AddModule(new ModuleDisableOffHand(this));
+        ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
+        ModuleLoader.AddModule(new ModuleDisableElytra(this));
+        
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));// Firing commands listener
 
     }

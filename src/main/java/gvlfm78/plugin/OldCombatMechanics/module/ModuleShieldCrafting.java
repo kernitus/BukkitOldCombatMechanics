@@ -1,26 +1,29 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import org.bukkit.inventory.Recipe;
-import java.util.Iterator;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 
 
 /**
- * Created by Detobel36 on 10/27/16.
+ * Created by Detobel36 on 27/10/16
+ * Changed by kernitus
  */
 
 public class ModuleShieldCrafting extends Module {
 
 	public ModuleShieldCrafting(OCMMain plugin) {
 		super(plugin, "disable-shield-craft");
-		removeShieldCrafting();
 	}
 
-	public void removeShieldCrafting() {
+	/*public void removeShieldCrafting() {
 		// Remove Recipes
 		Iterator<Recipe> recipes = plugin.getServer().recipeIterator();
+
 		while (recipes.hasNext()) {
 			Recipe recipe = recipes.next();
 			ItemStack result = recipe.getResult();
@@ -30,5 +33,13 @@ public class ModuleShieldCrafting extends Module {
 				break;
 			}
 		}
+	}*/
+	@EventHandler (priority = EventPriority.HIGHEST)
+	public void onItemCraft (PrepareItemCraftEvent e) {
+		World world = e.getViewers().get(0).getWorld();
+		if(!isEnabled(world)) return;
+
+		if(e.getRecipe().getResult().getType().equals(Material.SHIELD))
+			e.getInventory().setResult(null);
 	}
 }

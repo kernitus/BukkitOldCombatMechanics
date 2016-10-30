@@ -14,10 +14,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 
 public class ModuleOldArmourStrength extends Module {
 
-	private OCMMain plugin;
 	public ModuleOldArmourStrength(OCMMain plugin) {
 		super(plugin, "old-armour-strength");
-		this.plugin = plugin;
 	}
 
 	@EventHandler
@@ -34,7 +32,7 @@ public class ModuleOldArmourStrength extends Module {
 		}
 	}
 
-	//This won't actually work because armour pieces won't necessarily be worn, they could be in chets etc.
+	//This won't actually work because armour pieces won't necessarily be worn, they could be in chests etc.
 	/*@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerQuit(PlayerQuitEvent e){
 		Player player = e.getPlayer();
