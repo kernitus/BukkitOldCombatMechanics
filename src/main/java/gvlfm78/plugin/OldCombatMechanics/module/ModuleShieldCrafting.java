@@ -36,6 +36,9 @@ public class ModuleShieldCrafting extends Module {
 	}*/
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onItemCraft (PrepareItemCraftEvent e) {
+	    if (e.getViewers().size() < 1) {
+	        return;
+	    }
 		World world = e.getViewers().get(0).getWorld();
 		if(!isEnabled(world)) return;
 
