@@ -130,6 +130,11 @@ old-fishing-knockback:
   # Credit to HyKurtis for the original code, optimised by Rayzr522
   enabled: true
   worlds: []
+  # This makes OCM check if other plugins are stopping the rod damage and follow their choice
+  # Set to false to always have rod damage
+  checkCancelled: true
+  # This is the damage done by the fishing rod attack
+  damage: 0.2
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
@@ -180,4 +185,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 8
+config-version: 9
