@@ -58,7 +58,7 @@ public class ModuleFishingKnockback extends Module {
 			EntityDamageByEntityEvent event = makeEvent(rodder, player);
 			Bukkit.getPluginManager().callEvent(event);
 
-			if(event.isCancelled()){
+			if(plugin.getConfig().getBoolean("old-fishing-knockback.checkCancelled") && event.isCancelled()){
 
 				if(plugin.getConfig().getBoolean("debug.enabled")){
 					debug("You can't do that here!", rodder);
@@ -69,11 +69,11 @@ public class ModuleFishingKnockback extends Module {
 					}
 
 				}
-
 				return; 
 			}
 
-			player.damage(0.2);
+			Double damage = plugin.getConfig().getDouble("old-fishing-knockback.damage");
+			player.damage(damage);
 			Location loc = player.getLocation().add(0, 0.5, 0);
 			player.teleport(loc);
 			player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
