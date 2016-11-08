@@ -36,13 +36,14 @@ public class ModuleShieldCrafting extends Module {
 	}*/
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onItemCraft (PrepareItemCraftEvent e) {
-	    if (e.getViewers().size() < 1) {
-	        return;
-	    }
+	        if (e.getViewers().size() < 1) {
+	                return;
+	        }
 		World world = e.getViewers().get(0).getWorld();
 		if(!isEnabled(world)) return;
 
-		if(e.getRecipe().getResult().getType().equals(Material.SHIELD))
+		if(e.getRecipe().getResult().getType().equals(Material.SHIELD)) {
 			e.getInventory().setResult(null);
+		}
 	}
 }
