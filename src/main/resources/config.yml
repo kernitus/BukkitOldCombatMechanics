@@ -132,7 +132,7 @@ old-fishing-knockback:
   worlds: []
   # This makes OCM check if other plugins are stopping the rod damage and follow their choice
   # Set to false to always have rod damage
-  checkCancelled: true
+  checkCancelled: false
   # This is the damage done by the fishing rod attack
   damage: 0.2
 
