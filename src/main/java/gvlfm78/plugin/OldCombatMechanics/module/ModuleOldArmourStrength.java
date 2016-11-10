@@ -3,6 +3,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent;
@@ -28,32 +29,34 @@ public class ModuleOldArmourStrength extends Module {
 			Player p = e.getPlayer();
 			debug("Attempting to apply armour value to new armour piece", p);
 
-			e.setNewArmourPiece(apply(newPiece));
+			e.setNewArmourPiece(apply(newPiece, true));
 		}
 	}
 
-	//This won't actually work because armour pieces won't necessarily be worn, they could be in chests etc.
-	/*@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerQuit(PlayerQuitEvent e){
+	public void onWorldChange(PlayerChangedWorldEvent e){
 		Player player = e.getPlayer();
-		debug("OnPlayerQuit armour event was called", player);
+		debug("onWorldChange armour event was called", player);
 
-		ItemStack[] armours = player.getInventory().getArmorContents();
+		ItemStack[] armours = player.getInventory().getContents();
+		//Check the whole inventory for armour pieces
 
-		for(int i = 0; i<armours.length-1; i++){
+		boolean enabled = isEnabled(player.getWorld());
+
+		for(int i = 0; i < armours.length; i++){
 			ItemStack piece = armours[i];
 
 			if (piece != null && piece.getType() != Material.AIR) {
 				Player p = e.getPlayer();
-				debug("Attempting to apply armour value to new armour piece", p);
 
-				armours[i] = apply(piece);
+				debug("Attempting to apply armour value to armour piece", p);
+
+				armours[i] = apply(piece, !enabled);
 			}
-			player.getInventory().setArmorContents(armours);
 		}
-	}*/
+		player.getInventory().setContents(armours);
+	}
 
-	private ItemStack apply(ItemStack is) {
+	private ItemStack apply(ItemStack is, boolean enable) {
 
 		if (ItemData.hasMark(is, "ArmorModifier"))
 			return is;
@@ -73,7 +76,12 @@ public class ModuleOldArmourStrength extends Module {
 
 		Attributes attributes = new Attributes(is);
 
-		double toughness = plugin.getConfig().getDouble("old-armour-strength.toughness");
+		double toughness;
+
+		if(enable)
+			toughness = plugin.getConfig().getDouble("old-armour-strength.toughness");
+		else
+			toughness = getDefaultToughness(is.getType());
 
 		attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
 		attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
@@ -81,7 +89,13 @@ public class ModuleOldArmourStrength extends Module {
 		ItemData.mark(is, "ArmorModifier");
 
 		return is;
-
 	}
-
+	public static int getDefaultToughness(Material mat){
+		switch(mat){
+		case DIAMOND_CHESTPLATE: case DIAMOND_HELMET: case DIAMOND_LEGGINGS: case DIAMOND_BOOTS:
+			return 2;
+		default:
+			return 0;
+		}
+	}
 }
