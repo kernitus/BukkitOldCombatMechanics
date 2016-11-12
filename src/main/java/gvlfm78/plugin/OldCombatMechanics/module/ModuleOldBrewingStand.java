@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 
-public class ModuleOldBrewingStand extends Module{
+public class ModuleOldBrewingStand extends Module {
 
 	public ModuleOldBrewingStand(OCMMain plugin){
 		super(plugin, "old-brewing-stand");
@@ -26,7 +26,7 @@ public class ModuleOldBrewingStand extends Module{
 	}
 
 	@EventHandler
-	public void onClick(InventoryClickEvent e) {
+	public void onInventoryClick(InventoryClickEvent e) {
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
 		if(e.getInventory().getType().equals(InventoryType.BREWING) && e.getCurrentItem().getType() == Material.BLAZE_POWDER && e.getRawSlot()==4){
@@ -35,18 +35,22 @@ public class ModuleOldBrewingStand extends Module{
 	}
 
 	@EventHandler
-	public void onClose(InventoryCloseEvent e) {
+	public void onInventoryClose(InventoryCloseEvent e) {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
-		
+
 		Inventory inv = e.getInventory();
-		if(inv.getType().equals(InventoryType.BREWING) && inv.contains(Material.BLAZE_POWDER))
-			inv.remove(Material.BLAZE_POWDER);
+		if(inv.getType().equals(InventoryType.BREWING)){
+			BrewerInventory bi = (BrewerInventory) inv;
+			ItemStack fuel = bi.getFuel();
+			if(fuel.getType().equals(Material.BLAZE_POWDER))
+				bi.setFuel(new ItemStack(Material.AIR));
+		}
 	}
 
 	@EventHandler
 	public void onInventoryOpen(InventoryOpenEvent e) {
 		if(!isEnabled(e.getPlayer().getWorld()));
-		
+
 		Inventory inv = e.getInventory();
 		if(inv.getType().equals(InventoryType.BREWING))
 			( (BrewerInventory) inv).setFuel(new ItemStack(Material.BLAZE_POWDER, 64));
