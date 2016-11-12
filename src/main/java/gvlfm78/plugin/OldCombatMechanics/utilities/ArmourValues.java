@@ -40,17 +40,14 @@ public class ArmourValues {
             values.put(key, section.getDouble(key));
 
         }
-
     }
 
 
     public static double getValue(Material mat) {
 
-        if (!values.containsKey(mat.name())) {
-            return -1;
-        }
+        if (!values.containsKey(mat.name()))
+            return 0;
 
         return values.get(mat.name());
-
     }
 }
