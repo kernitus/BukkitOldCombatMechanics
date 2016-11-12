@@ -161,10 +161,10 @@ old-armour-strength:
     CHAINMAIL_LEGGINGS: 4
     CHAINMAIL_BOOTS: 1
     # Golden armour
-    GOLDEN_HELMET: 2
-    GOLDEN_CHESTPLATE: 5
-    GOLDEN_LEGGINGS: 3
-    GOLDEN_BOOTS: 1
+    GOLD_HELMET: 2
+    GOLD_CHESTPLATE: 5
+    GOLD_LEGGINGS: 3
+    GOLD_BOOTS: 1
     # Iron armour
     IRON_HELMET: 2
     IRON_CHESTPLATE: 6
