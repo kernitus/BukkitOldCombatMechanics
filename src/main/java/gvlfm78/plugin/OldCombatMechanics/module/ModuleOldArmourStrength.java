@@ -8,6 +8,8 @@ import org.bukkit.inventory.ItemStack;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent;
 import com.comphenix.example.Attributes;
+import com.comphenix.example.Attributes.Attribute;
+import com.comphenix.example.Attributes.AttributeType;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ArmourValues;
@@ -33,6 +35,7 @@ public class ModuleOldArmourStrength extends Module {
 		}
 	}
 
+	@EventHandler
 	public void onWorldChange(PlayerChangedWorldEvent e){
 		Player player = e.getPlayer();
 		debug("onWorldChange armour event was called", player);
@@ -50,16 +53,13 @@ public class ModuleOldArmourStrength extends Module {
 
 				debug("Attempting to apply armour value to armour piece", p);
 
-				armours[i] = apply(piece, !enabled);
+				armours[i] = apply(piece, enabled);
 			}
 		}
 		player.getInventory().setContents(armours);
 	}
 
 	private ItemStack apply(ItemStack is, boolean enable) {
-
-		if (ItemData.hasMark(is, "ArmorModifier"))
-			return is;
 
 		String slot = "";
 		String type = is.getType().toString().toLowerCase();
@@ -71,6 +71,7 @@ public class ModuleOldArmourStrength extends Module {
 			slot = "legs";
 		else if(type.contains("boots"))
 			slot = "feet";
+		else return is; //Not an armour piece
 
 		double strength = ArmourValues.getValue(is.getType());
 
@@ -83,8 +84,43 @@ public class ModuleOldArmourStrength extends Module {
 		else
 			toughness = getDefaultToughness(is.getType());
 
-		attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
-		attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
+		boolean armourTagPresent = false, toughnessTagPresent = false;
+
+		for(int i = 0; i<attributes.size(); i++){
+			Attribute att = attributes.get(i);
+			if(att==null) continue;
+
+			AttributeType attType = att.getAttributeType();
+
+			if(attType.equals(AttributeType.GENERIC_ARMOR)){ //Found a generic armour tag
+				if(armourTagPresent==true) //If we've already found another tag
+					attributes.remove(att); //Remove this one as it's a duplicate
+				else{
+					armourTagPresent = true;
+					if(att.getAmount()!=strength){ //If its value does not match what it should be, remove it
+						attributes.remove(att);
+						armourTagPresent = false; //Set armour value anew
+					}
+				}
+			}
+
+			else if(attType.equals(AttributeType.GENERIC_ARMOR_TOUGHNESS)){ //Found a generic armour toughness tag
+				if(toughnessTagPresent==true) //If we've already found another tag
+					attributes.remove(att); //Remove this one as it's a duplicate
+				else{
+					toughnessTagPresent = true;
+					if(att.getAmount()!=toughness){ //If its value does not match what it should be, remove it
+						attributes.remove(att);
+						toughnessTagPresent = false; //Set armour value anew
+					}
+				}
+			}
+		}
+
+		if(!armourTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
+
+		if(!toughnessTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
+
 
 		ItemData.mark(is, "ArmorModifier");
 
