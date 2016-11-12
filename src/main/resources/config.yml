@@ -16,10 +16,10 @@ update-checker:
 enableIndividualToggle: false
 
 # To use the per-world feature you specify a list of the worlds in the []
-# For example: 
-# worlds: [world,survival,creative,skywars]
+# For example: (names are case sensitive)
+# worlds: [world,survival,creative,SkyWars]
 # Another example (for 1 world): 
-# worlds: [bestworld]
+# worlds: [bestWorld]
 
 disable-attack-cooldown:
   # This is to disable the attack cooldown
