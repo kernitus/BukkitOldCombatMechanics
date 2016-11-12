@@ -23,15 +23,14 @@ public class ModuleOldArmourStrength extends Module {
 
 	@EventHandler
 	public void onArmourEquip(ArmourEquipEvent e) {
-
-		debug("OnArmourEquip was called", e.getPlayer());
+		final Player p = e.getPlayer();
+		debug("OnArmourEquip was called", p);
 		ItemStack newPiece = e.getNewArmourPiece();
 
 		if (newPiece != null && newPiece.getType() != Material.AIR) {
-			Player p = e.getPlayer();
 			debug("Attempting to apply armour value to new armour piece", p);
 
-			e.setNewArmourPiece(apply(newPiece, true));
+			e.setNewArmourPiece(apply(newPiece, isEnabled(p.getWorld())));
 		}
 	}
 
