@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
  * @Website http://codingforcookies.com/
  * @since Jul 30, 2015
  */
-public final class ArmourEquipEvent extends PlayerEvent implements Cancellable{
+public final class ArmourEquipEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList handlers = new HandlerList();
 	private boolean cancel = false;
