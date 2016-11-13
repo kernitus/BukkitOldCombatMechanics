@@ -29,6 +29,9 @@ import kernitus.plugin.OldCombatMechanics.module.Module;
  * @Website http://codingforcookies.com/
  * @since Jul 30, 2015 6:43:34 PM
  */
+
+// Heavily modified by kernitus
+
 public class ArmourListener extends Module implements Listener {
 
 	public ArmourListener(OCMMain plugin) {
@@ -39,53 +42,55 @@ public class ArmourListener extends Module implements Listener {
 	public final void onInventoryClick(final InventoryClickEvent e) {
 
 		boolean shift = false, numberkey = false;
-		if (e.isCancelled())
-			return;
-		if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+
+		if (e.isCancelled()) return;
+
+		if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) 
 			shift = true;
-		}
-		if (e.getClick().equals(ClickType.NUMBER_KEY)) {
+
+		if (e.getClick().equals(ClickType.NUMBER_KEY))
 			numberkey = true;
-		}
+
 		if ((e.getSlotType() != SlotType.ARMOR || e.getSlotType() != SlotType.QUICKBAR)
-				&& !e.getInventory().getType().equals(InventoryType.CRAFTING))
-			return;
-		if (!(e.getWhoClicked() instanceof Player))
-			return;
-		if (e.getCurrentItem() == null && e.getCursor() == null)
-			return;
+				&& !e.getInventory().getType().equals(InventoryType.CRAFTING)) return;
+
+		if (!(e.getWhoClicked() instanceof Player)) return;
+
+		if (e.getCurrentItem() == null && e.getCursor() == null) return;
+
 		ArmourType newArmourType = ArmourType.matchType(shift ? e.getCurrentItem() : e.getCursor());
-		if (!shift && newArmourType != null && e.getRawSlot() != newArmourType.getSlot()) {
-			// Used for drag and drop checking to make sure you aren't trying to
-			// place a helmet in the boots place.
-			return;
-		}
+
+		// Used for drag and drop checking to make sure you aren't trying to place a helmet in the boots place.
+		if (!shift && newArmourType != null && e.getRawSlot() != newArmourType.getSlot()) return;
+
 		if (shift) {
 			newArmourType = ArmourType.matchType(e.getCurrentItem());
 			if (newArmourType != null) {
 				boolean equipping = true;
-				if (e.getRawSlot() == newArmourType.getSlot()) {
+				if (e.getRawSlot() == newArmourType.getSlot())
 					equipping = false;
-				}
+
 				if (newArmourType.equals(ArmourType.HELMET)
 						&& (equipping ? e.getWhoClicked().getInventory().getHelmet() == null
-								: e.getWhoClicked().getInventory().getHelmet() != null)
+						: e.getWhoClicked().getInventory().getHelmet() != null)
 						|| newArmourType.equals(ArmourType.CHESTPLATE)
-								&& (equipping ? e.getWhoClicked().getInventory().getChestplate() == null
-										: e.getWhoClicked().getInventory().getChestplate() != null)
+						&& (equipping ? e.getWhoClicked().getInventory().getChestplate() == null
+						: e.getWhoClicked().getInventory().getChestplate() != null)
 						|| newArmourType.equals(ArmourType.LEGGINGS)
-								&& (equipping ? e.getWhoClicked().getInventory().getLeggings() == null
-										: e.getWhoClicked().getInventory().getLeggings() != null)
+						&& (equipping ? e.getWhoClicked().getInventory().getLeggings() == null
+						: e.getWhoClicked().getInventory().getLeggings() != null)
 						|| newArmourType.equals(ArmourType.BOOTS)
-								&& (equipping ? e.getWhoClicked().getInventory().getBoots() == null
-										: e.getWhoClicked().getInventory().getBoots() != null)) {
+						&& (equipping ? e.getWhoClicked().getInventory().getBoots() == null
+						: e.getWhoClicked().getInventory().getBoots() != null)) {
+
 					ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent((Player) e.getWhoClicked(),
 							EquipMethod.SHIFT_CLICK, newArmourType, equipping ? null : e.getCurrentItem(),
-							equipping ? e.getCurrentItem() : null);
+									equipping ? e.getCurrentItem() : null);
+
 					Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
-					if (armourEquipEvent.isCancelled()) {
+
+					if (armourEquipEvent.isCancelled())
 						e.setCancelled(true);
-					}
 				}
 			}
 		} else {
@@ -119,28 +124,23 @@ public class ArmourListener extends Module implements Listener {
 					newArmourPiece = hotbarItem;
 					oldArmourPiece = e.getInventory().getItem(e.getSlot());
 				} else {// Unequipping
-					newArmourType = ArmourType
-							.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR
-									? e.getCurrentItem() : e.getCursor());
+					newArmourType = ArmourType.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR	? e.getCurrentItem() : e.getCursor());
 				}
 			} else {
 				// e.getCurrentItem() == Unequip
 				// e.getCursor() == Equip
-				newArmourType = ArmourType
-						.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR
-								? e.getCurrentItem() : e.getCursor());
+				newArmourType = ArmourType.matchType(e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR	? e.getCurrentItem() : e.getCursor());
 			}
 			if (newArmourType != null && e.getRawSlot() == newArmourType.getSlot()) {
 				EquipMethod method = EquipMethod.DRAG;
 				if (e.getAction().equals(InventoryAction.HOTBAR_SWAP) || numberkey)
 					method = EquipMethod.HOTBAR_SWAP;
 
-				ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent((Player) e.getWhoClicked(), method,
-						newArmourType, oldArmourPiece, newArmourPiece);
+				ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent((Player) e.getWhoClicked(), method, newArmourType, oldArmourPiece, newArmourPiece);
+
 				Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
-				if (armourEquipEvent.isCancelled()) {
+				if (armourEquipEvent.isCancelled())
 					e.setCancelled(true);
-				}
 			}
 		}
 	}
@@ -193,12 +193,12 @@ public class ArmourListener extends Module implements Listener {
 						if (directionFacing == BlockFace.EAST && p.getLocation().getBlockX() != loc.getBlockX()
 								&& p.getLocation().getX() <= loc.getX() + 2.3 && p.getLocation().getX() >= loc.getX()
 								|| directionFacing == BlockFace.WEST && p.getLocation().getX() >= loc.getX() - 1.3
-										&& p.getLocation().getX() <= loc.getX()
+								&& p.getLocation().getX() <= loc.getX()
 								|| directionFacing == BlockFace.SOUTH && p.getLocation().getBlockZ() != loc.getBlockZ()
-										&& p.getLocation().getZ() <= loc.getZ() + 2.3
-										&& p.getLocation().getZ() >= loc.getZ()
+								&& p.getLocation().getZ() <= loc.getZ() + 2.3
+								&& p.getLocation().getZ() >= loc.getZ()
 								|| directionFacing == BlockFace.NORTH && p.getLocation().getZ() >= loc.getZ() - 1.3
-										&& p.getLocation().getZ() <= loc.getZ()) {
+								&& p.getLocation().getZ() <= loc.getZ()) {
 							ArmourEquipEvent armourEquipEvent = new ArmourEquipEvent(p, EquipMethod.DISPENSER,
 									ArmourType.matchType(e.getItem()), null, e.getItem());
 							Bukkit.getServer().getPluginManager().callEvent(armourEquipEvent);
