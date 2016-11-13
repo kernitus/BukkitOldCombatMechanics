@@ -4,7 +4,10 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import com.codingforcookies.armourequip.ArmourEquipEvent;
 import com.comphenix.example.Attributes;
@@ -35,26 +38,71 @@ public class ModuleOldArmourStrength extends Module {
 	}
 
 	@EventHandler
-	public void onWorldChange(PlayerChangedWorldEvent e){
-		Player player = e.getPlayer();
+	public void onArmourUnequip(ArmourEquipEvent e) {
+		final Player p = e.getPlayer();
+		debug("OnArmourUnequip was called", p);
+		ItemStack oldPiece = e.getOldArmourPiece();
+		if (oldPiece != null && oldPiece.getType() != Material.AIR) {
+			debug("Attempting to apply armour value to new armour piece", p);
+
+			e.setNewArmourPiece(apply(oldPiece, false));
+		}
+	}
+
+	@EventHandler
+	public void onPlayerJoin(PlayerJoinEvent e){
+		final Player player = e.getPlayer();
+		debug("onPlayerJoin armour event was called", player);
+		setArmourAccordingly(player);
+	}
+
+	@EventHandler
+	public void onPlayerLeave(PlayerQuitEvent e) {
+		final Player player = e.getPlayer();
+		debug("onPlayerLeave armour event was called", player);
+		setArmourToDefault(player);
+	}
+
+	@EventHandler
+	public void onWorldChange(PlayerChangedWorldEvent e) {
+		final Player player = e.getPlayer();
 		debug("onWorldChange armour event was called", player);
+		setArmourAccordingly(player);
+	}
 
-		ItemStack[] armours = player.getInventory().getContents();
-		//Check the whole inventory for armour pieces
+	private void setArmourToDefault(final Player player) {
+		// Tells method that module is disabled in this world
+		setArmourAccordingly(player, false);
+	}
 
+	private void setArmourAccordingly(final Player player){
 		boolean enabled = isEnabled(player.getWorld());
+		setArmourAccordingly(player, enabled);
+	}
 
-		for(int i = 0; i < armours.length; i++){
+	private void setArmourAccordingly(final Player player, boolean enabled) {
+		final PlayerInventory inv = player.getInventory();
+		ItemStack[] armours = inv.getContents();
+		// Check the whole inventory for armour pieces
+
+		for (int i = 0; i < armours.length; i++) {
 			ItemStack piece = armours[i];
 
 			if (piece != null && piece.getType() != Material.AIR) {
-				Player p = e.getPlayer();
-
-				debug("Attempting to apply armour value to armour piece", p);
-
-				armours[i] = apply(piece, enabled);
+				debug("Attempting to apply armour value to armour piece", player);
+				//If this piece is one of the ones being worn right now
+				boolean wasWorn = false;
+				for(ItemStack wornPiece : inv.getArmorContents()){
+					if(wornPiece!=null && wornPiece.equals(armours[i])){ // TODO This equals doesn't work
+						armours[i] = apply(piece, enabled); //Apply/remove values according state of module in this world
+						wasWorn = true;
+					}
+				}
+				if(wasWorn) armours[i] = apply(piece, false); //Otherwise set values back to default
 			}
+
 		}
+
 		player.getInventory().setContents(armours);
 	}
 
@@ -115,9 +163,9 @@ public class ModuleOldArmourStrength extends Module {
 				}
 			}
 		}
-
+		//If there's no armour tag present add it
 		if(!armourTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
-
+		//If there's no toughness tag present add it
 		if(!toughnessTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
 
 
@@ -125,6 +173,7 @@ public class ModuleOldArmourStrength extends Module {
 
 		return is;
 	}
+
 	public static int getDefaultToughness(Material mat){
 		switch(mat){
 		case DIAMOND_CHESTPLATE: case DIAMOND_HELMET: case DIAMOND_LEGGINGS: case DIAMOND_BOOTS:
