@@ -96,7 +96,7 @@ public class ArmourListener extends Module implements Listener {
 		} else {
 			ItemStack newArmourPiece = e.getCursor();
 			ItemStack oldArmourPiece = e.getCurrentItem();
-			if (numberkey) {
+			if (numberkey) { //TODO This doesn't work
 
 				// e.getInventory() == The players inventory
 				// e.getHotBarButton() == key people are pressing to equip or

@@ -26,7 +26,7 @@ disable-attack-cooldown:
   enabled: true
   worlds: []
   # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
-  general-attack-speed: 1024
+  general-attack-speed: 16
   
 disable-player-collisions:
   # This is to disable player collisions

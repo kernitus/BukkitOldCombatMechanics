@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -76,11 +77,10 @@ public class ModuleOldArmourStrength extends Module {
 	}
 
 	private void setArmourAccordingly(final Player player){
-		boolean enabled = isEnabled(player.getWorld());
-		setArmourAccordingly(player, enabled);
+		setArmourAccordingly(player, isEnabled(player.getWorld()));
 	}
 
-	private void setArmourAccordingly(final Player player, boolean enabled) {
+	public void setArmourAccordingly(final Player player, boolean enabled) {
 		final PlayerInventory inv = player.getInventory();
 		ItemStack[] armours = inv.getContents();
 		// Check the whole inventory for armour pieces
@@ -89,20 +89,20 @@ public class ModuleOldArmourStrength extends Module {
 			ItemStack piece = armours[i];
 
 			if (piece != null && piece.getType() != Material.AIR) {
-				debug("Attempting to apply armour value to armour piece", player);
+				debug("Attempting to apply armour value to item", player);
+
 				//If this piece is one of the ones being worn right now
 				boolean wasWorn = false;
-				for(ItemStack wornPiece : inv.getArmorContents()){
-					if(wornPiece!=null && wornPiece.equals(armours[i])){ // TODO This equals doesn't work
-						armours[i] = apply(piece, enabled); //Apply/remove values according state of module in this world
-						wasWorn = true;
-					}
+
+				if(ArrayUtils.contains(inv.getArmorContents(), armours[i])){
+					armours[i] = apply(piece, enabled); //Apply/remove values according state of module in this world
+					wasWorn = true;
 				}
-				if(wasWorn) armours[i] = apply(piece, false); //Otherwise set values back to default
+
+				if(!wasWorn) armours[i] = apply(piece, false); //Otherwise set values back to default
 			}
 
 		}
-
 		player.getInventory().setContents(armours);
 	}
 
