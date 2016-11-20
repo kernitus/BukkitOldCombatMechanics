@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 
 import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -61,23 +62,31 @@ public class Config {
 		plugin.restartSweepTask(); //Restart sword sweep check
 		load();
 
+		//Setting correct attack speed and armour values for online players
 		for(World world : Bukkit.getWorlds()){
 
 			List<Player> players = world.getPlayers();
 
 			double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
 
-			for(Player playa : players){
-				AttributeInstance attribute = playa.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			if (!Config.moduleEnabled("disable-attack-cooldown", world))
+				GAS = 4; //If module is disabled, set attack speed to 1.9 default
+			
+			boolean isArmourEnabled = Config.moduleEnabled("old-armour-strength", world);
+			
+			for(Player player : players){
+				//Setting attack speed
+				AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 				double baseValue = attribute.getBaseValue();
-
-				if (!Config.moduleEnabled("disable-attack-cooldown", world))
-					GAS = 4; //If module is disabled, set attack speed to 1.9 default
 
 				if(baseValue!=GAS){
 					attribute.setBaseValue(GAS);
-					playa.saveData();
+					player.saveData();
 				}
+				
+				//Setting armour values
+				ModuleOldArmourStrength moas = new ModuleOldArmourStrength(plugin);
+				moas.setArmourAccordingly(player, isArmourEnabled);
 			}
 		}
 	}
