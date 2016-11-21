@@ -7,10 +7,12 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -78,6 +80,19 @@ public class ModuleSwordBlocking extends Module {
 
 		scheduleRestore(p);
 
+	}
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onEntityDamaged(EntityDamageEvent e){
+		Entity entity = e.getEntity();
+		if(storedOffhandItems.containsKey(entity.getUniqueId())){
+			Player p = (Player) e.getEntity();
+			//Check if they are holding a shield
+			if(p.getInventory().getItemInOffHand().getType().equals(Material.SHIELD)){
+				double damage = (e.getDamage()/0.33D)-1;
+				if(damage < 0) damage = 0;
+				e.setDamage(damage);
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
