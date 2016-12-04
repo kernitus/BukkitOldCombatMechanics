@@ -12,7 +12,9 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -62,15 +64,11 @@ public class ModuleSwordBlocking extends Module {
 
 		UUID id = p.getUniqueId();
 
-		if (storedOffhandItems.containsKey(id)) {
-			return;
-		}
+		if (isBlocking(id)) return;
 
 		ItemStack item = e.getItem();
 
-		if (!isHolding(item.getType(), "sword") || hasShield(p)) {
-			return;
-		}
+		if (!isHolding(item.getType(), "sword") || hasShield(p)) return;
 
 		PlayerInventory inv = p.getInventory();
 
@@ -82,10 +80,42 @@ public class ModuleSwordBlocking extends Module {
 
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onProjectileHit(EntityDamageByEntityEvent e){
+		//TODO Check if projectile had explosive or fire damage and apply it
+		DamageCause cause = e.getCause();
+		
+		if(cause.equals(DamageCause.PROJECTILE)){ //Hit by a projectile
+			//Checking if an arrow hit the player while they were blocking
+			//and reduce damage by 1/2 a heart instead of completely blocking it
+			
+			Entity ent = e.getEntity();
+			if(ent != null && ent instanceof Player){
+				Player p = (Player) ent;
+				if(isBlocking(p.getUniqueId())){
+					double damageReduction = e.getDamage(); //This would mean blocking all damage
+
+					if((damageReduction - 1) >= 0)
+						damageReduction = -1;
+
+					//Reduce the damage by 1/2 a heart if it doesn't result in the damage being negative
+					//Otherwise reduce damage entirely
+					e.setDamage(DamageModifier.BLOCKING, damageReduction);
+
+				}
+			}
+		}
+		
+		if(cause.equals(DamageCause.ENTITY_EXPLOSION)){
+
+		}
+	}
+
+	/*@EventHandler(priority = EventPriority.HIGHEST)
 	public void onEntityDamaged(EntityDamageEvent e){
 		Entity entity = e.getEntity();
-		if(storedOffhandItems.containsKey(entity.getUniqueId())){
+		if(isBlocking(entity.getUniqueId())){
 			Player p = (Player) e.getEntity();
+			debug("Damage: "+e.getDamage()+" final: "+e.getFinalDamage(), p);
 			//Check if they are holding a shield
 			if(p.getInventory().getItemInOffHand().getType().equals(Material.SHIELD)){
 				double damage = (e.getDamage()/0.33D)-1;
@@ -93,7 +123,7 @@ public class ModuleSwordBlocking extends Module {
 				e.setDamage(damage);
 			}
 		}
-	}
+	}*/
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onWorldChange(PlayerChangedWorldEvent e) {
@@ -108,7 +138,7 @@ public class ModuleSwordBlocking extends Module {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerDeath(PlayerDeathEvent e) {
 
-		if (!storedOffhandItems.containsKey(e.getEntity().getUniqueId())) return;
+		if (!isBlocking(e.getEntity().getUniqueId())) return;
 
 		Player p = e.getEntity();
 		UUID id = p.getUniqueId();
@@ -123,7 +153,7 @@ public class ModuleSwordBlocking extends Module {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
 		Player p = e.getPlayer();
-		if (storedOffhandItems.containsKey(p.getUniqueId()))
+		if (isBlocking(p.getUniqueId()))
 			e.setCancelled(true);
 
 	}
@@ -134,7 +164,7 @@ public class ModuleSwordBlocking extends Module {
 		if(e.getWhoClicked() instanceof Player){
 			Player p = (Player) e.getWhoClicked();
 
-			if (storedOffhandItems.containsKey(p.getUniqueId())){
+			if (isBlocking(p.getUniqueId())){
 				if(e.getCursor().getType().equals(Material.SHIELD) || e.getCurrentItem().getType().equals(Material.SHIELD)){
 					e.setCancelled(true);
 					restore(p);
@@ -147,13 +177,13 @@ public class ModuleSwordBlocking extends Module {
 	public void onItemDrop(PlayerDropItemEvent e){
 		Item is = e.getItemDrop();
 
-			Player p = e.getPlayer();
+		Player p = e.getPlayer();
 
-			if (storedOffhandItems.containsKey(p.getUniqueId())){
-				if(is.getType().equals(Material.SHIELD)){
-					e.setCancelled(true);
-					restore(p);
-				}
+		if (isBlocking(p.getUniqueId())){
+			if(is.getType().equals(Material.SHIELD)){
+				e.setCancelled(true);
+				restore(p);
+			}
 		}
 	}
 
@@ -171,7 +201,7 @@ public class ModuleSwordBlocking extends Module {
 
 		UUID id = p.getUniqueId();
 
-		if (!storedOffhandItems.containsKey(id)) {
+		if (!isBlocking(id)) {
 			return;
 		}
 
@@ -198,7 +228,10 @@ public class ModuleSwordBlocking extends Module {
 			storedOffhandItems.remove(id);
 
 		}
+	}
 
+	private boolean isBlocking(UUID uuid){
+		return storedOffhandItems.containsKey(uuid);
 	}
 
 	private boolean hasShield(Player p) {
