@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -83,14 +84,19 @@ public class ModuleSwordBlocking extends Module {
 	public void onProjectileHit(EntityDamageByEntityEvent e){
 		//TODO Check if projectile had explosive or fire damage and apply it
 		DamageCause cause = e.getCause();
-		
-		if(cause.equals(DamageCause.PROJECTILE)){ //Hit by a projectile
-			//Checking if an arrow hit the player while they were blocking
-			//and reduce damage by 1/2 a heart instead of completely blocking it
-			
-			Entity ent = e.getEntity();
-			if(ent != null && ent instanceof Player){
-				Player p = (Player) ent;
+		Entity ent = e.getEntity();
+		Entity damager = e.getDamager();
+
+		if(ent != null && ent instanceof Player){
+			Player p = (Player) ent;
+
+			//Checks for arrows, fireballs, snowballs
+			if(cause.equals(DamageCause.PROJECTILE) || (cause.equals(DamageCause.ENTITY_EXPLOSION) && damager instanceof Fireball) ){
+				//Checking if an arrow hit the player while they were blocking
+				//and reduce damage by 1/2 a heart instead of completely blocking it
+
+
+				//This would make sure if they blocked direct damage from the projectile it gets applied with a 1/2 heart reduction
 				if(isBlocking(p.getUniqueId())){
 					double damageReduction = e.getDamage(); //This would mean blocking all damage
 
@@ -104,26 +110,7 @@ public class ModuleSwordBlocking extends Module {
 				}
 			}
 		}
-		
-		if(cause.equals(DamageCause.ENTITY_EXPLOSION)){
-
-		}
 	}
-
-	/*@EventHandler(priority = EventPriority.HIGHEST)
-	public void onEntityDamaged(EntityDamageEvent e){
-		Entity entity = e.getEntity();
-		if(isBlocking(entity.getUniqueId())){
-			Player p = (Player) e.getEntity();
-			debug("Damage: "+e.getDamage()+" final: "+e.getFinalDamage(), p);
-			//Check if they are holding a shield
-			if(p.getInventory().getItemInOffHand().getType().equals(Material.SHIELD)){
-				double damage = (e.getDamage()/0.33D)-1;
-				if(damage < 0) damage = 0;
-				e.setDamage(damage);
-			}
-		}
-	}*/
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onWorldChange(PlayerChangedWorldEvent e) {
