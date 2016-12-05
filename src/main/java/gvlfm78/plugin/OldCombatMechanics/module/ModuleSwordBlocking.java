@@ -8,13 +8,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -82,31 +80,24 @@ public class ModuleSwordBlocking extends Module {
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onProjectileHit(EntityDamageByEntityEvent e){
-		DamageCause cause = e.getCause();
 		Entity ent = e.getEntity();
-		Entity damager = e.getDamager();
 
 		if(ent != null && ent instanceof Player){
 			Player p = (Player) ent;
+			if(isBlocking(p.getUniqueId())){
+				//If it's a player blocking with their sword
+				//Instead of reducing damage to 33% just remove half a heart
 
-			//Checks for arrows, fireballs and snowballs
-			if(cause.equals(DamageCause.PROJECTILE) || (cause.equals(DamageCause.ENTITY_EXPLOSION) && damager instanceof Fireball) ){
-				//Checking if an arrow hit the player while they were blocking
-				//and reduce damage by 1/2 a heart instead of completely blocking it
+				double damageReduction = e.getDamage(); //This would mean blocking all damage
 
+				//Reduce the damage by 1/2 a heart if it doesn't result in the damage being negative
+				//Otherwise reduce damage entirely
+				if((damageReduction - 1) >= 0)
+					damageReduction = -1;
 
-				//This would make sure if they blocked direct damage from the projectile it gets applied with a 1/2 heart reduction
-				if(isBlocking(p.getUniqueId())){
-					double damageReduction = e.getDamage(); //This would mean blocking all damage
-
-					if((damageReduction - 1) >= 0)
-						damageReduction = -1;
-
-					//Reduce the damage by 1/2 a heart if it doesn't result in the damage being negative
-					//Otherwise reduce damage entirely
-					e.setDamage(DamageModifier.BLOCKING, damageReduction);
-
-				}
+				//If the damage was not reduced at all from blocking they must have not been hitten head-on, so don't reduce damage
+				if(e.getDamage(DamageModifier.BLOCKING) > 0)			
+				e.setDamage(DamageModifier.BLOCKING, damageReduction);
 			}
 		}
 	}
