@@ -82,7 +82,6 @@ public class ModuleSwordBlocking extends Module {
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onProjectileHit(EntityDamageByEntityEvent e){
-		//TODO Check if projectile had explosive or fire damage and apply it
 		DamageCause cause = e.getCause();
 		Entity ent = e.getEntity();
 		Entity damager = e.getDamager();
@@ -90,7 +89,7 @@ public class ModuleSwordBlocking extends Module {
 		if(ent != null && ent instanceof Player){
 			Player p = (Player) ent;
 
-			//Checks for arrows, fireballs, snowballs
+			//Checks for arrows, fireballs and snowballs
 			if(cause.equals(DamageCause.PROJECTILE) || (cause.equals(DamageCause.ENTITY_EXPLOSION) && damager instanceof Fireball) ){
 				//Checking if an arrow hit the player while they were blocking
 				//and reduce damage by 1/2 a heart instead of completely blocking it
