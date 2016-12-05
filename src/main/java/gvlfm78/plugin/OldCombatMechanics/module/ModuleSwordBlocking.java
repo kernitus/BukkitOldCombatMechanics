@@ -95,7 +95,7 @@ public class ModuleSwordBlocking extends Module {
 				if((damageReduction - 1) >= 0)
 					damageReduction = -1;
 
-				//If the damage was not reduced at all from blocking they must have not been hitten head-on, so don't reduce damage
+				//If the damage was not reduced at all from blocking they must have not been hit head-on, so don't reduce damage
 				if(e.getDamage(DamageModifier.BLOCKING) > 0)			
 				e.setDamage(DamageModifier.BLOCKING, damageReduction);
 			}
