@@ -1,5 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
+import java.io.File;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -18,9 +20,11 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 public class OCMCommandHandler implements CommandExecutor {
 
 	private OCMMain plugin;
+	private File pluginFile;
 
-	public OCMCommandHandler(OCMMain instance) {
+	public OCMCommandHandler(OCMMain instance, File pluginFile) {
 		this.plugin = instance;
+		this.pluginFile = pluginFile;
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -87,7 +91,7 @@ public class OCMCommandHandler implements CommandExecutor {
 				Chatter.send(p, message);
 
 			} else { //Tell them about available commands
-				OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin);
+				OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin, pluginFile);
 
 				PluginDescriptionFile pdf = plugin.getDescription();
 
