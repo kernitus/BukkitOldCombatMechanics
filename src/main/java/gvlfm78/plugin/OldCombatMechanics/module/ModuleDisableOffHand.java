@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import org.bukkit.Material;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -23,7 +24,6 @@ public class ModuleDisableOffHand extends Module {
 
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
-
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
 		if(e.getInventory().getType().equals(InventoryType.PLAYER)) return; //Making sure it's a survival player's inventory
@@ -38,7 +38,7 @@ public class ModuleDisableOffHand extends Module {
 		// as any further click on the item will take it back out
 		
 		debug("An empty offhand slot was clicked");
-		
+		e.setResult(Event.Result.DENY);
 		e.setCancelled(true);
 	}
 }
