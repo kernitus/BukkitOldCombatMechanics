@@ -10,45 +10,37 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 /**
- * Created by Rayzr522 on 6/25/16.
+ * Created by Rayzr522 on 25/6/16.
  */
 public class ModulePlayerCollisions extends Module {
 
-    OCMTask task = new OCMTask(plugin);
+	OCMTask task = new OCMTask(plugin);
 
-    public ModulePlayerCollisions(OCMMain plugin) {
-        super(plugin, "disable-player-collisions");
-    }
+	public ModulePlayerCollisions(OCMMain plugin) {
+		super(plugin, "disable-player-collisions");
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogin(PlayerJoinEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerLogin(PlayerJoinEvent e) {
 
-        Player p = e.getPlayer();
-        World world = p.getWorld();
+		Player p = e.getPlayer();
+		World world = p.getWorld();
 
-        if (isEnabled(world)) {
-            task.addPlayerToScoreboard(p);
-        } else {
-            task.removePlayerFromScoreboard(p);
-        }
-    }
+		if (isEnabled(world))
+			task.addPlayerToScoreboard(p);
+		else 
+			task.removePlayerFromScoreboard(p);
+	}
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e) {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onWorldChange(PlayerChangedWorldEvent e) {
 
-        Player player = e.getPlayer();
-        World world = player.getWorld();
+		Player player = e.getPlayer();
+		World world = player.getWorld();
 
-       if (isEnabled(world))
-
-            task.addPlayerToScoreboard(player);
-
-       else {
-
-            task.removePlayerFromScoreboard(player);
-
-       }
-
-    }
-
+		if (isEnabled(world))
+			task.addPlayerToScoreboard(player);
+		else 
+			task.removePlayerFromScoreboard(player);
+	}
 }

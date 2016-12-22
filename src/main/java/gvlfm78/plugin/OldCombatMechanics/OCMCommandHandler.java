@@ -2,9 +2,7 @@ package gvlfm78.plugin.OldCombatMechanics;
 
 import java.io.File;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.command.Command;
@@ -15,7 +13,6 @@ import org.bukkit.plugin.PluginDescriptionFile;
 
 import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 
 public class OCMCommandHandler implements CommandExecutor {
 
@@ -36,36 +33,6 @@ public class OCMCommandHandler implements CommandExecutor {
 			if (args.length > 0 && args[0].equalsIgnoreCase("reload") && sender.hasPermission("oldcombatmechanics.reload")) {// Reloads config
 
 				Config.reload();
-
-				for (World world : Bukkit.getServer().getWorlds()) {
-
-					boolean plugin_active = Config.moduleEnabled("disable-attack-cooldown", world);
-
-					for (Player player : world.getPlayers()) {
-
-						AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-						double baseValue = attribute.getBaseValue();
-
-						if (plugin_active) { // Setting to no cooldown
-
-							Messenger.debug("Enabling cooldown for " + player.getName());
-							double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
-							if (baseValue != GAS) {
-								attribute.setBaseValue(GAS);
-								player.saveData();
-							}
-						} else { // Re-enabling cooldown
-							Messenger.debug("Disabling cooldown for " + player.getName());
-							if (baseValue != 4) {
-								attribute.setBaseValue(4);
-								player.saveData();
-							}
-
-						}
-
-					}
-
-				}
 
 				Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
 

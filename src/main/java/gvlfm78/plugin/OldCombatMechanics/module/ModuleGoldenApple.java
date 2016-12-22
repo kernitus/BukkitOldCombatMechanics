@@ -1,10 +1,11 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,15 +19,16 @@ import org.bukkit.potion.PotionEffectType;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 
 /**
- * Created by Rayzr522 on 6/25/16.
+ * Created by Rayzr522 on 25/6/16.
  */
 public class ModuleGoldenApple extends Module {
 
-	private List<PotionEffect> enchantedGoldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 4), new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300 * 20, 0), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
-	private List<PotionEffect> goldenAppleEffects = Arrays.asList(new PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 1), new PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 0));
+	private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
 
 	public ModuleGoldenApple(OCMMain plugin) {
 		super(plugin, "old-golden-apples");
+		enchantedGoldenAppleEffects = getPotionEffects("napple");
+		goldenAppleEffects = getPotionEffects("gapple");
 	}
 
 	public static boolean RECIPE_ALREADY_EXISTED = false;
@@ -45,18 +47,11 @@ public class ModuleGoldenApple extends Module {
 
 			if (isSettingEnabled("no-conflict-mode")) return;
 
-			if (!isEnabled(world)) {
-
+			if (!isEnabled(world))
 				e.getInventory().setResult(null);
-
-			} else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting")) {
-
+			else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting"))
 				e.getInventory().setResult(null);
-
-			}
-
 		}
-
 	}
 
 	@EventHandler(priority = EventPriority.HIGH)
@@ -84,20 +79,17 @@ public class ModuleGoldenApple extends Module {
 
 		if (item.getDurability() == (short) 1) {
 
-			for (PotionEffect effect : enchantedGoldenAppleEffects) {
+			for (PotionEffect effect : enchantedGoldenAppleEffects)
 				e.getPlayer().removePotionEffect(effect.getType());
-			}
 
 			e.getPlayer().addPotionEffects(enchantedGoldenAppleEffects);
 
 		} else {
 
-			for (PotionEffect effect : goldenAppleEffects) {
+			for (PotionEffect effect : goldenAppleEffects)
 				e.getPlayer().removePotionEffect(effect.getType());
-			}
 
 			e.getPlayer().addPotionEffects(goldenAppleEffects);
-
 		}
 		if (item.getAmount() <= 0)
 			item = null;
@@ -111,14 +103,23 @@ public class ModuleGoldenApple extends Module {
 		else if(offHand.equals(originalItem))
 			inv.setItemInOffHand(item);
 
-		else{//The bug occurs here, so we must check which hand has the apples
-			// A player can't eat food in the offhand if there is any in the main hand
-			// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
-			if(mainHand.getType().equals(Material.GOLDEN_APPLE))
-				inv.setItemInMainHand(item);
+		else if(mainHand.getType().equals(Material.GOLDEN_APPLE))
+			inv.setItemInMainHand(item);
+		//The bug occurs here, so we must check which hand has the apples
+		// A player can't eat food in the offhand if there is any in the main hand
+		// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
+	}
+	public List<PotionEffect> getPotionEffects(String apple){
+		List<PotionEffect> appleEffects = new ArrayList<PotionEffect>();
 
-			else
-				p.sendMessage("4: "+originalItem.getAmount()+" "+item.getAmount());
+		ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
+		for(String key : sect.getKeys(false)){
+			int duration = sect.getInt(key + ".duration");
+			int amplifier = sect.getInt(key + ".amplifier");
+
+			PotionEffect fx = new PotionEffect(PotionEffectType.getByName(key), duration, amplifier);
+			if(fx!=null) appleEffects.add(fx);
 		}
+		return appleEffects;
 	}
 }
