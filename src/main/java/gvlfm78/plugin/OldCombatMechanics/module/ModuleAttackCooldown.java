@@ -28,12 +28,12 @@ public class ModuleAttackCooldown extends Module {
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
-		double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+		double GAS = module().getDouble("disable-attack-cooldown.general-attack-speed");
 
 		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
 
-		if (!Config.moduleEnabled("disable-attack-cooldown", world))
+		if(!Config.moduleEnabled("disable-attack-cooldown", world))
 			GAS = 4; //If module is disabled, set attack speed to 1.9 default
 
 		if(baseValue!=GAS){
@@ -57,17 +57,18 @@ public class ModuleAttackCooldown extends Module {
 	public void onWorldChange(PlayerChangedWorldEvent e) {
 		Player player = e.getPlayer();
 		World world = player.getWorld();
-
-		if (isEnabled(world)){
-
-			AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-			double baseValue = attribute.getBaseValue();
-			double GAS = module().getDouble("general-attack-speed");
-
-			if(baseValue!=GAS){
-				attribute.setBaseValue(GAS);
-				player.saveData();
-			}
+		
+		double GAS = module().getDouble("general-attack-speed");
+		
+		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+		double baseValue = attribute.getBaseValue();
+		
+		if(!Config.moduleEnabled("disable-attack-cooldown", world))
+			GAS = 4; //If module is disabled, set attack speed to 1.9 default
+		
+		if(baseValue!=GAS){
+			attribute.setBaseValue(GAS);
+			player.saveData();
 		}
 	}
 }
