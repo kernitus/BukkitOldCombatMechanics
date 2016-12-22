@@ -20,7 +20,7 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 
 public class Config {
 
-	public static final int CONFIG_VERSION = 9;
+	public static final int CONFIG_VERSION = 10;
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
@@ -36,7 +36,6 @@ public class Config {
 
 
 	private static boolean checkConfigVersion() {
-
 		if (config.getInt("config-version") != CONFIG_VERSION) {
 			plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
 			plugin.upgradeConfig();
@@ -67,7 +66,7 @@ public class Config {
 
 			List<Player> players = world.getPlayers();
 
-			double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+			double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.generic-attack-speed");
 
 			if (!Config.moduleEnabled("disable-attack-cooldown", world))
 				GAS = 4; //If module is disabled, set attack speed to 1.9 default

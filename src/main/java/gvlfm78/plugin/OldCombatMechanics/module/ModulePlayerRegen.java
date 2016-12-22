@@ -3,6 +3,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import java.util.HashMap;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,7 +14,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.MathHelper;
 
 /**
- * Created by Rayzr522 on 6/28/16.
+ * Created by Rayzr522 on 28/6/16.
  */
 public class ModulePlayerRegen extends Module {
 
@@ -23,32 +24,41 @@ public class ModulePlayerRegen extends Module {
         super(plugin, "old-player-regen");
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @SuppressWarnings("deprecation")
+	@EventHandler(priority = EventPriority.HIGHEST)
     public void onRegen(EntityRegainHealthEvent e) {
 
-        if (e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED) {
+        if (e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
             return;
-        }
 
-        Player p = (Player) e.getEntity();
+        final Player p = (Player) e.getEntity();
 
-        if (!isEnabled(p.getWorld())) {
+        if (!isEnabled(p.getWorld()))
             return;
-        }
 
         e.setCancelled(true);
 
         long currentTime = System.currentTimeMillis()/1000;
         long lastHealTime = getLastHealTime(p);
 
-        if(currentTime - lastHealTime < 3)
+        if(currentTime - lastHealTime < module().getLong("frequency"))
             return;
 
         if (p.getHealth() < p.getMaxHealth()) {
-            p.setHealth(MathHelper.clamp(p.getHealth() + 1, 0.0, p.getMaxHealth()));
+            p.setHealth(MathHelper.clamp(p.getHealth() + module().getInt("amount"), 0.0, p.getMaxHealth()));
             healTimes.put(p.getUniqueId(), currentTime);
         }
-
+        
+        final float previousExh = p.getExhaustion();
+        final float exhToApply = (float) module().getDouble("exhaustion");
+        	
+        Bukkit.getScheduler().runTaskLater(plugin, new Runnable () {
+			public void run() {
+				//This is because bukkit doesn't stop the exhaustion change when cancelling the event
+				p.setExhaustion(previousExh + exhToApply);
+				debug("Exhaustion before: " + previousExh + " Now: " + p.getExhaustion() + "Saturation: " + p.getSaturation(), p);
+			}
+		},1L);
     }
 
     private long getLastHealTime(Player p) {
@@ -57,7 +67,5 @@ public class ModulePlayerRegen extends Module {
             healTimes.put(p.getUniqueId(), System.currentTimeMillis()/1000);
 
         return healTimes.get(p.getUniqueId());
-
     }
-
 }

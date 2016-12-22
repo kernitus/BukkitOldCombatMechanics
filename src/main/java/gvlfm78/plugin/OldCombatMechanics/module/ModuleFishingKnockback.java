@@ -44,9 +44,8 @@ public class ModuleFishingKnockback extends Module {
 
 		for (Entity entity : entities) {
 
-			if (!(entity instanceof Player)) {
+			if (!(entity instanceof Player))
 				continue;
-			}
 
 			FishHook hook = (FishHook) e.getEntity();
 			Player rodder = (Player) hook.getShooter();
@@ -58,8 +57,9 @@ public class ModuleFishingKnockback extends Module {
 			EntityDamageByEntityEvent event = makeEvent(rodder, player);
 			Bukkit.getPluginManager().callEvent(event);
 
-			if(plugin.getConfig().getBoolean("old-fishing-knockback.checkCancelled") && event.isCancelled()){
+			if(module().getBoolean("checkCancelled") && event.isCancelled()){
 
+				//This is to check what plugins are listening to the event
 				if(plugin.getConfig().getBoolean("debug.enabled")){
 					debug("You can't do that here!", rodder);
 					HandlerList hl = event.getHandlers();
@@ -67,13 +67,15 @@ public class ModuleFishingKnockback extends Module {
 					for(RegisteredListener rl : hl.getRegisteredListeners()){
 						debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
 					}
-
 				}
+
 				return; 
 			}
 
-			Double damage = plugin.getConfig().getDouble("old-fishing-knockback.damage");
+			double damage = module().getDouble("damage");
+			if(damage<0) damage = 0.2;
 			player.damage(damage);
+
 			Location loc = player.getLocation().add(0, 0.5, 0);
 			player.teleport(loc);
 			player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
