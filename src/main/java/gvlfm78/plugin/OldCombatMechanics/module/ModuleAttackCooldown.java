@@ -28,7 +28,7 @@ public class ModuleAttackCooldown extends Module {
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
-		double GAS = module().getDouble("disable-attack-cooldown.general-attack-speed");
+		double GAS = module().getDouble("general-attack-speed");
 
 		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
