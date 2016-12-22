@@ -26,7 +26,7 @@ disable-attack-cooldown:
   enabled: true
   worlds: []
   # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
-  general-attack-speed: 24
+  generic-attack-speed: 24
   
 disable-player-collisions:
   # This is to disable player collisions
@@ -52,6 +52,11 @@ disable-offhand:
   # Won't affect sword-blocking module
   enabled: true
   worlds: []
+  # Whether the following list blocks items or allows them
+  whitelist: false
+  # List of items that should be allowed/not
+  # Example: [diamond_sword,BOW]
+  items: []
   
 old-brewing-stand:
   # Automatically adds a blaze powder to brewing stand upon opening
@@ -120,6 +125,30 @@ old-golden-apples:
   # Enabling this makes the potion effects gained by eating golden apples
   # and enchanted golden apples the same as it was in pre-1.9
   old-potion-effects: true
+  # Potion effects golden apples should apply
+  # Duration is in ticks (20 ticks = 1 second)
+  # Amplifier is potion level -1, so Regeneration IV would be amplifier 3
+  gapple-effects:
+    regeneration:
+      duration: 100
+      amplifier: 1
+    absorption: 
+      duration: 2400
+      amplifier: 0
+  # Potion effects enchanted golden apples should apply
+  napple-effects:
+    regeneration:
+      duration: 600
+      amplifier: 4
+    damage_resistance:
+      duration: 6000
+      amplifier: 0
+    fire_resistance:
+      duration: 6000
+      amplifier: 0
+    absorption:
+      duration: 2400
+      amplifier: 0
   # Enable this if you have another plugin which adds a crafting recipe for
   # enchanted golden apples (requires server restart)
   no-conflict-mode: false
@@ -141,6 +170,14 @@ old-player-regen:
   # It's hard to make it behave exactly like before, but in general this makes it work like in pre-1.9
   enabled: true
   worlds: []
+  # How often, in seconds, a player should regenerate health
+  frequency: 3
+  # How many half-hearts the player should heal by, every seconds specified above
+  amount: 1
+  # How much exhaustion healing should give to the player. In 1.8: 3 In 1.9: 4 in 1.11: 6
+  # If, after adding this, Minecraft finds the value is above 4, it subtracts 4
+  # and either reduces saturation or, if saturation is 0, reduces food level by 1 (1/2 a stick)
+  exhaustion: 3
 
 old-armour-strength:
   # This is to set armour strength values as in pre-1.9
@@ -185,4 +222,4 @@ debug:
     enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 9
+config-version: 10

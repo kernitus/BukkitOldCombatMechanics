@@ -28,7 +28,7 @@ public class ModuleAttackCooldown extends Module {
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
-		double GAS = module().getDouble("general-attack-speed");
+		double GAS = module().getDouble("generic-attack-speed");
 
 		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
@@ -58,7 +58,7 @@ public class ModuleAttackCooldown extends Module {
 		Player player = e.getPlayer();
 		World world = player.getWorld();
 		
-		double GAS = module().getDouble("general-attack-speed");
+		double GAS = module().getDouble("generic-attack-speed");
 		
 		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
