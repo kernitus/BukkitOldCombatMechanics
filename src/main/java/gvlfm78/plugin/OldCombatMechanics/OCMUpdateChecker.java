@@ -38,7 +38,7 @@ public class OCMUpdateChecker {
 				//Updater knows local and remote versions are different, but not if it's an update
 				String remoteVersion = updater.getLatestName().replaceAll("[A-Za-z\\s]", "");
 				if(shouldUpdate(plugin.getDescription().getVersion(), remoteVersion)){
-					updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + updater.getLatestName().replaceAll("[A-Za-z\\s]", "") + " is available!";
+					updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + remoteVersion + " is available!";
 					updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + updater.getLatestFileLink();
 				}
 			}
