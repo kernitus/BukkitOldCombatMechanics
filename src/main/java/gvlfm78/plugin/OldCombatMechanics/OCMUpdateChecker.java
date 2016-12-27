@@ -35,8 +35,12 @@ public class OCMUpdateChecker {
 		else{//Get messages from bukkit update checker
 			Updater updater = new Updater(plugin, 98233, pluginFile, Updater.UpdateType.NO_DOWNLOAD, false);
 			if(updater.getResult().equals(Updater.UpdateResult.UPDATE_AVAILABLE)){
-				updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + updater.getLatestName().replaceAll("[A-Za-z\\s]", "") + " is available!";
-				updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + updater.getLatestFileLink();
+				//Updater knows local and remote versions are different, but not if it's an update
+				String remoteVersion = updater.getLatestName().replaceAll("[A-Za-z\\s]", "");
+				if(shouldUpdate(plugin.getDescription().getVersion(), remoteVersion)){
+					updateMessages[0] = ChatColor.BLUE + "An update for OldCombatMechanics to version " + updater.getLatestName().replaceAll("[A-Za-z\\s]", "") + " is available!";
+					updateMessages[1] = ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + updater.getLatestFileLink();
+				}
 			}
 		}
 		return updateMessages;
@@ -62,5 +66,26 @@ public class OCMUpdateChecker {
 		}
 		else
 			sendUpdateMessages(plugin.getLogger());
+	}
+	public boolean shouldUpdate(String localVersion, String remoteVersion) {
+		return versionCompare(localVersion, remoteVersion) < 0;
+		//return !localVersion.equalsIgnoreCase(remoteVersion);
+	}
+	public Integer versionCompare(String oldVer, String newVer){
+		String[] vals1 = oldVer.split("\\.");
+		String[] vals2 = newVer.split("\\.");
+		int i = 0;
+		// set index to first non-equal ordinal or length of shortest version string
+		while (i < vals1.length && i < vals2.length && vals1[i].equals(vals2[i]))
+			i++;
+		// compare first non-equal ordinal number
+		if (i < vals1.length && i < vals2.length){
+			int diff = Integer.valueOf(vals1[i]).compareTo(Integer.valueOf(vals2[i]));
+			return Integer.signum(diff);
+		}
+		// the strings are equal or one string is a substring of the other
+		// e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
+		else
+			return Integer.signum(vals1.length - vals2.length);
 	}
 }
