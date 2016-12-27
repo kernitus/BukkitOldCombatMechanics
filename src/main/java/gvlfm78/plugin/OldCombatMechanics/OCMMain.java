@@ -19,176 +19,165 @@ import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
-    protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this, this.getFile());
-    Logger logger = getLogger();
-    private OCMConfigHandler CH = new OCMConfigHandler(this);
-    private OCMTask task = null;
-    private OCMSweepTask sweepTask = null;
-    private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
-    private Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this, this.getFile());
+	Logger logger = getLogger();
+	private OCMConfigHandler CH = new OCMConfigHandler(this);
+	private OCMTask task = null;
+	private OCMSweepTask sweepTask = null;
+	private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
+	private Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
 
-    @Override
-    public void onEnable() {
+	@Override
+	public void onEnable() {
 
-        PluginDescriptionFile pdfFile = this.getDescription();
+		PluginDescriptionFile pdfFile = this.getDescription();
 
-        // Initialise ModuleLoader utility
-        ModuleLoader.Initialise(this);
-        
-        // Register every event class (as well as our command handler)
-        registerAllEvents();
+		// Initialise ModuleLoader utility
+		ModuleLoader.Initialise(this);
 
-        // Setting up config.yml
-        CH.setupConfigyml();
-        
-        // Initialise the Messenger utility
-        Messenger.Initialise(this);
-        
-        // Initialise Config utility
-        Config.Initialise(this);
+		// Register every event class (as well as our command handler)
+		registerAllEvents();
 
-        // Initialise the team if it doesn't already exist
-        createTeam();
+		// Setting up config.yml
+		CH.setupConfigyml();
 
-        // Disabling player collisions
-        if (Config.moduleEnabled("disable-player-collisions")) {
-            // Even though it says "restart", it works for just starting it too
-            restartTask();
-        }
+		// Initialise the Messenger utility
+		Messenger.Initialise(this);
 
-        if (Config.moduleEnabled("disable-sword-sweep")) {
-            //Start up anti sword sweep attack task
-            restartSweepTask();
-        }
+		// Initialise Config utility
+		Config.Initialise(this);
 
-        // Metrics
-        try {
-            MetricsLite metrics = new MetricsLite(this);
-            metrics.start();
-        } catch (IOException e) {
-            // Failed to submit the stats
-        }
+		// Initialise the team if it doesn't already exist
+		createTeam();
 
-        // Register crafting recipes
-        registerCrafting();
+		// Disabling player collisions
+		if (Config.moduleEnabled("disable-player-collisions"))
+			// Even though it says "restart", it works for just starting it too
+			restartTask();
 
-        // Logging to console the enabling of OCM
-        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+		if (Config.moduleEnabled("disable-sword-sweep"))
+			//Start up anti sword sweep attack task
+			restartSweepTask();
 
-    }
+		// Metrics
+		try {
+			MetricsLite metrics = new MetricsLite(this);
+			metrics.start();
+		} catch (IOException e) {
+			// Failed to submit the stats
+		}
 
-    @Override
-    public void onDisable() {
+		// Register crafting recipes
+		registerCrafting();
 
-        PluginDescriptionFile pdfFile = this.getDescription();
+		// Logging to console the enabling of OCM
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
 
-        if (task != null)
-            task.cancel();
+	}
 
-        // Logging to console the disabling of OCM
-        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
-    }
+	@Override
+	public void onDisable() {
 
-    private void registerAllEvents() {
+		PluginDescriptionFile pdfFile = this.getDescription();
 
-        // Main listener (also a module so we can use the dynamic registering/unregistering)
-        ModuleLoader.AddModule(new OCMListener(this, this.getFile()));
-        ModuleLoader.AddModule(new ArmourListener(this));
+		if (task != null) task.cancel();
 
-        // Module listeners
-        ModuleLoader.AddModule(new ModuleAttackCooldown(this));
-        ModuleLoader.AddModule(new ModulePlayerCollisions(this));
-        ModuleLoader.AddModule(new ModuleSwordSweep(this)); // Registering this before OldToolDamage should prevent any problems
-        ModuleLoader.AddModule(new ModuleOldToolDamage(this));
-        ModuleLoader.AddModule(new ModuleGoldenApple(this));
-        ModuleLoader.AddModule(new ModuleFishingKnockback(this));
-        ModuleLoader.AddModule(new ModulePlayerRegen(this));
-        ModuleLoader.AddModule(new ModuleSwordBlocking(this));
-        ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
-        ModuleLoader.AddModule(new ModuleShieldCrafting(this));
-        ModuleLoader.AddModule(new ModuleDisableOffHand(this));
-        ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
-        ModuleLoader.AddModule(new ModuleDisableElytra(this));
-        
-        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
+		// Logging to console the disabling of OCM
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+	}
 
-    }
+	private void registerAllEvents() {
 
-    private void createTeam() {
+		// Main listener (also a module so we can use the dynamic registering/unregistering)
+		ModuleLoader.AddModule(new OCMListener(this, this.getFile()));
+		ModuleLoader.AddModule(new ArmourListener(this));
 
-        String name = "ocmInternal";
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		// Module listeners
+		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
+		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
+		ModuleLoader.AddModule(new ModuleSwordSweep(this)); // Registering this before OldToolDamage should prevent any problems
+		ModuleLoader.AddModule(new ModuleOldToolDamage(this));
+		ModuleLoader.AddModule(new ModuleGoldenApple(this));
+		ModuleLoader.AddModule(new ModuleFishingKnockback(this));
+		ModuleLoader.AddModule(new ModulePlayerRegen(this));
+		ModuleLoader.AddModule(new ModuleSwordBlocking(this));
+		ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
+		ModuleLoader.AddModule(new ModuleShieldCrafting(this));
+		ModuleLoader.AddModule(new ModuleDisableOffHand(this));
+		ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
+		ModuleLoader.AddModule(new ModuleDisableElytra(this));
+		ModuleLoader.AddModule(new ModuleDisableProjectileRandomness(this));
+		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 
-        Team team = null;
+		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 
-        for (Team t : scoreboard.getTeams()) {
-            if (t.getName().equals(name)) {
-                team = t;
-                break;
-            }
-        }
+	}
 
-        if (team == null) {
-            team = scoreboard.registerNewTeam(name);
-        }
+	private void createTeam() {
+		String name = "ocmInternal";
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
-        team.setAllowFriendlyFire(true);
+		Team team = null;
 
-    }
+		for (Team t : scoreboard.getTeams()) {
+			if (t.getName().equals(name)) {
+				team = t;
+				break;
+			}
+		}
 
-    public void upgradeConfig() {
-        CH.upgradeConfig();
-    }
+		if (team == null)
+			team = scoreboard.registerNewTeam(name);
 
-    public boolean doesConfigymlExist() {
-        return CH.doesConfigymlExist();
-    }
+		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
+		team.setAllowFriendlyFire(true);
+	}
 
-    public void restartTask() {
+	public void upgradeConfig() {
+		CH.upgradeConfig();
+	}
 
-        if (task == null) {
-            task = new OCMTask(this);
-        } else {
-            task.cancel();
-            task = new OCMTask(this);
-        }
+	public boolean doesConfigymlExist() {
+		return CH.doesConfigymlExist();
+	}
 
-        double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
+	public void restartTask() {
 
-        if (minutes > 0)
-            task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
-        else
-            task.runTaskTimerAsynchronously(this, 0, 60 * 20);
+		if (task == null)
+			task = new OCMTask(this);
+		else {
+			task.cancel();
+			task = new OCMTask(this);
+		}
 
-    }
+		double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
 
-    public void restartSweepTask() {
-        if (sweepTask == null) {
-            sweepTask = new OCMSweepTask();
-        } else {
-            sweepTask.cancel();
-            sweepTask = new OCMSweepTask();
-        }
-        sweepTask.runTaskTimer(this, 0, 1);
-    }
+		if (minutes > 0)
+			task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
+		else
+			task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
-    public OCMSweepTask sweepTask() {
-        return sweepTask;
-    }
+	}
 
-    private void registerCrafting() {
+	public void restartSweepTask() {
+		if (sweepTask == null)
+			sweepTask = new OCMSweepTask();
+		else {
+			sweepTask.cancel();
+			sweepTask = new OCMSweepTask();
+		}
+		sweepTask.runTaskTimer(this, 0, 1);
+	}
 
-        if (!Config.moduleSettingEnabled("old-golden-apples", "no-conflict-mode")) {
+	public OCMSweepTask sweepTask() {
+		return sweepTask;
+	}
 
-            if (Bukkit.getRecipesFor(gapple).size() == 0) {
+	private void registerCrafting() {
 
-                Bukkit.addRecipe(r);
-
-            }
-
-        }
-
-    }
-
+		if (!Config.moduleSettingEnabled("old-golden-apples", "no-conflict-mode")) {
+			if (Bukkit.getRecipesFor(gapple).size() == 0)
+				Bukkit.addRecipe(r);
+		}
+	}
 }

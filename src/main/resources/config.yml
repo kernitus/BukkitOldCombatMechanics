@@ -212,6 +212,19 @@ old-armour-strength:
     DIAMOND_CHESTPLATE: 8
     DIAMOND_LEGGINGS: 6
     DIAMOND_BOOTS: 3
+    
+disable-projectile-randomness:
+    # This is to remove projectile randomness while firing arrows with a bow
+    # This is actually a very old feature and has been in the game for quite some time
+    enabled: false
+    worlds: []
+    
+disable-bow-boost:
+    # This is to stop players from boosting themselves forward by hitting themselves
+    # while running with a punch II arrow from their bow
+    # This module just stops them from hitting themselves with arrows entirely
+    enabled: false
+    worlds: []
 
 ################################
 #### SPECIAL SETTINGS BELOW ####
