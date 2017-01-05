@@ -53,6 +53,8 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>jar-with-dependencies</shadedClassifierName>
 							<artifactSet>
 								<includes>
 									<include>net.gravitydevelopment.updater:*</include>
