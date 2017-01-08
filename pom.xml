@@ -3,9 +3,9 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
 	<artifactId>OldCombatMechanics</artifactId>
-	<version>1.1.2</version>
+	<version>1.2.0</version>
 	<name>OldCombatMechanics</name>
-	<description>Reverts to pre-1.8 combat mechanics</description>
+	<description>Reverts to pre-1.9 combat mechanics</description>
 	<repositories>
 		<repository>
 			<id>bukkit</id>
@@ -42,6 +42,15 @@
 			</resource>
 		</resources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.2</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
