@@ -1,9 +1,8 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import com.codingforcookies.armourequip.ArmourListener;
-import kernitus.plugin.OldCombatMechanics.module.*;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import java.io.IOException;
+import java.util.logging.Logger;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -14,8 +13,25 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import java.io.IOException;
-import java.util.logging.Logger;
+import com.codingforcookies.armourequip.ArmourListener;
+
+import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableElytra;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
+import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
+import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen;
+import kernitus.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 
 public class OCMMain extends JavaPlugin {
 
