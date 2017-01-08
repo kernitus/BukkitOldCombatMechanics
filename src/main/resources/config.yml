@@ -8,8 +8,8 @@
 #############################################################################
 
 # This is to toggle the update checker
-update-checker: 
-    enabled: true
+update-checker:
+  enabled: true
     
 # Enable the oldcombatmechanics.toggle permission
 # for players to individually /ocm toggle their cooldown
@@ -132,7 +132,7 @@ old-golden-apples:
     regeneration:
       duration: 100
       amplifier: 1
-    absorption: 
+    absorption:
       duration: 2400
       amplifier: 0
   # Potion effects enchanted golden apples should apply
@@ -214,17 +214,17 @@ old-armour-strength:
     DIAMOND_BOOTS: 3
     
 disable-projectile-randomness:
-    # This is to remove projectile randomness while firing arrows with a bow
-    # This is actually a very old feature and has been in the game for quite some time
-    enabled: false
-    worlds: []
+  # This is to remove projectile randomness while firing arrows with a bow
+  # This is actually a very old feature and has been in the game for quite some time
+  enabled: false
+  worlds: []
     
 disable-bow-boost:
-    # This is to stop players from boosting themselves forward by hitting themselves
-    # while running with a punch II arrow from their bow
-    # This module just stops them from hitting themselves with arrows entirely
-    enabled: false
-    worlds: []
+  # This is to stop players from boosting themselves forward by hitting themselves
+  # while running with a punch II arrow from their bow
+  # This module just stops them from hitting themselves with arrows entirely
+  enabled: false
+  worlds: []
 
 ################################
 #### SPECIAL SETTINGS BELOW ####
@@ -232,7 +232,7 @@ disable-bow-boost:
   
 # This enables debug messages, only enable when troubleshooting
 debug:
-    enabled: false
+  enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
 config-version: 10

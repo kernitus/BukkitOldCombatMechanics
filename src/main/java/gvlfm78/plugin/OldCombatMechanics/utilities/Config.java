@@ -8,6 +8,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
@@ -35,8 +36,12 @@ public class Config {
 	}
 
 
+	@SuppressWarnings("deprecation")
 	private static boolean checkConfigVersion() {
-		if (config.getInt("config-version") != CONFIG_VERSION) {
+		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(plugin.getResource("config.yml"));
+
+		if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
+			
 			plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
 			plugin.upgradeConfig();
 			reload();
@@ -70,9 +75,9 @@ public class Config {
 
 			if (!Config.moduleEnabled("disable-attack-cooldown", world))
 				GAS = 4; //If module is disabled, set attack speed to 1.9 default
-			
+
 			boolean isArmourEnabled = Config.moduleEnabled("old-armour-strength", world);
-			
+
 			for(Player player : players){
 				//Setting attack speed
 				AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
@@ -82,7 +87,7 @@ public class Config {
 					attribute.setBaseValue(GAS);
 					player.saveData();
 				}
-				
+
 				//Setting armour values
 				ModuleOldArmourStrength moas = new ModuleOldArmourStrength(plugin);
 				moas.setArmourAccordingly(player, isArmourEnabled);
