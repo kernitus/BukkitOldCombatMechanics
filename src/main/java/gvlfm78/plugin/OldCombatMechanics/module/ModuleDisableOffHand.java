@@ -30,17 +30,14 @@ public class ModuleDisableOffHand extends Module {
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
-
-		if(e.getInventory().getType().equals(InventoryType.PLAYER)) return; //Making sure it's a survival player's inventory
+		e.getWhoClicked().sendMessage("Inventory Type: " + e.getInventory().getType());
+		if(!e.getInventory().getType().equals(InventoryType.CRAFTING)) return; //Making sure it's a survival player's inventory
 
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
 
 		if(!e.getCurrentItem().getType().equals(Material.AIR)) return; 
 		// If the slot is not empty, allow taking the item
-		// This is because enough spamclicking will actually allow them to put an item into the offhand slot
-		// They now need to get extremely lucky to stop clicking at the exact click in which this occurs,
-		// as any further click on the item will take it back out
 
 		ItemStack item = e.getCursor();
 		if(shouldWeCancel(item)){
@@ -52,7 +49,7 @@ public class ModuleDisableOffHand extends Module {
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryDrag(InventoryDragEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld()) || 
-				e.getInventory().getType().equals(InventoryType.PLAYER) || 
+				!e.getInventory().getType().equals(InventoryType.CRAFTING) || 
 				!e.getInventorySlots().contains(40)) return;
 
 		e.setResult(Event.Result.DENY);
