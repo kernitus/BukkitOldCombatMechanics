@@ -30,7 +30,6 @@ public class ModuleDisableOffHand extends Module {
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
-		e.getWhoClicked().sendMessage("Inventory Type: " + e.getInventory().getType());
 		if(!e.getInventory().getType().equals(InventoryType.CRAFTING)) return; //Making sure it's a survival player's inventory
 
 		if(e.getSlot() != 40) return;
