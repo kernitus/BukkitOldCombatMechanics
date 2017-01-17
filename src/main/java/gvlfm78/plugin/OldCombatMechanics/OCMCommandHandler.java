@@ -40,13 +40,13 @@ public class OCMCommandHandler implements CommandExecutor {
 					&& sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player){
 				//Toggle their cooldown
 				Player p = (Player) sender;
-				double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.general-attack-speed");
+				double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.generic-attack-speed");
 
 				AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 				double baseValue = attribute.getBaseValue();
 				String message = "";
 
-				if (baseValue == GAS) {// They're enabled, let's disable it
+				if (baseValue == GAS) {// Toggle
 					GAS = 4;
 					message = "&1[OCM] &aAttack cooldown enabled";
 				}
