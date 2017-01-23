@@ -13,6 +13,8 @@ import org.bukkit.entity.Player;
 
 import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 
 /**
@@ -93,6 +95,10 @@ public class Config {
 				moas.setArmourAccordingly(player, isArmourEnabled);
 			}
 		}
+		if(Config.moduleEnabled("disable-offhand"))
+			ModuleDisableOffHand.INSTANCE.reloadList();
+		if(Config.moduleEnabled("old-golden-apples"))
+			ModuleGoldenApple.INSTANCE.reloadRecipes();
 	}
 
 	private static void load() {
