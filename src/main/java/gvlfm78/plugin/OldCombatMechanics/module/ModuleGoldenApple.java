@@ -25,12 +25,19 @@ public class ModuleGoldenApple extends Module {
 
 	private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
 
+	public static ModuleGoldenApple INSTANCE;
+	
 	public ModuleGoldenApple(OCMMain plugin) {
 		super(plugin, "old-golden-apples");
+		INSTANCE = this;
+		reloadRecipes();
+	}
+
+	public void reloadRecipes(){
 		enchantedGoldenAppleEffects = getPotionEffects("napple");
 		goldenAppleEffects = getPotionEffects("gapple");
 	}
-
+	
 	public static boolean RECIPE_ALREADY_EXISTED = false;
 
 	@EventHandler(priority = EventPriority.HIGH)

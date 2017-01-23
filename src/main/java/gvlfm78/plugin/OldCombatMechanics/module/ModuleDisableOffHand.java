@@ -19,9 +19,15 @@ public class ModuleDisableOffHand extends Module {
 
 	private static ArrayList<Material> mats = new ArrayList<Material>();
 	
+	public static ModuleDisableOffHand INSTANCE;
+
 	public ModuleDisableOffHand(OCMMain plugin) {
 		super(plugin, "disable-offhand");
-		
+		INSTANCE = this;
+		reloadList();
+	}
+
+	public void reloadList(){
 		List<String> items = module().getStringList("items");
 
 		//There is no list, just block everything
