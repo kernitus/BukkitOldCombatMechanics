@@ -153,6 +153,25 @@ old-golden-apples:
   # enchanted golden apples (requires server restart)
   no-conflict-mode: false
   worlds: []
+  
+old-potion-effects:
+  # This is to restore the 1.8 potion effects before they were nerfed
+  enabled: true
+  # Poison potion II
+  8228:
+    poison:
+      duration: 440
+      amplifier: 1????
+  # Extended Poison potion
+  8260:
+    poison:
+      duration: 2400
+      amplifier: 0????
+  # Extended Regeneration potion
+  8257:
+    regeneration:
+      duration: 2400
+      amplifier: 0????
 
 old-fishing-knockback:
   # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
