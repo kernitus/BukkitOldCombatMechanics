@@ -56,7 +56,7 @@ public class ModuleDisableOffHand extends Module {
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
 
-		if(!e.getCurrentItem().getType().equals(Material.AIR)) return; 
+		if(!e.getCurrentItem().getType().equals(Material.AIR) && e.getCursor().getType().equals(Material.AIR)) return; 
 		// If the slot is not empty, allow taking the item
 
 		if(shouldWeCancel(e.getCursor())){
