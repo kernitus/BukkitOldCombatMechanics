@@ -16,6 +16,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -99,6 +100,8 @@ public class Config {
 			ModuleDisableOffHand.INSTANCE.reloadList();
 		if(Config.moduleEnabled("old-golden-apples"))
 			ModuleGoldenApple.INSTANCE.reloadRecipes();
+		if(Config.moduleEnabled("sword-blocking"))
+			ModuleSwordBlocking.INSTANCE.reloadExcluded();
 	}
 
 	private static void load() {

@@ -1,6 +1,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,6 +14,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -32,34 +35,32 @@ import kernitus.plugin.OldCombatMechanics.utilities.ItemUtils;
  */
 public class ModuleSwordBlocking extends Module {
 
-	private static ModuleSwordBlocking INSTANCE;
+	public static ModuleSwordBlocking INSTANCE;
 
 	private static final ItemStack SHIELD = ItemUtils.makeItem("shield");
 
 	private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
+	private ArrayList<Material> excluded = new ArrayList<Material>();
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
 		INSTANCE = this;
+		reloadExcluded();
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onRightClick(PlayerInteractEvent e) {
 
-		if (!e.getAction().toString().startsWith("RIGHT_CLICK")) {
-			return;
-		}
+		if (e.getItem() == null) return;
 
-		if (e.getItem() == null) {
-			return;
-		}
+		Action action = e.getAction();
+		if (action.equals(Action.RIGHT_CLICK_BLOCK) &&
+				excluded.contains(e.getClickedBlock().getType())) return;
 
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
-		if (!isEnabled(world)) {
-			return;
-		}
+		if (!isEnabled(world)) return;
 
 		UUID id = p.getUniqueId();
 
@@ -97,7 +98,7 @@ public class ModuleSwordBlocking extends Module {
 
 				//If the damage was not reduced at all from blocking they must have not been hit head-on, so don't reduce damage
 				if(e.getDamage(DamageModifier.BLOCKING) > 0)			
-				e.setDamage(DamageModifier.BLOCKING, damageReduction);
+					e.setDamage(DamageModifier.BLOCKING, damageReduction);
 			}
 		}
 	}
@@ -188,13 +189,10 @@ public class ModuleSwordBlocking extends Module {
 	}
 
 	public static void RestoreAll() {
-
 		INSTANCE.restoreAll();
-
 	}
 
 	public void restoreAll() {
-
 		for (Map.Entry<UUID, ItemStack> entry : storedOffhandItems.entrySet()) {
 
 			UUID id = entry.getKey();
@@ -203,7 +201,16 @@ public class ModuleSwordBlocking extends Module {
 			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
 
 			storedOffhandItems.remove(id);
+		}
+	}
 
+	public void reloadExcluded(){
+		List<String> list = module().getStringList("excluded");
+		if(list==null) return;
+		for(String name : list){
+			Material mat = Material.matchMaterial(name);
+			if(mat!=null)
+				excluded.add(mat);
 		}
 	}
 
@@ -218,5 +225,4 @@ public class ModuleSwordBlocking extends Module {
 	private boolean isHolding(Material mat, String type) {
 		return mat.toString().endsWith("_" + type.toUpperCase());
 	}
-
 }
