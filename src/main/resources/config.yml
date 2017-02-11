@@ -116,6 +116,8 @@ sword-blocking:
   # This is to allow players to block with swords again by getting a shield while they hold right click with a sword
   enabled: true
   worlds: []
+  # List of blocks right-clicking on won't give you a shield
+  excluded: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,wood_door,wooden_door]
     
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
