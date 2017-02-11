@@ -48,14 +48,14 @@ public class OCMMain extends JavaPlugin {
 
 		PluginDescriptionFile pdfFile = this.getDescription();
 
+		// Setting up config.yml
+		CH.setupConfigyml();
+		
 		// Initialise ModuleLoader utility
 		ModuleLoader.Initialise(this);
 
 		// Register every event class (as well as our command handler)
 		registerAllEvents();
-
-		// Setting up config.yml
-		CH.setupConfigyml();
 
 		// Initialise the Messenger utility
 		Messenger.Initialise(this);
