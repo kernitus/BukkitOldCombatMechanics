@@ -29,8 +29,10 @@ public class ModuleOldBrewingStand extends Module {
 	public void onInventoryClick(InventoryClickEvent e) {
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
-		if(e.getInventory().getType().equals(InventoryType.BREWING) && e.getCurrentItem().getType() == Material.BLAZE_POWDER && e.getRawSlot()==4){
-			e.setCancelled(true);
+		if(e.getInventory().getType().equals(InventoryType.BREWING)){
+			ItemStack item = e.getCurrentItem();
+			if(item!=null && item.getType() == Material.BLAZE_POWDER && e.getRawSlot()==4)
+				e.setCancelled(true);
 		}
 	}
 
