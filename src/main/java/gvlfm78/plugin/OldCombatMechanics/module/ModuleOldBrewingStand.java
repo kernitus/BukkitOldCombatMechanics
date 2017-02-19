@@ -44,7 +44,7 @@ public class ModuleOldBrewingStand extends Module {
 		if(inv.getType().equals(InventoryType.BREWING)){
 			BrewerInventory bi = (BrewerInventory) inv;
 			ItemStack fuel = bi.getFuel();
-			if(fuel.getType().equals(Material.BLAZE_POWDER))
+			if(fuel != null && fuel.getType().equals(Material.BLAZE_POWDER))
 				bi.setFuel(new ItemStack(Material.AIR));
 		}
 	}
