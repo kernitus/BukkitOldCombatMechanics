@@ -1,8 +1,10 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
+import org.bstats.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -15,6 +17,7 @@ import org.bukkit.scoreboard.Team;
 
 import com.codingforcookies.armourequip.ArmourListener;
 
+import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableElytra;
@@ -50,7 +53,7 @@ public class OCMMain extends JavaPlugin {
 
 		// Setting up config.yml
 		CH.setupConfigyml();
-		
+
 		// Initialise ModuleLoader utility
 		ModuleLoader.Initialise(this);
 
@@ -75,7 +78,10 @@ public class OCMMain extends JavaPlugin {
 			//Start up anti sword sweep attack task
 			restartSweepTask();
 
-		// Metrics
+		// Register crafting recipes
+		registerCrafting();
+
+		// MCStats Metrics
 		try {
 			MetricsLite metrics = new MetricsLite(this);
 			metrics.start();
@@ -83,8 +89,16 @@ public class OCMMain extends JavaPlugin {
 			// Failed to submit the stats
 		}
 
-		// Register crafting recipes
-		registerCrafting();
+		//BStats Metrics
+		Metrics metrics = new Metrics(this);
+		metrics.addCustomChart(new Metrics.SimpleBarChart("Enabled Modules") {
+			@Override
+			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
+				for(Module module : ModuleLoader.getEnabledModules().keySet())
+				values.put(module.toString(), 1);
+				return values;
+			}
+		});
 
 		// Logging to console the enabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
@@ -106,9 +120,9 @@ public class OCMMain extends JavaPlugin {
 
 		// Main listener (also a module so we can use the dynamic registering/unregistering)
 		ModuleLoader.AddModule(new OCMListener(this, this.getFile()));
-		ModuleLoader.AddModule(new ArmourListener(this));
 
 		// Module listeners
+		ModuleLoader.AddModule(new ArmourListener(this));
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
 		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
 		ModuleLoader.AddModule(new ModuleSwordSweep(this)); // Registering this before OldToolDamage should prevent any problems
