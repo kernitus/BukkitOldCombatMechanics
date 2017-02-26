@@ -15,6 +15,10 @@
 			<id>gravity-repo</id>
 			<url>http://repo.gravitydevelopment.net</url>
 		</repository>
+		<repository>
+			<id>bstats-repo</id>
+			<url>http://repo.bstats.org/content/repositories/releases/</url>
+		</repository>
 	</repositories>
 	<dependencies>
 		<dependency>
@@ -26,6 +30,11 @@
 			<groupId>net.gravitydevelopment.updater</groupId>
 			<artifactId>updater</artifactId>
 			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bstats</groupId>
+			<artifactId>bstats-bukkit</artifactId>
+			<version>1.1</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -65,6 +74,9 @@
 							<artifactSet>
 								<includes>
 									<include>net.gravitydevelopment.updater:*</include>
+								</includes>
+								<includes>
+									<include>org.bstats:*</include>
 								</includes>
 							</artifactSet>
 						</configuration>

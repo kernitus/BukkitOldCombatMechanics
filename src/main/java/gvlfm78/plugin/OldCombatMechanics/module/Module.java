@@ -61,5 +61,9 @@ public class Module implements Listener {
 		}
 
 	}
-
+	
+	@Override
+	public String toString(){
+		return moduleName;
+	}
 }
