@@ -143,7 +143,9 @@ public class ModuleSwordBlocking extends Module {
 			Player p = (Player) e.getWhoClicked();
 
 			if (isBlocking(p.getUniqueId())){
-				if(e.getCursor().getType().equals(Material.SHIELD) || e.getCurrentItem().getType().equals(Material.SHIELD)){
+				ItemStack cursor = e.getCursor();
+				ItemStack current = e.getCurrentItem();
+				if(cursor!=null && cursor.getType().equals(Material.SHIELD) || current!=null && current.getType().equals(Material.SHIELD)){
 					e.setCancelled(true);
 					restore(p);
 				}
