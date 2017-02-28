@@ -48,7 +48,6 @@ public class OCMMain extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-
 		PluginDescriptionFile pdfFile = this.getDescription();
 
 		// Setting up config.yml
@@ -88,10 +87,11 @@ public class OCMMain extends JavaPlugin {
 		} catch (IOException e) {
 			// Failed to submit the stats
 		}
-
+		
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
-		metrics.addCustomChart(new Metrics.SimpleBarChart("Enabled Modules") {
+		
+		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules") {
 			@Override
 			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
 				for(Module module : ModuleLoader.getEnabledModules().keySet())
