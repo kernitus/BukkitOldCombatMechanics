@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import org.apache.commons.lang.WordUtils;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -64,6 +65,6 @@ public class Module implements Listener {
 	
 	@Override
 	public String toString(){
-		return moduleName;
+		return WordUtils.capitalizeFully(configName.replaceAll("-", " "));
 	}
 }
