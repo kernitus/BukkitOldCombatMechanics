@@ -95,7 +95,7 @@ public class OCMMain extends JavaPlugin {
 			@Override
 			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
 				for(Module module : ModuleLoader.getEnabledModules().keySet())
-				values.put(module.toString(), 1);
+					if(module.isEnabled()) values.put(module.toString(), 1);
 				return values;
 			}
 		});
