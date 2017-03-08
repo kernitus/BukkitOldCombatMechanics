@@ -74,8 +74,6 @@
 							<artifactSet>
 								<includes>
 									<include>net.gravitydevelopment.updater:*</include>
-								</includes>
-								<includes>
 									<include>org.bstats:*</include>
 								</includes>
 							</artifactSet>
