@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -52,14 +53,11 @@ public class ModuleDisableOffHand extends Module {
 	public void onInventoryClick(InventoryClickEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 		if(!e.getInventory().getType().equals(InventoryType.CRAFTING)) return; //Making sure it's a survival player's inventory
-
+		
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
 
-		if(!e.getCurrentItem().getType().equals(Material.AIR) && e.getCursor().getType().equals(Material.AIR)) return; 
-		// If the slot is not empty, allow taking the item
-
-		if(shouldWeCancel(e.getCursor())){
+		if(shouldWeCancel(e.getCursor()) || (e.getClick().equals(ClickType.NUMBER_KEY) && e.getCurrentItem().getType().equals(Material.AIR)) ){
 			e.setResult(Event.Result.DENY);
 			e.setCancelled(true);
 		}
@@ -82,7 +80,7 @@ public class ModuleDisableOffHand extends Module {
 		boolean isContained = mats.contains(mat);
 		boolean isWhitelist = module().getBoolean("whitelist");
 
-		if(isWhitelist && !isContained && !mat.equals(Material.AIR) || !isWhitelist && isContained )
+		if(isWhitelist && !isContained && !mat.equals(Material.AIR) || !isWhitelist && isContained)
 			return true;
 
 		return false;
