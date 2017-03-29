@@ -29,6 +29,7 @@ public class ModuleDisableOffHand extends Module {
 	}
 
 	public void reloadList(){
+		mats.clear();
 		List<String> items = module().getStringList("items");
 
 		//There is no list, just block everything
@@ -38,6 +39,7 @@ public class ModuleDisableOffHand extends Module {
 		//Looping through name list and adding valid materials to list
 		for(String itemName : items){
 			Material foundMat = Material.matchMaterial(itemName);
+			debug("Found material: " + foundMat);
 			if(foundMat != null) mats.add(foundMat);
 		}
 	}
