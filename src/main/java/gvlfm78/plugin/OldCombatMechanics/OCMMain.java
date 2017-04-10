@@ -140,7 +140,6 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
-
 	}
 
 	private void createTeam() {

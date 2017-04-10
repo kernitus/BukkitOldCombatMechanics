@@ -24,8 +24,6 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 
 public class Config {
 
-	public static final int CONFIG_VERSION = 10;
-
 	private static OCMMain plugin;
 	private static FileConfiguration config;
 
@@ -36,6 +34,8 @@ public class Config {
 
 		if (!checkConfigVersion())
 			load();
+
+		reload();
 	}
 
 
@@ -44,7 +44,7 @@ public class Config {
 		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(plugin.getResource("config.yml"));
 
 		if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
-			
+
 			plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
 			plugin.upgradeConfig();
 			reload();
@@ -126,9 +126,14 @@ public class Config {
 
 		if (section.getBoolean("enabled")) {
 
-			if (world != null && section.getList("worlds").size() > 0 && !section.getList("worlds").contains(world.getName()))
-				return false;
+			List<?> list = section.getList("worlds");
 
+			if (world != null && list != null && list.size() > 0){
+				for(Object wname : list){
+					if(String.valueOf(wname).equalsIgnoreCase(world.getName()))
+						return true;
+				}
+			}
 			return true;
 		}
 
