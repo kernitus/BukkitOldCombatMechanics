@@ -58,8 +58,8 @@ public class ModuleDisableOffHand extends Module {
 		
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
-
-		if(shouldWeCancel(e.getCursor()) || (e.getClick().equals(ClickType.NUMBER_KEY) && e.getCurrentItem().getType().equals(Material.AIR)) ){
+		
+		if(shouldWeCancel(e.getCursor()) || (e.getClick().equals(ClickType.NUMBER_KEY))){
 			e.setResult(Event.Result.DENY);
 			e.setCancelled(true);
 		}
