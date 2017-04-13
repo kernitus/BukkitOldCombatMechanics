@@ -30,6 +30,7 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen;
+import kernitus.plugin.OldCombatMechanics.module.ModuleProjectileKnockback;
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep;
@@ -138,6 +139,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableElytra(this));
 		ModuleLoader.AddModule(new ModuleDisableProjectileRandomness(this));
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
+		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}
