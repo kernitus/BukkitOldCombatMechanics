@@ -155,25 +155,6 @@ old-golden-apples:
   # enchanted golden apples (requires server restart)
   no-conflict-mode: false
   worlds: []
-  
-old-potion-effects:
-  # This is to restore the 1.8 potion effects before they were nerfed
-  enabled: true
-  # Poison potion II
-  8228:
-    poison:
-      duration: 440
-      amplifier: 1????
-  # Extended Poison potion
-  8260:
-    poison:
-      duration: 2400
-      amplifier: 0????
-  # Extended Regeneration potion
-  8257:
-    regeneration:
-      duration: 2400
-      amplifier: 0????
 
 old-fishing-knockback:
   # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
@@ -185,6 +166,24 @@ old-fishing-knockback:
   checkCancelled: false
   # This is the damage done by the fishing rod attack
   damage: 0.2
+  
+projectile-knockback:
+  # This adds damage and knockback to players when they get hit by snowballs, eggs & enderpearls
+  # This has been a Bukkit bug for som long people thought it was vanilla when it was recently patched
+  enabled: true
+  worlds: []
+  # This makes OCM check if other plugins are stopping projectile damage and follow their choice
+  # Set to false to always have projectile damage
+  checkCancelled: false
+  # This is the damage done by each projectile
+  damage:
+    snowball: 1
+    egg: 0.1
+    ender_pearl: 0.1
+  knockback:
+    snowball: 0.5
+    egg: 0.5
+    ender_pearl: 0.5
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
@@ -256,4 +255,24 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 10
+config-version: 11
+
+# Not added yet
+old-potion-effects:
+  # This is to restore the 1.8 potion effects before they were nerfed
+  enabled: true
+  # Poison potion II
+  8228:
+    poison:
+      duration: 440
+      amplifier: 1????
+  # Extended Poison potion
+  8260:
+    poison:
+      duration: 2400
+      amplifier: 0????
+  # Extended Regeneration potion
+  8257:
+    regeneration:
+      duration: 2400
+      amplifier: 0????

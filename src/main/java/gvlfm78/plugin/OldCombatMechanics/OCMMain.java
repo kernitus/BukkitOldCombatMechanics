@@ -30,6 +30,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
 import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
 import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerRegen;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleProjectileKnockback;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordSweep;
@@ -138,6 +139,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableElytra(this));
 		ModuleLoader.AddModule(new ModuleDisableProjectileRandomness(this));
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
+		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}
