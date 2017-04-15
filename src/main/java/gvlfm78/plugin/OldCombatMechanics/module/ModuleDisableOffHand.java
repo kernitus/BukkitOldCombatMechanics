@@ -19,7 +19,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 public class ModuleDisableOffHand extends Module {
 
 	private static ArrayList<Material> mats = new ArrayList<Material>();
-	
+
 	public static ModuleDisableOffHand INSTANCE;
 
 	public ModuleDisableOffHand(OCMMain plugin) {
@@ -55,11 +55,11 @@ public class ModuleDisableOffHand extends Module {
 	public void onInventoryClick(InventoryClickEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 		if(!e.getInventory().getType().equals(InventoryType.CRAFTING)) return; //Making sure it's a survival player's inventory
-		
+
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
-		
-		if(shouldWeCancel(e.getCursor()) || (e.getClick().equals(ClickType.NUMBER_KEY))){
+
+		if(e.getClick().equals(ClickType.NUMBER_KEY) || shouldWeCancel(e.getCursor())){
 			e.setResult(Event.Result.DENY);
 			e.setCancelled(true);
 		}
