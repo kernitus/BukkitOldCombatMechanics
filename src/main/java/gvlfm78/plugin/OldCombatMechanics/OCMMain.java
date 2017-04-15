@@ -39,7 +39,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 
 public class OCMMain extends JavaPlugin {
 
-	protected OCMUpdateChecker updateChecker = new OCMUpdateChecker(this, this.getFile());
 	Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
 	private OCMTask task = null;
@@ -119,8 +118,8 @@ public class OCMMain extends JavaPlugin {
 
 	private void registerAllEvents() {
 
-		// Main listener (also a module so we can use the dynamic registering/unregistering)
-		ModuleLoader.AddModule(new OCMListener(this, this.getFile()));
+		// Update Checker (also a module so we can use the dynamic registering/unregistering)
+		ModuleLoader.AddModule(new OCMUpdateChecker(this, this.getFile()));
 
 		// Module listeners
 		ModuleLoader.AddModule(new ArmourListener(this));
