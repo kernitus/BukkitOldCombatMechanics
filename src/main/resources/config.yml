@@ -170,22 +170,15 @@ old-fishing-knockback:
   damage: 0.2
   
 projectile-knockback:
-  # This adds damage and knockback to players when they get hit by snowballs, eggs & enderpearls
-  # This has been a Bukkit bug for som long people thought it was vanilla when it was recently patched
+  # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
+  # This has been a Bukkit bug for so long people thought it was vanilla when it was recently patched
   enabled: true
   worlds: []
-  # This makes OCM check if other plugins are stopping projectile damage and follow their choice
-  # Set to false to always have projectile damage
-  checkCancelled: false
   # This is the damage done by each projectile
   damage:
-    snowball: 1
+    snowball: 0.1
     egg: 0.1
     ender_pearl: 0.1
-  knockback:
-    snowball: 0.5
-    egg: 0.5
-    ender_pearl: 0.5
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
@@ -257,7 +250,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 12
+config-version: 13
 
 # Not added yet
 old-potion-effects:
