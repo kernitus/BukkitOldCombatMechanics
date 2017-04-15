@@ -7,24 +7,55 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 
+import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import net.gravitydevelopment.updater.Updater;
 
-public class OCMUpdateChecker {
-
+public class OCMUpdateChecker extends Module implements Listener {
+	
 	private OCMMain plugin;
-	private final File pluginFile;
+	private File pluginFile;
 	private final SpigotUpdateChecker SUC;
 
-	public OCMUpdateChecker(OCMMain plugin, File pluginFile){
+	public OCMUpdateChecker(OCMMain plugin, File pluginFile) {
+		super(plugin, "update-checker");
 		this.plugin = plugin;
 		this.pluginFile = pluginFile;
 		SUC = new SpigotUpdateChecker(plugin, 19510);
 	}
 
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerLogin(PlayerJoinEvent e) {
+		final Player p = e.getPlayer();
+		if(p.hasPermission("OldCombatMechanics.notify")){
+			Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, new Runnable () {
+				public void run() {
+
+					OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin, pluginFile);
+
+					// Checking for updates
+					updateChecker.sendUpdateMessages(p);
+				}
+			},20L);
+		}
+	}
+
 	private String[] getUpdateMessages(){
 		String[] updateMessages = new String[2];
-		if(Bukkit.getVersion().toLowerCase().contains("spigot")){
+		boolean spigotChecker = false;
+		switch(module().getString("mode").toLowerCase()){
+		case "spigot": spigotChecker = true; break;
+		case "auto":
+			if(Bukkit.getVersion().toLowerCase().contains("spigot"))
+				spigotChecker = true;
+		}
+		
+		if(spigotChecker){
+			debug("Using spigot update checker");
 			//Get messages from Spigot update checker
 			if(SUC.getResult().name().equalsIgnoreCase("UPDATE_AVAILABLE")){
 				//An update is available
@@ -33,6 +64,7 @@ public class OCMUpdateChecker {
 			}
 		}
 		else{//Get messages from bukkit update checker
+			debug("Using bukkit update checker");
 			Updater updater = new Updater(plugin, 98233, pluginFile, Updater.UpdateType.NO_DOWNLOAD, false);
 			if(updater.getResult().equals(Updater.UpdateResult.UPDATE_AVAILABLE)){
 				//Updater knows local and remote versions are different, but not if it's an update

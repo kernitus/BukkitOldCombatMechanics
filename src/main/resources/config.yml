@@ -10,6 +10,8 @@
 # This is to toggle the update checker
 update-checker:
   enabled: true
+  # Modes: auto, bukkit, spigot
+  mode: auto
     
 # Enable the oldcombatmechanics.toggle permission
 # for players to individually /ocm toggle their cooldown
@@ -255,7 +257,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 11
+config-version: 12
 
 # Not added yet
 old-potion-effects:
