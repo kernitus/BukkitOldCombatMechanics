@@ -1,9 +1,9 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import java.util.Collection;
 import java.util.EnumMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -39,55 +39,51 @@ public class ModuleFishingKnockback extends Module {
 
 		if ((e.getEntityType() != EntityType.FISHING_HOOK))
 			return;
+		
+		Entity hitent = e.getHitEntity();
+		if(!(hitent instanceof Player)) return;
+		
+		FishHook hook = (FishHook) e.getEntity();
+		Player rodder = (Player) hook.getShooter();
+		Player player = (Player) hitent;
+		
+		debug("You were hit by a fishing rod!", player);
 
-		Collection<Entity> entities = Bukkit.getWorld(e.getEntity().getLocation().getWorld().getName()).getNearbyEntities(e.getEntity().getLocation(), 0.25, 0.25, 0.25);
+		if (player.getUniqueId() == rodder.getUniqueId())
+			return;
+		
+		if(player.getGameMode().equals(GameMode.CREATIVE)) return;
+		
+		double damage = module().getDouble("damage");
+		if(damage<0) damage = 0.2;
 
-		for (Entity entity : entities) {
+		EntityDamageByEntityEvent event = makeEvent(rodder, player, damage);
+		Bukkit.getPluginManager().callEvent(event);
 
-			if (!(entity instanceof Player))
-				continue;
+		if(module().getBoolean("checkCancelled") && event.isCancelled()){
 
-			FishHook hook = (FishHook) e.getEntity();
-			Player rodder = (Player) hook.getShooter();
-			Player player = (Player) entity;
+			//This is to check what plugins are listening to the event
+			if(plugin.getConfig().getBoolean("debug.enabled")){
+				debug("You can't do that here!", rodder);
+				HandlerList hl = event.getHandlers();
 
-			if (player.getUniqueId() == rodder.getUniqueId())
-				continue;
-
-			EntityDamageByEntityEvent event = makeEvent(rodder, player);
-			Bukkit.getPluginManager().callEvent(event);
-
-			if(module().getBoolean("checkCancelled") && event.isCancelled()){
-
-				//This is to check what plugins are listening to the event
-				if(plugin.getConfig().getBoolean("debug.enabled")){
-					debug("You can't do that here!", rodder);
-					HandlerList hl = event.getHandlers();
-
-					for(RegisteredListener rl : hl.getRegisteredListeners()){
-						debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
-					}
+				for(RegisteredListener rl : hl.getRegisteredListeners()){
+					debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
 				}
-
-				return; 
 			}
 
-			double damage = module().getDouble("damage");
-			if(damage<0) damage = 0.2;
-			player.damage(damage);
-
-			Location loc = player.getLocation().add(0, 0.5, 0);
-			player.teleport(loc);
-			player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
-
-			return;
-
+			return; 
 		}
 
+		player.damage(damage);
+
+		Location loc = player.getLocation().add(0, 0.5, 0);
+		player.teleport(loc);
+		player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private EntityDamageByEntityEvent makeEvent(Player rodder, Player player) {
-		return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Double.valueOf(0.2))), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(Double.valueOf(0.2)))));
+	private EntityDamageByEntityEvent makeEvent(Player rodder, Player player, double damage) {
+		return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	}
 }
