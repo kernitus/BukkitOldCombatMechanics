@@ -1,67 +1,69 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.OCMSweepTask;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.inventory.ItemStack;
+
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.OCMSweepTask;
+import kernitus.plugin.OldCombatMechanics.utilities.ToolDamage;
 
 /**
- * Created by Rayzr522 on 6/25/16.
+ * Created by Rayzr522 on 25/06/16.
  */
 public class ModuleSwordSweep extends Module {
 
-    public ModuleSwordSweep(OCMMain plugin) {
-        super(plugin, "disable-sword-sweep");
-    }
+	public ModuleSwordSweep(OCMMain plugin) {
+		super(plugin, "disable-sword-sweep");
+	}
 
-    // Add when finished:
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDamaged(EntityDamageByEntityEvent e) {
-        World world = e.getDamager().getWorld();
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onEntityDamaged(EntityDamageByEntityEvent e) {
+		World world = e.getDamager().getWorld();
 
-        if (!isEnabled(world)) {
-            return;
-        }
+		if (!isEnabled(world)) return;
 
-        if (!(e.getDamager() instanceof Player)) {
-            return;
-        }
+		if (!(e.getDamager() instanceof Player)) return;
 
-        Player p = (Player) e.getDamager();
-        Material mat = p.getInventory().getItemInMainHand().getType();
+		Player p = (Player) e.getDamager();
+		ItemStack weapon = p.getInventory().getItemInMainHand();
 
-        if (isHolding(mat, "sword")) {
-            onSwordAttack(e, p, mat);
-        }
+		if (isHolding(weapon.getType(), "sword"))
+			onSwordAttack(e, p, weapon);
+	}
 
-    }
+	private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon) {
+		//Disable sword sweep
 
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, Material mat) {
-        //Disable sword sweep
+		int locHashCode = p.getLocation().hashCode(); // ATTACKER
 
-        int locHashCode = p.getLocation().hashCode(); // ATTACKER
-        if (e.getDamage() == 1.0) {
-            // Possibly a sword sweep attack
-            if (sweepTask().swordLocations.contains(locHashCode)) {
-                e.setCancelled(true);
-            }
-        } else {
-            sweepTask().swordLocations.add(locHashCode);
-        }
+		int level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
 
-        ModuleOldToolDamage.onAttack(e);
-    }
+		float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
-    private OCMSweepTask sweepTask() {
-        return plugin.sweepTask();
-    }
+		if (e.getDamage() == damage) {
+			// Possibly a sword sweep attack
+			if (sweepTask().swordLocations.contains(locHashCode)){
+				debug("Cancelling sweep...", p);
+				e.setCancelled(true);
+			}
+		} else
+			sweepTask().swordLocations.add(locHashCode);
 
-    private boolean isHolding(Material mat, String type) {
-        return mat.toString().endsWith("_" + type.toUpperCase());
-    }
+		ModuleOldToolDamage.onAttack(e);
+	}
+
+	private OCMSweepTask sweepTask() {
+		return plugin.sweepTask();
+	}
+
+	private boolean isHolding(Material mat, String type) {
+		return mat.toString().endsWith("_" + type.toUpperCase());
+	}
 
 }
