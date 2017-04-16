@@ -18,7 +18,7 @@ public class ModuleProjectileKnockback extends Module {
 		if(!isEnabled(e.getEntity().getWorld())) return;
 
 		EntityType type = e.getDamager().getType();
-
+		
 		switch(type){
 		case SNOWBALL: case EGG: case ENDER_PEARL:
 			e.setDamage(module().getDouble("damage." + type.toString().toLowerCase()));
