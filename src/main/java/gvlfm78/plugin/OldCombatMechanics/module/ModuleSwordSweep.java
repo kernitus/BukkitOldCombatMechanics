@@ -41,8 +41,13 @@ public class ModuleSwordSweep extends Module {
 		//Disable sword sweep
 
 		int locHashCode = p.getLocation().hashCode(); // ATTACKER
-
-		int level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
+		
+		int level = 0;
+		
+		try{ //In a try catch for servers that haven't updated
+		level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
+		}
+		catch(NoSuchFieldError e1){ }
 
 		float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
