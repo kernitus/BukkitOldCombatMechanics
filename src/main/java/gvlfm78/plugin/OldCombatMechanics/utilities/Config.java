@@ -133,6 +133,7 @@ public class Config {
 					if(String.valueOf(wname).equalsIgnoreCase(world.getName()))
 						return true;
 				}
+				return false;
 			}
 			return true;
 		}
