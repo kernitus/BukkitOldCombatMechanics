@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import java.util.Collection;
 import java.util.EnumMap;
 
 import org.bukkit.Bukkit;
@@ -39,21 +40,37 @@ public class ModuleFishingKnockback extends Module {
 
 		if ((e.getEntityType() != EntityType.FISHING_HOOK))
 			return;
+
+
+		Entity hitent = null;
 		
-		Entity hitent = e.getHitEntity();
-		if(!(hitent instanceof Player)) return;
+		try{
+			hitent = e.getHitEntity();
+		}
+		catch(NoSuchMethodError e1){ //For older version that don't have such method
+			Collection<Entity> entities = Bukkit.getWorld(e.getEntity().getLocation().getWorld().getName()).getNearbyEntities(e.getEntity().getLocation(), 0.25, 0.25, 0.25);
+
+			for (Entity entity : entities) {
+				if (entity instanceof Player){
+					hitent = entity;
+					break;
+				}
+			}
+		}
 		
+		if(hitent != null && !(hitent instanceof Player)) return;
+
 		FishHook hook = (FishHook) e.getEntity();
 		Player rodder = (Player) hook.getShooter();
 		Player player = (Player) hitent;
-		
+
 		debug("You were hit by a fishing rod!", player);
 
 		if (player.getUniqueId() == rodder.getUniqueId())
 			return;
-		
+
 		if(player.getGameMode().equals(GameMode.CREATIVE)) return;
-		
+
 		double damage = module().getDouble("damage");
 		if(damage<0) damage = 0.2;
 
