@@ -65,6 +65,11 @@ old-brewing-stand:
   enabled: true
   worlds: []
   
+no-lapis-enchantments:
+  # Automatically adds lapis to enchantment tables upon opening
+  enabled: false
+  worlds: []
+  
 disable-elytra:
   # As players attempt to move around elytra items they get destroyed
   enabled: false
@@ -250,7 +255,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 13
+config-version: 14
 
 # Not added yet
 old-potion-effects:

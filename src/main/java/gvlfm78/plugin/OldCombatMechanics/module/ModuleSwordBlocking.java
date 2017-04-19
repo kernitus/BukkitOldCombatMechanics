@@ -54,9 +54,11 @@ public class ModuleSwordBlocking extends Module {
 		if (e.getItem() == null) return;
 
 		Action action = e.getAction();
-		if (action.equals(Action.RIGHT_CLICK_BLOCK) &&
-				excluded.contains(e.getClickedBlock().getType())) return;
-
+		
+		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
+		
+		if (action.equals(Action.RIGHT_CLICK_BLOCK) && excluded.contains(e.getClickedBlock().getType())) return;
+		
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 

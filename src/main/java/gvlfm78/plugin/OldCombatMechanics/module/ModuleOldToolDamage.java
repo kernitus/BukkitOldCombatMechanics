@@ -3,6 +3,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,7 +20,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.WeaponDamages;
  */
 public class ModuleOldToolDamage extends Module {
 
-    private String[] weapons = {"axe", "pickaxe", "spade", "hoe"};
+    private String[] weapons = {"sword", "axe", "pickaxe", "spade", "hoe"};
 
     private static ModuleOldToolDamage INSTANCE;
 
@@ -30,11 +31,13 @@ public class ModuleOldToolDamage extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
-        World world = e.getDamager().getWorld();
+    	Entity damager = e.getDamager();
+    	
+        World world = damager.getWorld();
 
-        if (!(e.getDamager() instanceof Player)) return;
+        if (!(damager instanceof Player)) return;
 
-        Player p = (Player) e.getDamager();
+        Player p = (Player) damager;
         Material mat = p.getInventory().getItemInMainHand().getType();
 
         if (isHolding(mat, weapons) && isEnabled(world))
@@ -55,7 +58,7 @@ public class ModuleOldToolDamage extends Module {
         newDamage = newDamage < 0 ? 0 : newDamage;
         e.setDamage(newDamage);
         debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage + 
-        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== new damage: " + newDamage
+        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
         , p);
     }
 

@@ -31,7 +31,7 @@ public class ModuleOldBrewingStand extends Module {
 
 		if(e.getInventory().getType().equals(InventoryType.BREWING)){
 			ItemStack item = e.getCurrentItem();
-			if(item!=null && item.getType() == Material.BLAZE_POWDER && e.getRawSlot()==4)
+			if(item!=null && item.getType().equals(Material.BLAZE_POWDER) && e.getRawSlot()==4)
 				e.setCancelled(true);
 		}
 	}
@@ -51,7 +51,7 @@ public class ModuleOldBrewingStand extends Module {
 
 	@EventHandler
 	public void onInventoryOpen(InventoryOpenEvent e) {
-		if(!isEnabled(e.getPlayer().getWorld()));
+		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
 		if(inv.getType().equals(InventoryType.BREWING))
