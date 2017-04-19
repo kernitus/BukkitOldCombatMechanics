@@ -25,6 +25,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleNoLapisEnchantments;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
@@ -125,8 +126,11 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ArmourListener(this));
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
 		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
-		ModuleLoader.AddModule(new ModuleSwordSweep(this)); // Registering this before OldToolDamage should prevent any problems
+		
+		//Apparently listeners registered after get priority
 		ModuleLoader.AddModule(new ModuleOldToolDamage(this));
+		ModuleLoader.AddModule(new ModuleSwordSweep(this));
+
 		ModuleLoader.AddModule(new ModuleGoldenApple(this));
 		ModuleLoader.AddModule(new ModuleFishingKnockback(this));
 		ModuleLoader.AddModule(new ModulePlayerRegen(this));
@@ -139,6 +143,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableProjectileRandomness(this));
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
+		ModuleLoader.AddModule(new ModuleNoLapisEnchantments(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}
