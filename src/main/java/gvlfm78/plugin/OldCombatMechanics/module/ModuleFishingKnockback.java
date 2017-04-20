@@ -58,7 +58,8 @@ public class ModuleFishingKnockback extends Module {
 			}
 		}
 		
-		if(hitent != null && !(hitent instanceof Player)) return;
+		if(hitent == null) return;
+		if(!(hitent instanceof Player)) return;
 
 		FishHook hook = (FishHook) e.getEntity();
 		Player rodder = (Player) hook.getShooter();
