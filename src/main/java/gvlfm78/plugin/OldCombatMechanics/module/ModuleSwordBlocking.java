@@ -54,11 +54,11 @@ public class ModuleSwordBlocking extends Module {
 		if (e.getItem() == null) return;
 
 		Action action = e.getAction();
-		
+
 		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
-		
+
 		if (action.equals(Action.RIGHT_CLICK_BLOCK) && excluded.contains(e.getClickedBlock().getType())) return;
-		
+
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
@@ -117,17 +117,21 @@ public class ModuleSwordBlocking extends Module {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerDeath(PlayerDeathEvent e) {
-
 		if (!isBlocking(e.getEntity().getUniqueId())) return;
 
 		Player p = e.getEntity();
 		UUID id = p.getUniqueId();
 
-		e.getDrops().remove(SHIELD);
-		e.getDrops().add(storedOffhandItems.get(id));
+		e.getDrops().replaceAll(item -> {
+			if(item.getType().equals(Material.SHIELD)){
+				item = storedOffhandItems.get(id);
+			}
+
+			return item;
+		}
+				);
 
 		storedOffhandItems.remove(id);
-
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
