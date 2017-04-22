@@ -75,7 +75,7 @@ public class ModuleFishingKnockback extends Module {
 		double damage = module().getDouble("damage");
 		if(damage<0) damage = 0.2;
 
-		EntityDamageByEntityEvent event = makeEvent(rodder, player, damage);
+		EntityDamageEvent event = makeEvent(rodder, player, damage);
 		Bukkit.getPluginManager().callEvent(event);
 
 		if(module().getBoolean("checkCancelled") && event.isCancelled()){
@@ -100,8 +100,12 @@ public class ModuleFishingKnockback extends Module {
 		player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private EntityDamageByEntityEvent makeEvent(Player rodder, Player player, double damage) {
-		return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+	@SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
+	private EntityDamageEvent makeEvent(Player rodder, Player player, double damage) {
+	    if (module().getBoolean("useEntityDamageEvent")) {
+	        return new EntityDamageEvent(player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage);
+	    } else {
+	        return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+	    }
 	}
 }
