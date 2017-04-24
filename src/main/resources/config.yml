@@ -173,6 +173,9 @@ old-fishing-knockback:
   checkCancelled: false
   # This is the damage done by the fishing rod attack
   damage: 0.2
+  # Whether the EntityDamageEvent should be used instead of the EntityDamageByEntityEvent
+  # Set to true when using plugins like NCP that check range
+  useEntityDamageEvent: false
   
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
