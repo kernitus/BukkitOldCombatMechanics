@@ -85,9 +85,8 @@ public class ModuleFishingKnockback extends Module {
 				debug("You can't do that here!", rodder);
 				HandlerList hl = event.getHandlers();
 
-				for(RegisteredListener rl : hl.getRegisteredListeners()){
+				for(RegisteredListener rl : hl.getRegisteredListeners())
 					debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
-				}
 			}
 
 			return; 
@@ -102,10 +101,16 @@ public class ModuleFishingKnockback extends Module {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private EntityDamageEvent makeEvent(Player rodder, Player player, double damage) {
-	    if (module().getBoolean("useEntityDamageEvent")) {
-	        return new EntityDamageEvent(player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
-	    } else {
-	        return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
-	    }
+		
+	    if (module().getBoolean("useEntityDamageEvent"))
+	        return new EntityDamageEvent(player,
+	        		EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+	    else
+	        return new EntityDamageByEntityEvent(rodder, player,
+	        		EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	}
 }
