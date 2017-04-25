@@ -104,12 +104,12 @@ public class ModuleFishingKnockback extends Module {
 		
 	    if (module().getBoolean("useEntityDamageEvent"))
 	        return new EntityDamageEvent(player,
-	        		EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+	        		EntityDamageEvent.DamageCause.PROJECTILE,
 	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
 	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	    else
 	        return new EntityDamageByEntityEvent(rodder, player,
-	        		EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+	        		EntityDamageEvent.DamageCause.PROJECTILE,
 	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
 	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	}
