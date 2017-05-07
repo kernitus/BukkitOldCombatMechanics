@@ -82,7 +82,7 @@ public class ModuleSwordBlocking extends Module {
 
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onProjectileHit(EntityDamageByEntityEvent e){
+	public void onHit(EntityDamageByEntityEvent e){
 		Entity ent = e.getEntity();
 
 		if(ent != null && ent instanceof Player){

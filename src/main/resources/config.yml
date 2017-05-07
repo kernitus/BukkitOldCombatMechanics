@@ -124,7 +124,7 @@ sword-blocking:
   enabled: true
   worlds: []
   # List of blocks right-clicking on won't give you a shield
-  excluded: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,wood_door,wooden_door]
+  excluded: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box]
     
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -258,7 +258,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 15
+config-version: 16
 
 # Not added yet
 old-potion-effects:
