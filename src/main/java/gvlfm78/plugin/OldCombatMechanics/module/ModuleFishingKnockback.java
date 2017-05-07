@@ -16,6 +16,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.plugin.RegisteredListener;
 
 import com.google.common.base.Functions;
@@ -43,7 +44,7 @@ public class ModuleFishingKnockback extends Module {
 
 
 		Entity hitent = null;
-		
+
 		try{
 			hitent = e.getHitEntity();
 		}
@@ -57,7 +58,7 @@ public class ModuleFishingKnockback extends Module {
 				}
 			}
 		}
-		
+
 		if(hitent == null) return;
 		if(!(hitent instanceof Player)) return;
 
@@ -101,16 +102,16 @@ public class ModuleFishingKnockback extends Module {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private EntityDamageEvent makeEvent(Player rodder, Player player, double damage) {
-		
-	    if (module().getBoolean("useEntityDamageEvent"))
-	        return new EntityDamageEvent(player,
-	        		EntityDamageEvent.DamageCause.PROJECTILE,
-	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
-	    else
-	        return new EntityDamageByEntityEvent(rodder, player,
-	        		EntityDamageEvent.DamageCause.PROJECTILE,
-	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-	        		new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+
+		if (module().getBoolean("useEntityDamageEvent"))
+			return new EntityDamageEvent(player,
+					EntityDamageEvent.DamageCause.PROJECTILE,
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+		else
+			return new EntityDamageByEntityEvent(rodder, player,
+					EntityDamageEvent.DamageCause.PROJECTILE,
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	}
 }
