@@ -7,8 +7,8 @@ import java.util.logging.Logger;
 import org.bstats.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,7 +45,19 @@ public class OCMMain extends JavaPlugin {
 	private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
 	private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
-	private Recipe r = new ShapedRecipe(gapple).shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+	
+	private ShapedRecipe r;
+	
+	@SuppressWarnings("deprecation")
+	public OCMMain(){
+		try{ 
+			r = new ShapedRecipe(new NamespacedKey(this, "MINECRAFT"), gapple);
+		}
+		catch(NoClassDefFoundError e) {
+			r = new ShapedRecipe(gapple);
+		}
+		r.shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+	}
 
 	@Override
 	public void onEnable() {
