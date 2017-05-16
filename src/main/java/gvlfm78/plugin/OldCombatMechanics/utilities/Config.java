@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
+import java.io.InputStreamReader;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -39,9 +40,8 @@ public class Config {
 	}
 
 
-	@SuppressWarnings("deprecation")
 	private static boolean checkConfigVersion() {
-		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(plugin.getResource("config.yml"));
+		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
 
 		if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
 
