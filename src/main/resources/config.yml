@@ -55,7 +55,7 @@ disable-offhand:
   enabled: true
   worlds: []
   # Whether the following list blocks items or allows them
-  whitelist: false
+  whitelist: true
   # List of items that should be allowed/not
   # Example: [diamond_sword,BOW]
   items: []
