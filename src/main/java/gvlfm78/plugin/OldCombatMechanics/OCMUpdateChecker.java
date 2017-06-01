@@ -16,7 +16,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import net.gravitydevelopment.updater.Updater;
 
 public class OCMUpdateChecker extends Module implements Listener {
-	
+
 	private OCMMain plugin;
 	private File pluginFile;
 	private final SpigotUpdateChecker SUC;
@@ -32,15 +32,13 @@ public class OCMUpdateChecker extends Module implements Listener {
 	public void onPlayerLogin(PlayerJoinEvent e) {
 		final Player p = e.getPlayer();
 		if(p.hasPermission("OldCombatMechanics.notify")){
-			Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, new Runnable () {
-				public void run() {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, ()  -> {
 
-					OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin, pluginFile);
+				OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin, pluginFile);
 
-					// Checking for updates
-					updateChecker.sendUpdateMessages(p);
-				}
-			},20L);
+				// Checking for updates
+				updateChecker.sendUpdateMessages(p);
+			} , 20L);
 		}
 	}
 
@@ -53,7 +51,7 @@ public class OCMUpdateChecker extends Module implements Listener {
 			if(Bukkit.getVersion().toLowerCase().contains("spigot"))
 				spigotChecker = true;
 		}
-		
+
 		if(spigotChecker){
 			debug("Using spigot update checker");
 			//Get messages from Spigot update checker
