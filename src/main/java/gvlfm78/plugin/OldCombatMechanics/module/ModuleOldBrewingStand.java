@@ -42,8 +42,8 @@ public class ModuleOldBrewingStand extends Module {
 			ItemStack item = e.getCurrentItem();
 
 			if(item!=null && 
-					( (item.getType().equals(Material.BLAZE_POWDER) && e.getRawSlot() == 4) 
-							|| e.getClick().equals(ClickType.DOUBLE_CLICK) ) )
+					( (item.getType().equals(Material.BLAZE_POWDER) && e.getRawSlot() == 4) ||
+							( e.getCursor().getType().equals(Material.BLAZE_POWDER) && e.getClick().equals(ClickType.DOUBLE_CLICK) ) ))
 				e.setCancelled(true);
 		}
 	}
