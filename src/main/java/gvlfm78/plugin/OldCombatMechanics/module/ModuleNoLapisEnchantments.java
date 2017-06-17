@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -35,11 +36,13 @@ public class ModuleNoLapisEnchantments extends Module {
 	public void onInventoryClick(InventoryClickEvent e) {
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
-		if(e.getInventory().getType().equals(InventoryType.ENCHANTING)){
-			ItemStack item = e.getCurrentItem();
-			if(item!=null && item.getType().equals(Material.INK_SACK) && e.getRawSlot()==1)
-				e.setCancelled(true);
-		}
+		if(!e.getInventory().getType().equals(InventoryType.ENCHANTING)) return;
+
+		ItemStack item = e.getCurrentItem();
+		if(item!=null && ( 
+				(item.getType().equals(Material.INK_SACK) && e.getRawSlot() == 1) || 
+				(e.getCursor().getType().equals(Material.INK_SACK) && e.getClick().equals(ClickType.DOUBLE_CLICK)) ) )
+			e.setCancelled(true);
 	}
 
 	@EventHandler
@@ -69,5 +72,5 @@ public class ModuleNoLapisEnchantments extends Module {
 		lapis.setAmount(64);
 		return lapis;
 	}
-	
+
 }

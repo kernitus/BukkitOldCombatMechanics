@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
 	<artifactId>OldCombatMechanics</artifactId>
-	<version>1.4.2</version>
+	<version>1.4.3</version>
 	<name>OldCombatMechanics</name>
 	<description>Reverts to pre-1.9 combat mechanics</description>
 	<repositories>
@@ -24,7 +24,7 @@
 		<dependency>
 			<groupId>org.bukkit</groupId>
 			<artifactId>bukkit</artifactId>
-			<version>1.12-pre6-SNAPSHOT</version>
+			<version>1.12-R0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.gravitydevelopment.updater</groupId>

@@ -5,6 +5,8 @@ import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.ItemStack;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 
@@ -34,16 +36,18 @@ public class ModuleShieldCrafting extends Module {
 			}
 		}
 	}*/
+
 	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onItemCraft (PrepareItemCraftEvent e) {
-	        if (e.getViewers().size() < 1) {
-	                return;
-	        }
+	public void onPrepareItemCraft (PrepareItemCraftEvent e) { //CraftItemEvent
+		if (e.getViewers().size() < 1) return;
+
 		World world = e.getViewers().get(0).getWorld();
 		if(!isEnabled(world)) return;
 
-		if(e.getRecipe().getResult().getType().equals(Material.SHIELD)) {
-			e.getInventory().setResult(null);
-		}
+		CraftingInventory inv = e.getInventory();
+		ItemStack result = inv.getResult();
+		
+		if(result != null && result.getType().equals(Material.SHIELD))
+			inv.setResult(null);
 	}
 }
