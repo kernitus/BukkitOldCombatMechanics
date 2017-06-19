@@ -48,7 +48,7 @@ public class ModuleSwordBlocking extends Module {
 		reloadExcluded();
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.HIGH)
 	public void onRightClick(PlayerInteractEvent e) {
 
 		if (e.getItem() == null) return;
