@@ -21,6 +21,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableElytra;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
@@ -156,6 +157,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
 		ModuleLoader.AddModule(new ModuleNoLapisEnchantments(this));
+		ModuleLoader.AddModule(new ModuleDisableEnderpearlCooldown(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}
