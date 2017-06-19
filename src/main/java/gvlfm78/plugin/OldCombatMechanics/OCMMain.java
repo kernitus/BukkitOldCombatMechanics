@@ -21,6 +21,7 @@ import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableElytra;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
 import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
@@ -156,6 +157,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
 		ModuleLoader.AddModule(new ModuleNoLapisEnchantments(this));
+		ModuleLoader.AddModule(new ModuleDisableEnderpearlCooldown(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}

@@ -75,6 +75,11 @@ disable-elytra:
   enabled: false
   worlds: []
   
+disable-enderpearl-cooldown:
+    # Disables enderpearl cooldown
+    enabled: true
+    worlds: []
+  
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damage
@@ -258,7 +263,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 16
+config-version: 17
 
 # Not added yet
 old-potion-effects:
