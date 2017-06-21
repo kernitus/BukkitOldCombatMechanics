@@ -1,6 +1,6 @@
 main: kernitus.plugin.OldCombatMechanics.OCMMain
 name: OldCombatMechanics
-version: 1.4.3
+version: 1.5.0
 authors: [kernitus, Rayzr522]
 description: Reverts to pre-1.9 combat mechanics
 website: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics
