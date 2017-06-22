@@ -1,10 +1,12 @@
 package com.codingforcookies.armourequip;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -55,7 +57,11 @@ public class ArmourListener extends Module implements Listener {
 		if ((e.getSlotType() != SlotType.ARMOR || e.getSlotType() != SlotType.QUICKBAR)
 				&& !e.getInventory().getType().equals(InventoryType.CRAFTING)) return;
 
-		if (!(e.getWhoClicked() instanceof Player)) return;
+		HumanEntity he = e.getWhoClicked();
+		
+		if (!(he instanceof Player)) return;
+		
+		if(((Player) he).getGameMode().equals(GameMode.CREATIVE)) return; //Because Bukkit does strange stuff with the inventory in creative
 
 		if (e.getCurrentItem() == null && e.getCursor() == null) return;
 
