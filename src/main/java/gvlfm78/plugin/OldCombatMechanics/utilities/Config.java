@@ -1,9 +1,11 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -17,7 +19,6 @@ import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -27,6 +28,7 @@ public class Config {
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
+	private static ArrayList<Material> interactive = new ArrayList<Material>();
 
 	public static void Initialise(OCMMain plugin) {
 
@@ -100,8 +102,8 @@ public class Config {
 			ModuleDisableOffHand.INSTANCE.reloadList();
 		if(Config.moduleEnabled("old-golden-apples"))
 			ModuleGoldenApple.INSTANCE.reloadRecipes();
-		if(Config.moduleEnabled("sword-blocking"))
-			ModuleSwordBlocking.INSTANCE.reloadExcluded();
+		if(Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
+			reloadInteractiveBlocks();
 	}
 
 	private static void load() {
@@ -164,6 +166,22 @@ public class Config {
 		config.set(moduleName + "." + moduleSettingName, value);
 		plugin.saveConfig();
 
+	}
+
+	public static void reloadInteractiveBlocks(){
+
+		List<String> list = config.getStringList("interactive");
+		if(list==null) return;
+
+		for(String name : list){
+			Material mat = Material.matchMaterial(name);
+			if(mat!=null)
+				interactive.add(mat);
+		}
+	}
+
+	public static ArrayList<Material> getInteractiveBlocks(){
+		return interactive;
 	}
 
 }

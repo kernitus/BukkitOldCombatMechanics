@@ -1,8 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,6 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
 
 /**
@@ -40,12 +39,10 @@ public class ModuleSwordBlocking extends Module {
 	private static final ItemStack SHIELD = ItemUtils.makeItem("shield");
 
 	private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
-	private ArrayList<Material> excluded = new ArrayList<Material>();
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
 		INSTANCE = this;
-		reloadExcluded();
 	}
 
 	@EventHandler(priority = EventPriority.HIGH)
@@ -57,7 +54,7 @@ public class ModuleSwordBlocking extends Module {
 
 		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
 
-		if (action.equals(Action.RIGHT_CLICK_BLOCK) && excluded.contains(e.getClickedBlock().getType())) return;
+		if (action.equals(Action.RIGHT_CLICK_BLOCK) && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType())) return;
 
 		Player p = e.getPlayer();
 		World world = p.getWorld();
@@ -209,16 +206,6 @@ public class ModuleSwordBlocking extends Module {
 			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
 
 			storedOffhandItems.remove(id);
-		}
-	}
-
-	public void reloadExcluded(){
-		List<String> list = module().getStringList("excluded");
-		if(list==null) return;
-		for(String name : list){
-			Material mat = Material.matchMaterial(name);
-			if(mat!=null)
-				excluded.add(mat);
 		}
 	}
 
