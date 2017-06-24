@@ -30,6 +30,9 @@ public class ModuleOldBrewingStand extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
+		
+		if(inv == null) return;
+		
 		Location loc = inv.getLocation();
 		
 		if(loc == null) return;
