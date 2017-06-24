@@ -1,7 +1,9 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -9,7 +11,10 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
@@ -71,5 +76,25 @@ public class ModuleDisableElytra extends Module {
 		if(!e.getInventorySlots().contains(38)) return;
 
 		e.setCancelled(true);
+	}
+
+	@EventHandler (priority = EventPriority.HIGHEST)
+	public void onWorldChange(PlayerChangedWorldEvent e){
+		Player p = e.getPlayer();
+		World w = p.getWorld();
+		if(!isEnabled(w)) return;
+
+		PlayerInventory inv = p.getInventory();
+
+		ItemStack chestplate = inv.getChestplate();
+
+		if(!chestplate.getType().equals(Material.ELYTRA)) return;
+
+		inv.setChestplate(new ItemStack(Material.AIR));
+
+		if(inv.firstEmpty() != -1)
+			inv.addItem(chestplate);
+		else 
+			w.dropItem(p.getLocation(), chestplate);
 	}
 }
