@@ -32,8 +32,13 @@ public class ModuleOldBrewingStand extends Module {
 		Inventory inv = e.getInventory();
 		
 		if(inv == null) return;
+
+		Location loc = null;
 		
-		Location loc = inv.getLocation();
+		try{
+		loc = inv.getLocation();
+		}
+		catch(Exception ex){}
 		
 		if(loc == null) return;
 		
