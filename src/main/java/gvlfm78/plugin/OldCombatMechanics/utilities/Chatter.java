@@ -2,7 +2,8 @@ package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+
+import java.util.Objects;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -12,27 +13,17 @@ public class Chatter {
     public static final String HORIZONTAL_BAR = ChatColor.STRIKETHROUGH + "----------------------------------------------------";
 
     /**
-     * This will format any "&" color codes and send the message to the command sender
+     * This will format any ampersand (&) color codes, format any args passed to it using {@link String#format(String, Object...)}, and then send the message to the specified {@link CommandSender}.
      *
-     * @param s The command sender to send the message to
-     * @param msg The message to send
+     * @param sender  The {@link CommandSender} to send the message to.
+     * @param message The message to send.
+     * @param args    The args to format the message with.
      */
-    public static void send(CommandSender s, String msg) {
+    public static void send(CommandSender sender, String message, Object... args) {
+        Objects.requireNonNull(sender, "sender cannot be null!");
+        Objects.requireNonNull(message, "message cannot be null!");
 
-        s.sendMessage(TextUtils.colorize(msg));
-
-    }
-
-    /**
-     * This will format any "&" color codes and send the message to the player
-     *
-     * @param p The player to send the message to
-     * @param msg The message to send
-     */
-    public static void send(Player p, String msg) {
-
-        p.sendMessage(TextUtils.colorize(msg));
-
+        sender.sendMessage(TextUtils.colorize(String.format(message, args)));
     }
 
 }
