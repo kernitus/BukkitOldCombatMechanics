@@ -54,7 +54,7 @@ public class ModuleDisableOffHand extends Module {
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
-		if(!e.getInventory().getType().equals(InventoryType.CRAFTING)) return; //Making sure it's a survival player's inventory
+		if(e.getInventory().getType() != InventoryType.CRAFTING) return; //Making sure it's a survival player's inventory
 
 		if(e.getSlot() != 40) return;
 		// If they didn't click into the offhand slot, return
@@ -68,7 +68,7 @@ public class ModuleDisableOffHand extends Module {
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryDrag(InventoryDragEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld()) || 
-				!e.getInventory().getType().equals(InventoryType.CRAFTING) || 
+				e.getInventory().getType() != InventoryType.CRAFTING ||
 				!e.getInventorySlots().contains(40)) return;
 
 		if(shouldWeCancel(e.getOldCursor())){
@@ -77,12 +77,16 @@ public class ModuleDisableOffHand extends Module {
 		}
 	}
 
-	public boolean shouldWeCancel(ItemStack item){		
+	public boolean shouldWeCancel(ItemStack item){
+		if (item == null || item.getType() == Material.AIR) {
+			return false;
+		}
+
 		Material mat = item.getType();
 		boolean isContained = mats.contains(mat);
 		boolean isWhitelist = module().getBoolean("whitelist");
 
-		if(isWhitelist && !isContained && !mat.equals(Material.AIR) || !isWhitelist && isContained)
+		if(isWhitelist && !isContained || !isWhitelist && isContained)
 			return true;
 
 		return false;

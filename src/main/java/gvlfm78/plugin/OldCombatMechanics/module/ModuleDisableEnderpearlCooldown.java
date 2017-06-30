@@ -23,14 +23,14 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 	public void onPlayerShoot(PlayerInteractEvent e) {
 
 		Action action = e.getAction();
-		
-		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
+
+		if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
 		Player player = e.getPlayer();
 
 		if(!isEnabled(player.getWorld())) return;
 
-		if(!e.getMaterial().equals(Material.ENDER_PEARL)) return;
+		if(e.getMaterial() != Material.ENDER_PEARL) return;
 
 		e.setCancelled(true);
 
@@ -40,7 +40,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
 		GameMode mode = player.getGameMode();
 
-		if(mode.equals(GameMode.ADVENTURE) || mode.equals(GameMode.SURVIVAL)) {
+		if(mode == GameMode.ADVENTURE || mode == GameMode.SURVIVAL) {
 			ItemStack pearlItem = new ItemStack(Material.ENDER_PEARL);
 			player.getInventory().removeItem(pearlItem);
 			player.updateInventory();

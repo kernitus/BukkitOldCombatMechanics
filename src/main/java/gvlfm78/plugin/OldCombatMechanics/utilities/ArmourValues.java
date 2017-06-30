@@ -30,7 +30,7 @@ public class ArmourValues {
 
         ConfigurationSection section = config.getConfigurationSection("old-armour-strength.strength");
 
-        values = new HashMap<String, Double>();
+        values = new HashMap<>();
 
         for (String key : section.getKeys(false)) {
 

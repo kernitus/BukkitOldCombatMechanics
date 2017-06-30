@@ -38,7 +38,7 @@ public class ModuleGoldenApple extends Module {
 		goldenAppleEffects = getPotionEffects("gapple");
 	}
 	
-	public static boolean RECIPE_ALREADY_EXISTED = false;
+	// public static boolean RECIPE_ALREADY_EXISTED = false;
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onPrepareItemCraft(PrepareItemCraftEvent e) {
@@ -64,7 +64,7 @@ public class ModuleGoldenApple extends Module {
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onItemConsume(PlayerItemConsumeEvent e) {
 
-		if (e.getItem().getType() != Material.GOLDEN_APPLE) return;
+		if (e.getItem() == null || e.getItem().getType() != Material.GOLDEN_APPLE) return;
 
 		if (!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) return;
 
@@ -110,14 +110,14 @@ public class ModuleGoldenApple extends Module {
 		else if(offHand.equals(originalItem))
 			inv.setItemInOffHand(item);
 
-		else if(mainHand.getType().equals(Material.GOLDEN_APPLE))
+		else if(mainHand.getType() == Material.GOLDEN_APPLE)
 			inv.setItemInMainHand(item);
 		//The bug occurs here, so we must check which hand has the apples
 		// A player can't eat food in the offhand if there is any in the main hand
 		// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
 	}
 	public List<PotionEffect> getPotionEffects(String apple){
-		List<PotionEffect> appleEffects = new ArrayList<PotionEffect>();
+		List<PotionEffect> appleEffects = new ArrayList<>();
 
 		ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
 		for(String key : sect.getKeys(false)){
@@ -125,7 +125,7 @@ public class ModuleGoldenApple extends Module {
 			int amplifier = sect.getInt(key + ".amplifier");
 
 			PotionEffect fx = new PotionEffect(PotionEffectType.getByName(key), duration, amplifier);
-			if(fx!=null) appleEffects.add(fx);
+			appleEffects.add(fx);
 		}
 		return appleEffects;
 	}

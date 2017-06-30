@@ -38,7 +38,7 @@ public class ModuleFishingKnockback extends Module {
 		if (!isEnabled(e.getEntity().getWorld()))
 			return;
 
-		if ((e.getEntityType() != EntityType.FISHING_HOOK))
+		if (e.getEntityType() != EntityType.FISHING_HOOK)
 			return;
 
 
@@ -48,7 +48,7 @@ public class ModuleFishingKnockback extends Module {
 			hitent = e.getHitEntity();
 		}
 		catch(NoSuchMethodError e1){ //For older version that don't have such method
-			Collection<Entity> entities = Bukkit.getWorld(e.getEntity().getLocation().getWorld().getName()).getNearbyEntities(e.getEntity().getLocation(), 0.25, 0.25, 0.25);
+			Collection<Entity> entities = e.getEntity().getLocation().getWorld().getNearbyEntities(e.getEntity().getLocation(), 0.25, 0.25, 0.25);
 
 			for (Entity entity : entities) {
 				if (entity instanceof Player){
@@ -70,7 +70,7 @@ public class ModuleFishingKnockback extends Module {
 		if (player.getUniqueId() == rodder.getUniqueId())
 			return;
 
-		if(player.getGameMode().equals(GameMode.CREATIVE)) return;
+		if(player.getGameMode() == GameMode.CREATIVE) return;
 
 		double damage = module().getDouble("damage");
 		if(damage<0) damage = 0.2;
