@@ -3,8 +3,8 @@ bin
 .project
 .classpath
 .idea
-BukkitOldCombatMechanics.eml
-BukkitOldCombatMechanics.iml
+*.eml
+*.iml
 builds
 META-INF
 target
