@@ -14,6 +14,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import java.io.File;
 
 public class OCMCommandHandler implements CommandExecutor {
+    private static final String NO_PERMISSION = "&cYou need the permission '%s' to do that!";
 
     private OCMMain plugin;
     private File pluginFile;
@@ -51,7 +52,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
         if (sub.equals("reload")) {// Reloads config
             if (!sender.hasPermission("oldcombatmechanics.reload")) {
-                Chatter.send(sender, "&cYou don't have permission to do that!");
+                Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.reload");
                 return true;
             }
 
@@ -62,11 +63,11 @@ public class OCMCommandHandler implements CommandExecutor {
             return true;
         } else if (sub.equals("toggle") && plugin.getConfig().getBoolean("enableIndividualToggle") && sender instanceof Player) {
             if (!sender.hasPermission("oldcombatmechanics.toggle")) {
-                Chatter.send(sender, "&cYou don't have permission to do that!");
+                Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.toggle");
                 return true;
             }
 
-            //Toggle their cooldown
+            // Toggle their cooldown
             Player p = (Player) sender;
             double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.generic-attack-speed");
 
