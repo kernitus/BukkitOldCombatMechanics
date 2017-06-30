@@ -1,13 +1,22 @@
+# ===
+# == IDE settings files
+# ===
 
-bin
-.project
-.classpath
-.idea
-BukkitOldCombatMechanics.eml
-BukkitOldCombatMechanics.iml
-builds
-META-INF
-target
+# IntelliJ
+/*.eml
+/*.iml
+/.idea
+
+# Eclipse
+/.project
+/.classpath
+/.settings
+
+# ===
+# == Compilation output / working files
+# ===
 out
-.settings/org.eclipse.jdt.core.prefs
-.settings/org.eclipse.m2e.core.prefs
+builds
+target
+META-INF
+dependency-reduced-pom.xml
