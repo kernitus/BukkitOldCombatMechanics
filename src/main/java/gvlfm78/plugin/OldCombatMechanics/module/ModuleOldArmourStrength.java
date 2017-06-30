@@ -107,9 +107,9 @@ public class ModuleOldArmourStrength extends Module {
 	}
 
 	private ItemStack apply(ItemStack is, boolean enable) {
-
-		String slot = "";
+		String slot;
 		String type = is.getType().toString().toLowerCase();
+
 		if(type.contains("helmet"))
 			slot = "head";
 		else if(type.contains("chestplate"))
@@ -139,7 +139,7 @@ public class ModuleOldArmourStrength extends Module {
 
 			AttributeType attType = att.getAttributeType();
 
-			if(attType.equals(AttributeType.GENERIC_ARMOR)){ //Found a generic armour tag
+			if(attType == AttributeType.GENERIC_ARMOR){ //Found a generic armour tag
 				if(armourTagPresent==true) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{
@@ -151,7 +151,7 @@ public class ModuleOldArmourStrength extends Module {
 				}
 			}
 
-			else if(attType.equals(AttributeType.GENERIC_ARMOR_TOUGHNESS)){ //Found a generic armour toughness tag
+			else if(attType == AttributeType.GENERIC_ARMOR_TOUGHNESS){ //Found a generic armour toughness tag
 				if(toughnessTagPresent==true) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{

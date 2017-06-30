@@ -38,6 +38,8 @@ public class ModuleOldToolDamage extends Module {
         if (!(damager instanceof Player)) return;
 
         Player p = (Player) damager;
+        if (p.getInventory().getItemInMainHand() == null) return;
+
         Material mat = p.getInventory().getItemInMainHand().getType();
 
         if (isHolding(mat, weapons) && isEnabled(world))
