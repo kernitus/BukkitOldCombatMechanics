@@ -40,8 +40,8 @@ public class ModuleNoLapisEnchantments extends Module {
 
 		ItemStack item = e.getCurrentItem();
 		if(item!=null && ( 
-				(item.getType().equals(Material.INK_SACK) && e.getRawSlot() == 1) || 
-				(e.getCursor().getType().equals(Material.INK_SACK) && e.getClick().equals(ClickType.DOUBLE_CLICK)) ) )
+				(item.getType() == Material.INK_SACK && e.getRawSlot() == 1) ||
+				(e.getCursor() != null && e.getCursor().getType() == Material.INK_SACK && e.getClick() == ClickType.DOUBLE_CLICK) ) )
 			e.setCancelled(true);
 	}
 
@@ -50,7 +50,7 @@ public class ModuleNoLapisEnchantments extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
-		if(inv.getType().equals(InventoryType.ENCHANTING)){
+		if(inv != null && inv.getType() == InventoryType.ENCHANTING){
 			EnchantingInventory ei = (EnchantingInventory) inv;
 			ei.setSecondary(new ItemStack(Material.AIR));
 		}
@@ -61,16 +61,14 @@ public class ModuleNoLapisEnchantments extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
-		if(inv.getType().equals(InventoryType.ENCHANTING))
+		if(inv != null && inv.getType() == InventoryType.ENCHANTING)
 			( (EnchantingInventory) inv).setSecondary(getLapis());
 	}
 
 	private ItemStack getLapis(){
-		Dye l = new Dye();
-		l.setColor(DyeColor.BLUE);
-		ItemStack lapis = l.toItemStack();
-		lapis.setAmount(64);
-		return lapis;
+		Dye dye = new Dye();
+		dye.setColor(DyeColor.BLUE);
+		return dye.toItemStack(64);
 	}
 
 }
