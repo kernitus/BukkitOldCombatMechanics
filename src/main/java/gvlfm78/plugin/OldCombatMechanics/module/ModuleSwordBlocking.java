@@ -52,9 +52,9 @@ public class ModuleSwordBlocking extends Module {
 
 		Action action = e.getAction();
 
-		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
+		if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-		if (action.equals(Action.RIGHT_CLICK_BLOCK) && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType())) return;
+		if (action == Action.RIGHT_CLICK_BLOCK && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType())) return;
 
 		Player p = e.getPlayer();
 		World world = p.getWorld();
@@ -148,7 +148,8 @@ public class ModuleSwordBlocking extends Module {
 			if (isBlocking(p.getUniqueId())){
 				ItemStack cursor = e.getCursor();
 				ItemStack current = e.getCurrentItem();
-				if(cursor!=null && cursor.getType().equals(Material.SHIELD) || current!=null && current.getType().equals(Material.SHIELD)){
+				if(cursor!=null && cursor.getType() == Material.SHIELD || 
+						current!=null && current.getType() == Material.SHIELD){
 					e.setCancelled(true);
 					restore(p);
 				}
@@ -162,35 +163,25 @@ public class ModuleSwordBlocking extends Module {
 
 		Player p = e.getPlayer();
 
-		if (isBlocking(p.getUniqueId())){
-			if(is.getType().equals(Material.SHIELD)){
-				e.setCancelled(true);
-				restore(p);
-			}
+		if (isBlocking(p.getUniqueId()) &&
+				is.getItemStack().getType() == Material.SHIELD	){
+			e.setCancelled(true);
+			restore(p);
 		}
 	}
 
 	private void scheduleRestore(final Player p) {
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-			public void run() {
-				restore(p);
-			}
-		}, 60);
-
+		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> restore(p), 60 );
 	}
 
 	private void restore(Player p) {
 
 		UUID id = p.getUniqueId();
 
-		if (!isBlocking(id)) {
-			return;
-		}
+		if (!isBlocking(id)) return;
 
 		p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
 		storedOffhandItems.remove(id);
-
 	}
 
 	public static void RestoreAll() {
