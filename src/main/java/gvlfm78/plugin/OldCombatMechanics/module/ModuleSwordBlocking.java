@@ -1,9 +1,8 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,17 +16,13 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -52,7 +47,7 @@ public class ModuleSwordBlocking extends Module {
 
 		Action action = e.getAction();
 
-		if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+		if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
 		if (action == Action.RIGHT_CLICK_BLOCK && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType())) return;
 
@@ -78,6 +73,8 @@ public class ModuleSwordBlocking extends Module {
 		scheduleRestore(p);
 
 	}
+
+	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onHit(EntityDamageByEntityEvent e){
 		Entity ent = e.getEntity();
@@ -120,13 +117,12 @@ public class ModuleSwordBlocking extends Module {
 		UUID id = p.getUniqueId();
 
 		e.getDrops().replaceAll(item -> {
-			if(item.getType().equals(Material.SHIELD)){
+			if (item.getType().equals(Material.SHIELD)) {
 				item = storedOffhandItems.get(id);
 			}
 
 			return item;
-		}
-				);
+		});
 
 		storedOffhandItems.remove(id);
 	}

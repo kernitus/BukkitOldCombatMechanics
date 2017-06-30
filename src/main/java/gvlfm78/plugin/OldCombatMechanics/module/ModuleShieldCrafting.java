@@ -47,7 +47,7 @@ public class ModuleShieldCrafting extends Module {
 		CraftingInventory inv = e.getInventory();
 		ItemStack result = inv.getResult();
 		
-		if(result != null && result.getType().equals(Material.SHIELD))
+		if(result != null && result.getType() == Material.SHIELD)
 			inv.setResult(null);
 	}
 }
