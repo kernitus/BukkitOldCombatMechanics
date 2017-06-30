@@ -1,60 +1,33 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 /**
- * Created by Rayzr522 on 6/28/16.
- * For all the math that I needed which (for some reason) isn't in the Math class
+ * For all the math utilities that I needed which (for some reason) aren't in the Math class.
+ *
+ * @author Rayzr
  */
 public class MathHelper {
 
-    public static float clamp(float value, float min, float max) {
-
-        float min2 = Math.min(min, max);
-        float max2 = Math.max(min, max);
-
-        if (value < min2) {
-            value = min2;
-        }
-
-        if (value > max2) {
-            value = max2;
-        }
-
-        return value;
-
-    }
+    /**
+     * Clamps a value between a minimum and a maximum.
+     *
+     * @param value The value to clamp.
+     * @param min   The minimum value to clamp to.
+     * @param max   The maximum value to clamp to.
+     * @return The clamped value.
+     */
     public static double clamp(double value, double min, double max) {
+        double realMin = Math.min(min, max);
+        double realMax = Math.max(min, max);
 
-        double min2 = Math.min(min, max);
-        double max2 = Math.max(min, max);
-
-        if (value < min2) {
-            value = min2;
+        if (value < realMin) {
+            value = realMin;
         }
 
-        if (value > max2) {
-            value = max2;
-        }
-
-        return value;
-
-    }
-
-    public static int clamp(int value, int min, int max) {
-
-        int min2 = Math.min(min, max);
-        int max2 = Math.max(min, max);
-
-        if (value < min2) {
-            value = min2;
-        }
-
-        if (value > max2) {
-            value = max2;
+        if (value > realMax) {
+            value = realMax;
         }
 
         return value;
-
     }
-    
 
 }
