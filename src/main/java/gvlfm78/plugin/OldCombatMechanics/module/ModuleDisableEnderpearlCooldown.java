@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.EnderPearl;
@@ -8,8 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-
-import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.inventory.PlayerInventory;
 
 public class ModuleDisableEnderpearlCooldown extends Module {
 
@@ -18,7 +18,6 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
 	}
 
-	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onPlayerShoot(PlayerInteractEvent e) {
 
@@ -41,9 +40,20 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 		GameMode mode = player.getGameMode();
 
 		if(mode == GameMode.ADVENTURE || mode == GameMode.SURVIVAL) {
-			ItemStack pearlItem = new ItemStack(Material.ENDER_PEARL);
-			player.getInventory().removeItem(pearlItem);
-			player.updateInventory();
+			PlayerInventory inv = player.getInventory();
+
+			boolean isInOffhand = true;
+			ItemStack hand = inv.getItemInOffHand();
+
+			if(hand.getType() != Material.ENDER_PEARL) {
+				hand = inv.getItemInMainHand();
+				isInOffhand = false;
+			}
+
+			hand.setAmount(hand.getAmount() - 1);
+
+			if(isInOffhand) inv.setItemInOffHand(hand);
+				else inv.setItemInMainHand(hand);
 		}            
 	}
 }
