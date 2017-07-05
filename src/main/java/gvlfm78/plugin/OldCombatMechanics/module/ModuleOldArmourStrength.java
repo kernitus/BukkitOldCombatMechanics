@@ -1,5 +1,12 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import com.codingforcookies.armourequip.ArmourEquipEvent;
+import com.comphenix.example.Attributes;
+import com.comphenix.example.Attributes.Attribute;
+import com.comphenix.example.Attributes.AttributeType;
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ArmourValues;
+import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -9,15 +16,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-
-import com.codingforcookies.armourequip.ArmourEquipEvent;
-import com.comphenix.example.Attributes;
-import com.comphenix.example.Attributes.Attribute;
-import com.comphenix.example.Attributes.AttributeType;
-
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ArmourValues;
-import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 
 public class ModuleOldArmourStrength extends Module {
 
@@ -29,25 +27,21 @@ public class ModuleOldArmourStrength extends Module {
 	public void onArmourEquip(ArmourEquipEvent e) {
 		final Player p = e.getPlayer();
 		debug("OnArmourEquip was called", p);
+
+		//Equipping
 		ItemStack newPiece = e.getNewArmourPiece();
-
 		if (newPiece != null && newPiece.getType() != Material.AIR) {
-			debug("Attempting to apply armour value to new armour piece", p);
-
+			debug("Equip detected, applying armour value to new armour piece", p);
 			e.setNewArmourPiece(apply(newPiece, isEnabled(p.getWorld())));
 		}
-	}
 
-	@EventHandler
-	public void onArmourUnequip(ArmourEquipEvent e) {
-		final Player p = e.getPlayer();
-		debug("OnArmourUnequip was called", p);
+		//Unequipping
 		ItemStack oldPiece = e.getOldArmourPiece();
 		if (oldPiece != null && oldPiece.getType() != Material.AIR) {
-			debug("Attempting to apply armour value to new armour piece", p);
-
-			e.setNewArmourPiece(apply(oldPiece, false));
+			debug("Unequip detected, applying armour value to old armour piece", p);
+			e.setOldArmourPiece(apply(oldPiece, false));
 		}
+
 	}
 
 	@EventHandler
@@ -92,17 +86,12 @@ public class ModuleOldArmourStrength extends Module {
 				debug("Attempting to apply armour value to item", player);
 
 				//If this piece is one of the ones being worn right now
-				boolean wasWorn = false;
-
-				if(ArrayUtils.contains(inv.getArmorContents(), armours[i])){
+				if(ArrayUtils.contains(inv.getArmorContents(), armours[i]))
 					armours[i] = apply(piece, enabled); //Apply/remove values according state of module in this world
-					wasWorn = true;
-				}
-
-				if(!wasWorn) armours[i] = apply(piece, false); //Otherwise set values back to default
+				else armours[i] = apply(piece, false); //Otherwise set values back to default
 			}
-
 		}
+
 		player.getInventory().setContents(armours);
 	}
 
@@ -124,27 +113,22 @@ public class ModuleOldArmourStrength extends Module {
 
 		Attributes attributes = new Attributes(is);
 
-		double toughness;
-
-		if(enable)
-			toughness = plugin.getConfig().getDouble("old-armour-strength.toughness");
-		else
-			toughness = getDefaultToughness(is.getType());
+		double toughness = enable ? plugin.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(is.getType());
 
 		boolean armourTagPresent = false, toughnessTagPresent = false;
 
 		for(int i = 0; i<attributes.size(); i++){
 			Attribute att = attributes.get(i);
-			if(att==null) continue;
+			if(att == null) continue;
 
 			AttributeType attType = att.getAttributeType();
 
 			if(attType == AttributeType.GENERIC_ARMOR){ //Found a generic armour tag
-				if(armourTagPresent==true) //If we've already found another tag
+				if(armourTagPresent) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{
 					armourTagPresent = true;
-					if(att.getAmount()!=strength){ //If its value does not match what it should be, remove it
+					if(att.getAmount() != strength){ //If its value does not match what it should be, remove it
 						attributes.remove(att);
 						armourTagPresent = false; //Set armour value anew
 					}
@@ -152,11 +136,11 @@ public class ModuleOldArmourStrength extends Module {
 			}
 
 			else if(attType == AttributeType.GENERIC_ARMOR_TOUGHNESS){ //Found a generic armour toughness tag
-				if(toughnessTagPresent==true) //If we've already found another tag
+				if(toughnessTagPresent) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{
 					toughnessTagPresent = true;
-					if(att.getAmount()!=toughness){ //If its value does not match what it should be, remove it
+					if(att.getAmount() != toughness){ //If its value does not match what it should be, remove it
 						attributes.remove(att);
 						toughnessTagPresent = false; //Set armour value anew
 					}
@@ -178,8 +162,7 @@ public class ModuleOldArmourStrength extends Module {
 		switch(mat){
 		case DIAMOND_CHESTPLATE: case DIAMOND_HELMET: case DIAMOND_LEGGINGS: case DIAMOND_BOOTS:
 			return 2;
-		default:
-			return 0;
+		default: return 0;
 		}
 	}
 }
