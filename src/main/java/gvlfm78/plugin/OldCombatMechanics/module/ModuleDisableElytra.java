@@ -1,8 +1,12 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,9 +20,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-
 public class ModuleDisableElytra extends Module {
 
 	public static ModuleSwordBlocking INSTANCE;
@@ -29,23 +30,28 @@ public class ModuleDisableElytra extends Module {
 
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
-		if(!isEnabled(e.getWhoClicked().getWorld())) return;
+		HumanEntity human = e.getWhoClicked();
+		if(!isEnabled(human.getWorld())) return;
+
+		if(!(human instanceof Player)) return;
+
+		Player p = (Player) human;
+
+		if(p.getGameMode() == GameMode.CREATIVE) return;
 
 		InventoryType type = e.getInventory().getType(); // Only if they're in their inventory, not chests etc.
 		if(type != InventoryType.CRAFTING && type != InventoryType.PLAYER) return;
 
-		if(e.getSlot() == 38){
-			e.setCancelled(true);
-			return;
-		}
-
 		ItemStack cursor = e.getCursor();
 		ItemStack currentItem = e.getCurrentItem();
-		if(cursor == null || currentItem == null){
-		    return;
-        }
 
-		if(e.getCursor().getType() != Material.ELYTRA && currentItem.getType() != Material.ELYTRA) return;
+		if((cursor != null && cursor.getType() != Material.ELYTRA) && (currentItem != null && currentItem.getType() != Material.ELYTRA)) return;
+
+		if(e.getSlot() == 38){
+			e.setCancelled(true);
+			//((Player) e.getWhoClicked()).updateInventory();
+			return;
+		}
 
 		//Stop shift clicking elytra in
 		if(e.getClick() != ClickType.SHIFT_LEFT && e.getClick() != ClickType.SHIFT_RIGHT) return;
@@ -76,7 +82,7 @@ public class ModuleDisableElytra extends Module {
 	public void onDrag(InventoryDragEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
-		if(e.getOldCursor() == null || e.getCursor().getType() != Material.ELYTRA) return;
+		if(e.getOldCursor() == null || (e.getCursor() != null && e.getCursor().getType() != Material.ELYTRA)) return;
 
 		if(!e.getInventorySlots().contains(38)) return;
 

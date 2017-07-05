@@ -1,5 +1,8 @@
 package com.codingforcookies.armourequip;
 
+import com.codingforcookies.armourequip.ArmourEquipEvent.EquipMethod;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.module.Module;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -20,11 +23,6 @@ import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-
-import com.codingforcookies.armourequip.ArmourEquipEvent.EquipMethod;
-
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 
 /**
  * @Author Borlea
