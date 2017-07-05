@@ -10,4 +10,5 @@ Project on [BukkitDev](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/)
 Jenkins Server for test builds available [here](https://jenkins-gvl.rhcloud.com/)
 
 <hr/>
-![OCM MCStats](http://i.mcstats.org/OldCombatMechanics/Global+Statistics.borderless.png)
+
+![Alt text](http://i.mcstats.org/OldCombatMechanics/Global+Statistics.borderless.png)
