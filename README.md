@@ -11,4 +11,4 @@ Jenkins Server for test builds available [here](https://jenkins-gvl.rhcloud.com/
 
 <hr/>
 
-![Alt text](http://i.mcstats.org/OldCombatMechanics/Global+Statistics.borderless.png)
+![MCStats](http://i.mcstats.org/OldCombatMechanics/Global+Statistics.borderless.png)
