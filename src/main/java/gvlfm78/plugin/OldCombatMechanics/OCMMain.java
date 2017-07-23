@@ -1,10 +1,10 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.logging.Logger;
-
-import org.bstats.Metrics;
+import com.codingforcookies.armourequip.ArmourListener;
+import kernitus.plugin.OldCombatMechanics.module.*;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -15,29 +15,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import com.codingforcookies.armourequip.ArmourListener;
-
-import kernitus.plugin.OldCombatMechanics.module.Module;
-import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableElytra;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
-import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
-import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import kernitus.plugin.OldCombatMechanics.module.ModuleNoLapisEnchantments;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
-import kernitus.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
-import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen;
-import kernitus.plugin.OldCombatMechanics.module.ModuleProjectileKnockback;
-import kernitus.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
-import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
-import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
@@ -104,15 +84,14 @@ public class OCMMain extends JavaPlugin {
 		
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
-		
-		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules") {
-			@Override
-			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
-				for(Module module : ModuleLoader.getEnabledModules().keySet())
-					if(module.isEnabled()) values.put(module.toString(), 1);
-				return values;
-			}
-		});
+
+		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules", () -> {
+			HashMap<String, Integer> values = new HashMap<>();
+			ModuleLoader.getEnabledModules().keySet().forEach(module -> {
+				if(module.isEnabled()) values.put(module.toString(), 1);
+			});
+			return values;
+		}));
 
 		// Logging to console the enabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
