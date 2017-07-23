@@ -1,10 +1,10 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.logging.Logger;
-
-import org.bstats.Metrics;
+import com.codingforcookies.armourequip.ArmourListener;
+import gvlfm78.plugin.OldCombatMechanics.module.*;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -15,29 +15,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import com.codingforcookies.armourequip.ArmourListener;
-
-import gvlfm78.plugin.OldCombatMechanics.module.Module;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableElytra;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleNoLapisEnchantments;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerRegen;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleProjectileKnockback;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordSweep;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
@@ -104,15 +84,14 @@ public class OCMMain extends JavaPlugin {
 		
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
-		
-		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules") {
-			@Override
-			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
-				for(Module module : ModuleLoader.getEnabledModules().keySet())
-					if(module.isEnabled()) values.put(module.toString(), 1);
-				return values;
-			}
-		});
+
+		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules", () -> {
+			HashMap<String, Integer> values = new HashMap<>();
+			ModuleLoader.getEnabledModules().keySet().forEach(module -> {
+				if(module.isEnabled()) values.put(module.toString(), 1);
+			});
+			return values;
+		}));
 
 		// Logging to console the enabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");

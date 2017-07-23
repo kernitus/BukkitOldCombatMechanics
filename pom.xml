@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
 	<artifactId>OldCombatMechanics</artifactId>
-	<version>1.5.1</version>
+	<version>1.5.2</version>
 	<name>OldCombatMechanics</name>
 	<description>Reverts to pre-1.9 combat mechanics</description>
 	<repositories>
@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>org.bstats</groupId>
 			<artifactId>bstats-bukkit</artifactId>
-			<version>1.1</version>
+			<version>1.2</version>
 		</dependency>
 	</dependencies>
 	<build>
