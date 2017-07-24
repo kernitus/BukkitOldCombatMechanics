@@ -1,5 +1,8 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.OCMSweepTask;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ToolDamage;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
@@ -8,10 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
-
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.OCMSweepTask;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ToolDamage;
 
 /**
  * Created by Rayzr522 on 25/06/16.
@@ -39,7 +38,6 @@ public class ModuleSwordSweep extends Module {
 
 	private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon) {
 		//Disable sword sweep
-
 		int locHashCode = p.getLocation().hashCode(); // ATTACKER
 		
 		int level = 0;
@@ -52,7 +50,7 @@ public class ModuleSwordSweep extends Module {
 		float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
 		if (e.getDamage() == damage) {
-			// Possibly a sword sweep attack
+			// Possibly a sword-sweep attack
 			if (sweepTask().swordLocations.contains(locHashCode)){
 				debug("Cancelling sweep...", p);
 				e.setCancelled(true);
