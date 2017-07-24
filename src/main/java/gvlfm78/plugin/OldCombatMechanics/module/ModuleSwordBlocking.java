@@ -93,7 +93,8 @@ public class ModuleSwordBlocking extends Module {
 					damageReduction = -1; //-1 because it is a reduction value
 
 				//Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
-				if(e.getDamage(DamageModifier.BLOCKING) > 0)			
+				//Also make sure reducing the damage by 1 doesn't result in negative damage
+				if(e.getDamage(DamageModifier.BLOCKING) > 0 && e.getFinalDamage() >= 1)
 					e.setDamage(DamageModifier.BLOCKING, damageReduction);
 			}
 		}

@@ -113,7 +113,7 @@ public class ModuleOldArmourStrength extends Module {
 
 		Attributes attributes = new Attributes(is);
 
-		double toughness = enable ? plugin.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(is.getType());
+		double toughness = enable ? module().getDouble("toughness") : getDefaultToughness(is.getType());
 
 		boolean armourTagPresent = false, toughnessTagPresent = false;
 
