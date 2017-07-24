@@ -1,5 +1,8 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.MobDamage;
+import gvlfm78.plugin.OldCombatMechanics.utilities.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
@@ -10,10 +13,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
-
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.MobDamage;
-import gvlfm78.plugin.OldCombatMechanics.utilities.WeaponDamages;
 
 /**
  * Created by Rayzr522 on 6/25/16.
@@ -31,8 +30,8 @@ public class ModuleOldToolDamage extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
-    	Entity damager = e.getDamager();
-    	
+        Entity damager = e.getDamager();
+
         World world = damager.getWorld();
 
         if (!(damager instanceof Player)) return;
@@ -51,17 +50,18 @@ public class ModuleOldToolDamage extends Module {
         EntityType entity = e.getEntityType();
 
         double baseDamage = e.getDamage();
-        double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage) + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
+        double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage)
+                + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
 
         double divider = WeaponDamages.getDamage(mat);
-        divider = divider > 0 ? divider : 1;
+        if(divider <= 0) divider = 1;
         double newDamage = (baseDamage - enchantmentDamage) / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
-        newDamage = newDamage < 0 ? 0 : newDamage;
+        if (newDamage < 0) newDamage = 0;
         e.setDamage(newDamage);
-        debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage + 
-        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
-        , p);
+        debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage +
+                        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
+                , p);
     }
 
     public static void onAttack(EntityDamageByEntityEvent e) {
@@ -78,10 +78,9 @@ public class ModuleOldToolDamage extends Module {
 
     private boolean isHolding(Material mat, String[] types) {
         boolean hasAny = false;
-        for (String type : types) {
+        for (String type : types)
             if (isHolding(mat, type))
                 hasAny = true;
-        }
         return hasAny;
     }
 
