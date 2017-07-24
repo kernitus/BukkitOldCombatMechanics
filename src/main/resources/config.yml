@@ -74,6 +74,8 @@ no-lapis-enchantments:
   # Automatically adds lapis to enchantment tables upon opening
   enabled: false
   worlds: []
+  # Whether to only allow this for players with oldcombatmechanics.nolapis permission
+  usePermission: false
   
 disable-elytra:
   # Do not allow players to wear elytra
@@ -266,7 +268,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 18
+config-version: 19
 
 # Not added yet
 old-potion-effects:
