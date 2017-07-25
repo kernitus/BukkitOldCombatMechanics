@@ -23,7 +23,7 @@ public class OCMMain extends JavaPlugin {
 
 	Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	private OCMTask task = null;
+	//private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
 	private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
 	
@@ -62,10 +62,10 @@ public class OCMMain extends JavaPlugin {
 		// Initialise the team if it doesn't already exist
 		createTeam();
 
-		// Disabling player collisions
-		if (Config.moduleEnabled("disable-player-collisions"))
+		// Disabling player collision
+		/*if (Config.moduleEnabled("disable-player-collision"))
 			// Even though it says "restart", it works for just starting it too
-			restartTask();
+			restartTask();*/
 
 		if (Config.moduleEnabled("disable-sword-sweep"))
 			//Start up anti sword sweep attack task
@@ -103,7 +103,7 @@ public class OCMMain extends JavaPlugin {
 
 		PluginDescriptionFile pdfFile = this.getDescription();
 
-		if (task != null) task.cancel();
+		//if (task != null) task.cancel();
 
 		// Logging to console the disabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
@@ -169,7 +169,7 @@ public class OCMMain extends JavaPlugin {
 		return CH.doesConfigymlExist();
 	}
 
-	public void restartTask() {
+	/*public void restartTask() {
 
 		if (task == null)
 			task = new OCMTask(this);
@@ -178,14 +178,14 @@ public class OCMMain extends JavaPlugin {
 			task = new OCMTask(this);
 		}
 
-		double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
+		double minutes = getConfig().getDouble("disable-player-collision.collision-check-frequency");
 
 		if (minutes > 0)
 			task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
 		else
 			task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
-	}
+	}*/
 
 	public void restartSweepTask() {
 		if (sweepTask == null)
