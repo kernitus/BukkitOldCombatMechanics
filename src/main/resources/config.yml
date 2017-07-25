@@ -36,12 +36,10 @@ disable-attack-cooldown:
   generic-attack-speed: 24
   
 disable-player-collisions:
-  # This is to disable player collisions
+  # This is to disable player collision
+  # This is now compatible with scoreboard and tablist-editing plugins
   enabled: false
   worlds: []
-  # How often the plugin should check that all players have no collisions applied to them
-  # This is specified in minutes, but decimals can be used (i.e. 0.5 = 30 seconds)
-  collision-check-frequency: 1
   
 disable-sword-sweep:
   # This is to disable the sword sweep attack
@@ -268,7 +266,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 19
+config-version: 20
 
 # Not added yet
 old-potion-effects:
