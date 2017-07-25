@@ -1,26 +1,32 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.OCMTask;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
+import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.TeamUtils;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-/**
- * Created by Rayzr522 on 25/6/16.
- */
 public class ModulePlayerCollisions extends Module {
 
-	OCMTask task = new OCMTask(plugin);
+	//private OCMTask task = new OCMTask(plugin);
 
 	public ModulePlayerCollisions(OCMMain plugin) {
 		super(plugin, "disable-player-collisions");
+
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler
+	public void onPlayerLogin(PlayerJoinEvent e) {
+		e.getPlayer().sendMessage("You logged in");
+		TeamUtils.sendTeamPacket(e.getPlayer());
+	}
+
+	@EventHandler
+	public void onPlayerQuit(PlayerQuitEvent e){
+		TeamUtils.getSecurePlayers().remove(e.getPlayer());
+	}
+
+	/*@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {
 
 		Player p = e.getPlayer();
@@ -42,5 +48,5 @@ public class ModulePlayerCollisions extends Module {
 			task.addPlayerToScoreboard(player);
 		else 
 			task.removePlayerFromScoreboard(player);
-	}
+	}*/
 }

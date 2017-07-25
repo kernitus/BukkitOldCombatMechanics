@@ -1,9 +1,10 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
+import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -14,11 +15,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
-import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -67,7 +66,7 @@ public class Config {
 
 		checkConfigVersion();
 
-		plugin.restartTask(); //Restart no-collisions check
+		//plugin.restartTask(); //Restart no-collision check
 		plugin.restartSweepTask(); //Restart sword sweep check
 		load();
 
