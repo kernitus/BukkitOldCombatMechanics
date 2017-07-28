@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import gvlfm78.plugin.OldCombatMechanics.BlockingTask;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
@@ -19,6 +20,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,16 +35,26 @@ public class ModuleSwordBlocking extends Module {
 
 	private static final ItemStack SHIELD = ItemUtils.makeItem("shield");
 
-	private HashMap<UUID, ItemStack> storedOffhandItems = new HashMap<UUID, ItemStack>();
+	private int restoreDelay;
+	private String blockingDamageReduction;
+
+	private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
+	private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
 		INSTANCE = this;
+		reload();
+	}
+
+	public void reload(){
+		restoreDelay = module().getInt("restoreDelay", 40);
+		blockingDamageReduction = module().getString("blockingDamageReduction", "1");
+		blockingDamageReduction = blockingDamageReduction.replaceAll(" ", "");
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onRightClick(PlayerInteractEvent e) {
-
 		if (e.getItem() == null) return;
 
 		Action action = e.getAction();
@@ -58,7 +70,7 @@ public class ModuleSwordBlocking extends Module {
 
 		UUID id = p.getUniqueId();
 
-		if (isBlocking(id)) return;
+		/*if (isBlocking(id)) return;
 
 		ItemStack item = e.getItem();
 
@@ -70,8 +82,24 @@ public class ModuleSwordBlocking extends Module {
 
 		inv.setItemInOffHand(SHIELD);
 
-		scheduleRestore(p);
+		scheduleRestore(p);*/
 
+		if (p.isBlocking()){
+			correspondingTasks.get(id).cancel();
+			correspondingTasks.remove(id);
+		} else {
+			ItemStack item = e.getItem();
+
+			if (!isHolding(item.getType(), "sword") || hasShield(p)) return;
+
+			PlayerInventory inv = p.getInventory();
+
+			storedOffhandItems.put(id, inv.getItemInOffHand());
+
+			inv.setItemInOffHand(SHIELD);
+		}
+
+		correspondingTasks.put(id, scheduleRestore(p));
 	}
 
 	@SuppressWarnings("deprecation")
@@ -79,24 +107,43 @@ public class ModuleSwordBlocking extends Module {
 	public void onHit(EntityDamageByEntityEvent e){
 		Entity ent = e.getEntity();
 
-		if(ent != null && ent instanceof Player){
-			Player p = (Player) ent;
-			if(isBlocking(p.getUniqueId())){
-				//If it's a player blocking with their sword
-				//Instead of reducing damage to 33% just remove half a heart
+		if(ent == null || !(ent instanceof Player)) return;
 
-				double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
+		Player p = (Player) ent;
 
-				//Reduce the damage by 1/2 a heart if it doesn't result in the damage being negative
-				//Otherwise remove damage entirely
-				if((damageReduction - 1) >= 0)
-					damageReduction = -1; //-1 because it is a reduction value
+		if(isBlocking(p.getUniqueId())){
+			//If it's a player blocking
+			//Instead of reducing damage to 33% apply config reduction
 
-				//Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
-				//Also make sure reducing the damage by 1 doesn't result in negative damage
-				if(e.getDamage(DamageModifier.BLOCKING) > 0 && e.getFinalDamage() >= 1)
-					e.setDamage(DamageModifier.BLOCKING, damageReduction);
+			double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
+
+			if(blockingDamageReduction.matches("\\d{1,3}%")){
+				//Reduce damage by percentage
+				int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
+				damageReduction = damageReduction * percentage / 100;
 			}
+			else if (blockingDamageReduction.matches("\\d+")){
+				//Reduce by specified amount of half-hearts
+				damageReduction = Integer.parseInt(blockingDamageReduction);
+			}
+			else damageReduction = 0;
+
+			if(damageReduction < 0) damageReduction = 0;
+
+			//Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
+			if(e.getDamage(DamageModifier.BLOCKING) >= 0) return;
+
+			//Also make sure reducing the damage doesn't result in negative damage
+			e.setDamage(DamageModifier.BLOCKING, 0);
+
+			if(e.getFinalDamage() >= damageReduction)
+				e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
+
+			//Make maximum reduction possible be up to 1/2 a heart
+			if(!isSettingEnabled("shieldFullBlock") && e.getFinalDamage() < 1)
+				e.setDamage(1);
+
+			debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
 		}
 	}
 
@@ -118,9 +165,9 @@ public class ModuleSwordBlocking extends Module {
 		UUID id = p.getUniqueId();
 
 		e.getDrops().replaceAll(item -> {
-			if (item.getType().equals(Material.SHIELD)) {
+
+			if (item.getType().equals(Material.SHIELD))
 				item = storedOffhandItems.get(id);
-			}
 
 			return item;
 		});
@@ -145,8 +192,8 @@ public class ModuleSwordBlocking extends Module {
 			if (isBlocking(p.getUniqueId())){
 				ItemStack cursor = e.getCursor();
 				ItemStack current = e.getCurrentItem();
-				if(cursor!=null && cursor.getType() == Material.SHIELD || 
-						current!=null && current.getType() == Material.SHIELD){
+				if(cursor != null && cursor.getType() == Material.SHIELD ||
+						current != null && current.getType() == Material.SHIELD){
 					e.setCancelled(true);
 					restore(p);
 				}
@@ -160,25 +207,37 @@ public class ModuleSwordBlocking extends Module {
 
 		Player p = e.getPlayer();
 
-		if (isBlocking(p.getUniqueId()) &&
-				is.getItemStack().getType() == Material.SHIELD	){
+		if (isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD){
 			e.setCancelled(true);
 			restore(p);
 		}
 	}
 
-	private void scheduleRestore(final Player p) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> restore(p), 60 );
+	private BukkitRunnable scheduleRestore(final Player p) {
+		BukkitRunnable run = new BlockingTask(p);
+		run.runTaskLater(plugin, restoreDelay);
+
+		return run;
 	}
 
-	private void restore(Player p) {
-
+	public void restore(Player p) {
 		UUID id = p.getUniqueId();
 
 		if (!isBlocking(id)) return;
 
-		p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
-		storedOffhandItems.remove(id);
+		if(p.isBlocking()) //They are still blocking with the shield so postpone restoring
+			postponeRestoring(p);
+		else {
+			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+			storedOffhandItems.remove(id);
+		}
+	}
+
+	private void postponeRestoring(Player p){
+		UUID id = p.getUniqueId();
+		correspondingTasks.get(id).cancel();
+		correspondingTasks.remove(id);
+		correspondingTasks.put(id, scheduleRestore(p));
 	}
 
 	public static void RestoreAll() {
