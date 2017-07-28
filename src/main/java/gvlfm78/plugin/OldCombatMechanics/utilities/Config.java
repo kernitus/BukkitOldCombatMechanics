@@ -5,6 +5,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -27,7 +28,7 @@ public class Config {
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
-	private static ArrayList<Material> interactive = new ArrayList<Material>();
+	private static ArrayList<Material> interactive = new ArrayList<>();
 
 	public static void Initialise(OCMMain plugin) {
 
@@ -57,7 +58,6 @@ public class Config {
 
 
 	public static void reload() {
-
 		if (plugin.doesConfigymlExist()) {
 			plugin.reloadConfig();
 			config = plugin.getConfig();
@@ -103,6 +103,8 @@ public class Config {
 			ModuleGoldenApple.INSTANCE.reloadRecipes();
 		if(Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
 			reloadInteractiveBlocks();
+		if(Config.moduleEnabled("sword-blocking"))
+			ModuleSwordBlocking.INSTANCE.reload();
 	}
 
 	private static void load() {
