@@ -64,7 +64,7 @@ disable-offhand:
   items: []
   
 old-brewing-stand:
-  # Automatically adds a blaze powder to brewing stand upon opening
+  # Automatically refuels brewing stands
   enabled: true
   worlds: []
   
@@ -81,9 +81,9 @@ disable-elytra:
   worlds: []
   
 disable-enderpearl-cooldown:
-    # Disables enderpearl cooldown
-    enabled: true
-    worlds: []
+  # Disables enderpearl cooldown
+  enabled: true
+  worlds: []
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
@@ -133,6 +133,18 @@ sword-blocking:
   # This is to allow players to block with swords again by getting a shield while they hold right click with a sword
   enabled: true
   worlds: []
+  # How much damage should blocking reduce
+  # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
+  # 1.8 default: 50%             1.9 default: 33%
+  blockingDamageReduction: 50%
+  # Whether shields can block damage entirely
+  # In 1.8 blocking could only reduce to 1/2 a heart
+  shieldFullBlock: false
+  # How often, it ticks, should OCM check if the player is still blocking with the shield and remove it if not
+  # If this is too fast the player will have their shield disappear before they're able to block again causing a slight delay
+  # If this is too slow players will have a shield in their hand well after they've stopped blocking
+  # 20 ticks = 1 second
+  restoreDelay: 40
    
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -266,7 +278,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 20
+config-version: 21
 
 # Not added yet
 old-potion-effects:
