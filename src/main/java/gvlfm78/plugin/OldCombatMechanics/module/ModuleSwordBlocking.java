@@ -139,9 +139,14 @@ public class ModuleSwordBlocking extends Module {
 			if(e.getFinalDamage() >= damageReduction)
 				e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
 
-			//Make maximum reduction possible be up to 1/2 a heart
-			if(!isSettingEnabled("shieldFullBlock") && e.getFinalDamage() < 1)
-				e.setDamage(1);
+			//Make maximum reduction possible be up to amount specified in config
+
+			if(!isSettingEnabled("shieldFullBlock")){
+				double minDamage = module().getDouble("minimumDamage");
+				if(e.getFinalDamage() < minDamage)
+					e.setDamage(minDamage);
+			}
+
 
 			debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
 		}
