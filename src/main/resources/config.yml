@@ -47,10 +47,12 @@ disable-sword-sweep:
   enabled: true
   worlds: []
   
-disable-shield-craft:
-  # Disable the crafting of shields
+disable-crafting:
+  # Disable the crafting of specified items
   enabled: true
   worlds: []
+  # List of denied items
+  denied: [shield]
   
 disable-offhand:
   # Disable the usage of the offhand
@@ -278,7 +280,7 @@ debug:
   enabled: false
 
 # DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 21
+config-version: 22
 
 # Not added yet
 old-potion-effects:

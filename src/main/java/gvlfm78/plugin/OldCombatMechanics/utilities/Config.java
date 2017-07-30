@@ -2,10 +2,7 @@ package kernitus.plugin.OldCombatMechanics.utilities;
 
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
+import kernitus.plugin.OldCombatMechanics.module.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -105,6 +102,8 @@ public class Config {
 			reloadInteractiveBlocks();
 		if(Config.moduleEnabled("sword-blocking"))
 			ModuleSwordBlocking.INSTANCE.reload();
+		if(moduleEnabled("disable-crafting"))
+			ModuleDisableCrafting.INSTANCE.reload();
 	}
 
 	private static void load() {
