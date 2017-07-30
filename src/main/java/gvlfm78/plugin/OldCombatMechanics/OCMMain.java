@@ -128,7 +128,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModulePlayerRegen(this));
 		ModuleLoader.AddModule(new ModuleSwordBlocking(this));
 		ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
-		ModuleLoader.AddModule(new ModuleShieldCrafting(this));
+		ModuleLoader.AddModule(new ModuleDisableCrafting(this));
 		ModuleLoader.AddModule(new ModuleDisableOffHand(this));
 		ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
 		ModuleLoader.AddModule(new ModuleDisableElytra(this));

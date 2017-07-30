@@ -2,10 +2,7 @@ package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
+import gvlfm78.plugin.OldCombatMechanics.module.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -105,6 +102,8 @@ public class Config {
 			reloadInteractiveBlocks();
 		if(Config.moduleEnabled("sword-blocking"))
 			ModuleSwordBlocking.INSTANCE.reload();
+		if(moduleEnabled("disable-crafting"))
+			ModuleDisableCrafting.INSTANCE.reload();
 	}
 
 	private static void load() {
