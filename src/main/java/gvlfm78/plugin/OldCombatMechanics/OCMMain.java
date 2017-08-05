@@ -67,6 +67,11 @@ public class OCMMain extends JavaPlugin {
 			// Even though it says "restart", it works for just starting it too
 			restartTask();*/
 
+		//Remove scoreboard
+		String name = "ocmInternal";
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		scoreboard.getTeam(name).unregister();
+
 		if (Config.moduleEnabled("disable-sword-sweep"))
 			//Start up anti sword sweep attack task
 			restartSweepTask();

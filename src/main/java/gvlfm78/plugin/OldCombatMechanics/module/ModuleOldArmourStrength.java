@@ -117,7 +117,7 @@ public class ModuleOldArmourStrength extends Module {
 
 		boolean armourTagPresent = false, toughnessTagPresent = false;
 
-		for(int i = 0; i<attributes.size(); i++){
+		for(int i = 0; i < attributes.size(); i++){
 			Attribute att = attributes.get(i);
 			if(att == null) continue;
 
