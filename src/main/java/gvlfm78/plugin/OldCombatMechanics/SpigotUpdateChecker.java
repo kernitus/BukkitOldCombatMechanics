@@ -51,19 +51,16 @@ public class SpigotUpdateChecker {
 
 	private void run(){
 		connection.setDoOutput(true);
+
 		try{
 			connection.setRequestMethod(REQUEST_METHOD);
 			connection.getOutputStream().write(WRITE_STRING.getBytes("UTF-8"));
 		}
-		catch (ProtocolException e1){
-			result = UpdateResult.FAIL_SPIGOT;
-		}
-		catch (UnsupportedEncodingException e){
-			result = UpdateResult.FAIL_SPIGOT;
-		}
 		catch (IOException e){
 			result = UpdateResult.FAIL_SPIGOT;
+			return;
 		}
+
 		String version;
 		try{
 			version = new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine();
@@ -72,12 +69,14 @@ public class SpigotUpdateChecker {
 			result = UpdateResult.BAD_RESOURCEID;
 			return;
 		}
-		if (version.length() <= 7){
+
+		if (version != null && version.length() <= 7){
 			this.version = version;
 			version.replace("[^A-Za-z]", "").replace("|", "");
 			versionCheck();
 			return;
 		}
+
 		result = UpdateResult.BAD_RESOURCEID;
 	}
 
