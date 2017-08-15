@@ -37,6 +37,7 @@ public class ModuleSwordBlocking extends Module {
 
 	private int restoreDelay;
 	private String blockingDamageReduction;
+	private boolean bowSwordCombo;
 
 	private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
 	private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
@@ -51,6 +52,7 @@ public class ModuleSwordBlocking extends Module {
 		restoreDelay = module().getInt("restoreDelay", 40);
 		blockingDamageReduction = module().getString("blockingDamageReduction", "1");
 		blockingDamageReduction = blockingDamageReduction.replaceAll(" ", "");
+        bowSwordCombo = module().getBoolean("bowSwordCombo");
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -93,6 +95,8 @@ public class ModuleSwordBlocking extends Module {
 			if (!isHolding(item.getType(), "sword") || hasShield(p)) return;
 
 			PlayerInventory inv = p.getInventory();
+
+			if(inv.getItemInOffHand().getType().equals(Material.BOW) && bowSwordCombo == true) return;
 
 			storedOffhandItems.put(id, inv.getItemInOffHand());
 
