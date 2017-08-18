@@ -149,7 +149,11 @@ sword-blocking:
   # If this is too slow players will have a shield in their hand well after they've stopped blocking
   # 20 ticks = 1 second
   restoreDelay: 40
-   
+  # Should having a bow in the off-hand and a sword in the main hand enable the bow combo?
+  # If this is enabled, when a player right-clicks with the sword+bow combo, the bow is drawn
+  # If this is disabled, when a player right-clicks with the sword+bow combo, he will block with the sword
+  bowSwordCombo: true
+
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
   enabled: true
