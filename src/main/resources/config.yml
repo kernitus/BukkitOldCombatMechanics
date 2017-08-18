@@ -149,10 +149,10 @@ sword-blocking:
   # If this is too slow players will have a shield in their hand well after they've stopped blocking
   # 20 ticks = 1 second
   restoreDelay: 40
-  # Should having a bow in the off-hand and a sword in the main hand enable the bow combo?
-  # If this is enabled, when a player right-clicks with the sword+bow combo, the bow is drawn
-  # If this is disabled, when a player right-clicks with the sword+bow combo, he will block with the sword
-  bowSwordCombo: true
+  # List of items that holding in the offhand while right-clicking with a sword doesn't trigger blocking e.g. bow
+  noBlockingItems: []
+  # Whether the above list should act as a blacklist (i.e. only items in it stop the blocking mechanic)
+  blacklist: true
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -285,8 +285,8 @@ disable-bow-boost:
 debug:
   enabled: false
 
-# DON'T EVER EVER EVER CHANGE THIS UNLESS YOU KNOW WHAT YOU'RE DOING (It will reset the config if you don't have it at the right number)
-config-version: 22
+# DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
+config-version: 23
 
 # Not added yet
 old-potion-effects:
