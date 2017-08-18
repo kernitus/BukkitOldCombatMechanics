@@ -22,9 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -37,10 +35,11 @@ public class ModuleSwordBlocking extends Module {
 
 	private int restoreDelay;
 	private String blockingDamageReduction;
-	private boolean bowSwordCombo;
+	private boolean blacklist;
 
 	private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
 	private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
+	private final List<Material> noBlockingItems = new ArrayList<>();
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
@@ -52,7 +51,17 @@ public class ModuleSwordBlocking extends Module {
 		restoreDelay = module().getInt("restoreDelay", 40);
 		blockingDamageReduction = module().getString("blockingDamageReduction", "1");
 		blockingDamageReduction = blockingDamageReduction.replaceAll(" ", "");
-        bowSwordCombo = module().getBoolean("bowSwordCombo");
+		reloadNoBlockingItems();
+		blacklist = module().getBoolean("blacklist");
+	}
+	public void reloadNoBlockingItems(){
+		noBlockingItems.clear();
+		List<String> nbis = module().getStringList("noBlockingItems");
+		if(nbis == null) return;
+		for(String itemName : nbis){
+			Material mat = Material.matchMaterial(itemName);
+			if(mat != null) noBlockingItems.add(mat);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -96,7 +105,9 @@ public class ModuleSwordBlocking extends Module {
 
 			PlayerInventory inv = p.getInventory();
 
-			if(inv.getItemInOffHand().getType().equals(Material.BOW) && bowSwordCombo == true) return;
+			boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+
+			if(blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
 
 			storedOffhandItems.put(id, inv.getItemInOffHand());
 

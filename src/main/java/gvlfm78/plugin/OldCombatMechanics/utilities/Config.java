@@ -25,7 +25,7 @@ public class Config {
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
-	private static ArrayList<Material> interactive = new ArrayList<>();
+	private static List<Material> interactive = new ArrayList<>();
 
 	public static void Initialise(OCMMain plugin) {
 
@@ -180,7 +180,7 @@ public class Config {
 		}
 	}
 
-	public static ArrayList<Material> getInteractiveBlocks(){
+	public static List<Material> getInteractiveBlocks(){
 		return interactive;
 	}
 

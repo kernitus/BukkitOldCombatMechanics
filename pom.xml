@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
 	<artifactId>OldCombatMechanics</artifactId>
-	<version>1.6.0</version>
+	<version>1.6.2</version>
 	<name>OldCombatMechanics</name>
 	<description>Reverts to pre-1.9 combat mechanics</description>
 	<repositories>
