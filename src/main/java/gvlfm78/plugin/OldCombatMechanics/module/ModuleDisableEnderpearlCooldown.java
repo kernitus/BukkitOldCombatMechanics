@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -15,10 +16,9 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
 	public ModuleDisableEnderpearlCooldown(OCMMain plugin) {
 		super(plugin, "disable-enderpearl-cooldown");
-
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerShoot(PlayerInteractEvent e) {
 
 		Action action = e.getAction();
@@ -30,6 +30,8 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 		if(!isEnabled(player.getWorld())) return;
 
 		if(e.getMaterial() != Material.ENDER_PEARL) return;
+
+		if (e.isCancelled()) return;
 
 		e.setCancelled(true);
 
@@ -52,8 +54,10 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
 			hand.setAmount(hand.getAmount() - 1);
 
-			if(isInOffhand) inv.setItemInOffHand(hand);
-				else inv.setItemInMainHand(hand);
-		}            
+			if(isInOffhand)
+				inv.setItemInOffHand(hand);
+			else
+				inv.setItemInMainHand(hand);
+		}
 	}
 }
