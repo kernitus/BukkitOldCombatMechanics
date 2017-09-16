@@ -7,9 +7,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.HashMap;
 
-/**
- * Created by Rayzr522 on 6/14/16.
- */
 public class WeaponDamages {
 
     private static HashMap<String, Double> damages;
@@ -30,7 +27,7 @@ public class WeaponDamages {
 
         ConfigurationSection section = config.getConfigurationSection("old-tool-damage.damages");
 
-        damages = new HashMap<String, Double>();
+        damages = new HashMap<>();
 
         for (String key : section.getKeys(false)) {
 
@@ -46,9 +43,8 @@ public class WeaponDamages {
 
     public static double getDamage(Material mat) {
 
-        if (!damages.containsKey(mat.name())) {
+        if (!damages.containsKey(mat.name()))
             return -1;
-        }
 
         return damages.get(mat.name());
 

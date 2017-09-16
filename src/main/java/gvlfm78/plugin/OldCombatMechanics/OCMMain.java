@@ -99,7 +99,7 @@ public class OCMMain extends JavaPlugin {
 		}));
 
 		// Logging to console the enabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
 	}
 
