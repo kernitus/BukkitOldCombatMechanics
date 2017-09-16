@@ -32,13 +32,13 @@ public class Config {
 		Config.plugin = plugin;
 		config = plugin.getConfig();
 
-		if (!checkConfigVersion())
-			load();
-
 		reload();
 	}
 
-
+	/**
+	 *
+	 * @return Whether config was changed or not
+	 */
 	private static boolean checkConfigVersion() {
 		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
 
@@ -55,6 +55,7 @@ public class Config {
 
 
 	public static void reload() {
+
 		if (plugin.doesConfigymlExist()) {
 			plugin.reloadConfig();
 			config = plugin.getConfig();
@@ -65,7 +66,16 @@ public class Config {
 
 		//plugin.restartTask(); //Restart no-collision check
 		plugin.restartSweepTask(); //Restart sword sweep check
-		load();
+
+		Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+
+		ModuleLoader.ToggleModules();
+
+		if(Config.moduleEnabled("old-tool-damage"))
+			WeaponDamages.Initialise(plugin); //Reload weapon damages from config
+		if(Config.moduleEnabled("old-armour-strength"))
+			ArmourValues.Initialise(plugin); //Reload armour values from config
+
 
 		//Setting correct attack speed and armour values for online players
 		for(World world : Bukkit.getWorlds()){
@@ -84,7 +94,7 @@ public class Config {
 				AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 				double baseValue = attribute.getBaseValue();
 
-				if(baseValue!=GAS){
+				if(baseValue != GAS){
 					attribute.setBaseValue(GAS);
 					player.saveData();
 				}
@@ -94,6 +104,7 @@ public class Config {
 				moas.setArmourAccordingly(player, isArmourEnabled);
 			}
 		}
+
 		if(Config.moduleEnabled("disable-offhand"))
 			ModuleDisableOffHand.INSTANCE.reloadList();
 		if(Config.moduleEnabled("old-golden-apples"))
@@ -104,17 +115,6 @@ public class Config {
 			ModuleSwordBlocking.INSTANCE.reload();
 		if(moduleEnabled("disable-crafting"))
 			ModuleDisableCrafting.INSTANCE.reload();
-	}
-
-	private static void load() {
-
-		Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
-
-		WeaponDamages.Initialise(plugin); //Reload weapon damages from config
-		ArmourValues.Initialise(plugin); //Reload armour values from config
-
-		ModuleLoader.ToggleModules();
-
 	}
 
 	public static boolean moduleEnabled(String name, World world) {

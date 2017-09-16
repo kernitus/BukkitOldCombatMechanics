@@ -15,7 +15,7 @@ public class ModuleLoader {
 
 	private static OCMMain plugin;
 
-	private static List<Module> modules = new ArrayList<Module>();
+	private static List<Module> modules = new ArrayList<>();
 	private static HashMap<Module, Boolean> enabledModules = null;
 
 	public static void Initialise(OCMMain plugin) {
@@ -26,7 +26,7 @@ public class ModuleLoader {
 
 		if (enabledModules == null) {
 
-			enabledModules = new HashMap<Module, Boolean>();
+			enabledModules = new HashMap<>();
 
 			for (Module module : modules) {
 				enabledModules.put(module, module.isEnabled());
@@ -36,6 +36,7 @@ public class ModuleLoader {
 		} else {
 
 			for (Module module : modules) {
+
 				if (!enabledModules.containsKey(module)) {
 					enabledModules.put(module, module.isEnabled());
 					SetState(module, module.isEnabled());
@@ -43,6 +44,7 @@ public class ModuleLoader {
 					enabledModules.put(module, module.isEnabled());
 					SetState(module, module.isEnabled());
 				}
+
 			}
 		}
 	}

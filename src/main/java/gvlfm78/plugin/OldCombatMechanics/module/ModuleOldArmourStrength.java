@@ -6,6 +6,7 @@ import com.comphenix.example.Attributes.Attribute;
 import com.comphenix.example.Attributes.AttributeType;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ArmourValues;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Material;
@@ -127,11 +128,11 @@ public class ModuleOldArmourStrength extends Module {
 				if(armourTagPresent) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{
-					armourTagPresent = true;
 					if(att.getAmount() != strength){ //If its value does not match what it should be, remove it
 						attributes.remove(att);
 						armourTagPresent = false; //Set armour value anew
 					}
+					else armourTagPresent = true;
 				}
 			}
 
@@ -139,19 +140,25 @@ public class ModuleOldArmourStrength extends Module {
 				if(toughnessTagPresent) //If we've already found another tag
 					attributes.remove(att); //Remove this one as it's a duplicate
 				else{
-					toughnessTagPresent = true;
 					if(att.getAmount() != toughness){ //If its value does not match what it should be, remove it
 						attributes.remove(att);
 						toughnessTagPresent = false; //Set armour value anew
 					}
+					else toughnessTagPresent = true;
 				}
 			}
 		}
-		//If there's no armour tag present add it
-		if(!armourTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
-		//If there's no toughness tag present add it
-		if(!toughnessTagPresent) attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
 
+		//If there's no armour tag present add it
+		if(!armourTagPresent){
+			attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
+			Messenger.debug("Added generic armour tag");
+		}
+		//If there's no toughness tag present add it
+		if(!toughnessTagPresent){
+			attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
+			Messenger.debug("Added toughness tag");
+		}
 
 		ItemData.mark(is, "ArmorModifier");
 
