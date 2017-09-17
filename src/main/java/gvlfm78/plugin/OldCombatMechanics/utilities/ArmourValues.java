@@ -18,7 +18,7 @@ public class ArmourValues {
     private static FileConfiguration config;
 
     public static void Initialise(OCMMain plugin) {
-
+        Messenger.debug("Initialised armour values");
         ArmourValues.plugin = plugin;
         reload();
 
