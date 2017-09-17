@@ -69,13 +69,11 @@ public class Config {
 
 		Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
 
-		ModuleLoader.ToggleModules();
-
 		if(Config.moduleEnabled("old-tool-damage"))
 			WeaponDamages.Initialise(plugin); //Reload weapon damages from config
+
 		if(Config.moduleEnabled("old-armour-strength"))
 			ArmourValues.Initialise(plugin); //Reload armour values from config
-
 
 		//Setting correct attack speed and armour values for online players
 		for(World world : Bukkit.getWorlds()){
@@ -100,10 +98,11 @@ public class Config {
 				}
 
 				//Setting armour values
-				ModuleOldArmourStrength moas = new ModuleOldArmourStrength(plugin);
-				moas.setArmourAccordingly(player, isArmourEnabled);
+				ModuleOldArmourStrength.setArmourAccordingly(player, isArmourEnabled);
 			}
 		}
+
+		ModuleLoader.ToggleModules();
 
 		if(Config.moduleEnabled("disable-offhand"))
 			ModuleDisableOffHand.INSTANCE.reloadList();
@@ -184,4 +183,11 @@ public class Config {
 		return interactive;
 	}
 
+	/**
+	 * Only use if you can't access config through plugin instance
+	 * @return config.yml instance
+	 */
+	public static FileConfiguration getConfig(){
+		return plugin.getConfig();
+	}
 }

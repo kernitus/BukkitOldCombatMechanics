@@ -44,11 +44,12 @@ public class Messenger {
     }
 
     public static void debug(String msg) {
-        if (!DEBUG_ENABLED) {
-            return;
-        }
-
+        if(!DEBUG_ENABLED) return;
         plugin.getLogger().info("[DEBUG] " + msg);
     }
 
+    public static void debug(String msg, Player p){
+        if(!DEBUG_ENABLED) return;
+        p.sendMessage("[DEBUG] " + msg);
+    }
 }

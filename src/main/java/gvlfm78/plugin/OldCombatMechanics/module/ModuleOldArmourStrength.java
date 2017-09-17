@@ -6,6 +6,7 @@ import com.comphenix.example.Attributes.Attribute;
 import com.comphenix.example.Attributes.AttributeType;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.ArmourValues;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.ItemData;
 import org.apache.commons.lang.ArrayUtils;
@@ -75,7 +76,7 @@ public class ModuleOldArmourStrength extends Module {
 		setArmourAccordingly(player, isEnabled(player.getWorld()));
 	}
 
-	public void setArmourAccordingly(final Player player, boolean enabled) {
+	public static void setArmourAccordingly(final Player player, boolean enabled) {
 		final PlayerInventory inv = player.getInventory();
 		ItemStack[] armours = inv.getContents();
 		// Check the whole inventory for armour pieces
@@ -84,7 +85,7 @@ public class ModuleOldArmourStrength extends Module {
 			ItemStack piece = armours[i];
 
 			if (piece != null && piece.getType() != Material.AIR) {
-				debug("Attempting to apply armour value to item", player);
+				Messenger.debug("Attempting to apply armour value to item", player);
 
 				//If this piece is one of the ones being worn right now
 				if(ArrayUtils.contains(inv.getArmorContents(), armours[i]))
@@ -96,7 +97,7 @@ public class ModuleOldArmourStrength extends Module {
 		player.getInventory().setContents(armours);
 	}
 
-	private ItemStack apply(ItemStack is, boolean enable) {
+	private static ItemStack apply(ItemStack is, boolean enable) {
 		String slot;
 		String type = is.getType().toString().toLowerCase();
 
@@ -114,7 +115,7 @@ public class ModuleOldArmourStrength extends Module {
 
 		Attributes attributes = new Attributes(is);
 
-		double toughness = enable ? module().getDouble("toughness") : getDefaultToughness(is.getType());
+		double toughness = enable ? Config.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(is.getType());
 
 		boolean armourTagPresent = false, toughnessTagPresent = false;
 
