@@ -6,10 +6,6 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
@@ -25,20 +21,6 @@ public class OCMMain extends JavaPlugin {
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
 	//private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
-	private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
-	
-	private ShapedRecipe r;
-	
-	@SuppressWarnings("deprecation")
-	public OCMMain(){
-		try{ 
-			r = new ShapedRecipe(new NamespacedKey(this, "MINECRAFT"), gapple);
-		}
-		catch(NoClassDefFoundError e) {
-			r = new ShapedRecipe(gapple);
-		}
-		r.shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
-	}
 
 	@Override
 	public void onEnable() {
@@ -76,9 +58,6 @@ public class OCMMain extends JavaPlugin {
 			//Start up anti sword sweep attack task
 			restartSweepTask();
 
-		// Register crafting recipes
-		registerCrafting();
-
 		// MCStats Metrics
 		try {
 			MetricsLite metrics = new MetricsLite(this);
@@ -86,7 +65,7 @@ public class OCMMain extends JavaPlugin {
 		} catch (IOException e) {
 			// Failed to submit the stats
 		}
-		
+
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
 
@@ -123,7 +102,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ArmourListener(this));
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
 		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
-		
+
 		//Apparently listeners registered after get priority
 		ModuleLoader.AddModule(new ModuleOldToolDamage(this));
 		ModuleLoader.AddModule(new ModuleSwordSweep(this));
@@ -204,13 +183,5 @@ public class OCMMain extends JavaPlugin {
 
 	public OCMSweepTask sweepTask() {
 		return sweepTask;
-	}
-
-	private void registerCrafting() {
-
-		if (!Config.moduleSettingEnabled("old-golden-apples", "no-conflict-mode")) {
-			if (Bukkit.getRecipesFor(gapple).size() == 0)
-				Bukkit.addRecipe(r);
-		}
 	}
 }

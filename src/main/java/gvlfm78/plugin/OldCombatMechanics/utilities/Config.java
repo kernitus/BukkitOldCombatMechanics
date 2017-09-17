@@ -106,8 +106,10 @@ public class Config {
 
 		if(Config.moduleEnabled("disable-offhand"))
 			ModuleDisableOffHand.INSTANCE.reloadList();
-		if(Config.moduleEnabled("old-golden-apples"))
+		if(Config.moduleEnabled("old-golden-apples")) {
 			ModuleGoldenApple.INSTANCE.reloadRecipes();
+			ModuleGoldenApple.INSTANCE.registerCrafting();
+		}
 		if(Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
 			reloadInteractiveBlocks();
 		if(Config.moduleEnabled("sword-blocking"))

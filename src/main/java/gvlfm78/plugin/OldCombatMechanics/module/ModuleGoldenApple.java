@@ -1,9 +1,11 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -13,10 +15,12 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 25/6/16.
@@ -24,25 +28,33 @@ import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 public class ModuleGoldenApple extends Module {
 
 	private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
+	private ItemStack napple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
+	private ShapedRecipe r;
 
 	public static ModuleGoldenApple INSTANCE;
-	
+
 	public ModuleGoldenApple(OCMMain plugin) {
 		super(plugin, "old-golden-apples");
 		INSTANCE = this;
 		reloadRecipes();
 	}
 
+	@SuppressWarnings("deprecated")
 	public void reloadRecipes(){
 		enchantedGoldenAppleEffects = getPotionEffects("napple");
 		goldenAppleEffects = getPotionEffects("gapple");
+
+		try{
+			r = new ShapedRecipe(new NamespacedKey(plugin, "MINECRAFT"), napple);
+		}
+		catch(NoClassDefFoundError e) {
+			r = new ShapedRecipe(napple);
+		}
+		r.shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
 	}
-	
-	// public static boolean RECIPE_ALREADY_EXISTED = false;
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onPrepareItemCraft(PrepareItemCraftEvent e) {
-
 		if (e.getInventory() == null) return;
 
 		ItemStack item = e.getInventory().getResult();
@@ -128,5 +140,13 @@ public class ModuleGoldenApple extends Module {
 			appleEffects.add(fx);
 		}
 		return appleEffects;
+	}
+
+	public void registerCrafting(){
+		if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
+			if(Config.getConfig().getBoolean("old-golden-apples.no-conflict-mode") && Bukkit.getRecipesFor(napple).size() > 0) return;
+			Bukkit.addRecipe(r);
+			Messenger.debug("Added napple recipe");
+		}
 	}
 }
