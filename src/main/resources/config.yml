@@ -156,6 +156,7 @@ sword-blocking:
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
+  # WARNING: If on 1.12 or above and you disable this module you must reload the server for the recipe to disappear
   enabled: true
   worlds: []
   # If you want to allow enchanted golden apple crafting
