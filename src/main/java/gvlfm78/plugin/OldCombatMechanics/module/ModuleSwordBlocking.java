@@ -96,7 +96,8 @@ public class ModuleSwordBlocking extends Module {
 		scheduleRestore(p);*/
 
 		if (p.isBlocking()){
-			correspondingTasks.get(id).cancel();
+			BukkitRunnable task = correspondingTasks.get(id);
+			if(task != null) task.cancel();
 			correspondingTasks.remove(id);
 		} else {
 			ItemStack item = e.getItem();
