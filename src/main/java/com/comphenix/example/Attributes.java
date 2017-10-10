@@ -157,7 +157,7 @@ public class Attributes {
         }
 
         public UUID getUUID() {
-            return new UUID(data.getLong("UUIDMost", null), data.getLong("UUIDLeast", null));
+            return new UUID(data.getIntegerOrLong("UUIDMost", null), data.getIntegerOrLong("UUIDLeast", null));
         }
 
         public void setUUID(UUID id) {
