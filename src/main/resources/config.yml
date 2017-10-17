@@ -205,6 +205,8 @@ old-fishing-knockback:
   # Whether the EntityDamageEvent should be used instead of the EntityDamageByEntityEvent
   # Set to true when using plugins like NCP that check range
   useEntityDamageEvent: false
+  # This is to cancel dragging in the entity attached to the fishing rod when reeling in, like in 1.8
+  cancelDraggingIn: true
   
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
@@ -264,6 +266,15 @@ old-armour-strength:
     DIAMOND_CHESTPLATE: 8
     DIAMOND_LEGGINGS: 6
     DIAMOND_BOOTS: 3
+
+old-potion-effects:
+  # This is to restore the 1.8 potion effects before they were nerfed
+  enabled: true
+  # Strength potion
+  8228:
+    poison:
+      duration: 440
+      amplifier: 1????
     
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
@@ -287,24 +298,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 23
-
-# Not added yet
-old-potion-effects:
-  # This is to restore the 1.8 potion effects before they were nerfed
-  enabled: true
-  # Poison potion II
-  8228:
-    poison:
-      duration: 440
-      amplifier: 1????
-  # Extended Poison potion
-  8260:
-    poison:
-      duration: 2400
-      amplifier: 0????
-  # Extended Regeneration potion
-  8257:
-    regeneration:
-      duration: 2400
-      amplifier: 0????
+config-version: 25

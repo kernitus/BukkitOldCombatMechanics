@@ -17,14 +17,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.util.Collection;
 import java.util.EnumMap;
 
-/**
- * Created by Rayzr522 on 6/27/16.
- */
 public class ModuleFishingKnockback extends Module {
 
 	public ModuleFishingKnockback(OCMMain plugin) {
@@ -54,7 +52,7 @@ public class ModuleFishingKnockback extends Module {
 			for (Entity entity : entities) {
 				if (entity instanceof Player)
 					hitent = entity;
-					break;
+				break;
 
 			}
 		}
@@ -90,7 +88,7 @@ public class ModuleFishingKnockback extends Module {
 					debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
 			}
 
-			return; 
+			return;
 		}
 
 		player.damage(damage);
@@ -98,6 +96,16 @@ public class ModuleFishingKnockback extends Module {
 		Location loc = player.getLocation().add(0, 0.5, 0);
 		player.teleport(loc);
 		player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
+	}
+
+	/**
+	 * This is to cancel dragging the player closer when you reel in
+	 */
+	@EventHandler(priority = EventPriority.HIGHEST)
+	private void onReelIn(PlayerFishEvent e){
+		if(!isSettingEnabled("cancelDraggingIn") || e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
+		e.getHook().remove(); //Nuke the bobber and don't do anything else
+		e.setCancelled(true);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
