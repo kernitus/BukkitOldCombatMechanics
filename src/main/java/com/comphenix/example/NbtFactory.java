@@ -135,7 +135,10 @@ public class NbtFactory {
         public int[] getIntegerArray(String key, int[] defaultValue) {
             return containsKey(key) ? (int[])get(key) : defaultValue;
         }
-        //Method for when items are not created following NBTtag convention and have Integers where there should be Longs
+
+        /**
+         * Method for when items are not created following NBTtag convention and have Integers where there should be Longs
+         */
         public Long getIntegerOrLong(String key, Long defaultValue){
             if(!containsKey(key)) return defaultValue;
 
@@ -147,7 +150,7 @@ public class NbtFactory {
             } catch (ClassCastException e){
                 //It's not a long, try casting to integer
                 try{
-                    resultingValue = ((Integer) get(key)).longValue(); //todo maybe needs Long.valueOf() around it
+                    resultingValue = ((Integer) get(key)).longValue();
                 } catch (ClassCastException e1){
                     System.out.println("NBT value was neither a Long or an Integer");
                     e1.printStackTrace();
