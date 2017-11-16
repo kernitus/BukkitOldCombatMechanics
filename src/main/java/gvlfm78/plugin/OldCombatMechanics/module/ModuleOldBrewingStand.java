@@ -34,14 +34,14 @@ public class ModuleOldBrewingStand extends Module {
 		if(inv == null) return;
 
 		Location loc = null;
-		
+
 		try{
 		loc = inv.getLocation();
 		}
 		catch(Exception ex){}
 		
 		if(loc == null) return;
-		
+
 		Block block = loc.getBlock();
 
 		if(!block.getType().equals(Material.BREWING_STAND)) return;
@@ -49,6 +49,8 @@ public class ModuleOldBrewingStand extends Module {
 		BrewingStand stand = (BrewingStand) block.getState();
 
 		stand.setFuelLevel(20);
+
+		stand.update();
 
 	}
 
