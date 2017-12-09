@@ -3,9 +3,9 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
 	<artifactId>OldCombatMechanics</artifactId>
-	<version>1.6.2</version>
+	<version>1.6.3</version>
 	<name>OldCombatMechanics</name>
-	<description>Reverts to pre-1.9 combat mechanics</description>
+	<description>Implements pre-1.9 combat-related mechanics</description>
 	<repositories>
 		<repository>
 			<id>bukkit</id>
