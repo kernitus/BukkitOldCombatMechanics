@@ -47,13 +47,13 @@ public class ModulePlayerRegen extends Module {
             healTimes.put(p.getUniqueId(), currentTime);
         }
         
-        final float previousExh = p.getExhaustion();
-        final float exhToApply = (float) module().getDouble("exhaustion");
+        final float PREVIOUS_EXHAUSTION = p.getExhaustion();
+        final float EXHAUSTION_TO_APPLY = (float) module().getDouble("exhaustion");
         	
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             //This is because bukkit doesn't stop the exhaustion change when cancelling the event
-            p.setExhaustion(previousExh + exhToApply);
-            debug("Exhaustion before: " + previousExh + " Now: " + p.getExhaustion() + "Saturation: " + p.getSaturation(), p);
+            p.setExhaustion(PREVIOUS_EXHAUSTION + EXHAUSTION_TO_APPLY);
+            debug("Exhaustion before: " + PREVIOUS_EXHAUSTION + " Now: " + p.getExhaustion() + " Saturation: " + p.getSaturation(), p);
         },1L);
     }
 

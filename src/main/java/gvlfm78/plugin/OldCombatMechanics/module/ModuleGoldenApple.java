@@ -88,12 +88,22 @@ public class ModuleGoldenApple extends Module {
 		Player p = e.getPlayer();
 		PlayerInventory inv = p.getInventory();
 
+		//Hunger level
 		int foodLevel = p.getFoodLevel();
 		foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
 
 		item.setAmount(item.getAmount() - 1);
 
 		p.setFoodLevel(foodLevel);
+
+		//Saturation
+		//Gapple and Napple saturation is 9.6
+		float saturation = p.getSaturation() + 9.6f;
+		// "The total saturation never gets higher than the total number of hunger points"
+		if (saturation > foodLevel)
+				saturation = foodLevel;
+
+		p.setSaturation(saturation);
 
 		if (item.getDurability() == (short) 1) {
 
@@ -127,6 +137,7 @@ public class ModuleGoldenApple extends Module {
 		// A player can't eat food in the offhand if there is any in the main hand
 		// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
 	}
+
 	public List<PotionEffect> getPotionEffects(String apple){
 		List<PotionEffect> appleEffects = new ArrayList<>();
 
