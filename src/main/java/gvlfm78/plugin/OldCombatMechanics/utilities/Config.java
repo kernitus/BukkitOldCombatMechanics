@@ -72,8 +72,8 @@ public class Config {
 		if(Config.moduleEnabled("old-tool-damage"))
 			WeaponDamages.Initialise(plugin); //Reload weapon damages from config
 
-		if(Config.moduleEnabled("old-armour-strength"))
-			ArmourValues.Initialise(plugin); //Reload armour values from config
+		//if(Config.moduleEnabled("old-armour-strength"))
+        ArmourValues.Initialise(plugin); //Reload armour values from config
 
 		//Setting correct attack speed and armour values for online players
 		for(World world : Bukkit.getWorlds()){
