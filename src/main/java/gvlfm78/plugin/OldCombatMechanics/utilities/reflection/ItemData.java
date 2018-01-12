@@ -22,10 +22,7 @@ public class ItemData {
     }
 
     public static boolean hasMark(ItemStack is, String marker) {
-        if (is == null || is.getType() == Material.AIR){
-            return false;
-        }
-        return NbtFactory.fromItemTag(is).get("[OCM]" + marker) != null;
+        return is != null && is.getType() != Material.AIR && NbtFactory.fromItemTag(is).get("[OCM]" + marker) != null;
     }
 
 }
