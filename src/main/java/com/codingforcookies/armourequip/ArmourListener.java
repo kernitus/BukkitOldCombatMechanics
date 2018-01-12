@@ -59,7 +59,7 @@ public class ArmourListener extends Module implements Listener {
 		
 		if (!(he instanceof Player)) return;
 		
-		if(((Player) he).getGameMode().equals(GameMode.CREATIVE)) return; //Because Bukkit does strange stuff with the inventory in creative
+		if(he.getGameMode().equals(GameMode.CREATIVE)) return; //Because Bukkit does strange stuff with the inventory in creative
 
 		if (e.getCurrentItem() == null && e.getCursor() == null) return;
 

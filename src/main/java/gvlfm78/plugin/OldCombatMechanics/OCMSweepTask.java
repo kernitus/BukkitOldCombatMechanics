@@ -9,7 +9,7 @@ public class OCMSweepTask extends BukkitRunnable {
 
 	public OCMSweepTask() {}
 	
-	public List<Integer> swordLocations = new ArrayList<Integer>();
+	public List<Integer> swordLocations = new ArrayList<>();
 
 	public void run() {
 		//Clearing buffer

@@ -43,7 +43,7 @@ public class TeamUtils {
 
             nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
             modeField.set(packetTeamObject, 0);
-            playersField.set(packetTeamObject, Arrays.asList(new String[] { player.getName() }));
+            playersField.set(packetTeamObject, Arrays.asList(player.getName()));
 
             changePacketCollisionType(packetTeamObject);
 

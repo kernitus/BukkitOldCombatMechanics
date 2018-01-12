@@ -48,7 +48,7 @@ public class NbtFactory {
         // Unique NBT id
         public final int id;
 
-        private NbtType(int id, Class<?> type) {
+        NbtType(int id, Class<?> type) {
             this.id = id;
             NBT_CLASS.put(id, type);
             NBT_ENUM.put(id, this);
@@ -181,7 +181,7 @@ public class NbtFactory {
          * @return An existing map, a new map or NULL.
          */
         public NbtCompound getMap(String key, boolean createNew) {
-            return getMap(Arrays.asList(key), createNew);
+            return getMap(Collections.singletonList(key), createNew);
         }
         // Done
 
@@ -283,12 +283,12 @@ public class NbtFactory {
      * Represents an object that provides a view of a native NMS class.
      * @author Kristian
      */
-    public static interface Wrapper {
+    public interface Wrapper {
         /**
          * Retrieve the underlying native NBT tag.
          * @return The underlying NBT.
          */
-        public Object getHandle();
+        Object getHandle();
     }
 
     /**
@@ -359,7 +359,7 @@ public class NbtFactory {
      * Construct a new NBT list of an unspecified type.
      * @return The NBT list.
      */
-    public static NbtList createList(Iterable<? extends Object> iterable) {
+    public static NbtList createList(Iterable<?> iterable) {
         NbtList list = get().new NbtList(
                 INSTANCE.createNbtTag(NbtType.TAG_LIST, "", null)
         );
@@ -789,8 +789,8 @@ public class NbtFactory {
         @Override
         public Object put(String key, Object value) {
             return wrapOutgoing(original.put(
-                    (String) key,
-                    unwrapIncoming((String) key, value)
+                    key,
+                    unwrapIncoming(key, value)
             ));
         }
 
@@ -845,7 +845,7 @@ public class NbtFactory {
                 public Entry<String, Object> next() {
                     Entry<String, Object> entry = proxy.next();
 
-                    return new SimpleEntry<String, Object>(
+                    return new SimpleEntry<>(
                             entry.getKey(), wrapOutgoing(entry.getValue())
                     );
                 }
