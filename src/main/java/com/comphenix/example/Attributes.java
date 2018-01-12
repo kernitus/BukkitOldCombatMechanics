@@ -161,7 +161,7 @@ public class Attributes {
         }
 
         public void setUUID(UUID id) {
-            Preconditions.checkNotNull("id", "id cannot be NULL.");
+            Preconditions.checkNotNull(id, "id cannot be NULL.");
             data.put("UUIDLeast", id.getLeastSignificantBits());
             data.put("UUIDMost", id.getMostSignificantBits());
         }
@@ -319,15 +319,7 @@ public class Attributes {
 
     // We can't make Attributes itself iterable without splitting it up into separate classes
     public Iterable<Attribute> values() {
-        return new Iterable<Attribute>() {
-            public Iterator<Attribute> iterator() {
-                return Iterators.transform(attributes.iterator(),
-                        new Function<Object, Attribute>() {
-                            public Attribute apply(Object element) {
-                                return new Attribute((NbtCompound) element);
-                            }
-                        });
-            }
-        };
+        return () -> Iterators.transform(attributes.iterator(),
+                element -> new Attribute((NbtCompound) element));
     }
 }

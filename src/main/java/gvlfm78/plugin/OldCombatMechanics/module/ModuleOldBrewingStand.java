@@ -38,7 +38,7 @@ public class ModuleOldBrewingStand extends Module {
 		try{
 		loc = inv.getLocation();
 		}
-		catch(Exception ex){}
+		catch(Exception ignored){}
 		
 		if(loc == null) return;
 
