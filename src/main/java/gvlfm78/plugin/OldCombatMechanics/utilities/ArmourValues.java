@@ -6,13 +6,15 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 6/14/16.
  */
 public class ArmourValues {
 
-    private static HashMap<String, Double> values;
+    private static Map<String, Double> values;
 
     private static OCMMain plugin;
     private static FileConfiguration config;
@@ -21,33 +23,21 @@ public class ArmourValues {
         Messenger.debug("Initialised armour values");
         ArmourValues.plugin = plugin;
         reload();
-
     }
 
     public static void reload() {
-
         config = plugin.getConfig();
 
         ConfigurationSection section = config.getConfigurationSection("old-armour-strength.strength");
 
-        values = new HashMap<>();
-
-        for (String key : section.getKeys(false)) {
-
-            double val = section.getDouble(key);
-            Messenger.debug("[ArmourValues] Loading value '" + val + "' for type '" + key + "'");
-
-            values.put(key, section.getDouble(key));
-
-        }
+        values = section.getKeys(false).stream()
+                .filter(section::isDouble)
+                // .peek(key -> Messenger.debug("[ArmourValues] Loading value '" + section.getDouble(key) + "' for type '" + key + "'"))
+                .collect(Collectors.toMap(key -> key, section::getDouble));
     }
 
 
     public static double getValue(Material mat) {
-
-        if (!values.containsKey(mat.name()))
-            return 0;
-
-        return values.get(mat.name());
+        return values.getOrDefault(mat.name(), 0.0);
     }
 }

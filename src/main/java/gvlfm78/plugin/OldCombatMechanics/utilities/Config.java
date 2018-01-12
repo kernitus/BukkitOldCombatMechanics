@@ -16,6 +16,8 @@ import org.bukkit.entity.Player;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -28,7 +30,6 @@ public class Config {
 	private static List<Material> interactive = new ArrayList<>();
 
 	public static void Initialise(OCMMain plugin) {
-
 		Config.plugin = plugin;
 		config = plugin.getConfig();
 
@@ -43,7 +44,6 @@ public class Config {
 		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
 
 		if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
-
 			plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
 			plugin.upgradeConfig();
 			reload();
@@ -55,14 +55,16 @@ public class Config {
 
 
 	public static void reload() {
-
 		if (plugin.doesConfigymlExist()) {
 			plugin.reloadConfig();
 			config = plugin.getConfig();
 		} else
 			plugin.upgradeConfig();
 
-		checkConfigVersion();
+        if(checkConfigVersion()) {
+            // checkConfigVersion will call #reload() again anyways
+            return;
+        }
 
 		//plugin.restartTask(); //Restart no-collision check
 		plugin.restartSweepTask(); //Restart sword sweep check
@@ -119,26 +121,17 @@ public class Config {
 	}
 
 	public static boolean moduleEnabled(String name, World world) {
-
 		ConfigurationSection section = config.getConfigurationSection(name);
 
-		if (section == null) {
-			System.err.println("Tried to check module '" + name + "', but it didn't exist!");
+		if(section == null) {
+			plugin.getLogger().warning("Tried to check module '" + name + "', but it didn't exist!");
 			return false;
 		}
 
-		if (section.getBoolean("enabled")) {
+		if(world != null && section.getBoolean("enabled")) {
+			List<String> list = section.getStringList("worlds");
 
-			List<?> list = section.getList("worlds");
-
-			if (world != null && list != null && list.size() > 0){
-				for(Object wname : list){
-					if(String.valueOf(wname).equalsIgnoreCase(world.getName()))
-						return true;
-				}
-				return false;
-			}
-			return true;
+			return list == null || list.size() <= 0 || list.stream().anyMatch(entry -> entry.equalsIgnoreCase(world.getName()));
 		}
 
 		return false;
@@ -157,28 +150,21 @@ public class Config {
 	}
 
 	public static boolean moduleSettingEnabled(String moduleName, String moduleSettingName) {
-
 		return config.getBoolean(moduleName + "." + moduleSettingName);
-
 	}
 
 	public static void setModuleSetting(String moduleName, String moduleSettingName, boolean value) {
-
 		config.set(moduleName + "." + moduleSettingName, value);
 		plugin.saveConfig();
-
 	}
 
 	public static void reloadInteractiveBlocks(){
-
 		List<String> list = config.getStringList("interactive");
 		if(list==null) return;
 
-		for(String name : list){
-			Material mat = Material.matchMaterial(name);
-			if(mat!=null)
-				interactive.add(mat);
-		}
+		interactive = list.stream().map(Material::matchMaterial)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 	}
 
 	public static List<Material> getInteractiveBlocks(){
