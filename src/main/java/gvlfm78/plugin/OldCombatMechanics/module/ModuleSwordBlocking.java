@@ -3,7 +3,6 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 import gvlfm78.plugin.OldCombatMechanics.BlockingTask;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -31,7 +30,7 @@ public class ModuleSwordBlocking extends Module {
 
 	public static ModuleSwordBlocking INSTANCE;
 
-	private static final ItemStack SHIELD = ItemUtils.makeItem("shield");
+	private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
 
 	private int restoreDelay;
 	private String blockingDamageReduction;
