@@ -5,7 +5,6 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -14,17 +13,14 @@ public class WeaponDamages {
     private static Map<String, Double> damages;
 
     private static OCMMain plugin;
-    private static FileConfiguration config;
 
     public static void Initialise(OCMMain plugin) {
         WeaponDamages.plugin = plugin;
         reload();
     }
 
-    public static void reload() {
-        config = plugin.getConfig();
-
-        ConfigurationSection section = config.getConfigurationSection("old-tool-damage.damages");
+    private static void reload() {
+        ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
 
         damages = section.getKeys(false).stream()
                 .filter(section::isDouble)

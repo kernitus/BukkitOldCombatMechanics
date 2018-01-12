@@ -23,7 +23,7 @@ public enum ArmourType{
 	 * @param itemStack The ItemStack to parse the type of.
 	 * @return The parsed ArmourType. (null if none were found.)
 	 */
-	public final static ArmourType matchType(final ItemStack itemStack){
+	public static ArmourType matchType(final ItemStack itemStack){
 		if(itemStack == null) { return null; }
 		switch (itemStack.getType()){
 			case DIAMOND_HELMET:

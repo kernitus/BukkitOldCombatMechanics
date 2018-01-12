@@ -5,7 +5,6 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,7 +16,6 @@ public class ArmourValues {
     private static Map<String, Double> values;
 
     private static OCMMain plugin;
-    private static FileConfiguration config;
 
     public static void Initialise(OCMMain plugin) {
         Messenger.debug("Initialised armour values");
@@ -26,9 +24,7 @@ public class ArmourValues {
     }
 
     public static void reload() {
-        config = plugin.getConfig();
-
-        ConfigurationSection section = config.getConfigurationSection("old-armour-strength.strength");
+        ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-armour-strength.strength");
 
         values = section.getKeys(false).stream()
                 .filter(section::isDouble)

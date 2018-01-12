@@ -45,7 +45,7 @@ public class ModuleSwordSweep extends Module {
 		try{ //In a try catch for servers that haven't updated
 		level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
 		}
-		catch(NoSuchFieldError e1){ }
+		catch(NoSuchFieldError ignored){ }
 
 		float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 

@@ -18,7 +18,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 
 public class ModuleDisableOffHand extends Module {
 
-	private static ArrayList<Material> mats = new ArrayList<Material>();
+	private static ArrayList<Material> mats = new ArrayList<>();
 
 	public static ModuleDisableOffHand INSTANCE;
 
@@ -86,9 +86,7 @@ public class ModuleDisableOffHand extends Module {
 		boolean isContained = mats.contains(mat);
 		boolean isWhitelist = module().getBoolean("whitelist");
 
-		if(isWhitelist && !isContained || !isWhitelist && isContained)
-			return true;
+		return isWhitelist && !isContained || !isWhitelist && isContained;
 
-		return false;
 	}
 }

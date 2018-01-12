@@ -202,12 +202,7 @@ public class MetricsLite {
             try {
                 // Reload the metrics file
                 configuration.load(getConfigFile());
-            } catch (IOException ex) {
-                if (debug) {
-                    Bukkit.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
-                }
-                return true;
-            } catch (InvalidConfigurationException ex) {
+            } catch (IOException | InvalidConfigurationException ex) {
                 if (debug) {
                     Bukkit.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
                 }
@@ -513,7 +508,7 @@ public class MetricsLite {
                 default:
                     if (chr < ' ') {
                         String t = "000" + Integer.toHexString(chr);
-                        builder.append("\\u" + t.substring(t.length() - 4));
+                        builder.append("\\u").append(t.substring(t.length() - 4));
                     } else {
                         builder.append(chr);
                     }
