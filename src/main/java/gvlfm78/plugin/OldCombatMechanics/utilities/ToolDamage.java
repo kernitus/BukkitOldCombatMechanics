@@ -14,7 +14,7 @@ DIAMOND_SWORD(7), DIAMOND_SPADE(5.5F), DIAMOND_PICKAXE(5), DIAMOND_AXE(9), DIAMO
 
 	private float damage;
 	
-	private ToolDamage(float damage){
+	ToolDamage(float damage){
 		this.damage = damage;
 	}
 	
