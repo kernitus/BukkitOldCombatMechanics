@@ -80,7 +80,11 @@
 							<relocations>
 								<relocation>
 									<pattern>org.bstats</pattern>
-									<shadedPattern>gvlfm78.plugin.OldCombatMechanics</shadedPattern>
+									<shadedPattern>gvlfm78.plugin.OldCombatMechanics.lib.bstats</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>net.gravitydevelopment.updater</pattern>
+									<shadedPattern>gvlfm78.plugin.OldCombatMechanics.lib.updater</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
