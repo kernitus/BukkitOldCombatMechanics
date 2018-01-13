@@ -38,6 +38,7 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<defaultGoal>clean package</defaultGoal>
 		<finalName>${project.artifactId}</finalName>
 		<sourceDirectory>src/main/java</sourceDirectory>
 		<resources>
