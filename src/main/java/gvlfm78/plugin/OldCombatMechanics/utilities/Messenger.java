@@ -19,11 +19,11 @@ public class Messenger {
     }
 
     public static void info(String msg) {
-        plugin.getLogger().info(msg);
+        plugin.getLogger().info(TextUtils.stripColor(msg));
     }
 
     public static void err(String msg) {
-        plugin.getLogger().warning(msg);
+        plugin.getLogger().warning(TextUtils.stripColor(msg));
     }
 
     public static void severe(String msg) {
@@ -31,7 +31,7 @@ public class Messenger {
 
         logger.severe("------------------------------------------------------------");
         logger.severe("OldCombatMechanics has encountered a serious problem:");
-        logger.severe(msg);
+        logger.severe(TextUtils.stripColor(msg));
         logger.severe("------------------------------------------------------------");
     }
 

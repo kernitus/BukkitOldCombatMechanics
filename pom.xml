@@ -80,7 +80,11 @@
 							<relocations>
 								<relocation>
 									<pattern>org.bstats</pattern>
-									<shadedPattern>kernitus.plugin.OldCombatMechanics</shadedPattern>
+									<shadedPattern>kernitus.plugin.OldCombatMechanics.lib.bstats</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>net.gravitydevelopment.updater</pattern>
+									<shadedPattern>kernitus.plugin.OldCombatMechanics.lib.updater</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>

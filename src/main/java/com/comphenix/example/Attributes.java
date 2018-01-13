@@ -20,7 +20,7 @@ public class Attributes {
         ADD_PERCENTAGE(2);
         private int id;
 
-        private Operation(int id) {
+        Operation(int id) {
             this.id = id;
         }
 

@@ -26,13 +26,11 @@ public class OCMCommandHandler implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (args.length < 1) {//Tell them about available commands
-            OCMUpdateChecker updateChecker = new OCMUpdateChecker(plugin, pluginFile);
-
             PluginDescriptionFile pdf = plugin.getDescription();
 
             Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
-            Chatter.send(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6" + pdf.getVersion());
+            Chatter.send(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s", pdf.getVersion());
             Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
 
             if (plugin.getConfig().getBoolean("enableIndividualToggle") && sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player) {
@@ -41,8 +39,8 @@ public class OCMCommandHandler implements CommandExecutor {
 
             Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
-            // Update check
-            updateChecker.sendUpdateMessages(sender);
+            // Check for updates
+            new UpdateChecker(plugin, pluginFile).sendUpdateMessages(sender);
 
             return true;
         }

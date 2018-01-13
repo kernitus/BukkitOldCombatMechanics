@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics;
 
 import com.codingforcookies.armourequip.ArmourListener;
 import kernitus.plugin.OldCombatMechanics.module.*;
+import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bstats.bukkit.Metrics;
@@ -17,7 +18,7 @@ import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
-	Logger logger = getLogger();
+	private Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
 	//private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
@@ -96,7 +97,7 @@ public class OCMMain extends JavaPlugin {
 	private void registerAllEvents() {
 
 		// Update Checker (also a module so we can use the dynamic registering/unregistering)
-		ModuleLoader.AddModule(new OCMUpdateChecker(this, this.getFile()));
+		ModuleLoader.AddModule(new ModuleUpdateChecker(this, this.getFile()));
 
 		// Module listeners
 		ModuleLoader.AddModule(new ArmourListener(this));
