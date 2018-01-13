@@ -448,7 +448,7 @@ public class MetricsLite {
      * @param value
      * @throws UnsupportedEncodingException
      */
-    private static void appendJSONPair(StringBuilder json, String key, String value) throws UnsupportedEncodingException {
+    private static void appendJSONPair(StringBuilder json, String key, String value) {
         boolean isValueNumeric = false;
 
         try {
