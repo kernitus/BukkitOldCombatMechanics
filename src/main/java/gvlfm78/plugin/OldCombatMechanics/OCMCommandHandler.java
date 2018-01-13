@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Chatter;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -40,7 +41,7 @@ public class OCMCommandHandler implements CommandExecutor {
             Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
 
             // Check for updates
-            new UpdateChecker(plugin, pluginFile).sendUpdateMessages(sender);
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> new UpdateChecker(plugin, pluginFile).sendUpdateMessages(sender));
 
             return true;
         }
