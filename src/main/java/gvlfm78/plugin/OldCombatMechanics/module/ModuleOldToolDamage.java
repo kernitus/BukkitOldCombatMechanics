@@ -14,9 +14,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
 
-/**
- * Created by Rayzr522 on 6/25/16.
- */
 public class ModuleOldToolDamage extends Module {
 
     private String[] weapons = {"sword", "axe", "pickaxe", "spade", "hoe"};
