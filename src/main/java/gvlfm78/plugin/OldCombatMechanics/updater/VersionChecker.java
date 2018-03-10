@@ -1,10 +1,16 @@
 package kernitus.plugin.OldCombatMechanics.updater;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class VersionChecker {
-    public static boolean shouldUpdate(String localVersion, String remoteVersion) {
+
+    public static boolean shouldUpdate(String remoteVersion){
+        return shouldUpdate(OCMMain.getInstance().getDescription().getVersion(), remoteVersion);
+    }
+    private static boolean shouldUpdate(String localVersion, String remoteVersion) {
         return isUpdateOut(remoteVersion, localVersion);
     }
 

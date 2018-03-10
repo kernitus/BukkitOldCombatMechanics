@@ -19,14 +19,14 @@ public class UpdateChecker {
     public UpdateChecker(OCMMain plugin, File pluginFile) {
         switch (ModuleUpdateChecker.INSTANCE.module().getString("mode").toLowerCase()) {
             case "spigot":
-                this.updateSource = new SpigotUpdateSource(plugin);
+                this.updateSource = new SpigotUpdateSource();
                 break;
             case "bukkit":
                 this.updateSource = new BukkitUpdateSource(plugin, pluginFile);
                 break;
             case "auto":
                 if (Bukkit.getVersion().toLowerCase().contains("spigot")) {
-                    this.updateSource = new SpigotUpdateSource(plugin);
+                    this.updateSource = new SpigotUpdateSource();
                 } else {
                     this.updateSource = new BukkitUpdateSource(plugin, pluginFile);
                 }
