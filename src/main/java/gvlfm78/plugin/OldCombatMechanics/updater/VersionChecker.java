@@ -1,10 +1,16 @@
 package gvlfm78.plugin.OldCombatMechanics.updater;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class VersionChecker {
-    public static boolean shouldUpdate(String localVersion, String remoteVersion) {
+
+    public static boolean shouldUpdate(String remoteVersion){
+        return shouldUpdate(OCMMain.getInstance().getDescription().getVersion(), remoteVersion);
+    }
+    private static boolean shouldUpdate(String localVersion, String remoteVersion) {
         return isUpdateOut(remoteVersion, localVersion);
     }
 
