@@ -20,11 +20,13 @@ public class OCMMain extends JavaPlugin {
 
 	private Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	//private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
+	private static OCMMain INSTANCE;
 
 	@Override
 	public void onEnable() {
+	    INSTANCE = this;
+
 		PluginDescriptionFile pdfFile = this.getDescription();
 
 		// Setting up config.yml
@@ -154,23 +156,9 @@ public class OCMMain extends JavaPlugin {
 		return CH.doesConfigymlExist();
 	}
 
-	/*public void restartTask() {
-
-		if (task == null)
-			task = new OCMTask(this);
-		else {
-			task.cancel();
-			task = new OCMTask(this);
-		}
-
-		double minutes = getConfig().getDouble("disable-player-collision.collision-check-frequency");
-
-		if (minutes > 0)
-			task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
-		else
-			task.runTaskTimerAsynchronously(this, 0, 60 * 20);
-
-	}*/
+	public static OCMMain getInstance(){
+	    return INSTANCE;
+    }
 
 	public void restartSweepTask() {
 		if (sweepTask == null)
