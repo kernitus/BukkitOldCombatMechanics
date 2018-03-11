@@ -19,6 +19,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ModuleOldArmourStrength extends Module {
 
 	public ModuleOldArmourStrength(OCMMain plugin) {
@@ -119,6 +122,8 @@ public class ModuleOldArmourStrength extends Module {
 
 		boolean armourTagPresent = false, toughnessTagPresent = false;
 
+        List<Attribute> toRemove = new ArrayList<>();
+
 		for(int i = 0; i < attributes.size(); i++){
 			Attribute att = attributes.get(i);
 			if(att == null) continue;
@@ -127,10 +132,10 @@ public class ModuleOldArmourStrength extends Module {
 
 			if(attType == AttributeType.GENERIC_ARMOR){ //Found a generic armour tag
 				if(armourTagPresent) //If we've already found another tag
-					attributes.remove(att); //Remove this one as it's a duplicate
+					toRemove.add(att); //Remove this one as it's a duplicate
 				else{
 					if(att.getAmount() != strength){ //If its value does not match what it should be, remove it
-						attributes.remove(att);
+                        toRemove.add(att);
 						armourTagPresent = false; //Set armour value anew
 					}
 					else armourTagPresent = true;
@@ -139,16 +144,19 @@ public class ModuleOldArmourStrength extends Module {
 
 			else if(attType == AttributeType.GENERIC_ARMOR_TOUGHNESS){ //Found a generic armour toughness tag
 				if(toughnessTagPresent) //If we've already found another tag
-					attributes.remove(att); //Remove this one as it's a duplicate
+                    toRemove.add(att); //Remove this one as it's a duplicate
 				else{
 					if(att.getAmount() != toughness){ //If its value does not match what it should be, remove it
-						attributes.remove(att);
+                        toRemove.add(att);
 						toughnessTagPresent = false; //Set armour value anew
 					}
 					else toughnessTagPresent = true;
 				}
 			}
 		}
+
+		// So we don't remove while iterating
+		toRemove.forEach(attributes::remove);
 
 		//If there's no armour tag present add it
 		if(!armourTagPresent){
