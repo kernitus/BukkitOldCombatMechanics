@@ -6,6 +6,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +28,7 @@ public class ArmourValues {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-armour-strength.strength");
 
         values = section.getKeys(false).stream()
-                .filter(section::isDouble)
+                .filter(((Predicate<String>) section::isDouble).or(section::isInt))
                 // .peek(key -> Messenger.debug("[ArmourValues] Loading value '" + section.getDouble(key) + "' for type '" + key + "'"))
                 .collect(Collectors.toMap(key -> key, section::getDouble));
     }
