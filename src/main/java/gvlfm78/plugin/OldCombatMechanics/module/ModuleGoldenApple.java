@@ -20,6 +20,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by Rayzr522 on 25/6/16.
@@ -138,7 +139,7 @@ public class ModuleGoldenApple extends Module {
 		// On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
 	}
 
-	public List<PotionEffect> getPotionEffects(String apple){
+	private List<PotionEffect> getPotionEffects(String apple){
 		List<PotionEffect> appleEffects = new ArrayList<>();
 
 		ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
@@ -146,7 +147,10 @@ public class ModuleGoldenApple extends Module {
 			int duration = sect.getInt(key + ".duration");
 			int amplifier = sect.getInt(key + ".amplifier");
 
-			PotionEffect fx = new PotionEffect(PotionEffectType.getByName(key), duration, amplifier);
+			PotionEffectType type = PotionEffectType.getByName(key);
+			Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
+
+			PotionEffect fx = new PotionEffect(type, duration, amplifier);
 			appleEffects.add(fx);
 		}
 		return appleEffects;
