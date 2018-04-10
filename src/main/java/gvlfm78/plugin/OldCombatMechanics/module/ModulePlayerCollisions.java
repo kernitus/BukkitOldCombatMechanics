@@ -11,7 +11,6 @@ public class ModulePlayerCollisions extends Module {
 
     public ModulePlayerCollisions(OCMMain plugin){
         super(plugin, "disable-player-collisions");
-
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
