@@ -25,18 +25,18 @@ public class MobDamage {
             .put(EntityType.ENDERMITE, Enchantment.DAMAGE_ARTHROPODS)
             .build();
 
-    public static Enchantment getEnchant(EntityType entity) {
+    public static Enchantment getEnchant(EntityType entity){
         return enchants.get(entity);
     }
 
-    public static double applyEntityBasedDamage(EntityType entity, ItemStack item, double startDamage) {
+    public static double applyEntityBasedDamage(EntityType entity, ItemStack item, double startDamage){
         Enchantment ench = getEnchant(entity);
 
-        if (ench == null) {
+        if(ench == null){
             return startDamage;
         }
 
-        if (ench == Enchantment.DAMAGE_UNDEAD || ench == Enchantment.DAMAGE_ARTHROPODS) {
+        if(ench == Enchantment.DAMAGE_UNDEAD || ench == Enchantment.DAMAGE_ARTHROPODS){
             return startDamage + 2.5 * item.getEnchantmentLevel(ench);
         }
 

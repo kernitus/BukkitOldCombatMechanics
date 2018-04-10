@@ -18,134 +18,134 @@ import java.util.stream.Collectors;
 
 public class OCMMain extends JavaPlugin {
 
-	private Logger logger = getLogger();
-	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	private static OCMMain INSTANCE;
+    private static OCMMain INSTANCE;
+    private Logger logger = getLogger();
+    private OCMConfigHandler CH = new OCMConfigHandler(this);
 
-	@Override
-	public void onEnable() {
-	    INSTANCE = this;
+    public static OCMMain getInstance(){
+        return INSTANCE;
+    }
 
-		PluginDescriptionFile pdfFile = this.getDescription();
+    @Override
+    public void onEnable(){
+        INSTANCE = this;
 
-		// Setting up config.yml
-		CH.setupConfig();
+        PluginDescriptionFile pdfFile = this.getDescription();
 
-		// Initialise ModuleLoader utility
-		ModuleLoader.initialise(this);
+        // Setting up config.yml
+        CH.setupConfig();
 
-		// Register every event class (as well as our command handler)
-		registerAllEvents();
+        // Initialise ModuleLoader utility
+        ModuleLoader.initialise(this);
 
-		// Initialise the Messenger utility
-		Messenger.initialise(this);
+        // Register every event class (as well as our command handler)
+        registerAllEvents();
 
-		// Initialise Config utility
-		Config.initialise(this);
+        // Initialise the Messenger utility
+        Messenger.initialise(this);
 
-		// Initialise the team if it doesn't already exist
-		createTeam();
+        // Initialise Config utility
+        Config.initialise(this);
 
-		// Disabling player collision
+        // Initialise the team if it doesn't already exist
+        createTeam();
+
+        // Disabling player collision
 		/*if (Config.moduleEnabled("disable-player-collision"))
 			// Even though it says "restart", it works for just starting it too
 			restartTask();*/
 
-		//Remove scoreboard
-		String name = "ocmInternal";
-		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-		scoreboard.getTeam(name).unregister();
+        //Remove scoreboard
+        String name = "ocmInternal";
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        scoreboard.getTeam(name).unregister();
 
-		// MCStats Metrics
-		try {
-			MetricsLite metrics = new MetricsLite(this);
-			metrics.start();
-		} catch (IOException e) {
-			// Failed to submit the stats
-		}
+        // MCStats Metrics
+        try{
+            MetricsLite metrics = new MetricsLite(this);
+            metrics.start();
+        } catch(IOException e){
+            // Failed to submit the stats
+        }
 
-		//BStats Metrics
-		Metrics metrics = new Metrics(this);
+        //BStats Metrics
+        Metrics metrics = new Metrics(this);
 
-		metrics.addCustomChart(
-				new Metrics.SimpleBarChart(
-						"enabled_modules",
-						() -> ModuleLoader.getModules().stream()
-								.filter(Module::isEnabled)
-								.collect(Collectors.toMap(Module::toString, module -> 1))
-				)
-		);
+        metrics.addCustomChart(
+                new Metrics.SimpleBarChart(
+                        "enabled_modules",
+                        () -> ModuleLoader.getModules().stream()
+                                .filter(Module::isEnabled)
+                                .collect(Collectors.toMap(Module::toString, module -> 1))
+                )
+        );
 
-		// Logging to console the enabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
+        // Logging to console the enabling of OCM
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
-	}
+    }
 
-	@Override
-	public void onDisable() {
+    @Override
+    public void onDisable(){
 
-		PluginDescriptionFile pdfFile = this.getDescription();
+        PluginDescriptionFile pdfFile = this.getDescription();
 
-		//if (task != null) task.cancel();
+        //if (task != null) task.cancel();
 
-		// Logging to console the disabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
-	}
+        // Logging to console the disabling of OCM
+        logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
+    }
 
-	private void registerAllEvents() {
+    private void registerAllEvents(){
 
-		// Update Checker (also a module so we can use the dynamic registering/unregistering)
-		ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
+        // Update Checker (also a module so we can use the dynamic registering/unregistering)
+        ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
 
-		// Module listeners
-		ModuleLoader.addModule(new ArmourListener(this));
-		ModuleLoader.addModule(new ModuleAttackCooldown(this));
-		ModuleLoader.addModule(new ModulePlayerCollisions(this));
+        // Module listeners
+        ModuleLoader.addModule(new ArmourListener(this));
+        ModuleLoader.addModule(new ModuleAttackCooldown(this));
+        ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
-		//Apparently listeners registered after get priority
-		ModuleLoader.addModule(new ModuleOldToolDamage(this));
-		ModuleLoader.addModule(new ModuleSwordSweep(this));
+        //Apparently listeners registered after get priority
+        ModuleLoader.addModule(new ModuleOldToolDamage(this));
+        ModuleLoader.addModule(new ModuleSwordSweep(this));
 
-		ModuleLoader.addModule(new ModuleGoldenApple(this));
-		ModuleLoader.addModule(new ModuleFishingKnockback(this));
-		ModuleLoader.addModule(new ModulePlayerRegen(this));
-		ModuleLoader.addModule(new ModuleSwordBlocking(this));
-		ModuleLoader.addModule(new ModuleOldArmourStrength(this));
-		ModuleLoader.addModule(new ModuleDisableCrafting(this));
-		ModuleLoader.addModule(new ModuleDisableOffHand(this));
-		ModuleLoader.addModule(new ModuleOldBrewingStand(this));
-		ModuleLoader.addModule(new ModuleDisableElytra(this));
-		ModuleLoader.addModule(new ModuleDisableProjectileRandomness(this));
-		ModuleLoader.addModule(new ModuleDisableBowBoost(this));
-		ModuleLoader.addModule(new ModuleProjectileKnockback(this));
-		ModuleLoader.addModule(new ModuleNoLapisEnchantments(this));
-		ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
+        ModuleLoader.addModule(new ModuleGoldenApple(this));
+        ModuleLoader.addModule(new ModuleFishingKnockback(this));
+        ModuleLoader.addModule(new ModulePlayerRegen(this));
+        ModuleLoader.addModule(new ModuleSwordBlocking(this));
+        ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+        ModuleLoader.addModule(new ModuleDisableCrafting(this));
+        ModuleLoader.addModule(new ModuleDisableOffHand(this));
+        ModuleLoader.addModule(new ModuleOldBrewingStand(this));
+        ModuleLoader.addModule(new ModuleDisableElytra(this));
+        ModuleLoader.addModule(new ModuleDisableProjectileRandomness(this));
+        ModuleLoader.addModule(new ModuleDisableBowBoost(this));
+        ModuleLoader.addModule(new ModuleProjectileKnockback(this));
+        ModuleLoader.addModule(new ModuleNoLapisEnchantments(this));
+        ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
 
-		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
-	}
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
+    }
 
-	private void createTeam() {
-		String name = "ocmInternal";
-		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+    private void createTeam(){
+        String name = "ocmInternal";
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-		Team team = scoreboard.getTeams().stream()
+        Team team = scoreboard.getTeams().stream()
                 .filter(t -> t.getName().equals(name))
                 .findFirst()
                 .orElse(scoreboard.registerNewTeam(name));
 
-		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
-		team.setAllowFriendlyFire(true);
-	}
+        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
+        team.setAllowFriendlyFire(true);
+    }
 
-	public void upgradeConfig() {
-		CH.upgradeConfig();
-	}
+    public void upgradeConfig(){
+        CH.upgradeConfig();
+    }
 
-	public boolean doesConfigExist() {
-		return CH.doesConfigExist();
-	}
-
-	public static OCMMain getInstance(){
-	    return INSTANCE;
+    public boolean doesConfigExist(){
+        return CH.doesConfigExist();
     }
 }

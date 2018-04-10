@@ -18,19 +18,19 @@ public class ModulePlayerRegen extends Module {
 
     private Map<UUID, Long> healTimes = new HashMap<>();
 
-    public ModulePlayerRegen(OCMMain plugin) {
+    public ModulePlayerRegen(OCMMain plugin){
         super(plugin, "old-player-regen");
     }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-    public void onRegen(EntityRegainHealthEvent e) {
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRegen(EntityRegainHealthEvent e){
 
-        if (e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
+        if(e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
             return;
 
         final Player p = (Player) e.getEntity();
 
-        if (!isEnabled(p.getWorld())) return;
+        if(!isEnabled(p.getWorld())) return;
 
         e.setCancelled(true);
 
@@ -42,24 +42,24 @@ public class ModulePlayerRegen extends Module {
 
         double maxHealth = p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
 
-        if (p.getHealth() < maxHealth) {
+        if(p.getHealth() < maxHealth){
             p.setHealth(MathHelper.clamp(p.getHealth() + module().getInt("amount"), 0.0, maxHealth));
             healTimes.put(p.getUniqueId(), currentTime);
         }
-        
+
         final float PREVIOUS_EXHAUSTION = p.getExhaustion();
         final float EXHAUSTION_TO_APPLY = (float) module().getDouble("exhaustion");
-        	
+
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             //This is because bukkit doesn't stop the exhaustion change when cancelling the event
             p.setExhaustion(PREVIOUS_EXHAUSTION + EXHAUSTION_TO_APPLY);
             debug("Exhaustion before: " + PREVIOUS_EXHAUSTION + " Now: " + p.getExhaustion() + " Saturation: " + p.getSaturation(), p);
-        },1L);
+        }, 1L);
     }
 
-    private long getLastHealTime(Player p) {
+    private long getLastHealTime(Player p){
 
-        if (!healTimes.containsKey(p.getUniqueId()))
+        if(!healTimes.containsKey(p.getUniqueId()))
             healTimes.put(p.getUniqueId(), System.currentTimeMillis() / 1000);
 
         return healTimes.get(p.getUniqueId());
