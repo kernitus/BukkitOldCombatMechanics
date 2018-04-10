@@ -19,11 +19,11 @@ public class ModuleLoader {
 	private static List<Module> modules = new ArrayList<>();
 	private static Map<Module, Boolean> enabledModules = null;
 
-	public static void Initialise(OCMMain plugin) {
+	public static void initialise(OCMMain plugin) {
 		ModuleLoader.plugin = plugin;
 	}
 
-	public static void ToggleModules() {
+	public static void toggleModules() {
 
 		if (enabledModules == null) {
 
@@ -31,7 +31,7 @@ public class ModuleLoader {
 
 			for (Module module : modules) {
 				enabledModules.put(module, module.isEnabled());
-				SetState(module, module.isEnabled());
+				setState(module, module.isEnabled());
 			}
 
 		} else {
@@ -40,17 +40,17 @@ public class ModuleLoader {
 
 				if (!enabledModules.containsKey(module)) {
 					enabledModules.put(module, module.isEnabled());
-					SetState(module, module.isEnabled());
+					setState(module, module.isEnabled());
 				} else if (module.isEnabled() != enabledModules.get(module)) {
 					enabledModules.put(module, module.isEnabled());
-					SetState(module, module.isEnabled());
+					setState(module, module.isEnabled());
 				}
 
 			}
 		}
 	}
 
-	private static void SetState(Module module, boolean state) {
+	private static void setState(Module module, boolean state) {
 		if (state) {
 			plugin.getServer().getPluginManager().registerEvents(module, plugin);
 			Messenger.debug("Enabled " + module.getClass().getSimpleName());
@@ -60,7 +60,7 @@ public class ModuleLoader {
 		}
 	}
 
-	public static void AddModule(Module module) {
+	public static void addModule(Module module) {
 		modules.add(module);
 	}
 	public static Map<Module, Boolean> getEnabledModules(){
