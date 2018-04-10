@@ -9,8 +9,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class ModulePlayerCollisions extends Module {
 
-    //private CollisionTask task = new CollisionTask(plugin);
-
     public ModulePlayerCollisions(OCMMain plugin){
         super(plugin, "disable-player-collisions");
 
@@ -26,27 +24,4 @@ public class ModulePlayerCollisions extends Module {
         TeamUtils.getSecurePlayers().remove(e.getPlayer());
     }
 
-	/*@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerLogin(PlayerJoinEvent e) {
-
-		Player p = e.getPlayer();
-		World world = p.getWorld();
-
-		if (isEnabled(world))
-			task.addPlayerToScoreboard(p);
-		else 
-			task.removePlayerFromScoreboard(p);
-	}
-
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onWorldChange(PlayerChangedWorldEvent e) {
-
-		Player player = e.getPlayer();
-		World world = player.getWorld();
-
-		if (isEnabled(world))
-			task.addPlayerToScoreboard(player);
-		else 
-			task.removePlayerFromScoreboard(player);
-	}*/
 }
