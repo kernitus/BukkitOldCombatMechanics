@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 
 /**
@@ -43,7 +43,7 @@ public class TeamUtils {
 
             nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
             modeField.set(packetTeamObject, 0);
-            playersField.set(packetTeamObject, Arrays.asList(player.getName()));
+            playersField.set(packetTeamObject, Collections.singletonList(player.getName()));
 
             changePacketCollisionType(packetTeamObject);
 
@@ -55,12 +55,8 @@ public class TeamUtils {
         }
     }
 
-    public static void changePacketCollisionType(Object packetTeamObject) throws Exception{
+    private static void changePacketCollisionType(Object packetTeamObject) throws Exception{
         collisionRuleField.set(packetTeamObject, "never");
-    }
-
-    public static Class<?> getPacketTeamClass(){
-        return packetTeamClass;
     }
 
     public static ArrayList<Player> getSecurePlayers(){
