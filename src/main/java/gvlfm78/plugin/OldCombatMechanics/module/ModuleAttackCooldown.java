@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -24,22 +25,12 @@ public class ModuleAttackCooldown extends Module {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {
+		checkAttackSpeed(e);
+	}
 
-		Player p = e.getPlayer();
-		World world = p.getWorld();
-
-		double GAS = module().getDouble("generic-attack-speed");
-
-		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-		double baseValue = attribute.getBaseValue();
-
-		if(!Config.moduleEnabled("disable-attack-cooldown", world))
-			GAS = 4; //If module is disabled, set attack speed to 1.9 default
-
-		if(baseValue!=GAS){
-			attribute.setBaseValue(GAS);
-			p.saveData();
-		}
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onWorldChange(PlayerChangedWorldEvent e) {
+		checkAttackSpeed(e);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -53,22 +44,20 @@ public class ModuleAttackCooldown extends Module {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onWorldChange(PlayerChangedWorldEvent e) {
-		Player player = e.getPlayer();
-		World world = player.getWorld();
-		
-		double GAS = module().getDouble("generic-attack-speed");
-		
-		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+	private void checkAttackSpeed(PlayerEvent e) {
+		Player p = e.getPlayer();
+		World world = p.getWorld();
+
+        //If module is disabled, set attack speed to 1.9 default
+		double attackSpeed = Config.moduleEnabled("disable-attack-cooldown", world) ? module().getDouble("generic-attack-speed") : 4;
+
+		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
-		
-		if(!Config.moduleEnabled("disable-attack-cooldown", world))
-			GAS = 4; //If module is disabled, set attack speed to 1.9 default
-		
-		if(baseValue!=GAS){
-			attribute.setBaseValue(GAS);
-			player.saveData();
+
+		if(baseValue!=attackSpeed){
+			attribute.setBaseValue(attackSpeed);
+			p.saveData();
 		}
 	}
+
 }
