@@ -22,6 +22,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -35,33 +36,34 @@ public class ModuleSwordBlocking extends Module {
 	private int restoreDelay;
 	private String blockingDamageReduction;
 	private boolean blacklist;
+	private List<Material> noBlockingItems;
 
 	private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
 	private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
-	private final List<Material> noBlockingItems = new ArrayList<>();
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
 		INSTANCE = this;
-		reload();
 	}
 
+	@Override
 	public void reload(){
 		restoreDelay = module().getInt("restoreDelay", 40);
-		blockingDamageReduction = module().getString("blockingDamageReduction", "1");
-		blockingDamageReduction = blockingDamageReduction.replaceAll(" ", "");
-		reloadNoBlockingItems();
+		blockingDamageReduction = module().getString("blockingDamageReduction", "1")
+				.replaceAll(" ", "");
 		blacklist = module().getBoolean("blacklist");
-	}
-	public void reloadNoBlockingItems(){
+
 		noBlockingItems.clear();
-		List<String> nbis = module().getStringList("noBlockingItems");
-		if(nbis == null) return;
-		for(String itemName : nbis){
-			Material mat = Material.matchMaterial(itemName);
-			if(mat != null) noBlockingItems.add(mat);
-		}
+
+		List<String> list = module().getStringList("noBlockingItems");
+		if(list == null) return;
+
+		noBlockingItems = list.stream()
+				.map(Material::matchMaterial)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
 	}
+
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onRightClick(PlayerInteractEvent e) {
