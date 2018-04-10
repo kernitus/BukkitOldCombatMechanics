@@ -9,13 +9,14 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class ModuleDisableCrafting extends Module {
 
 	public static ModuleDisableCrafting INSTANCE;
-	private List<Material> denied = new ArrayList<>();
+	private List<Material> denied;
 
 	public ModuleDisableCrafting(OCMMain plugin) {
 		super(plugin, "disable-crafting");
@@ -24,11 +25,10 @@ public class ModuleDisableCrafting extends Module {
 	}
 
 	public void reload(){
-		 List<String> list = module().getStringList("denied");
-		for(String name : list) {
-			Material mat = Material.matchMaterial(name);
-			if(mat != null) denied.add(mat);
-		}
+		denied = module().getStringList("denied").stream()
+                .map(Material::matchMaterial)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 	}
 
 	@EventHandler (priority = EventPriority.HIGHEST)
@@ -40,7 +40,7 @@ public class ModuleDisableCrafting extends Module {
 
 		CraftingInventory inv = e.getInventory();
 		ItemStack result = inv.getResult();
-		
+
 		if(result != null && denied.contains(result.getType()))
 			inv.setResult(null);
 	}
