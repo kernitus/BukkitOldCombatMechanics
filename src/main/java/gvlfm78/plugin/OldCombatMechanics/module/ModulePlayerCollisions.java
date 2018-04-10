@@ -9,22 +9,22 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class ModulePlayerCollisions extends Module {
 
-	//private CollisionTask task = new CollisionTask(plugin);
+    //private CollisionTask task = new CollisionTask(plugin);
 
-	public ModulePlayerCollisions(OCMMain plugin) {
-		super(plugin, "disable-player-collisions");
+    public ModulePlayerCollisions(OCMMain plugin){
+        super(plugin, "disable-player-collisions");
 
-	}
+    }
 
-	@EventHandler (priority = EventPriority.MONITOR)
-	public void onPlayerLogin(PlayerJoinEvent e) {
-		TeamUtils.sendTeamPacket(e.getPlayer());
-	}
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerLogin(PlayerJoinEvent e){
+        TeamUtils.sendTeamPacket(e.getPlayer());
+    }
 
-	@EventHandler (priority = EventPriority.MONITOR)
-	public void onPlayerQuit(PlayerQuitEvent e){
-		TeamUtils.getSecurePlayers().remove(e.getPlayer());
-	}
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent e){
+        TeamUtils.getSecurePlayers().remove(e.getPlayer());
+    }
 
 	/*@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {

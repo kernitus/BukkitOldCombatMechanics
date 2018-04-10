@@ -3,7 +3,6 @@ package kernitus.plugin.OldCombatMechanics.utilities;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Map;
 import java.util.function.Predicate;
@@ -18,13 +17,13 @@ public class ArmourValues {
 
     private static OCMMain plugin;
 
-    public static void initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin){
         Messenger.debug("Initialised armour values");
         ArmourValues.plugin = plugin;
         reload();
     }
 
-    public static void reload() {
+    public static void reload(){
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-armour-strength.strength");
 
         values = section.getKeys(false).stream()
@@ -34,7 +33,7 @@ public class ArmourValues {
     }
 
 
-    public static double getValue(Material mat) {
+    public static double getValue(Material mat){
         return values.getOrDefault(mat.name(), 0.0);
     }
 }

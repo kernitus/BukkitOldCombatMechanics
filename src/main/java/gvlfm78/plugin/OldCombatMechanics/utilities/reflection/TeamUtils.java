@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * From <a href="https://www.spigotmc.org/resources/1-9-anti-collision.28770/">1.9 anti-collision plugin by Mentrixx</a>
  * Modified by kernitus to work with Rayzr's Reflector utility
- *
+ * <p>
  * I've tried to contact the author but didn't get an answer after months,
  * and as the plugin has no license decided to take some of the code
  */
@@ -23,8 +23,8 @@ public class TeamUtils {
     private static Field collisionRuleField = null;
     private static Field playersField = null;
 
-    static {
-        try {
+    static{
+        try{
             packetTeamClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
 
             nameField = Reflector.getInaccessibleField(packetTeamClass, "a");
@@ -32,13 +32,13 @@ public class TeamUtils {
             collisionRuleField = Reflector.getInaccessibleField(packetTeamClass, "f");
             playersField = Reflector.getInaccessibleField(packetTeamClass, "h");
 
-        } catch (Exception ex) {
+        } catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
-    public static synchronized void sendTeamPacket(Player player) {
-        try {
+    public static synchronized void sendTeamPacket(Player player){
+        try{
             Object packetTeamObject = packetTeamClass.newInstance();
 
             nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
@@ -47,23 +47,23 @@ public class TeamUtils {
 
             changePacketCollisionType(packetTeamObject);
 
-            if (!getSecurePlayers().contains(player))
+            if(!getSecurePlayers().contains(player))
                 Reflector.Packets.sendPacket(player, packetTeamObject);
 
-        } catch (Exception ex) {
+        } catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
-    public static void changePacketCollisionType(Object packetTeamObject) throws Exception {
+    public static void changePacketCollisionType(Object packetTeamObject) throws Exception{
         collisionRuleField.set(packetTeamObject, "never");
     }
 
-    public static Class<?> getPacketTeamClass() {
+    public static Class<?> getPacketTeamClass(){
         return packetTeamClass;
     }
 
-    public static ArrayList<Player> getSecurePlayers() {
+    public static ArrayList<Player> getSecurePlayers(){
         return securePlayers;
     }
 }

@@ -19,7 +19,7 @@ public class Chatter {
      * @param message The message to send.
      * @param args    The args to format the message with.
      */
-    public static void send(CommandSender sender, String message, Object... args) {
+    public static void send(CommandSender sender, String message, Object... args){
         Objects.requireNonNull(sender, "sender cannot be null!");
         Objects.requireNonNull(message, "message cannot be null!");
 

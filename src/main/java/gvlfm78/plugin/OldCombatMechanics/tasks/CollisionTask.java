@@ -15,41 +15,41 @@ public class CollisionTask extends BukkitRunnable {
 
     private OCMMain plugin;
 
-    public CollisionTask(OCMMain instance) {
+    public CollisionTask(OCMMain instance){
         this.plugin = instance;
     }
 
-    public void run() {
+    public void run(){
         Collection<? extends Player> players = Bukkit.getServer().getOnlinePlayers();
-        for (Player p : players) {
+        for(Player p : players){
             addPlayerToScoreboard(p);
         }
     }
 
-    private void addPlayerToScoreboard(Player p) {
+    private void addPlayerToScoreboard(Player p){
 
         String name = p.getName();
-        if (p.getScoreboard().getEntryTeam(p.getName()) != null) return;
+        if(p.getScoreboard().getEntryTeam(p.getName()) != null) return;
 
         World w = p.getWorld();
         List<?> worlds = Config.getWorlds("disable-player-collision");
 
-        if (worlds.isEmpty() || worlds.contains(w.getName())) {
+        if(worlds.isEmpty() || worlds.contains(w.getName())){
             Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
-            if (!team.getEntries().contains(name)) {
+            if(!team.getEntries().contains(name)){
                 team.addEntry(name);
             }
-        } else if (!worlds.contains(w.getName())) {
+        } else if(!worlds.contains(w.getName())){
             removePlayerFromScoreboard(p);
         }
     }
 
-    private void removePlayerFromScoreboard(Player p) {
+    private void removePlayerFromScoreboard(Player p){
 
-        if (p.getScoreboard().getEntryTeam(p.getName()) != null) return;
+        if(p.getScoreboard().getEntryTeam(p.getName()) != null) return;
 
         Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("ocmInternal");
-        if (team.getEntries().contains(p.getName())) {
+        if(team.getEntries().contains(p.getName())){
             team.removeEntry(p.getName());
         }
     }

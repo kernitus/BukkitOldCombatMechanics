@@ -15,46 +15,46 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class ModuleDisableEnderpearlCooldown extends Module {
 
-	public ModuleDisableEnderpearlCooldown(OCMMain plugin) {
-		super(plugin, "disable-enderpearl-cooldown");
-	}
+    public ModuleDisableEnderpearlCooldown(OCMMain plugin){
+        super(plugin, "disable-enderpearl-cooldown");
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerShoot(PlayerInteractEvent e) {
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerShoot(PlayerInteractEvent e){
 
-		Action action = e.getAction();
+        Action action = e.getAction();
 
-		if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-		Player player = e.getPlayer();
+        Player player = e.getPlayer();
 
-		if(!isEnabled(player.getWorld())) return;
+        if(!isEnabled(player.getWorld())) return;
 
-		if(e.getMaterial() != Material.ENDER_PEARL) return;
+        if(e.getMaterial() != Material.ENDER_PEARL) return;
 
-		if (e.isCancelled()) return;
+        if(e.isCancelled()) return;
 
-		e.setCancelled(true);
+        e.setCancelled(true);
 
-		EnderPearl pearl = player.launchProjectile(EnderPearl.class);
+        EnderPearl pearl = player.launchProjectile(EnderPearl.class);
 
-		pearl.setVelocity(player.getEyeLocation().getDirection().multiply(2));
+        pearl.setVelocity(player.getEyeLocation().getDirection().multiply(2));
 
-		GameMode mode = player.getGameMode();
+        GameMode mode = player.getGameMode();
 
-		if(mode != GameMode.CREATIVE) {
-			PlayerInventory inv = player.getInventory();
+        if(mode != GameMode.CREATIVE){
+            PlayerInventory inv = player.getInventory();
 
-			boolean offhand = e.getHand() == EquipmentSlot.OFF_HAND;
-			ItemStack hand = e.getItem();
+            boolean offhand = e.getHand() == EquipmentSlot.OFF_HAND;
+            ItemStack hand = e.getItem();
 
-			hand.setAmount(hand.getAmount() - 1);
+            hand.setAmount(hand.getAmount() - 1);
 
-			if (e.getHand() == EquipmentSlot.HAND) {
-				inv.setItemInMainHand(hand);
-			} else {
-				inv.setItemInOffHand(hand);
-			}
-		}
-	}
+            if(e.getHand() == EquipmentSlot.HAND){
+                inv.setItemInMainHand(hand);
+            } else {
+                inv.setItemInOffHand(hand);
+            }
+        }
+    }
 }

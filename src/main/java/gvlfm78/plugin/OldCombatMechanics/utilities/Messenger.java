@@ -14,19 +14,19 @@ public class Messenger {
     public static boolean DEBUG_ENABLED = false;
     public static OCMMain plugin;
 
-    public static void initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin){
         Messenger.plugin = plugin;
     }
 
-    public static void info(String msg) {
+    public static void info(String msg){
         plugin.getLogger().info(TextUtils.stripColor(msg));
     }
 
-    public static void err(String msg) {
+    public static void err(String msg){
         plugin.getLogger().warning(TextUtils.stripColor(msg));
     }
 
-    public static void severe(String msg) {
+    public static void severe(String msg){
         Logger logger = plugin.getLogger();
 
         logger.severe("------------------------------------------------------------");
@@ -35,15 +35,15 @@ public class Messenger {
         logger.severe("------------------------------------------------------------");
     }
 
-    public static void send(Player p, String msg) {
+    public static void send(Player p, String msg){
         p.sendMessage(TextUtils.colorize(msg));
     }
 
-    public static void send(CommandSender s, String msg) {
+    public static void send(CommandSender s, String msg){
         s.sendMessage(TextUtils.stripColor(msg));
     }
 
-    public static void debug(String msg) {
+    public static void debug(String msg){
         if(!DEBUG_ENABLED) return;
         plugin.getLogger().info("[DEBUG] " + msg);
     }

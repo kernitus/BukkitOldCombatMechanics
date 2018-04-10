@@ -24,19 +24,19 @@ public class ModuleSwordSweep extends Module {
     private BukkitRunnable task;
     private List<Location> sweepLocations = new ArrayList<>();
 
-	public ModuleSwordSweep(OCMMain plugin) {
-		super(plugin, "disable-sword-sweep");
-	}
+    public ModuleSwordSweep(OCMMain plugin){
+        super(plugin, "disable-sword-sweep");
+    }
 
     @Override
-    public void reload() {
-        if (task != null) {
+    public void reload(){
+        if(task != null){
             task.cancel();
         }
 
         task = new BukkitRunnable() {
             @Override
-            public void run() {
+            public void run(){
                 sweepLocations.clear();
             }
         };
@@ -44,48 +44,48 @@ public class ModuleSwordSweep extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-	public void onEntityDamaged(EntityDamageByEntityEvent e) {
-		World world = e.getDamager().getWorld();
+    public void onEntityDamaged(EntityDamageByEntityEvent e){
+        World world = e.getDamager().getWorld();
 
-		if (!isEnabled(world)) return;
+        if(!isEnabled(world)) return;
 
-		if (!(e.getDamager() instanceof Player)) return;
+        if(!(e.getDamager() instanceof Player)) return;
 
-		Player p = (Player) e.getDamager();
-		ItemStack weapon = p.getInventory().getItemInMainHand();
+        Player p = (Player) e.getDamager();
+        ItemStack weapon = p.getInventory().getItemInMainHand();
 
-		if (isHoldingSword(weapon.getType()))
-			onSwordAttack(e, p, weapon);
-	}
+        if(isHoldingSword(weapon.getType()))
+            onSwordAttack(e, p, weapon);
+    }
 
-	private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon) {
-		//Disable sword sweep
-		Location location = p.getLocation(); // ATTACKER
-		
-		int level = 0;
-		
-		try{ //In a try catch for servers that haven't updated
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon){
+        //Disable sword sweep
+        Location location = p.getLocation(); // ATTACKER
+
+        int level = 0;
+
+        try{ //In a try catch for servers that haven't updated
             level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
+        } catch(NoSuchFieldError ignored){
         }
-		catch(NoSuchFieldError ignored){ }
 
-		float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
+        float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
-		if (e.getDamage() == damage) {
-			// Possibly a sword-sweep attack
-			if (sweepLocations.contains(location)){
-				debug("Cancelling sweep...", p);
-				e.setCancelled(true);
-			}
-		} else {
+        if(e.getDamage() == damage){
+            // Possibly a sword-sweep attack
+            if(sweepLocations.contains(location)){
+                debug("Cancelling sweep...", p);
+                e.setCancelled(true);
+            }
+        } else {
             sweepLocations.add(location);
         }
 
-		ModuleOldToolDamage.onAttack(e);
-	}
+        ModuleOldToolDamage.onAttack(e);
+    }
 
-	private boolean isHoldingSword(Material mat) {
-		return mat.toString().endsWith("_SWORD");
-	}
+    private boolean isHoldingSword(Material mat){
+        return mat.toString().endsWith("_SWORD");
+    }
 
 }

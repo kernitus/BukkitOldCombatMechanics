@@ -15,34 +15,34 @@ import java.util.stream.Collectors;
 
 public class ModuleDisableCrafting extends Module {
 
-	public static ModuleDisableCrafting INSTANCE;
-	private List<Material> denied;
+    public static ModuleDisableCrafting INSTANCE;
+    private List<Material> denied;
 
-	public ModuleDisableCrafting(OCMMain plugin) {
-		super(plugin, "disable-crafting");
-		INSTANCE = this;
-		reload();
-	}
+    public ModuleDisableCrafting(OCMMain plugin){
+        super(plugin, "disable-crafting");
+        INSTANCE = this;
+        reload();
+    }
 
-	@Override
-	public void reload(){
-		denied = module().getStringList("denied").stream()
+    @Override
+    public void reload(){
+        denied = module().getStringList("denied").stream()
                 .map(Material::matchMaterial)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-	}
+    }
 
-	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onPrepareItemCraft (PrepareItemCraftEvent e) {
-		if (e.getViewers().size() < 1) return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPrepareItemCraft(PrepareItemCraftEvent e){
+        if(e.getViewers().size() < 1) return;
 
-		World world = e.getViewers().get(0).getWorld();
-		if(!isEnabled(world)) return;
+        World world = e.getViewers().get(0).getWorld();
+        if(!isEnabled(world)) return;
 
-		CraftingInventory inv = e.getInventory();
-		ItemStack result = inv.getResult();
+        CraftingInventory inv = e.getInventory();
+        ItemStack result = inv.getResult();
 
-		if(result != null && denied.contains(result.getType()))
-			inv.setResult(null);
-	}
+        if(result != null && denied.contains(result.getType()))
+            inv.setResult(null);
+    }
 }

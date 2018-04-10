@@ -9,13 +9,13 @@ public class BlockingTask extends BukkitRunnable {
     private ModuleSwordBlocking module;
     private Player player;
 
-    public BlockingTask(ModuleSwordBlocking module, Player player) {
+    public BlockingTask(ModuleSwordBlocking module, Player player){
         this.module = module;
         this.player = player;
     }
 
     @Override
-    public void run() {
+    public void run(){
         module.restore(player);
     }
 }

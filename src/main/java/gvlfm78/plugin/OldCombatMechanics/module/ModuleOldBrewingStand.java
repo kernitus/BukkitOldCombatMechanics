@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -9,50 +10,48 @@ import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-
 public class ModuleOldBrewingStand extends Module {
 
-	public ModuleOldBrewingStand(OCMMain plugin){
-		super(plugin, "old-brewing-stand");
-	}
+    public ModuleOldBrewingStand(OCMMain plugin){
+        super(plugin, "old-brewing-stand");
+    }
 
-	@EventHandler
-	public void onBrew(BrewEvent e) {
-		Block block = e.getBlock();
+    @EventHandler
+    public void onBrew(BrewEvent e){
+        Block block = e.getBlock();
 
-		if(isEnabled(block.getWorld()) && block.getType().equals(Material.BREWING_STAND)) //Just in case...
-			((BrewingStand) block.getState()).setFuelLevel(20);
-	}
+        if(isEnabled(block.getWorld()) && block.getType().equals(Material.BREWING_STAND)) //Just in case...
+            ((BrewingStand) block.getState()).setFuelLevel(20);
+    }
 
-	@EventHandler
-	public void onInventoryOpen(InventoryOpenEvent e) {
-		if(!isEnabled(e.getPlayer().getWorld())) return;
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent e){
+        if(!isEnabled(e.getPlayer().getWorld())) return;
 
-		Inventory inv = e.getInventory();
-		
-		if(inv == null) return;
+        Inventory inv = e.getInventory();
 
-		Location loc = null;
+        if(inv == null) return;
 
-		try{
-		loc = inv.getLocation();
-		}
-		catch(Exception ignored){}
-		
-		if(loc == null) return;
+        Location loc = null;
 
-		Block block = loc.getBlock();
+        try{
+            loc = inv.getLocation();
+        } catch(Exception ignored){
+        }
 
-		if(!block.getType().equals(Material.BREWING_STAND)) return;
+        if(loc == null) return;
 
-		BrewingStand stand = (BrewingStand) block.getState();
+        Block block = loc.getBlock();
 
-		stand.setFuelLevel(20);
+        if(!block.getType().equals(Material.BREWING_STAND)) return;
 
-		stand.update();
+        BrewingStand stand = (BrewingStand) block.getState();
 
-	}
+        stand.setFuelLevel(20);
+
+        stand.update();
+
+    }
 
 	/*@EventHandler
 	public void onInventoryClick(InventoryClickEvent e) {

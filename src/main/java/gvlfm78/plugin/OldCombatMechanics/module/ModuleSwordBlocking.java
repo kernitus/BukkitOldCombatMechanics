@@ -1,7 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.tasks.BlockingTask;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.tasks.BlockingTask;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -28,55 +28,54 @@ import java.util.stream.Collectors;
  */
 public class ModuleSwordBlocking extends Module {
 
-	private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
+    private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
+    private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
+    private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
+    private int restoreDelay;
+    private String blockingDamageReduction;
+    private boolean blacklist;
+    private List<Material> noBlockingItems;
 
-	private int restoreDelay;
-	private String blockingDamageReduction;
-	private boolean blacklist;
-	private List<Material> noBlockingItems;
+    public ModuleSwordBlocking(OCMMain plugin){
+        super(plugin, "sword-blocking");
+    }
 
-	private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
-	private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
+    @Override
+    public void reload(){
+        restoreDelay = module().getInt("restoreDelay", 40);
+        blockingDamageReduction = module().getString("blockingDamageReduction", "1")
+                .replaceAll(" ", "");
+        blacklist = module().getBoolean("blacklist");
 
-	public ModuleSwordBlocking(OCMMain plugin) {
-		super(plugin, "sword-blocking");
-	}
+        noBlockingItems.clear();
 
-	@Override
-	public void reload(){
-		restoreDelay = module().getInt("restoreDelay", 40);
-		blockingDamageReduction = module().getString("blockingDamageReduction", "1")
-				.replaceAll(" ", "");
-		blacklist = module().getBoolean("blacklist");
+        List<String> list = module().getStringList("noBlockingItems");
+        if(list == null) return;
 
-		noBlockingItems.clear();
-
-		List<String> list = module().getStringList("noBlockingItems");
-		if(list == null) return;
-
-		noBlockingItems = list.stream()
-				.map(Material::matchMaterial)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-	}
+        noBlockingItems = list.stream()
+                .map(Material::matchMaterial)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
 
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onRightClick(PlayerInteractEvent e) {
-		if (e.getItem() == null) return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRightClick(PlayerInteractEvent e){
+        if(e.getItem() == null) return;
 
-		Action action = e.getAction();
+        Action action = e.getAction();
 
-		if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-		if (action == Action.RIGHT_CLICK_BLOCK && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType())) return;
+        if(action == Action.RIGHT_CLICK_BLOCK && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType()))
+            return;
 
-		Player p = e.getPlayer();
-		World world = p.getWorld();
+        Player p = e.getPlayer();
+        World world = p.getWorld();
 
-		if (!isEnabled(world)) return;
+        if(!isEnabled(world)) return;
 
-		UUID id = p.getUniqueId();
+        UUID id = p.getUniqueId();
 
 		/*if (isBlocking(id)) return;
 
@@ -92,181 +91,179 @@ public class ModuleSwordBlocking extends Module {
 
 		scheduleRestore(p);*/
 
-		if (p.isBlocking()){
-			BukkitRunnable task = correspondingTasks.get(id);
-			if(task != null) task.cancel();
-			correspondingTasks.remove(id);
-		} else {
-			ItemStack item = e.getItem();
+        if(p.isBlocking()){
+            BukkitRunnable task = correspondingTasks.get(id);
+            if(task != null) task.cancel();
+            correspondingTasks.remove(id);
+        } else {
+            ItemStack item = e.getItem();
 
-			if (!isHoldingSword(item.getType()) || hasShield(p)) return;
+            if(!isHoldingSword(item.getType()) || hasShield(p)) return;
 
-			PlayerInventory inv = p.getInventory();
+            PlayerInventory inv = p.getInventory();
 
-			boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+            boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
 
-			if(blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
+            if(blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
 
-			storedOffhandItems.put(id, inv.getItemInOffHand());
+            storedOffhandItems.put(id, inv.getItemInOffHand());
 
-			inv.setItemInOffHand(SHIELD);
-		}
+            inv.setItemInOffHand(SHIELD);
+        }
 
-		correspondingTasks.put(id, scheduleRestore(p));
-	}
+        correspondingTasks.put(id, scheduleRestore(p));
+    }
 
-	@SuppressWarnings("deprecation")
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onHit(EntityDamageByEntityEvent e){
-		Entity ent = e.getEntity();
+    @SuppressWarnings("deprecation")
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHit(EntityDamageByEntityEvent e){
+        Entity ent = e.getEntity();
 
-		if(!(ent instanceof Player)) return;
+        if(!(ent instanceof Player)) return;
 
-		Player p = (Player) ent;
+        Player p = (Player) ent;
 
-		if(isBlocking(p.getUniqueId())){
-			//If it's a player blocking
-			//Instead of reducing damage to 33% apply config reduction
+        if(isBlocking(p.getUniqueId())){
+            //If it's a player blocking
+            //Instead of reducing damage to 33% apply config reduction
 
-			double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
+            double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
 
-			if(blockingDamageReduction.matches("\\d{1,3}%")){
-				//Reduce damage by percentage
-				int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
-				damageReduction = damageReduction * percentage / 100;
-			}
-			else if (blockingDamageReduction.matches("\\d+")){
-				//Reduce by specified amount of half-hearts
-				damageReduction = Integer.parseInt(blockingDamageReduction);
-			}
-			else damageReduction = 0;
+            if(blockingDamageReduction.matches("\\d{1,3}%")){
+                //Reduce damage by percentage
+                int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
+                damageReduction = damageReduction * percentage / 100;
+            } else if(blockingDamageReduction.matches("\\d+")){
+                //Reduce by specified amount of half-hearts
+                damageReduction = Integer.parseInt(blockingDamageReduction);
+            } else damageReduction = 0;
 
-			if(damageReduction < 0) damageReduction = 0;
+            if(damageReduction < 0) damageReduction = 0;
 
-			//Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
-			if(e.getDamage(DamageModifier.BLOCKING) >= 0) return;
+            //Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
+            if(e.getDamage(DamageModifier.BLOCKING) >= 0) return;
 
-			//Also make sure reducing the damage doesn't result in negative damage
-			e.setDamage(DamageModifier.BLOCKING, 0);
+            //Also make sure reducing the damage doesn't result in negative damage
+            e.setDamage(DamageModifier.BLOCKING, 0);
 
-			if(e.getFinalDamage() >= damageReduction)
-				e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
+            if(e.getFinalDamage() >= damageReduction)
+                e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
 
-			//Make maximum reduction possible be up to amount specified in config
+            //Make maximum reduction possible be up to amount specified in config
 
-			if(!isSettingEnabled("shieldFullBlock")){
-				double minDamage = module().getDouble("minimumDamage");
-				if(e.getFinalDamage() < minDamage)
-					e.setDamage(minDamage);
-			}
+            if(!isSettingEnabled("shieldFullBlock")){
+                double minDamage = module().getDouble("minimumDamage");
+                if(e.getFinalDamage() < minDamage)
+                    e.setDamage(minDamage);
+            }
 
 
-			debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
-		}
-	}
+            debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
+        }
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onWorldChange(PlayerChangedWorldEvent e) {
-		restore(e.getPlayer());
-	}
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onWorldChange(PlayerChangedWorldEvent e){
+        restore(e.getPlayer());
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerLogout(PlayerQuitEvent e) {
-		restore(e.getPlayer());
-	}
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerLogout(PlayerQuitEvent e){
+        restore(e.getPlayer());
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerDeath(PlayerDeathEvent e) {
-		if (!isBlocking(e.getEntity().getUniqueId())) return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent e){
+        if(!isBlocking(e.getEntity().getUniqueId())) return;
 
-		Player p = e.getEntity();
-		UUID id = p.getUniqueId();
+        Player p = e.getEntity();
+        UUID id = p.getUniqueId();
 
-		e.getDrops().replaceAll(item -> {
+        e.getDrops().replaceAll(item -> {
 
-			if (item.getType().equals(Material.SHIELD))
-				item = storedOffhandItems.get(id);
+            if(item.getType().equals(Material.SHIELD))
+                item = storedOffhandItems.get(id);
 
-			return item;
-		});
+            return item;
+        });
 
-		storedOffhandItems.remove(id);
-	}
+        storedOffhandItems.remove(id);
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
-		Player p = e.getPlayer();
-		if (isBlocking(p.getUniqueId()))
-			e.setCancelled(true);
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
+        Player p = e.getPlayer();
+        if(isBlocking(p.getUniqueId()))
+            e.setCancelled(true);
 
-	}
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onInventoryClick(InventoryClickEvent e){
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClick(InventoryClickEvent e){
 
-		if(e.getWhoClicked() instanceof Player){
-			Player p = (Player) e.getWhoClicked();
+        if(e.getWhoClicked() instanceof Player){
+            Player p = (Player) e.getWhoClicked();
 
-			if (isBlocking(p.getUniqueId())){
-				ItemStack cursor = e.getCursor();
-				ItemStack current = e.getCurrentItem();
-				if(cursor != null && cursor.getType() == Material.SHIELD ||
-						current != null && current.getType() == Material.SHIELD){
-					e.setCancelled(true);
-					restore(p);
-				}
-			}
-		}
-	}
+            if(isBlocking(p.getUniqueId())){
+                ItemStack cursor = e.getCursor();
+                ItemStack current = e.getCurrentItem();
+                if(cursor != null && cursor.getType() == Material.SHIELD ||
+                        current != null && current.getType() == Material.SHIELD){
+                    e.setCancelled(true);
+                    restore(p);
+                }
+            }
+        }
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onItemDrop(PlayerDropItemEvent e){
-		Item is = e.getItemDrop();
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onItemDrop(PlayerDropItemEvent e){
+        Item is = e.getItemDrop();
 
-		Player p = e.getPlayer();
+        Player p = e.getPlayer();
 
-		if (isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD){
-			e.setCancelled(true);
-			restore(p);
-		}
-	}
+        if(isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD){
+            e.setCancelled(true);
+            restore(p);
+        }
+    }
 
-	private BukkitRunnable scheduleRestore(final Player player) {
-		BukkitRunnable run = new BlockingTask(this, player);
-		run.runTaskLater(plugin, restoreDelay);
+    private BukkitRunnable scheduleRestore(final Player player){
+        BukkitRunnable run = new BlockingTask(this, player);
+        run.runTaskLater(plugin, restoreDelay);
 
-		return run;
-	}
+        return run;
+    }
 
-	public void restore(Player p) {
-		UUID id = p.getUniqueId();
+    public void restore(Player p){
+        UUID id = p.getUniqueId();
 
-		if (!isBlocking(id)) return;
+        if(!isBlocking(id)) return;
 
-		if(p.isBlocking()) //They are still blocking with the shield so postpone restoring
-			postponeRestoring(p);
-		else {
-			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
-			storedOffhandItems.remove(id);
-		}
-	}
+        if(p.isBlocking()) //They are still blocking with the shield so postpone restoring
+            postponeRestoring(p);
+        else {
+            p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
+            storedOffhandItems.remove(id);
+        }
+    }
 
-	private void postponeRestoring(Player p){
-		UUID id = p.getUniqueId();
-		correspondingTasks.get(id).cancel();
-		correspondingTasks.remove(id);
-		correspondingTasks.put(id, scheduleRestore(p));
-	}
+    private void postponeRestoring(Player p){
+        UUID id = p.getUniqueId();
+        correspondingTasks.get(id).cancel();
+        correspondingTasks.remove(id);
+        correspondingTasks.put(id, scheduleRestore(p));
+    }
 
-	private boolean isBlocking(UUID uuid){
-		return storedOffhandItems.containsKey(uuid);
-	}
+    private boolean isBlocking(UUID uuid){
+        return storedOffhandItems.containsKey(uuid);
+    }
 
-	private boolean hasShield(Player p) {
-		return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
-	}
+    private boolean hasShield(Player p){
+        return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
+    }
 
-	private boolean isHoldingSword(Material mat) {
-		return mat.toString().endsWith("_SWORD");
-	}
+    private boolean isHoldingSword(Material mat){
+        return mat.toString().endsWith("_SWORD");
+    }
 }
