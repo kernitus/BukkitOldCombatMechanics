@@ -26,10 +26,10 @@ public class ModuleDisableOffHand extends Module {
 	public ModuleDisableOffHand(OCMMain plugin) {
 		super(plugin, "disable-offhand");
 		INSTANCE = this;
-		reloadList();
 	}
 
-	public void reloadList(){
+	@Override
+	public void reload(){
 		mats = module().getStringList("items").stream()
                 .map(Material::matchMaterial)
                 .filter(Objects::nonNull)

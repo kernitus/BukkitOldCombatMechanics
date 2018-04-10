@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -65,16 +66,16 @@ public class Config {
             return;
         }
 
+        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+
         //plugin.restartTask(); //Restart no-collision check
         plugin.restartSweepTask(); //Restart sword sweep check
 
-        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
-
-        if (Config.moduleEnabled("old-tool-damage"))
-            WeaponDamages.Initialise(plugin); //Reload weapon damages from config
-
-        //if(Config.moduleEnabled("old-armour-strength"))
+        WeaponDamages.Initialise(plugin); //Reload weapon damages from config
         ArmourValues.Initialise(plugin); //Reload armour values from config
+
+        // Load all interactive blocks (used by sword blocking and elytra modules)
+        reloadInteractiveBlocks();
 
         //Setting correct attack speed and armour values for online players
         for (World world : Bukkit.getWorlds()) {
@@ -105,18 +106,14 @@ public class Config {
 
         ModuleLoader.ToggleModules();
 
-        if (Config.moduleEnabled("disable-offhand"))
-            ModuleDisableOffHand.INSTANCE.reloadList();
-        if (Config.moduleEnabled("old-golden-apples")) {
-            ModuleGoldenApple.INSTANCE.reloadRecipes();
-            ModuleGoldenApple.INSTANCE.registerCrafting();
-        }
-        if (Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
-            reloadInteractiveBlocks();
-        if (Config.moduleEnabled("sword-blocking"))
-            ModuleSwordBlocking.INSTANCE.reload();
-        if (moduleEnabled("disable-crafting"))
-            ModuleDisableCrafting.INSTANCE.reload();
+        // Stream<Entry<Module, Boolean>>
+        ModuleLoader.getEnabledModules().entrySet().stream()
+                // Only enabled modules...
+                .filter(Map.Entry::getValue)
+                // ... map to the module itself...
+                .map(Map.Entry::getKey)
+                // ... and reload them all! Yay!
+                .forEach(Module::reload);
     }
 
     public static boolean moduleEnabled(String name, World world) {
@@ -161,11 +158,12 @@ public class Config {
         plugin.saveConfig();
     }
 
-    public static void reloadInteractiveBlocks() {
+    private static void reloadInteractiveBlocks() {
         List<String> list = config.getStringList("interactive");
         if (list == null) return;
 
-        interactive = list.stream().map(Material::matchMaterial)
+        interactive = list.stream()
+                .map(Material::matchMaterial)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
