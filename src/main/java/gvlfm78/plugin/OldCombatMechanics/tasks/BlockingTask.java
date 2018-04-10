@@ -1,4 +1,4 @@
-package gvlfm78.plugin.OldCombatMechanics;
+package gvlfm78.plugin.OldCombatMechanics.tasks;
 
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.entity.Player;
@@ -6,14 +6,16 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class BlockingTask extends BukkitRunnable {
 
-    private Player p;
+    private ModuleSwordBlocking module;
+    private Player player;
 
-    public BlockingTask(Player p){
-        this.p = p;
+    public BlockingTask(ModuleSwordBlocking module, Player player) {
+        this.module = module;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        ModuleSwordBlocking.INSTANCE.restore(p);
+        module.restore(player);
     }
 }

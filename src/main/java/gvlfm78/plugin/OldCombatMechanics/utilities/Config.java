@@ -65,9 +65,6 @@ public class Config {
 
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
 
-        //plugin.restartTask(); //Restart no-collision check
-        plugin.restartSweepTask(); //Restart sword sweep check
-
         WeaponDamages.initialise(plugin); //Reload weapon damages from config
         ArmourValues.initialise(plugin); //Reload armour values from config
 
