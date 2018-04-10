@@ -29,7 +29,7 @@ public class OCMMain extends JavaPlugin {
 		PluginDescriptionFile pdfFile = this.getDescription();
 
 		// Setting up config.yml
-		CH.setupConfigyml();
+		CH.setupConfig();
 
 		// Initialise ModuleLoader utility
 		ModuleLoader.initialise(this);
