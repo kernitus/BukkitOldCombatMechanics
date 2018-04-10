@@ -3,7 +3,6 @@ package gvlfm78.plugin.OldCombatMechanics.utilities;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,12 +13,12 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
 
-    public static void initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin){
         WeaponDamages.plugin = plugin;
         reload();
     }
 
-    private static void reload() {
+    private static void reload(){
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
 
         damages = section.getKeys(false).stream()
@@ -28,7 +27,7 @@ public class WeaponDamages {
                 .collect(Collectors.toMap(key -> key, section::getDouble));
     }
 
-    public static double getDamage(Material mat) {
+    public static double getDamage(Material mat){
         return damages.getOrDefault(mat.name(), -1.0);
     }
 }

@@ -16,33 +16,36 @@ import org.bukkit.inventory.ItemStack;
 
 public class ModuleOldToolDamage extends Module {
 
+    private static ModuleOldToolDamage INSTANCE;
     private String[] weapons = {"sword", "axe", "pickaxe", "spade", "hoe"};
 
-    private static ModuleOldToolDamage INSTANCE;
-
-    public ModuleOldToolDamage(OCMMain plugin) {
+    public ModuleOldToolDamage(OCMMain plugin){
         super(plugin, "old-tool-damage");
         INSTANCE = this;
     }
 
+    public static void onAttack(EntityDamageByEntityEvent e){
+        INSTANCE.onEntityDamaged(e);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDamaged(EntityDamageByEntityEvent e) {
+    public void onEntityDamaged(EntityDamageByEntityEvent e){
         Entity damager = e.getDamager();
 
         World world = damager.getWorld();
 
-        if (!(damager instanceof Player)) return;
+        if(!(damager instanceof Player)) return;
 
         Player p = (Player) damager;
-        if (p.getInventory().getItemInMainHand() == null) return;
+        if(p.getInventory().getItemInMainHand() == null) return;
 
         Material mat = p.getInventory().getItemInMainHand().getType();
 
-        if (isHolding(mat, weapons) && isEnabled(world))
+        if(isHolding(mat, weapons) && isEnabled(world))
             onAttack(e, p, mat);
     }
 
-    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat) {
+    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat){
         ItemStack item = p.getInventory().getItemInMainHand();
         EntityType entity = e.getEntityType();
 
@@ -54,29 +57,25 @@ public class ModuleOldToolDamage extends Module {
         if(divider <= 0) divider = 1;
         double newDamage = (baseDamage - enchantmentDamage) / divider;
         newDamage += enchantmentDamage;//Re-add damage from enchantments
-        if (newDamage < 0) newDamage = 0;
+        if(newDamage < 0) newDamage = 0;
         e.setDamage(newDamage);
         debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage +
                         " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
                 , p);
     }
 
-    public static void onAttack(EntityDamageByEntityEvent e) {
-        INSTANCE.onEntityDamaged(e);
-    }
-
-    private double getSharpnessDamage(int level) {
+    private double getSharpnessDamage(int level){
         return level >= 1 ? level * 1.25 : 0;
     }
 
-    private boolean isHolding(Material mat, String type) {
-        return mat.toString().endsWith("_" + type.toUpperCase() );
+    private boolean isHolding(Material mat, String type){
+        return mat.toString().endsWith("_" + type.toUpperCase());
     }
 
-    private boolean isHolding(Material mat, String[] types) {
+    private boolean isHolding(Material mat, String[] types){
         boolean hasAny = false;
-        for (String type : types)
-            if (isHolding(mat, type))
+        for(String type : types)
+            if(isHolding(mat, type))
                 hasAny = true;
         return hasAny;
     }

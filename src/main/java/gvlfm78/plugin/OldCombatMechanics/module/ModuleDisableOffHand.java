@@ -19,62 +19,61 @@ import java.util.stream.Collectors;
 
 public class ModuleDisableOffHand extends Module {
 
-	private List<Material> mats = new ArrayList<>();
+    public static ModuleDisableOffHand INSTANCE;
+    private List<Material> mats = new ArrayList<>();
 
-	public static ModuleDisableOffHand INSTANCE;
+    public ModuleDisableOffHand(OCMMain plugin){
+        super(plugin, "disable-offhand");
+        INSTANCE = this;
+    }
 
-	public ModuleDisableOffHand(OCMMain plugin) {
-		super(plugin, "disable-offhand");
-		INSTANCE = this;
-	}
-
-	@Override
-	public void reload(){
-		mats = module().getStringList("items").stream()
+    @Override
+    public void reload(){
+        mats = module().getStringList("items").stream()
                 .map(Material::matchMaterial)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-	}
+    }
 
-	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
-		if(isEnabled(e.getPlayer().getWorld()) && shouldWeCancel(e.getOffHandItem())){
-			e.setCancelled(true);
-		}
-	}
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSwapHandItems(PlayerSwapHandItemsEvent e){
+        if(isEnabled(e.getPlayer().getWorld()) && shouldWeCancel(e.getOffHandItem())){
+            e.setCancelled(true);
+        }
+    }
 
-	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onInventoryClick(InventoryClickEvent e){
-		if(!isEnabled(e.getWhoClicked().getWorld()) ||
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClick(InventoryClickEvent e){
+        if(!isEnabled(e.getWhoClicked().getWorld()) ||
                 e.getInventory().getType() != InventoryType.CRAFTING || //Making sure it's a survival player's inventory
                 e.getSlot() != 40) return; // If they didn't click into the offhand slot, return
 
-		if(e.getClick().equals(ClickType.NUMBER_KEY) || shouldWeCancel(e.getCursor())){
-			e.setResult(Event.Result.DENY);
-			e.setCancelled(true);
-		}
-	}
+        if(e.getClick().equals(ClickType.NUMBER_KEY) || shouldWeCancel(e.getCursor())){
+            e.setResult(Event.Result.DENY);
+            e.setCancelled(true);
+        }
+    }
 
-	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onInventoryDrag(InventoryDragEvent e){
-		if(!isEnabled(e.getWhoClicked().getWorld()) ||
-				e.getInventory().getType() != InventoryType.CRAFTING ||
-				!e.getInventorySlots().contains(40)) return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryDrag(InventoryDragEvent e){
+        if(!isEnabled(e.getWhoClicked().getWorld()) ||
+                e.getInventory().getType() != InventoryType.CRAFTING ||
+                !e.getInventorySlots().contains(40)) return;
 
-		if(shouldWeCancel(e.getOldCursor())){
-			e.setResult(Event.Result.DENY);
-			e.setCancelled(true);
-		}
-	}
+        if(shouldWeCancel(e.getOldCursor())){
+            e.setResult(Event.Result.DENY);
+            e.setCancelled(true);
+        }
+    }
 
-	private boolean shouldWeCancel(ItemStack item){
-		if (item == null || item.getType() == Material.AIR) {
-			return false;
-		}
+    private boolean shouldWeCancel(ItemStack item){
+        if(item == null || item.getType() == Material.AIR){
+            return false;
+        }
 
-		boolean isContained = mats.contains(item.getType());
-		boolean isWhitelist = module().getBoolean("whitelist");
+        boolean isContained = mats.contains(item.getType());
+        boolean isWhitelist = module().getBoolean("whitelist");
 
-		return isWhitelist != isContained;
-	}
+        return isWhitelist != isContained;
+    }
 }

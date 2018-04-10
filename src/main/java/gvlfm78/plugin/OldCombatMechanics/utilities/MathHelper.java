@@ -15,15 +15,15 @@ public class MathHelper {
      * @param max   The maximum value to clamp to.
      * @return The clamped value.
      */
-    public static double clamp(double value, double min, double max) {
+    public static double clamp(double value, double min, double max){
         double realMin = Math.min(min, max);
         double realMax = Math.max(min, max);
 
-        if (value < realMin) {
+        if(value < realMin){
             value = realMin;
         }
 
-        if (value > realMax) {
+        if(value > realMax){
             value = realMax;
         }
 

@@ -20,13 +20,13 @@ public class OCMCommandHandler implements CommandExecutor {
     private OCMMain plugin;
     private File pluginFile;
 
-    public OCMCommandHandler(OCMMain instance, File pluginFile) {
+    public OCMCommandHandler(OCMMain instance, File pluginFile){
         this.plugin = instance;
         this.pluginFile = pluginFile;
     }
 
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (args.length < 1) {//Tell them about available commands
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
+        if(args.length < 1){//Tell them about available commands
             PluginDescriptionFile pdf = plugin.getDescription();
 
             Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
@@ -34,7 +34,7 @@ public class OCMCommandHandler implements CommandExecutor {
             Chatter.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6%s", pdf.getVersion());
             Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
 
-            if (plugin.getConfig().getBoolean("enableIndividualToggle") && sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player) {
+            if(plugin.getConfig().getBoolean("enableIndividualToggle") && sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player){
                 Chatter.send(sender, "&eYou can use &c/ocm toggle&e to turn your attack cooldown on/off");
             }
 
@@ -49,8 +49,8 @@ public class OCMCommandHandler implements CommandExecutor {
         // Get the sub-command
         String sub = args[0].toLowerCase();
 
-        if (sub.equals("reload")) {// Reloads config
-            if (!sender.hasPermission("oldcombatmechanics.reload")) {
+        if(sub.equals("reload")){// Reloads config
+            if(!sender.hasPermission("oldcombatmechanics.reload")){
                 Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.reload");
                 return true;
             }
@@ -60,8 +60,8 @@ public class OCMCommandHandler implements CommandExecutor {
             Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
 
             return true;
-        } else if (sub.equals("toggle") && plugin.getConfig().getBoolean("enableIndividualToggle") && sender instanceof Player) {
-            if (!sender.hasPermission("oldcombatmechanics.toggle")) {
+        } else if(sub.equals("toggle") && plugin.getConfig().getBoolean("enableIndividualToggle") && sender instanceof Player){
+            if(!sender.hasPermission("oldcombatmechanics.toggle")){
                 Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.toggle");
                 return true;
             }
@@ -74,7 +74,7 @@ public class OCMCommandHandler implements CommandExecutor {
             double baseValue = attribute.getBaseValue();
             String message = "&1[OCM] &aAttack cooldown ";
 
-            if (baseValue == GAS) { // Toggle
+            if(baseValue == GAS){ // Toggle
                 GAS = 4;
                 message += "enabled";
             } else {
