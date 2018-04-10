@@ -20,7 +20,6 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.plugin.RegisteredListener;
 
-import java.util.Collection;
 import java.util.EnumMap;
 
 public class ModuleFishingKnockback extends Module {
@@ -41,27 +40,23 @@ public class ModuleFishingKnockback extends Module {
             return;
 
 
-        Entity hitent = null;
+        Entity hitEntity;
 
         try{
-            hitent = e.getHitEntity();
+            hitEntity = e.getHitEntity();
         } catch(NoSuchMethodError e1){ //For older version that don't have such method
-            Collection<Entity> entities = world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25);
-
-            for(Entity entity : entities){
-                if(entity instanceof Player)
-                    hitent = entity;
-                break;
-
-            }
+            hitEntity = world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
+                    .filter(entity -> entity instanceof Player)
+                    .findFirst()
+                    .orElse(null);
         }
 
-        if(hitent == null) return;
-        if(!(hitent instanceof Player)) return;
+        if(hitEntity == null) return;
+        if(!(hitEntity instanceof Player)) return;
 
         FishHook hook = (FishHook) hookEntity;
         Player rodder = (Player) hook.getShooter();
-        Player player = (Player) hitent;
+        Player player = (Player) hitEntity;
 
         debug("You were hit by a fishing rod!", player);
 
@@ -107,9 +102,8 @@ public class ModuleFishingKnockback extends Module {
         e.setCancelled(true);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "deprecation"})
     private EntityDamageEvent makeEvent(Player rodder, Player player, double damage){
-
         if(module().getBoolean("useEntityDamageEvent"))
             return new EntityDamageEvent(player,
                     EntityDamageEvent.DamageCause.PROJECTILE,
