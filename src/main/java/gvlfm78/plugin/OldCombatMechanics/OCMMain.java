@@ -33,16 +33,16 @@ public class OCMMain extends JavaPlugin {
 		CH.setupConfigyml();
 
 		// Initialise ModuleLoader utility
-		ModuleLoader.Initialise(this);
+		ModuleLoader.initialise(this);
 
 		// Register every event class (as well as our command handler)
 		registerAllEvents();
 
 		// Initialise the Messenger utility
-		Messenger.Initialise(this);
+		Messenger.initialise(this);
 
 		// Initialise Config utility
-		Config.Initialise(this);
+		Config.initialise(this);
 
 		// Initialise the team if it doesn't already exist
 		createTeam();
@@ -99,31 +99,31 @@ public class OCMMain extends JavaPlugin {
 	private void registerAllEvents() {
 
 		// Update Checker (also a module so we can use the dynamic registering/unregistering)
-		ModuleLoader.AddModule(new ModuleUpdateChecker(this, this.getFile()));
+		ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
 
 		// Module listeners
-		ModuleLoader.AddModule(new ArmourListener(this));
-		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
-		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
+		ModuleLoader.addModule(new ArmourListener(this));
+		ModuleLoader.addModule(new ModuleAttackCooldown(this));
+		ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
 		//Apparently listeners registered after get priority
-		ModuleLoader.AddModule(new ModuleOldToolDamage(this));
-		ModuleLoader.AddModule(new ModuleSwordSweep(this));
+		ModuleLoader.addModule(new ModuleOldToolDamage(this));
+		ModuleLoader.addModule(new ModuleSwordSweep(this));
 
-		ModuleLoader.AddModule(new ModuleGoldenApple(this));
-		ModuleLoader.AddModule(new ModuleFishingKnockback(this));
-		ModuleLoader.AddModule(new ModulePlayerRegen(this));
-		ModuleLoader.AddModule(new ModuleSwordBlocking(this));
-		ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
-		ModuleLoader.AddModule(new ModuleDisableCrafting(this));
-		ModuleLoader.AddModule(new ModuleDisableOffHand(this));
-		ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
-		ModuleLoader.AddModule(new ModuleDisableElytra(this));
-		ModuleLoader.AddModule(new ModuleDisableProjectileRandomness(this));
-		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
-		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
-		ModuleLoader.AddModule(new ModuleNoLapisEnchantments(this));
-		ModuleLoader.AddModule(new ModuleDisableEnderpearlCooldown(this));
+		ModuleLoader.addModule(new ModuleGoldenApple(this));
+		ModuleLoader.addModule(new ModuleFishingKnockback(this));
+		ModuleLoader.addModule(new ModulePlayerRegen(this));
+		ModuleLoader.addModule(new ModuleSwordBlocking(this));
+		ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+		ModuleLoader.addModule(new ModuleDisableCrafting(this));
+		ModuleLoader.addModule(new ModuleDisableOffHand(this));
+		ModuleLoader.addModule(new ModuleOldBrewingStand(this));
+		ModuleLoader.addModule(new ModuleDisableElytra(this));
+		ModuleLoader.addModule(new ModuleDisableProjectileRandomness(this));
+		ModuleLoader.addModule(new ModuleDisableBowBoost(this));
+		ModuleLoader.addModule(new ModuleProjectileKnockback(this));
+		ModuleLoader.addModule(new ModuleNoLapisEnchantments(this));
+		ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}
@@ -152,8 +152,8 @@ public class OCMMain extends JavaPlugin {
 		CH.upgradeConfig();
 	}
 
-	public boolean doesConfigymlExist() {
-		return CH.doesConfigymlExist();
+	public boolean doesConfigExist() {
+		return CH.doesConfigExist();
 	}
 
 	public static OCMMain getInstance(){

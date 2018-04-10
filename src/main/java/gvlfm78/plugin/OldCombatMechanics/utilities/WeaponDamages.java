@@ -14,7 +14,7 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
 
-    public static void Initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin) {
         WeaponDamages.plugin = plugin;
         reload();
     }

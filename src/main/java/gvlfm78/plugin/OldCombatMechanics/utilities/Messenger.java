@@ -14,7 +14,7 @@ public class Messenger {
     public static boolean DEBUG_ENABLED = false;
     public static OCMMain plugin;
 
-    public static void Initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin) {
         Messenger.plugin = plugin;
     }
 
