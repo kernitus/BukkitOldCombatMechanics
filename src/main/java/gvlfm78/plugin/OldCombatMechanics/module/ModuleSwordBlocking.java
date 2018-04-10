@@ -1,9 +1,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.BlockingTask;
+import kernitus.plugin.OldCombatMechanics.tasks.BlockingTask;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -29,8 +28,6 @@ import java.util.stream.Collectors;
  */
 public class ModuleSwordBlocking extends Module {
 
-	public static ModuleSwordBlocking INSTANCE;
-
 	private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
 
 	private int restoreDelay;
@@ -43,7 +40,6 @@ public class ModuleSwordBlocking extends Module {
 
 	public ModuleSwordBlocking(OCMMain plugin) {
 		super(plugin, "sword-blocking");
-		INSTANCE = this;
 	}
 
 	@Override
@@ -103,7 +99,7 @@ public class ModuleSwordBlocking extends Module {
 		} else {
 			ItemStack item = e.getItem();
 
-			if (!isHolding(item.getType(), "sword") || hasShield(p)) return;
+			if (!isHoldingSword(item.getType()) || hasShield(p)) return;
 
 			PlayerInventory inv = p.getInventory();
 
@@ -124,7 +120,7 @@ public class ModuleSwordBlocking extends Module {
 	public void onHit(EntityDamageByEntityEvent e){
 		Entity ent = e.getEntity();
 
-		if(ent == null || !(ent instanceof Player)) return;
+		if(!(ent instanceof Player)) return;
 
 		Player p = (Player) ent;
 
@@ -235,8 +231,8 @@ public class ModuleSwordBlocking extends Module {
 		}
 	}
 
-	private BukkitRunnable scheduleRestore(final Player p) {
-		BukkitRunnable run = new BlockingTask(p);
+	private BukkitRunnable scheduleRestore(final Player player) {
+		BukkitRunnable run = new BlockingTask(this, player);
 		run.runTaskLater(plugin, restoreDelay);
 
 		return run;
@@ -262,22 +258,6 @@ public class ModuleSwordBlocking extends Module {
 		correspondingTasks.put(id, scheduleRestore(p));
 	}
 
-	public static void RestoreAll() {
-		INSTANCE.restoreAll();
-	}
-
-	public void restoreAll() {
-		for (Map.Entry<UUID, ItemStack> entry : storedOffhandItems.entrySet()) {
-
-			UUID id = entry.getKey();
-			Player p = Bukkit.getPlayer(id);
-
-			p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
-
-			storedOffhandItems.remove(id);
-		}
-	}
-
 	private boolean isBlocking(UUID uuid){
 		return storedOffhandItems.containsKey(uuid);
 	}
@@ -286,7 +266,7 @@ public class ModuleSwordBlocking extends Module {
 		return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
 	}
 
-	private boolean isHolding(Material mat, String type) {
-		return mat.toString().endsWith("_" + type.toUpperCase());
+	private boolean isHoldingSword(Material mat) {
+		return mat.toString().endsWith("_SWORD");
 	}
 }

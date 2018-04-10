@@ -9,7 +9,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class ModulePlayerCollisions extends Module {
 
-	//private OCMTask task = new OCMTask(plugin);
+	//private CollisionTask task = new CollisionTask(plugin);
 
 	public ModulePlayerCollisions(OCMMain plugin) {
 		super(plugin, "disable-player-collisions");

@@ -20,7 +20,6 @@ public class OCMMain extends JavaPlugin {
 
 	private Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	private OCMSweepTask sweepTask = null;
 	private static OCMMain INSTANCE;
 
 	@Override
@@ -56,10 +55,6 @@ public class OCMMain extends JavaPlugin {
 		String name = "ocmInternal";
 		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 		scoreboard.getTeam(name).unregister();
-
-		if (Config.moduleEnabled("disable-sword-sweep"))
-			//Start up anti sword sweep attack task
-			restartSweepTask();
 
 		// MCStats Metrics
 		try {
@@ -152,17 +147,4 @@ public class OCMMain extends JavaPlugin {
 	public static OCMMain getInstance(){
 	    return INSTANCE;
     }
-
-	public void restartSweepTask() {
-		if (sweepTask != null) {
-			sweepTask.cancel();
-		}
-
-		sweepTask = new OCMSweepTask();
-		sweepTask.runTaskTimer(this, 0, 1);
-	}
-
-	public OCMSweepTask sweepTask() {
-		return sweepTask;
-	}
 }

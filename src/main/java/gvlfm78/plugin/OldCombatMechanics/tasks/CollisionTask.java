@@ -1,5 +1,6 @@
-package kernitus.plugin.OldCombatMechanics;
+package kernitus.plugin.OldCombatMechanics.tasks;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -10,11 +11,11 @@ import org.bukkit.scoreboard.Team;
 import java.util.Collection;
 import java.util.List;
 
-public class OCMTask extends BukkitRunnable {
+public class CollisionTask extends BukkitRunnable {
 
-    OCMMain plugin;
+    private OCMMain plugin;
 
-    public OCMTask(OCMMain instance) {
+    public CollisionTask(OCMMain instance) {
         this.plugin = instance;
     }
 
@@ -25,7 +26,7 @@ public class OCMTask extends BukkitRunnable {
         }
     }
 
-    public void addPlayerToScoreboard(Player p) {
+    private void addPlayerToScoreboard(Player p) {
 
         String name = p.getName();
         if (p.getScoreboard().getEntryTeam(p.getName()) != null) return;
@@ -43,7 +44,7 @@ public class OCMTask extends BukkitRunnable {
         }
     }
 
-    public void removePlayerFromScoreboard(Player p) {
+    private void removePlayerFromScoreboard(Player p) {
 
         if (p.getScoreboard().getEntryTeam(p.getName()) != null) return;
 
