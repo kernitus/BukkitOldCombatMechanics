@@ -132,17 +132,10 @@ public class OCMMain extends JavaPlugin {
 		String name = "ocmInternal";
 		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-		Team team = null;
-
-		for (Team t : scoreboard.getTeams()) {
-			if (t.getName().equals(name)) {
-				team = t;
-				break;
-			}
-		}
-
-		if (team == null)
-			team = scoreboard.registerNewTeam(name);
+		Team team = scoreboard.getTeams().stream()
+                .filter(t -> t.getName().equals(name))
+                .findFirst()
+                .orElse(scoreboard.registerNewTeam(name));
 
 		team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
 		team.setAllowFriendlyFire(true);
