@@ -31,16 +31,13 @@ public class ModuleGoldenApple extends Module {
 	private ItemStack napple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
 	private ShapedRecipe r;
 
-	public static ModuleGoldenApple INSTANCE;
-
 	public ModuleGoldenApple(OCMMain plugin) {
 		super(plugin, "old-golden-apples");
-		INSTANCE = this;
-		reloadRecipes();
 	}
 
 	@SuppressWarnings("deprecated")
-	public void reloadRecipes(){
+	@Override
+	public void reload(){
 		enchantedGoldenAppleEffects = getPotionEffects("napple");
 		goldenAppleEffects = getPotionEffects("gapple");
 
@@ -51,6 +48,16 @@ public class ModuleGoldenApple extends Module {
 			r = new ShapedRecipe(napple);
 		}
 		r.shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
+
+		registerCrafting();
+	}
+
+	private void registerCrafting(){
+		if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
+			if(Bukkit.getRecipesFor(napple).size() > 0) return;
+			Bukkit.addRecipe(r);
+			Messenger.debug("Added napple recipe");
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGH)
@@ -154,13 +161,5 @@ public class ModuleGoldenApple extends Module {
 			appleEffects.add(fx);
 		}
 		return appleEffects;
-	}
-
-	public void registerCrafting(){
-		if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
-			if(Bukkit.getRecipesFor(napple).size() > 0) return;
-			Bukkit.addRecipe(r);
-			Messenger.debug("Added napple recipe");
-		}
 	}
 }

@@ -7,6 +7,7 @@ import org.bukkit.event.HandlerList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Rayzr522 on 6/27/16.
@@ -16,7 +17,7 @@ public class ModuleLoader {
 	private static OCMMain plugin;
 
 	private static List<Module> modules = new ArrayList<>();
-	private static HashMap<Module, Boolean> enabledModules = null;
+	private static Map<Module, Boolean> enabledModules = null;
 
 	public static void Initialise(OCMMain plugin) {
 		ModuleLoader.plugin = plugin;
@@ -62,7 +63,7 @@ public class ModuleLoader {
 	public static void AddModule(Module module) {
 		modules.add(module);
 	}
-	public static HashMap<Module, Boolean> getEnabledModules(){
+	public static Map<Module, Boolean> getEnabledModules(){
 		return enabledModules;
 	}
 }

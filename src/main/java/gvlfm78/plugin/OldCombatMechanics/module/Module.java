@@ -32,35 +32,29 @@ public class Module implements Listener {
 	}
 
 	public boolean isEnabled() {
-
 		return isEnabled(null);
-
 	}
 
 	public boolean isSettingEnabled(String name) {
-
 		return plugin.getConfig().getBoolean(configName + "." + name);
-
 	}
 
 	public ConfigurationSection module() {
-
 		return plugin.getConfig().getConfigurationSection(configName);
+	}
 
+	public void reload() {
+		// Intentionally left blank! Meant for individual modules to use.
 	}
 
 	protected void debug(String text) {
-
 		Messenger.debug("[" + moduleName + "] " + text);
-
 	}
 
 	protected void debug(String text, Player p) {
-
 		if (Config.debugEnabled()) {
 			Messenger.send(p, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
 		}
-
 	}
 	
 	@Override

@@ -24,6 +24,7 @@ public class ModuleDisableCrafting extends Module {
 		reload();
 	}
 
+	@Override
 	public void reload(){
 		denied = module().getStringList("denied").stream()
                 .map(Material::matchMaterial)
