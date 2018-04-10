@@ -71,17 +71,12 @@ public class Config {
         // Load all interactive blocks (used by sword blocking and elytra modules)
         reloadInteractiveBlocks();
 
+        // Dynamically registers / unregisters all event listeners for optimal performance!
         ModuleLoader.toggleModules();
 
-        // Stream<Entry<Module, Boolean>>
-        ModuleLoader.getEnabledModules().entrySet().stream()
-                // Only enabled modules...
-                .filter(Map.Entry::getValue)
-                // ... map to the module itself...
-                .map(Map.Entry::getKey)
-                // ... and reload them all! Yay!
+        ModuleLoader.getModules().stream()
+                .filter(Module::isEnabled)
                 .forEach(Module::reload);
-
 
         //Setting correct attack speed and armour values for online players
         Bukkit.getOnlinePlayers().forEach(player -> {

@@ -13,8 +13,8 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class OCMMain extends JavaPlugin {
 
@@ -67,13 +67,14 @@ public class OCMMain extends JavaPlugin {
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
 
-		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules", () -> {
-			HashMap<String, Integer> values = new HashMap<>();
-			ModuleLoader.getEnabledModules().keySet().forEach(module -> {
-				if(module.isEnabled()) values.put(module.toString(), 1);
-			});
-			return values;
-		}));
+		metrics.addCustomChart(
+				new Metrics.SimpleBarChart(
+						"enabled_modules",
+						() -> ModuleLoader.getModules().stream()
+								.filter(Module::isEnabled)
+								.collect(Collectors.toMap(Module::toString, module -> 1))
+				)
+		);
 
 		// Logging to console the enabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");

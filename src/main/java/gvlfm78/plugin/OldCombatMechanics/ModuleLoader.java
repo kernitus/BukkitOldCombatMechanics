@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
 import gvlfm78.plugin.OldCombatMechanics.module.Module;
+import gvlfm78.plugin.OldCombatMechanics.utilities.EventRegistry;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.event.HandlerList;
 
@@ -14,56 +15,34 @@ import java.util.Map;
  */
 public class ModuleLoader {
 
-	private static OCMMain plugin;
-
+	private static EventRegistry eventRegistry;
 	private static List<Module> modules = new ArrayList<>();
-	private static Map<Module, Boolean> enabledModules = null;
 
 	public static void initialise(OCMMain plugin) {
-		ModuleLoader.plugin = plugin;
+		ModuleLoader.eventRegistry = new EventRegistry(plugin);
 	}
 
 	public static void toggleModules() {
-
-		if (enabledModules == null) {
-
-			enabledModules = new HashMap<>();
-
-			for (Module module : modules) {
-				enabledModules.put(module, module.isEnabled());
-				setState(module, module.isEnabled());
-			}
-
-		} else {
-
-			for (Module module : modules) {
-
-				if (!enabledModules.containsKey(module)) {
-					enabledModules.put(module, module.isEnabled());
-					setState(module, module.isEnabled());
-				} else if (module.isEnabled() != enabledModules.get(module)) {
-					enabledModules.put(module, module.isEnabled());
-					setState(module, module.isEnabled());
-				}
-
-			}
-		}
+        modules.forEach(module -> setState(module, module.isEnabled()));
 	}
 
 	private static void setState(Module module, boolean state) {
 		if (state) {
-			plugin.getServer().getPluginManager().registerEvents(module, plugin);
-			Messenger.debug("Enabled " + module.getClass().getSimpleName());
+			if (eventRegistry.registerListener(module)) {
+				Messenger.debug("Enabled " + module.getClass().getSimpleName());
+			}
 		} else {
-			HandlerList.unregisterAll(module);
-			Messenger.debug("Disabled " + module.getClass().getSimpleName());
+			if (eventRegistry.unregisterListener(module)) {
+				Messenger.debug("Disabled " + module.getClass().getSimpleName());
+			}
 		}
 	}
 
 	public static void addModule(Module module) {
 		modules.add(module);
 	}
-	public static Map<Module, Boolean> getEnabledModules(){
-		return enabledModules;
+
+	public static List<Module> getModules(){
+		return modules;
 	}
 }
