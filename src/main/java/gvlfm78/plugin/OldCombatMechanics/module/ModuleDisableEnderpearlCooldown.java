@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -41,23 +42,19 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
 		GameMode mode = player.getGameMode();
 
-		if(mode == GameMode.ADVENTURE || mode == GameMode.SURVIVAL) {
+		if(mode != GameMode.CREATIVE) {
 			PlayerInventory inv = player.getInventory();
 
-			boolean isInOffhand = true;
-			ItemStack hand = inv.getItemInOffHand();
-
-			if(hand.getType() != Material.ENDER_PEARL) {
-				hand = inv.getItemInMainHand();
-				isInOffhand = false;
-			}
+			boolean offhand = e.getHand() == EquipmentSlot.OFF_HAND;
+			ItemStack hand = e.getItem();
 
 			hand.setAmount(hand.getAmount() - 1);
 
-			if(isInOffhand)
-				inv.setItemInOffHand(hand);
-			else
+			if (e.getHand() == EquipmentSlot.HAND) {
 				inv.setItemInMainHand(hand);
+			} else {
+				inv.setItemInOffHand(hand);
+			}
 		}
 	}
 }
