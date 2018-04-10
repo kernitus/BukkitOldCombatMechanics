@@ -14,16 +14,6 @@ public class TextUtils {
     }
 
     /**
-     * Converts Minecraft ({@link ChatColor#COLOR_CHAR}) color codes to ampersand (&) color codes.
-     *
-     * @param text The text to uncolorize.
-     * @return The uncolorized text.
-     */
-    public static String uncolorize(String text){
-        return text.replace(ChatColor.COLOR_CHAR, '&');
-    }
-
-    /**
      * Removes all Minecraft ({@link ChatColor#COLOR_CHAR}) color codes from a string.
      *
      * @param text The text to strip colors from.

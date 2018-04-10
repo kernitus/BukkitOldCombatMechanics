@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class WeaponDamages {
@@ -22,7 +23,7 @@ public class WeaponDamages {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
 
         damages = section.getKeys(false).stream()
-                .filter(section::isDouble)
+                .filter(((Predicate<String>) section::isDouble).or(section::isInt))
                 // .peek(key -> Messenger.debug("[WeaponDamages] Loading damage '" + section.getDouble(key) + "' for type '" + key + "'"))
                 .collect(Collectors.toMap(key -> key, section::getDouble));
     }
