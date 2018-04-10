@@ -28,40 +28,31 @@ public class ModuleDisableElytra extends Module {
 		super(plugin, "disable-elytra");
 	}
 
-	@EventHandler (priority = EventPriority.HIGHEST)
-	public void onInventoryClick(InventoryClickEvent e){
-		HumanEntity human = e.getWhoClicked();
-		if(!isEnabled(human.getWorld())) return;
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onInventoryClick(InventoryClickEvent e) {
+		if (!(e.getWhoClicked() instanceof Player)) return;
 
-		if(!(human instanceof Player)) return;
-
-		Player p = (Player) human;
-
-		if(p.getGameMode() == GameMode.CREATIVE) return;
+		Player player = (Player) e.getWhoClicked();
+		if (!isEnabled(player.getWorld())) return;
+		if (player.getGameMode() == GameMode.CREATIVE) return;
 
 		InventoryType type = e.getInventory().getType(); // Only if they're in their inventory, not chests etc.
-		if(type != InventoryType.CRAFTING && type != InventoryType.PLAYER) return;
+		if (type != InventoryType.CRAFTING && type != InventoryType.PLAYER) return;
 
 		ItemStack cursor = e.getCursor();
 		ItemStack currentItem = e.getCurrentItem();
 
-		if((cursor != null && cursor.getType() != Material.ELYTRA) && (currentItem != null && currentItem.getType() != Material.ELYTRA)) return;
-
-		if(e.getSlot() == 38){
-			e.setCancelled(true);
-			//((Player) e.getWhoClicked()).updateInventory();
+		if ((cursor != null && cursor.getType() != Material.ELYTRA) && (currentItem != null && currentItem.getType() != Material.ELYTRA)) {
 			return;
 		}
 
-		//Stop shift clicking elytra in
-		if(e.getClick() != ClickType.SHIFT_LEFT && e.getClick() != ClickType.SHIFT_RIGHT) return;
-
-		e.setCancelled(true);
+		if (e.getSlot() == 38 || e.getClick() == ClickType.SHIFT_LEFT || e.getClick() == ClickType.SHIFT_RIGHT) {
+			e.setCancelled(true);
+		}
 	}
 
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onRightClick(PlayerInteractEvent e){
-
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		//Must not be able to right click while holding it to wear it
