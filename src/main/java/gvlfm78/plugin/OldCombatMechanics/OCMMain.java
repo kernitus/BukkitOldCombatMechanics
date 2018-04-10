@@ -161,12 +161,11 @@ public class OCMMain extends JavaPlugin {
     }
 
 	public void restartSweepTask() {
-		if (sweepTask == null)
-			sweepTask = new OCMSweepTask();
-		else {
+		if (sweepTask != null) {
 			sweepTask.cancel();
-			sweepTask = new OCMSweepTask();
 		}
+
+		sweepTask = new OCMSweepTask();
 		sweepTask.runTaskTimer(this, 0, 1);
 	}
 
