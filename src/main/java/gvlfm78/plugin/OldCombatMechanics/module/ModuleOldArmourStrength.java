@@ -24,8 +24,11 @@ import java.util.List;
 
 public class ModuleOldArmourStrength extends Module {
 
+	public static ModuleOldArmourStrength INSTANCE;
+
 	public ModuleOldArmourStrength(OCMMain plugin) {
 		super(plugin, "old-armour-strength");
+		INSTANCE = this;
 	}
 
 	@EventHandler
@@ -75,11 +78,11 @@ public class ModuleOldArmourStrength extends Module {
 		setArmourAccordingly(player, false);
 	}
 
-	private void setArmourAccordingly(final Player player){
+	public void setArmourAccordingly(final Player player){
 		setArmourAccordingly(player, isEnabled(player.getWorld()));
 	}
 
-	public static void setArmourAccordingly(final Player player, boolean enabled) {
+	private void setArmourAccordingly(final Player player, boolean enabled) {
 		final PlayerInventory inv = player.getInventory();
 		ItemStack[] armours = inv.getContents();
 		// Check the whole inventory for armour pieces
@@ -174,11 +177,15 @@ public class ModuleOldArmourStrength extends Module {
 		return is;
 	}
 
-	public static int getDefaultToughness(Material mat){
-		switch(mat){
-		case DIAMOND_CHESTPLATE: case DIAMOND_HELMET: case DIAMOND_LEGGINGS: case DIAMOND_BOOTS:
-			return 2;
-		default: return 0;
-		}
+	private static int getDefaultToughness(Material mat){
+		switch (mat) {
+            case DIAMOND_CHESTPLATE:
+            case DIAMOND_HELMET:
+            case DIAMOND_LEGGINGS:
+            case DIAMOND_BOOTS:
+                return 2;
+            default:
+                return 0;
+        }
 	}
 }

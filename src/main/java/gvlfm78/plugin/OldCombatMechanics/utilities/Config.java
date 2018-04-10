@@ -6,12 +6,9 @@ import kernitus.plugin.OldCombatMechanics.module.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -77,33 +74,6 @@ public class Config {
         // Load all interactive blocks (used by sword blocking and elytra modules)
         reloadInteractiveBlocks();
 
-        //Setting correct attack speed and armour values for online players
-        for (World world : Bukkit.getWorlds()) {
-
-            List<Player> players = world.getPlayers();
-
-            double GAS = plugin.getConfig().getDouble("disable-attack-cooldown.generic-attack-speed");
-
-            if (!Config.moduleEnabled("disable-attack-cooldown", world))
-                GAS = 4; //If module is disabled, set attack speed to 1.9 default
-
-            boolean isArmourEnabled = Config.moduleEnabled("old-armour-strength", world);
-
-            for (Player player : players) {
-                //Setting attack speed
-                AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-                double baseValue = attribute.getBaseValue();
-
-                if (baseValue != GAS) {
-                    attribute.setBaseValue(GAS);
-                    player.saveData();
-                }
-
-                //Setting armour values
-                ModuleOldArmourStrength.setArmourAccordingly(player, isArmourEnabled);
-            }
-        }
-
         ModuleLoader.toggleModules();
 
         // Stream<Entry<Module, Boolean>>
@@ -114,6 +84,13 @@ public class Config {
                 .map(Map.Entry::getKey)
                 // ... and reload them all! Yay!
                 .forEach(Module::reload);
+
+
+        //Setting correct attack speed and armour values for online players
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            ModuleAttackCooldown.INSTANCE.checkAttackSpeed(player);
+            ModuleOldArmourStrength.INSTANCE.setArmourAccordingly(player);
+        });
     }
 
     public static boolean moduleEnabled(String name, World world) {

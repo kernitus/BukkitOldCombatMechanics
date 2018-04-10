@@ -19,18 +19,22 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
  */
 public class ModuleAttackCooldown extends Module {
 
+	public static ModuleAttackCooldown INSTANCE;
+
 	public ModuleAttackCooldown(OCMMain plugin) {
 		super(plugin, "disable-attack-cooldown");
+
+		INSTANCE = this;
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerJoinEvent e) {
-		checkAttackSpeed(e);
+		checkAttackSpeed(e.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onWorldChange(PlayerChangedWorldEvent e) {
-		checkAttackSpeed(e);
+		checkAttackSpeed(e.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -44,20 +48,18 @@ public class ModuleAttackCooldown extends Module {
 		}
 	}
 
-	private void checkAttackSpeed(PlayerEvent e) {
-		Player p = e.getPlayer();
-		World world = p.getWorld();
+	public void checkAttackSpeed(Player player) {
+		World world = player.getWorld();
 
         //If module is disabled, set attack speed to 1.9 default
 		double attackSpeed = Config.moduleEnabled("disable-attack-cooldown", world) ? module().getDouble("generic-attack-speed") : 4;
 
-		AttributeInstance attribute = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+		AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		double baseValue = attribute.getBaseValue();
 
 		if(baseValue!=attackSpeed){
 			attribute.setBaseValue(attackSpeed);
-			p.saveData();
+			player.saveData();
 		}
 	}
-
 }
