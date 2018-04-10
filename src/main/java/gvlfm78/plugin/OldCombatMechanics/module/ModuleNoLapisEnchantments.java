@@ -12,6 +12,7 @@ import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Dye;
+import org.bukkit.permissions.Permissible;
 
 public class ModuleNoLapisEnchantments extends Module {
 
@@ -35,9 +36,9 @@ public class ModuleNoLapisEnchantments extends Module {
     public void onInventoryClick(InventoryClickEvent e){
         if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
-        if(!e.getInventory().getType().equals(InventoryType.ENCHANTING)) return;
+        if(e.getInventory().getType() != InventoryType.ENCHANTING) return;
 
-        if(!hasPermission((Player) e.getWhoClicked())) return;
+        if(!hasPermission(e.getWhoClicked())) return;
 
         ItemStack item = e.getCurrentItem();
         if(item != null && (
@@ -51,9 +52,8 @@ public class ModuleNoLapisEnchantments extends Module {
         if(!isEnabled(e.getPlayer().getWorld())) return;
 
         Inventory inv = e.getInventory();
-        if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission((Player) e.getPlayer())) return;
-        EnchantingInventory ei = (EnchantingInventory) inv;
-        ei.setSecondary(new ItemStack(Material.AIR));
+        if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission(e.getPlayer())) return;
+        ((EnchantingInventory) inv).setSecondary(new ItemStack(Material.AIR));
     }
 
     @EventHandler
@@ -61,7 +61,7 @@ public class ModuleNoLapisEnchantments extends Module {
         if(!isEnabled(e.getPlayer().getWorld())) return;
 
         Inventory inv = e.getInventory();
-        if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission((Player) e.getPlayer())) return;
+        if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission(e.getPlayer())) return;
         ((EnchantingInventory) inv).setSecondary(getLapis());
     }
 
@@ -71,7 +71,7 @@ public class ModuleNoLapisEnchantments extends Module {
         return dye.toItemStack(64);
     }
 
-    private boolean hasPermission(Player player){
+    private boolean hasPermission(Permissible player){
         return !isSettingEnabled("usePermission") || player.hasPermission("oldcombatmechanics.nolapis");
     }
 }
