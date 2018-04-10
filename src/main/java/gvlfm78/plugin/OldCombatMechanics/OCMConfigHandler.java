@@ -12,7 +12,7 @@ public class OCMConfigHandler {
 	}
 
 	public void upgradeConfig(){
-		if(doesConfigymlExist()){
+		if(doesConfigExist()){
 			//First we change name to the old config
 			File backup = getFile("config-backup.yml");
 			if(backup.exists()) backup.delete();
@@ -114,7 +114,7 @@ public class OCMConfigHandler {
 	public File getFile(String fileName) {
 		return new File(plugin.getDataFolder() + File.separator + fileName);
 	}
-	public boolean doesConfigymlExist(){
+	public boolean doesConfigExist(){
 		return getFile("config.yml").exists();
 	}
 }

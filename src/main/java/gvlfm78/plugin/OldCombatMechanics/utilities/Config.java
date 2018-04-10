@@ -30,7 +30,7 @@ public class Config {
     private static FileConfiguration config;
     private static List<Material> interactive = new ArrayList<>();
 
-    public static void Initialise(OCMMain plugin) {
+    public static void initialise(OCMMain plugin) {
         Config.plugin = plugin;
         config = plugin.getConfig();
 
@@ -55,7 +55,7 @@ public class Config {
 
 
     public static void reload() {
-        if (plugin.doesConfigymlExist()) {
+        if (plugin.doesConfigExist()) {
             plugin.reloadConfig();
             config = plugin.getConfig();
         } else
@@ -71,8 +71,8 @@ public class Config {
         //plugin.restartTask(); //Restart no-collision check
         plugin.restartSweepTask(); //Restart sword sweep check
 
-        WeaponDamages.Initialise(plugin); //Reload weapon damages from config
-        ArmourValues.Initialise(plugin); //Reload armour values from config
+        WeaponDamages.initialise(plugin); //Reload weapon damages from config
+        ArmourValues.initialise(plugin); //Reload armour values from config
 
         // Load all interactive blocks (used by sword blocking and elytra modules)
         reloadInteractiveBlocks();
@@ -104,7 +104,7 @@ public class Config {
             }
         }
 
-        ModuleLoader.ToggleModules();
+        ModuleLoader.toggleModules();
 
         // Stream<Entry<Module, Boolean>>
         ModuleLoader.getEnabledModules().entrySet().stream()
