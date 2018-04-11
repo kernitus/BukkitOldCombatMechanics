@@ -92,9 +92,7 @@ public class ModuleSwordBlocking extends Module {
 		scheduleRestore(p);*/
 
         if(p.isBlocking()){
-            BukkitRunnable task = correspondingTasks.get(id);
-            if(task != null) task.cancel();
-            correspondingTasks.remove(id);
+            tryCancelTask(id);
         } else {
             ItemStack item = e.getItem();
 
@@ -112,6 +110,12 @@ public class ModuleSwordBlocking extends Module {
         }
 
         correspondingTasks.put(id, scheduleRestore(p));
+    }
+
+    @EventHandler
+    public void onHotBarChange(PlayerItemHeldEvent e) {
+        tryCancelTask(e.getPlayer().getUniqueId());
+        restore(e.getPlayer());
     }
 
     @SuppressWarnings("deprecation")
@@ -246,6 +250,12 @@ public class ModuleSwordBlocking extends Module {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
             storedOffhandItems.remove(id);
         }
+    }
+
+    private void tryCancelTask(UUID id){
+        BukkitRunnable task = correspondingTasks.get(id);
+        if(task != null) task.cancel();
+        correspondingTasks.remove(id);
     }
 
     private void postponeRestoring(Player p){
