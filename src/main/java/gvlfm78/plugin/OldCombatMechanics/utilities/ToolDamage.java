@@ -3,6 +3,8 @@ package gvlfm78.plugin.OldCombatMechanics.utilities;
 import org.bukkit.Material;
 
 //Default minecraft tool damages
+//These are accessed dynamically, so ignore the fact that they're not directly accessed.
+@SuppressWarnings("unused")
 public enum ToolDamage {
 
     WOOD_SWORD(4), WOOD_SPADE(2.5F), WOOD_PICKAXE(2), WOOD_AXE(7), WOOD_HOE(1),
