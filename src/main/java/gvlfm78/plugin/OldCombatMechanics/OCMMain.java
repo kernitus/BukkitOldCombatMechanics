@@ -47,19 +47,6 @@ public class OCMMain extends JavaPlugin {
         // Initialise Config utility
         Config.initialise(this);
 
-        // Initialise the team if it doesn't already exist
-        createTeam();
-
-        // Disabling player collision
-		/*if (Config.moduleEnabled("disable-player-collision"))
-			// Even though it says "restart", it works for just starting it too
-			restartTask();*/
-
-        //Remove scoreboard
-        String name = "ocmInternal";
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        scoreboard.getTeam(name).unregister();
-
         // MCStats Metrics
         try{
             MetricsLite metrics = new MetricsLite(this);
@@ -126,19 +113,6 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
 
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
-    }
-
-    private void createTeam(){
-        String name = "ocmInternal";
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-
-        Team team = scoreboard.getTeams().stream()
-                .filter(t -> t.getName().equals(name))
-                .findFirst()
-                .orElse(scoreboard.registerNewTeam(name));
-
-        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.FOR_OWN_TEAM);
-        team.setAllowFriendlyFire(true);
     }
 
     public void upgradeConfig(){
