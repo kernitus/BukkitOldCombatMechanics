@@ -9,7 +9,9 @@ import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * Created by Rayzr522 on 7/11/16.
@@ -56,29 +58,23 @@ public class Reflector {
 
     public static Class<?> getClass(ClassType type, String name){
         try{
-            return Class.forName(type.getPackage() + "." + version + "." + name);
+            return Class.forName(String.format("%s.%s.%s", type.getPackage(), version, name));
         } catch(ClassNotFoundException e){
             e.printStackTrace();
             return null;
         }
     }
 
+
     public static Method getMethod(Class<?> clazz, String name){
-        for(Method m : clazz.getMethods()){
-            if(m.getName().equals(name))
-                return m;
-        }
-        return null;
+        return Arrays.stream(clazz.getMethods())
+                .filter(method -> method.getName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
-    public static Method getMethod(Class<?> clazz, String name, Class<?>... params){
-        for(Method m : clazz.getMethods()){
-            if(m.getName().equalsIgnoreCase("name")){
-                if(m.getParameterTypes() == params)
-                    return m;
-            }
-        }
-        return null;
+    public static void invokeMethod(Object object, String name, Object... params) throws InvocationTargetException, IllegalAccessException{
+        getMethod((object.getClass()), name).invoke(object, params);
     }
 
     public static Field getField(Class<?> clazz, String fieldName) throws Exception{
@@ -86,29 +82,24 @@ public class Reflector {
     }
 
     public static Field getInaccessibleField(Class<?> clazz, String fieldName) throws Exception{
-        Field field = clazz.getDeclaredField(fieldName);
+        Field field = getField(clazz, fieldName);
         field.setAccessible(true);
         return field;
     }
 
     public static Object getFieldValue(Object object, String fieldName) throws Exception{
-        Field f = getField(object.getClass(), fieldName);
-        f.setAccessible(true);
-        return f.get(object);
+        return getInaccessibleField(object.getClass(), fieldName).get(object);
     }
 
     public static void setFieldValue(Object object, String fieldName, Object value) throws Exception{
-        Field f = getField(object.getClass(), fieldName);
-        f.setAccessible(true);
-        f.set(object, value);
+        getInaccessibleField(object.getClass(), fieldName).set(object, value);
     }
 
     public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
-        for(Constructor<?> constr : clazz.getConstructors()){
-            if(constr.getParameterTypes().length == numParams)
-                return constr;
-        }
-        return null;
+        return Arrays.stream(clazz.getConstructors())
+                .filter(constructor -> constructor.getParameterCount() == numParams)
+                .findFirst()
+                .orElse(null);
     }
 
     public static Object getHandle(HandleType type, Object object){
@@ -140,26 +131,19 @@ public class Reflector {
     }
 
     public static class Packets {
-        public static Object getPlayerConnection(Player p){
-            try{
-                return getFieldValue(p, "playerConnection");
-            } catch(Exception e){
-                return null;
-            }
-        }
-
         public static Class<?> getPacket(PacketType type, String name){
             return Reflector.getClass(ClassType.NMS, "Packet" + type.prefix + name);
         }
 
         public static void sendPacket(Player player, Object packet){
-
             try{
                 Object nmsPlayer = getHandle(HandleType.PLAYER, player);
-                Field con_field = nmsPlayer.getClass().getField("playerConnection");
-                Object con = con_field.get(nmsPlayer);
-                Method packet_method = getMethod(con.getClass(), "sendPacket");
-                packet_method.invoke(con, packet);
+                assert nmsPlayer != null;
+
+                Object con = getFieldValue(nmsPlayer, "playerConnection");
+                assert con != null;
+
+                invokeMethod(con, "sendPacket", packet);
             } catch(Exception e){
                 e.printStackTrace();
             }

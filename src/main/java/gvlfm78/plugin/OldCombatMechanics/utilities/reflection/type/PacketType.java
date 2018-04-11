@@ -7,9 +7,7 @@ public enum PacketType {
     public String prefix;
 
     PacketType(String prefix){
-
         this.prefix = prefix;
-
     }
 
 }
