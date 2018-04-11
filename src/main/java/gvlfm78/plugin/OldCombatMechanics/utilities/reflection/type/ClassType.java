@@ -8,15 +8,11 @@ public enum ClassType {
     private String pkg;
 
     ClassType(String pkg){
-
         this.pkg = pkg;
-
     }
 
     public String getPackage(){
-
         return pkg;
-
     }
 
 }

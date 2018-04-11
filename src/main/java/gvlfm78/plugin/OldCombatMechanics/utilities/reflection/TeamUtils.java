@@ -3,9 +3,11 @@ package gvlfm78.plugin.OldCombatMechanics.utilities.reflection;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.entity.Player;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -16,30 +18,34 @@ import java.util.UUID;
  * and as the plugin has no license decided to take some of the code
  */
 public class TeamUtils {
-    private static ArrayList<Player> securePlayers = new ArrayList<>();
-    private static Class<?> packetTeamClass = null;
-    private static Field nameField = null;
-    private static Field modeField = null;
-    private static Field collisionRuleField = null;
-    private static Field playersField = null;
+    private static List<Player> securePlayers = new ArrayList<>();
+    private static Constructor<?> packetScoreboardTeamConstructor;
+    private static Field nameField;
+    private static Field modeField;
+    private static Field collisionRuleField;
+    private static Field playersField;
 
     static{
         try{
-            packetTeamClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+            Class<?> packetTeamClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+            packetScoreboardTeamConstructor = Reflector.getConstructor(packetTeamClass, 0);
 
             nameField = Reflector.getInaccessibleField(packetTeamClass, "a");
             modeField = Reflector.getInaccessibleField(packetTeamClass, "i");
             collisionRuleField = Reflector.getInaccessibleField(packetTeamClass, "f");
             playersField = Reflector.getInaccessibleField(packetTeamClass, "h");
-
         } catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
     public static synchronized void sendTeamPacket(Player player){
+        if(getSecurePlayers().contains(player)){
+            return;
+        }
+
         try{
-            Object packetTeamObject = packetTeamClass.newInstance();
+            Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
             nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
             modeField.set(packetTeamObject, 0);
@@ -47,9 +53,7 @@ public class TeamUtils {
 
             changePacketCollisionType(packetTeamObject);
 
-            if(!getSecurePlayers().contains(player))
-                Reflector.Packets.sendPacket(player, packetTeamObject);
-
+            Reflector.Packets.sendPacket(player, packetTeamObject);
         } catch(Exception ex){
             ex.printStackTrace();
         }
@@ -59,7 +63,7 @@ public class TeamUtils {
         collisionRuleField.set(packetTeamObject, "never");
     }
 
-    public static ArrayList<Player> getSecurePlayers(){
+    public static List<Player> getSecurePlayers(){
         return securePlayers;
     }
 }
