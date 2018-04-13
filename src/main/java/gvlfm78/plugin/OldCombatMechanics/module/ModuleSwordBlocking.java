@@ -3,6 +3,7 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.tasks.BlockingTask;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.RunnableSeries;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -30,7 +31,7 @@ public class ModuleSwordBlocking extends Module {
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
-    private final Map<UUID, BukkitRunnable> correspondingTasks = new HashMap<>();
+    private final Map<UUID, RunnableSeries> correspondingTasks = new HashMap<>();
     private int restoreDelay;
     private String blockingDamageReduction;
     private boolean blacklist;
@@ -95,11 +96,11 @@ public class ModuleSwordBlocking extends Module {
             inv.setItemInOffHand(SHIELD);
         }
 
-        correspondingTasks.put(id, scheduleRestore(p));
+        scheduleRestore(p);
     }
 
     @EventHandler
-    public void onHotBarChange(PlayerItemHeldEvent e) {
+    public void onHotBarChange(PlayerItemHeldEvent e){
         tryCancelTask(e.getPlayer().getUniqueId());
         restore(e.getPlayer());
     }
@@ -221,11 +222,22 @@ public class ModuleSwordBlocking extends Module {
         }
     }
 
-    private BukkitRunnable scheduleRestore(final Player player){
-        BukkitRunnable run = new BlockingTask(this, player);
-        run.runTaskLater(plugin, restoreDelay);
+    private void scheduleRestore(final Player player){
+        BukkitRunnable removeItem = new BlockingTask(this, player);
+        removeItem.runTaskLater(plugin, restoreDelay);
 
-        return run;
+        BukkitRunnable checkBlocking = new BukkitRunnable() {
+            @Override
+            public void run(){
+                if(!player.isBlocking()){
+                    restore(player);
+                    tryCancelTask(player.getUniqueId());
+                }
+            }
+        };
+        checkBlocking.runTaskTimer(plugin, 5L, 2L);
+
+        correspondingTasks.put(player.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
 
     public void restore(Player p){
@@ -242,16 +254,15 @@ public class ModuleSwordBlocking extends Module {
     }
 
     private void tryCancelTask(UUID id){
-        BukkitRunnable task = correspondingTasks.get(id);
-        if(task != null) task.cancel();
-        correspondingTasks.remove(id);
+        RunnableSeries series = correspondingTasks.remove(id);
+        if(series != null) series.cancelAll();
     }
 
     private void postponeRestoring(Player p){
         UUID id = p.getUniqueId();
-        correspondingTasks.get(id).cancel();
+        correspondingTasks.get(id).cancelAll();
         correspondingTasks.remove(id);
-        correspondingTasks.put(id, scheduleRestore(p));
+        scheduleRestore(p);
     }
 
     private boolean isBlocking(UUID uuid){
