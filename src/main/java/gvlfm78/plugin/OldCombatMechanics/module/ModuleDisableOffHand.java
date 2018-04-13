@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -14,8 +15,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class ModuleDisableOffHand extends Module {
 
@@ -27,10 +26,7 @@ public class ModuleDisableOffHand extends Module {
 
     @Override
     public void reload(){
-        mats = module().getStringList("items").stream()
-                .map(Material::matchMaterial)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        mats = ConfigUtils.loadMaterialList(module(), "items");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

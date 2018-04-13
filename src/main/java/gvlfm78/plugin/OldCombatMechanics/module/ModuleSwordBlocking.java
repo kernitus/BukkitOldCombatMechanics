@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,7 +22,6 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 7/4/16.
@@ -46,16 +46,7 @@ public class ModuleSwordBlocking extends Module {
         blockingDamageReduction = module().getString("blockingDamageReduction", "1")
                 .replaceAll(" ", "");
         blacklist = module().getBoolean("blacklist");
-
-        noBlockingItems.clear();
-
-        List<String> list = module().getStringList("noBlockingItems");
-        if(list == null) return;
-
-        noBlockingItems = list.stream()
-                .map(Material::matchMaterial)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        noBlockingItems = ConfigUtils.loadMaterialList(module(), "noBlockingItems");
     }
 
 

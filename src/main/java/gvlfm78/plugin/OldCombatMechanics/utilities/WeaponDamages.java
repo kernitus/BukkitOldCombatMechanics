@@ -14,7 +14,7 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
 
-    public static void initialise(OCMMain plugin){
+    static void initialise(OCMMain plugin){
         WeaponDamages.plugin = plugin;
         reload();
     }
@@ -22,10 +22,7 @@ public class WeaponDamages {
     private static void reload(){
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
 
-        damages = section.getKeys(false).stream()
-                .filter(((Predicate<String>) section::isDouble).or(section::isInt))
-                // .peek(key -> Messenger.debug("[WeaponDamages] Loading damage '" + section.getDouble(key) + "' for type '" + key + "'"))
-                .collect(Collectors.toMap(key -> key, section::getDouble));
+        damages = ConfigUtils.loadDoubleMap(section);
     }
 
     public static double getDamage(Material mat){
