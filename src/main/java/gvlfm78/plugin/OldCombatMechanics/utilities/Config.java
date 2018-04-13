@@ -81,8 +81,8 @@ public class Config {
 
         //Setting correct attack speed and armour values for online players
         Bukkit.getOnlinePlayers().forEach(player -> {
-            ModuleAttackCooldown.INSTANCE.checkAttackSpeed(player);
-            ModuleOldArmourStrength.INSTANCE.setArmourAccordingly(player);
+            ModuleAttackCooldown.applyAttackSpeed(player);
+            ModuleOldArmourStrength.applyArmour(player);
         });
     }
 

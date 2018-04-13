@@ -15,12 +15,10 @@ import java.util.stream.Collectors;
 
 public class ModuleDisableCrafting extends Module {
 
-    public static ModuleDisableCrafting INSTANCE;
     private List<Material> denied;
 
     public ModuleDisableCrafting(OCMMain plugin){
         super(plugin, "disable-crafting");
-        INSTANCE = this;
         reload();
     }
 

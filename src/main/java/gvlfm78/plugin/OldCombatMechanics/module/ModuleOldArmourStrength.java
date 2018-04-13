@@ -24,7 +24,7 @@ import java.util.List;
 
 public class ModuleOldArmourStrength extends Module {
 
-    public static ModuleOldArmourStrength INSTANCE;
+    private static ModuleOldArmourStrength INSTANCE;
 
     public ModuleOldArmourStrength(OCMMain plugin){
         super(plugin, "old-armour-strength");
@@ -113,6 +113,10 @@ public class ModuleOldArmourStrength extends Module {
         }
     }
 
+    public static void applyArmour(Player player){
+        INSTANCE.setArmourAccordingly(player);
+    }
+
     @EventHandler
     public void onArmourEquip(ArmourEquipEvent e){
         final Player p = e.getPlayer();
@@ -160,7 +164,7 @@ public class ModuleOldArmourStrength extends Module {
         setArmourAccordingly(player, false);
     }
 
-    public void setArmourAccordingly(final Player player){
+    private void setArmourAccordingly(final Player player){
         setArmourAccordingly(player, isEnabled(player.getWorld()));
     }
 

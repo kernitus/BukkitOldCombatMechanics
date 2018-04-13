@@ -17,12 +17,16 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 public class ModuleAttackCooldown extends Module {
 
-    public static ModuleAttackCooldown INSTANCE;
+    private static ModuleAttackCooldown INSTANCE;
 
     public ModuleAttackCooldown(OCMMain plugin){
         super(plugin, "disable-attack-cooldown");
 
         INSTANCE = this;
+    }
+
+    public static void applyAttackSpeed(Player player){
+        INSTANCE.checkAttackSpeed(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -46,7 +50,7 @@ public class ModuleAttackCooldown extends Module {
         }
     }
 
-    public void checkAttackSpeed(Player player){
+    private void checkAttackSpeed(Player player){
         World world = player.getWorld();
 
         //If module is disabled, set attack speed to 1.9 default

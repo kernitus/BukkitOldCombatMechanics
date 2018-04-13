@@ -21,8 +21,6 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class ModuleDisableElytra extends Module {
 
-    public static ModuleSwordBlocking INSTANCE;
-
     public ModuleDisableElytra(OCMMain plugin){
         super(plugin, "disable-elytra");
     }

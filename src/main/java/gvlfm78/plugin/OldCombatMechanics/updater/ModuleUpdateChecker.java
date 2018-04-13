@@ -12,13 +12,17 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import java.io.File;
 
 public class ModuleUpdateChecker extends Module {
-    public static Module INSTANCE;
+    private static Module INSTANCE;
     private File pluginFile;
 
     public ModuleUpdateChecker(OCMMain plugin, File pluginFile){
         super(plugin, "update-checker");
         INSTANCE = this;
         this.pluginFile = pluginFile;
+    }
+
+    public static String getMode() {
+        return INSTANCE.module().getString("mode").toLowerCase();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
