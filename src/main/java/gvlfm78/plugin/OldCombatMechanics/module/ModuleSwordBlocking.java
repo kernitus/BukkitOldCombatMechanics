@@ -1,7 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.tasks.BlockingTask;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
 import org.bukkit.Material;
@@ -223,7 +222,12 @@ public class ModuleSwordBlocking extends Module {
     }
 
     private void scheduleRestore(final Player player){
-        BukkitRunnable removeItem = new BlockingTask(this, player);
+        BukkitRunnable removeItem = new BukkitRunnable() {
+            @Override
+            public void run(){
+                restore(player);
+            }
+        };
         removeItem.runTaskLater(plugin, restoreDelay);
 
         BukkitRunnable checkBlocking = new BukkitRunnable() {
@@ -240,7 +244,7 @@ public class ModuleSwordBlocking extends Module {
         correspondingTasks.put(player.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
 
-    public void restore(Player p){
+    private void restore(Player p){
         UUID id = p.getUniqueId();
 
         if(!isBlocking(id)) return;
