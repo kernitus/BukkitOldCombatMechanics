@@ -19,12 +19,10 @@ import java.util.stream.Collectors;
 
 public class ModuleDisableOffHand extends Module {
 
-    public static ModuleDisableOffHand INSTANCE;
     private List<Material> mats = new ArrayList<>();
 
     public ModuleDisableOffHand(OCMMain plugin){
         super(plugin, "disable-offhand");
-        INSTANCE = this;
     }
 
     @Override
