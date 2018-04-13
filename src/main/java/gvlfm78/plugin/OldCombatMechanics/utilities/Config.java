@@ -129,13 +129,7 @@ public class Config {
     }
 
     private static void reloadInteractiveBlocks(){
-        List<String> list = config.getStringList("interactive");
-        if(list == null) return;
-
-        interactive = list.stream()
-                .map(Material::matchMaterial)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        interactive = ConfigUtils.loadMaterialList(config, "interactive");
     }
 
     public static List<Material> getInteractiveBlocks(){
