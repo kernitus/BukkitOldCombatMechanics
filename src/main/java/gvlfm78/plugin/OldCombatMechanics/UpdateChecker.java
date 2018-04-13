@@ -17,7 +17,7 @@ public class UpdateChecker {
     private UpdateSource updateSource;
 
     public UpdateChecker(OCMMain plugin, File pluginFile){
-        switch(ModuleUpdateChecker.INSTANCE.module().getString("mode").toLowerCase()){
+        switch(ModuleUpdateChecker.getMode()){
             case "spigot":
                 this.updateSource = new SpigotUpdateSource();
                 break;
