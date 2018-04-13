@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
@@ -24,10 +25,7 @@ public class ModuleDisableCrafting extends Module {
 
     @Override
     public void reload(){
-        denied = module().getStringList("denied").stream()
-                .map(Material::matchMaterial)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        denied = ConfigUtils.loadMaterialList(module(), "denied");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
