@@ -34,7 +34,7 @@ public class ModuleSwordBlocking extends Module {
     private int restoreDelay;
     private String blockingDamageReduction;
     private boolean blacklist;
-    private List<Material> noBlockingItems;
+    private List<Material> noBlockingItems = new ArrayList<>();
 
     public ModuleSwordBlocking(OCMMain plugin){
         super(plugin, "sword-blocking");
@@ -76,20 +76,6 @@ public class ModuleSwordBlocking extends Module {
         if(!isEnabled(world)) return;
 
         UUID id = p.getUniqueId();
-
-		/*if (isBlocking(id)) return;
-
-		ItemStack item = e.getItem();
-
-		if (!isHolding(item.getType(), "sword") || hasShield(p)) return;
-
-		PlayerInventory inv = p.getInventory();
-
-		storedOffhandItems.put(id, inv.getItemInOffHand());
-
-		inv.setItemInOffHand(SHIELD);
-
-		scheduleRestore(p);*/
 
         if(p.isBlocking()){
             tryCancelTask(id);
@@ -186,12 +172,15 @@ public class ModuleSwordBlocking extends Module {
         e.getDrops().replaceAll(item -> {
 
             if(item.getType().equals(Material.SHIELD))
-                item = storedOffhandItems.get(id);
+                item = storedOffhandItems.remove(id);
 
             return item;
         });
 
-        storedOffhandItems.remove(id);
+        // No need for any restore tasks, we've already done that
+        tryCancelTask(id);
+        // Handle keepInventory = true
+        restore(p);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
