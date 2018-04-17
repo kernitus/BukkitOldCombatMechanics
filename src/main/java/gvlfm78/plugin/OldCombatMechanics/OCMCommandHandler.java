@@ -1,7 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import gvlfm78.plugin.OldCombatMechanics.utilities.Chatter;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
@@ -29,16 +29,16 @@ public class OCMCommandHandler implements CommandExecutor {
         if(args.length < 1){//Tell them about available commands
             PluginDescriptionFile pdf = plugin.getDescription();
 
-            Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
+            Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
 
-            Chatter.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6%s", pdf.getVersion());
-            Chatter.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
+            Messenger.send(sender, "&6&lOldCombatMechanics&e by &cgvlfm78&e and &cRayzr522&e version &6%s", pdf.getVersion());
+            Messenger.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
 
             if(plugin.getConfig().getBoolean("enableIndividualToggle") && sender.hasPermission("oldcombatmechanics.toggle") && sender instanceof Player){
-                Chatter.send(sender, "&eYou can use &c/ocm toggle&e to turn your attack cooldown on/off");
+                Messenger.send(sender, "&eYou can use &c/ocm toggle&e to turn your attack cooldown on/off");
             }
 
-            Chatter.send(sender, ChatColor.DARK_GRAY + Chatter.HORIZONTAL_BAR);
+            Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
 
             // Check for updates
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> new UpdateChecker(plugin, pluginFile).sendUpdateMessages(sender));
@@ -51,18 +51,18 @@ public class OCMCommandHandler implements CommandExecutor {
 
         if(sub.equals("reload")){// Reloads config
             if(!sender.hasPermission("oldcombatmechanics.reload")){
-                Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.reload");
+                Messenger.send(sender, NO_PERMISSION, "oldcombatmechanics.reload");
                 return true;
             }
 
             Config.reload();
 
-            Chatter.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
+            Messenger.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
 
             return true;
         } else if(sub.equals("toggle") && plugin.getConfig().getBoolean("enableIndividualToggle") && sender instanceof Player){
             if(!sender.hasPermission("oldcombatmechanics.toggle")){
-                Chatter.send(sender, NO_PERMISSION, "oldcombatmechanics.toggle");
+                Messenger.send(sender, NO_PERMISSION, "oldcombatmechanics.toggle");
                 return true;
             }
 
@@ -83,7 +83,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
             attribute.setBaseValue(GAS);
             p.saveData();
-            Chatter.send(p, message);
+            Messenger.send(p, message);
 
             return true;
         }

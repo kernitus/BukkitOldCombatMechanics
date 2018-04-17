@@ -1,55 +1,49 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
-import java.util.logging.Logger;
+import java.util.Objects;
 
 /**
  * Created by Rayzr522 on 6/21/16.
  */
 public class Messenger {
 
-    public static boolean DEBUG_ENABLED = false;
-    public static OCMMain plugin;
+    public static final String HORIZONTAL_BAR = ChatColor.STRIKETHROUGH + "----------------------------------------------------";
+    static boolean DEBUG_ENABLED = false;
+    private static OCMMain plugin;
 
     public static void initialise(OCMMain plugin){
         Messenger.plugin = plugin;
     }
 
-    public static void info(String msg){
-        plugin.getLogger().info(TextUtils.stripColor(msg));
+    public static void info(String message, Object... args){
+        plugin.getLogger().info(TextUtils.stripColor(String.format(message, args)));
     }
 
-    public static void err(String msg){
-        plugin.getLogger().warning(TextUtils.stripColor(msg));
+    /**
+     * This will format any ampersand (&) color codes, format any args passed to it using {@link String#format(String, Object...)}, and then send the message to the specified {@link CommandSender}.
+     *
+     * @param sender  The {@link CommandSender} to send the message to.
+     * @param message The message to send.
+     * @param args    The args to format the message with.
+     */
+    public static void send(CommandSender sender, String message, Object... args){
+        Objects.requireNonNull(sender, "sender cannot be null!");
+        Objects.requireNonNull(message, "message cannot be null!");
+
+        sender.sendMessage(TextUtils.colorize(String.format(message, args)));
     }
 
-    public static void severe(String msg){
-        Logger logger = plugin.getLogger();
-
-        logger.severe("------------------------------------------------------------");
-        logger.severe("OldCombatMechanics has encountered a serious problem:");
-        logger.severe(TextUtils.stripColor(msg));
-        logger.severe("------------------------------------------------------------");
-    }
-
-    public static void send(Player p, String msg){
-        p.sendMessage(TextUtils.colorize(msg));
-    }
-
-    public static void send(CommandSender s, String msg){
-        s.sendMessage(TextUtils.stripColor(msg));
-    }
-
-    public static void debug(String msg){
+    public static void debug(String message, Object... args){
         if(!DEBUG_ENABLED) return;
-        plugin.getLogger().info("[DEBUG] " + msg);
+        info("[DEBUG] " + message, args);
     }
 
-    public static void debug(String msg, Player p){
+    public static void debug(CommandSender sender, String message, Object... args){
         if(!DEBUG_ENABLED) return;
-        p.sendMessage("[DEBUG] " + msg);
+        send(sender, "[DEBUG] " + message, args);
     }
 }
