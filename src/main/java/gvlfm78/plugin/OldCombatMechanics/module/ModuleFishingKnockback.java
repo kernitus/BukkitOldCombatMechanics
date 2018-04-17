@@ -7,6 +7,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FishHook;
@@ -19,6 +21,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.util.Vector;
 
 import java.util.EnumMap;
 
@@ -87,9 +90,16 @@ public class ModuleFishingKnockback extends Module {
 
         player.damage(damage);
 
-        Location loc = player.getLocation().add(0, 0.5, 0);
+        Block block = player.getEyeLocation().getBlock().getRelative(BlockFace.UP);
+
+        Vector offset = new Vector(0, 0.5, 0);
+        if(block != null && block.getType().isSolid()){
+            offset = new Vector(0, block.getY() - player.getLocation().getY() + 1.0, 0);
+        }
+
+        Location loc = player.getLocation().add(offset);
         player.teleport(loc);
-        player.setVelocity(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4));
+        player.setVelocity(player.getVelocity().add(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4)));
     }
 
     /**
