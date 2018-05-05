@@ -25,8 +25,8 @@ public class TeamUtils {
     private static Field collisionRuleField;
     private static Field playersField;
 
-    static{
-        try{
+    static {
+        try {
             Class<?> packetTeamClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
             packetScoreboardTeamConstructor = Reflector.getConstructor(packetTeamClass, 0);
 
@@ -34,17 +34,17 @@ public class TeamUtils {
             modeField = Reflector.getInaccessibleField(packetTeamClass, "i");
             collisionRuleField = Reflector.getInaccessibleField(packetTeamClass, "f");
             playersField = Reflector.getInaccessibleField(packetTeamClass, "h");
-        } catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    public static synchronized void sendTeamPacket(Player player){
-        if(getSecurePlayers().contains(player)){
+    public static synchronized void sendTeamPacket(Player player) {
+        if (getSecurePlayers().contains(player)) {
             return;
         }
 
-        try{
+        try {
             Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
             nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
@@ -54,16 +54,22 @@ public class TeamUtils {
             changePacketCollisionType(packetTeamObject);
 
             Reflector.Packets.sendPacket(player, packetTeamObject);
-        } catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    private static void changePacketCollisionType(Object packetTeamObject) throws Exception{
+    /**
+     * Sets the collision rule to never.
+     *
+     * @param packetTeamObject the packet to set it on
+     * @throws ReflectiveOperationException if an error occurs
+     */
+    public static void changePacketCollisionType(Object packetTeamObject) throws ReflectiveOperationException {
         collisionRuleField.set(packetTeamObject, "never");
     }
 
-    public static List<Player> getSecurePlayers(){
+    public static List<Player> getSecurePlayers() {
         return securePlayers;
     }
 }

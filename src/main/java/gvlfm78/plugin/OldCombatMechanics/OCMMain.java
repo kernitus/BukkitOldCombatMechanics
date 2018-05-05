@@ -6,13 +6,12 @@ import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -21,6 +20,7 @@ public class OCMMain extends JavaPlugin {
     private static OCMMain INSTANCE;
     private Logger logger = getLogger();
     private OCMConfigHandler CH = new OCMConfigHandler(this);
+    private List<Runnable> disableListeners = new ArrayList<>();
 
     public static OCMMain getInstance(){
         return INSTANCE;
@@ -77,6 +77,8 @@ public class OCMMain extends JavaPlugin {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
+        disableListeners.forEach(Runnable::run);
+
         //if (task != null) task.cancel();
 
         // Logging to console the disabling of OCM
@@ -121,5 +123,14 @@ public class OCMMain extends JavaPlugin {
 
     public boolean doesConfigExist(){
         return CH.doesConfigExist();
+    }
+
+    /**
+     * Registers a runnable to run when the plugin gets disabled.
+     *
+     * @param action the {@link Runnable} to run when the plugin gets disabled
+     */
+    public void addDisableListener(Runnable action) {
+        disableListeners.add(action);
     }
 }
