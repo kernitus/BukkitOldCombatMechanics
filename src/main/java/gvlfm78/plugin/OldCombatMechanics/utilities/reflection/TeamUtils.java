@@ -5,10 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * From <a href="https://www.spigotmc.org/resources/1-9-anti-collision.28770/">1.9 anti-collision plugin by Mentrixx</a>
@@ -24,6 +21,7 @@ public class TeamUtils {
     private static Field modeField;
     private static Field collisionRuleField;
     private static Field playersField;
+    private static Map<Player, String> teamNameMap = new WeakHashMap<>();
 
     static {
         try {
@@ -47,13 +45,43 @@ public class TeamUtils {
         try {
             Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
-            nameField.set(packetTeamObject, UUID.randomUUID().toString().substring(0, 15));
+            String teamName = UUID.randomUUID().toString().substring(0, 15);
+            teamNameMap.put(player, teamName);
+
+            nameField.set(packetTeamObject, teamName);
             modeField.set(packetTeamObject, 0);
             playersField.set(packetTeamObject, Collections.singletonList(player.getName()));
 
             changePacketCollisionType(packetTeamObject);
 
             Reflector.Packets.sendPacket(player, packetTeamObject);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Sends a packet that disbands the formerly formed team to re-enable collision.
+     * <p>
+     * If the player hasn't gotten a {@link #sendTeamPacket(Player)} yet, this method does nothing.
+     *
+     * @param player the player to send it to
+     */
+    public static synchronized void sendTeamRemovePacket(Player player) {
+        if (!teamNameMap.containsKey(player)) {
+            return;
+        }
+        String teamName = teamNameMap.get(player);
+
+        try {
+            Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
+
+            nameField.set(packetTeamObject, teamName);
+            modeField.set(packetTeamObject, 1);
+
+            Reflector.Packets.sendPacket(player, packetTeamObject);
+
+            teamNameMap.remove(player);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
