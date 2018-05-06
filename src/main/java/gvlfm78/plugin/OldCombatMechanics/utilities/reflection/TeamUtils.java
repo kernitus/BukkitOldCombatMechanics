@@ -5,7 +5,12 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * From <a href="https://www.spigotmc.org/resources/1-9-anti-collision.28770/">1.9 anti-collision plugin by Mentrixx</a>
@@ -49,7 +54,7 @@ public class TeamUtils {
             teamNameMap.put(player, teamName);
 
             nameField.set(packetTeamObject, teamName);
-            modeField.set(packetTeamObject, 0);
+            modeField.set(packetTeamObject, TeamAction.CREATE.getMinecraftId());
             playersField.set(packetTeamObject, Collections.singletonList(player.getName()));
 
             changePacketCollisionType(packetTeamObject);
@@ -77,7 +82,7 @@ public class TeamUtils {
             Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
             nameField.set(packetTeamObject, teamName);
-            modeField.set(packetTeamObject, 1);
+            modeField.set(packetTeamObject, TeamAction.DISBAND.getMinecraftId());
 
             Reflector.Packets.sendPacket(player, packetTeamObject);
 
@@ -99,5 +104,23 @@ public class TeamUtils {
 
     public static List<Player> getSecurePlayers() {
         return securePlayers;
+    }
+
+    /**
+     * The different actions a {@code PacketPlayOutScoreboardTeam} packet can represent.
+     */
+    private enum TeamAction {
+        CREATE(0),
+        DISBAND(1);
+
+        private int minecraftId;
+
+        TeamAction(int minecraftId) {
+            this.minecraftId = minecraftId;
+        }
+
+        public int getMinecraftId() {
+            return minecraftId;
+        }
     }
 }
