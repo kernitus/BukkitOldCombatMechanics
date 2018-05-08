@@ -4,7 +4,6 @@ import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.*;

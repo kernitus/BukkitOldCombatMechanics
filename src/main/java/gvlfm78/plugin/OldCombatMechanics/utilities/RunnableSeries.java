@@ -8,7 +8,7 @@ import java.util.List;
 public class RunnableSeries {
     private final List<BukkitRunnable> runnables;
 
-    public RunnableSeries(BukkitRunnable... runnables) {
+    public RunnableSeries(BukkitRunnable... runnables){
         this.runnables = Arrays.asList(runnables);
     }
 
@@ -16,7 +16,7 @@ public class RunnableSeries {
         return runnables;
     }
 
-    public void cancelAll() {
+    public void cancelAll(){
         runnables.forEach(BukkitRunnable::cancel);
     }
 }

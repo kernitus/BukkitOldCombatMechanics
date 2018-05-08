@@ -17,13 +17,13 @@ public class ModulePlayerCollisions extends Module {
 
     private CollisionPacketListener collisionPacketListener = new CollisionPacketListener();
 
-    public ModulePlayerCollisions(OCMMain plugin) {
+    public ModulePlayerCollisions(OCMMain plugin){
         super(plugin, "disable-player-collisions");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerLogin(PlayerJoinEvent e) {
-        if (isEnabled(e.getPlayer().getWorld())) {
+    public void onPlayerLogin(PlayerJoinEvent e){
+        if(isEnabled(e.getPlayer().getWorld())){
             TeamUtils.sendTeamPacket(e.getPlayer());
         }
 
@@ -32,8 +32,8 @@ public class ModulePlayerCollisions extends Module {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerChangeWorld(PlayerChangedWorldEvent e) {
-        if (isEnabled(e.getPlayer().getWorld())) {
+    public void onPlayerChangeWorld(PlayerChangedWorldEvent e){
+        if(isEnabled(e.getPlayer().getWorld())){
             TeamUtils.sendTeamPacket(e.getPlayer());
         } else {
             TeamUtils.sendTeamRemovePacket(e.getPlayer());
@@ -41,7 +41,7 @@ public class ModulePlayerCollisions extends Module {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(PlayerQuitEvent e) {
+    public void onPlayerQuit(PlayerQuitEvent e){
         TeamUtils.getSecurePlayers().remove(e.getPlayer());
     }
 
@@ -51,19 +51,19 @@ public class ModulePlayerCollisions extends Module {
                 .getClass(ClassType.NMS, "PacketPlayOutScoreboardTeam");
 
         @Override
-        public void onPacketSend(PacketEvent packetEvent) {
-            if (packetEvent.getPacket().getPacketClass() != targetClass) {
+        public void onPacketSend(PacketEvent packetEvent){
+            if(packetEvent.getPacket().getPacketClass() != targetClass){
                 return;
             }
 
-            if (!isEnabled(packetEvent.getPlayer().getWorld())) {
+            if(!isEnabled(packetEvent.getPlayer().getWorld())){
                 return;
             }
 
-            try {
+            try{
                 // this is very prone to changes as it just *gets the field by name*. But not in my code.
                 TeamUtils.changePacketCollisionType(packetEvent.getPacket().getNMSPacket());
-            } catch (ReflectiveOperationException e) {
+            } catch(ReflectiveOperationException e){
                 throw new RuntimeException("An error occurred setting the collision rule", e);
             }
         }
