@@ -2,11 +2,11 @@
 
 ## Info
 
+<!-- For the last two, please post links to a hastebin/pastebin upload of the file -->
 - Server version: 
 - OldCombatMechanics version: 
-<!-- For these next two, please post links to a hastebin/pastebin upload of the file -->
-- OldCombatMechanics config file: 
 - Server log file: 
+- OldCombatMechanics config file: 
 
 ## Problem Description
 > 
