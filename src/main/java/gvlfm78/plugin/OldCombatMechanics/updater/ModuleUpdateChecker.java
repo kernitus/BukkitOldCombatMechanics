@@ -21,7 +21,7 @@ public class ModuleUpdateChecker extends Module {
         this.pluginFile = pluginFile;
     }
 
-    public static String getMode() {
+    public static String getMode(){
         return INSTANCE.module().getString("mode").toLowerCase();
     }
 

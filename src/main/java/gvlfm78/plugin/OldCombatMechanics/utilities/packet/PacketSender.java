@@ -33,7 +33,14 @@ class PacketSender {
 
     private static final PacketSender instance = new PacketSender();
 
-    private PacketSender() {
+    private PacketSender(){
+    }
+
+    /**
+     * @return The Instance of the PacketSender
+     */
+    static PacketSender getInstance(){
+        return instance;
     }
 
     /**
@@ -42,18 +49,11 @@ class PacketSender {
      * @param packet The {@link Packet} to send
      * @param player The Player to send it to
      */
-    void sendPacket(Packet packet, Player player) {
+    void sendPacket(Packet packet, Player player){
         sendPacket(packet.getNMSPacket(), getConnection(player));
     }
 
-    /**
-     * @return The Instance of the PacketSender
-     */
-    static PacketSender getInstance() {
-        return instance;
-    }
-
-    private void sendPacket(Object nmsPacket, Object playerConnection) {
+    private void sendPacket(Object nmsPacket, Object playerConnection){
         Reflector.invokeMethod(SEND_PACKET, playerConnection, nmsPacket);
     }
 
@@ -63,7 +63,7 @@ class PacketSender {
      * @param player The Player to get the Connection for
      * @return The Player's connection
      */
-    Object getConnection(Player player) {
+    Object getConnection(Player player){
         Object handle = Reflector.invokeMethod(GET_HANDLE, player);
 
         return Reflector.getFieldValue(PLAYER_CONNECTION_FIELD, handle);

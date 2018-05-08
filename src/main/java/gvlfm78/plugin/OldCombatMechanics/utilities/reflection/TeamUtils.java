@@ -5,12 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.WeakHashMap;
+import java.util.*;
 
 /**
  * From <a href="https://www.spigotmc.org/resources/1-9-anti-collision.28770/">1.9 anti-collision plugin by Mentrixx</a>
@@ -28,8 +23,8 @@ public class TeamUtils {
     private static Field playersField;
     private static Map<Player, String> teamNameMap = new WeakHashMap<>();
 
-    static {
-        try {
+    static{
+        try{
             Class<?> packetTeamClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
             packetScoreboardTeamConstructor = Reflector.getConstructor(packetTeamClass, 0);
 
@@ -37,17 +32,17 @@ public class TeamUtils {
             modeField = Reflector.getInaccessibleField(packetTeamClass, "i");
             collisionRuleField = Reflector.getInaccessibleField(packetTeamClass, "f");
             playersField = Reflector.getInaccessibleField(packetTeamClass, "h");
-        } catch (Exception ex) {
+        } catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
-    public static synchronized void sendTeamPacket(Player player) {
-        if (getSecurePlayers().contains(player)) {
+    public static synchronized void sendTeamPacket(Player player){
+        if(getSecurePlayers().contains(player)){
             return;
         }
 
-        try {
+        try{
             Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
             String teamName = UUID.randomUUID().toString().substring(0, 15);
@@ -60,7 +55,7 @@ public class TeamUtils {
             changePacketCollisionType(packetTeamObject);
 
             Reflector.Packets.sendPacket(player, packetTeamObject);
-        } catch (Exception ex) {
+        } catch(Exception ex){
             ex.printStackTrace();
         }
     }
@@ -72,13 +67,13 @@ public class TeamUtils {
      *
      * @param player the player to send it to
      */
-    public static synchronized void sendTeamRemovePacket(Player player) {
-        if (!teamNameMap.containsKey(player)) {
+    public static synchronized void sendTeamRemovePacket(Player player){
+        if(!teamNameMap.containsKey(player)){
             return;
         }
         String teamName = teamNameMap.get(player);
 
-        try {
+        try{
             Object packetTeamObject = packetScoreboardTeamConstructor.newInstance();
 
             nameField.set(packetTeamObject, teamName);
@@ -87,7 +82,7 @@ public class TeamUtils {
             Reflector.Packets.sendPacket(player, packetTeamObject);
 
             teamNameMap.remove(player);
-        } catch (Exception ex) {
+        } catch(Exception ex){
             ex.printStackTrace();
         }
     }
@@ -98,11 +93,11 @@ public class TeamUtils {
      * @param packetTeamObject the packet to set it on
      * @throws ReflectiveOperationException if an error occurs
      */
-    public static void changePacketCollisionType(Object packetTeamObject) throws ReflectiveOperationException {
+    public static void changePacketCollisionType(Object packetTeamObject) throws ReflectiveOperationException{
         collisionRuleField.set(packetTeamObject, "never");
     }
 
-    public static List<Player> getSecurePlayers() {
+    public static List<Player> getSecurePlayers(){
         return securePlayers;
     }
 
@@ -115,11 +110,11 @@ public class TeamUtils {
 
         private int minecraftId;
 
-        TeamAction(int minecraftId) {
+        TeamAction(int minecraftId){
             this.minecraftId = minecraftId;
         }
 
-        public int getMinecraftId() {
+        public int getMinecraftId(){
             return minecraftId;
         }
     }
