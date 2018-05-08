@@ -3,8 +3,9 @@
 
 # Old Combat Mechanics
 #### by kernitus and Rayzr522
-Bukkit/Spigot plugin to have combat mechanics like in pre-1.9
+A Bukkit/Spigot plugin to revert combat mechanics to pre-1.9. Also supports reverting other features.
 
+If you are interested in contributing, please [check this page first](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/Contributing).
 
 <hr/>
 
