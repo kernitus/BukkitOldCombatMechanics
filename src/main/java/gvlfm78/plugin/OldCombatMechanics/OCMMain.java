@@ -1,8 +1,10 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import com.codingforcookies.armourequip.ArmourListener;
-import kernitus.plugin.OldCombatMechanics.module.*;
+import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
+import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
 import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -22,6 +24,7 @@ public class OCMMain extends JavaPlugin {
     private Logger logger = getLogger();
     private OCMConfigHandler CH = new OCMConfigHandler(this);
     private List<Runnable> disableListeners = new ArrayList<>();
+    private List<Hook> hooks = new ArrayList<>();
 
     public static OCMMain getInstance(){
         return INSTANCE;
@@ -39,8 +42,17 @@ public class OCMMain extends JavaPlugin {
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
 
-        // Register every event class (as well as our command handler)
-        registerAllEvents();
+        // Register all the modules
+        registerModules();
+
+        // Register all hooks for integrating with other plugins
+        registerHooks();
+
+        // Initialize all the hooks
+        hooks.forEach(hook -> hook.init(this));
+
+        // Set up the command handler
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));
 
         // Initialise the Messenger utility
         Messenger.initialise(this);
@@ -86,8 +98,7 @@ public class OCMMain extends JavaPlugin {
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
     }
 
-    private void registerAllEvents(){
-
+    private void registerModules(){
         // Update Checker (also a module so we can use the dynamic registering/unregistering)
         ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
 
@@ -114,8 +125,12 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleProjectileKnockback(this));
         ModuleLoader.addModule(new ModuleNoLapisEnchantments(this));
         ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
+    }
 
-        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
+    private void registerHooks(){
+        if(getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")){
+            hooks.add(new PlaceholderAPIHook());
+        }
     }
 
     public void upgradeConfig(){
@@ -131,7 +146,7 @@ public class OCMMain extends JavaPlugin {
      *
      * @param action the {@link Runnable} to run when the plugin gets disabled
      */
-    public void addDisableListener(Runnable action) {
+    public void addDisableListener(Runnable action){
         disableListeners.add(action);
     }
 }
