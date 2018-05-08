@@ -15,8 +15,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 6/14/16.
