@@ -26,31 +26,31 @@ public class ModuleSwordSweep extends Module {
     private List<Location> sweepLocations = new ArrayList<>();
     private EntityDamageEvent.DamageCause sweepDamageCause;
 
-    public ModuleSwordSweep(OCMMain plugin) {
+    public ModuleSwordSweep(OCMMain plugin){
         super(plugin, "disable-sword-sweep");
 
-        try {
+        try{
             // Will be available from some 1.11 version onwards
             sweepDamageCause = EntityDamageEvent.DamageCause.valueOf("ENTITY_SWEEP_ATTACK");
-        } catch (IllegalArgumentException e) {
+        } catch(IllegalArgumentException e){
             sweepDamageCause = null;
         }
     }
 
     @Override
-    public void reload() {
+    public void reload(){
         // we didn't set anything up in the first place
-        if (sweepDamageCause != null) {
+        if(sweepDamageCause != null){
             return;
         }
 
-        if (task != null) {
+        if(task != null){
             task.cancel();
         }
 
         task = new BukkitRunnable() {
             @Override
-            public void run() {
+            public void run(){
                 sweepLocations.clear();
             }
         };
@@ -58,15 +58,15 @@ public class ModuleSwordSweep extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDamaged(EntityDamageByEntityEvent e) {
+    public void onEntityDamaged(EntityDamageByEntityEvent e){
         World world = e.getDamager().getWorld();
 
-        if (!isEnabled(world)) return;
+        if(!isEnabled(world)) return;
 
-        if (!(e.getDamager() instanceof Player)) return;
+        if(!(e.getDamager() instanceof Player)) return;
 
-        if (sweepDamageCause != null) {
-            if (e.getCause() == sweepDamageCause) {
+        if(sweepDamageCause != null){
+            if(e.getCause() == sweepDamageCause){
                 e.setCancelled(true);
             }
             // sweep attack detected or not, we do not need to fall back to the guessing implementation
@@ -76,26 +76,26 @@ public class ModuleSwordSweep extends Module {
         Player p = (Player) e.getDamager();
         ItemStack weapon = p.getInventory().getItemInMainHand();
 
-        if (isHoldingSword(weapon.getType()))
+        if(isHoldingSword(weapon.getType()))
             onSwordAttack(e, p, weapon);
     }
 
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon) {
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon){
         //Disable sword sweep
         Location location = p.getLocation(); // ATTACKER
 
         int level = 0;
 
-        try { //In a try catch for servers that haven't updated
+        try{ //In a try catch for servers that haven't updated
             level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
-        } catch (NoSuchFieldError ignored) {
+        } catch(NoSuchFieldError ignored){
         }
 
         float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
-        if (e.getDamage() == damage) {
+        if(e.getDamage() == damage){
             // Possibly a sword-sweep attack
-            if (sweepLocations.contains(location)) {
+            if(sweepLocations.contains(location)){
                 debug("Cancelling sweep...", p);
                 e.setCancelled(true);
             }
@@ -106,7 +106,7 @@ public class ModuleSwordSweep extends Module {
         ModuleOldToolDamage.onAttack(e);
     }
 
-    private boolean isHoldingSword(Material mat) {
+    private boolean isHoldingSword(Material mat){
         return mat.toString().endsWith("_SWORD");
     }
 
