@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -17,19 +18,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Rayzr522 on 25/06/16.
+ * A module to disable the sweep attack.
  */
 public class ModuleSwordSweep extends Module {
 
     private BukkitRunnable task;
     private List<Location> sweepLocations = new ArrayList<>();
+    private EntityDamageEvent.DamageCause sweepDamageCause;
 
     public ModuleSwordSweep(OCMMain plugin){
         super(plugin, "disable-sword-sweep");
+
+        try{
+            // Will be available from some 1.11 version onwards
+            sweepDamageCause = EntityDamageEvent.DamageCause.valueOf("ENTITY_SWEEP_ATTACK");
+        } catch(IllegalArgumentException e){
+            sweepDamageCause = null;
+        }
     }
 
     @Override
     public void reload(){
+        // we didn't set anything up in the first place
+        if(sweepDamageCause != null){
+            return;
+        }
+
         if(task != null){
             task.cancel();
         }
@@ -50,6 +64,14 @@ public class ModuleSwordSweep extends Module {
         if(!isEnabled(world)) return;
 
         if(!(e.getDamager() instanceof Player)) return;
+
+        if(sweepDamageCause != null){
+            if(e.getCause() == sweepDamageCause){
+                e.setCancelled(true);
+            }
+            // sweep attack detected or not, we do not need to fall back to the guessing implementation
+            return;
+        }
 
         Player p = (Player) e.getDamager();
         ItemStack weapon = p.getInventory().getItemInMainHand();
