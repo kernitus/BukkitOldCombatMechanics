@@ -211,7 +211,16 @@ public class Attributes {
         }
 
         public double getAmount(){
-            return data.getDouble("Amount", 0.0);
+            double output = 0.0;
+            // Hack for bad Bukkit plugins which don't realize that THESE ARE SUPPOSED TO BE DOUBLES!!! *le sigh*
+            Object value = data.get("Amount");
+            if (value instanceof Double) {
+                output = (double) value;
+            } else if (value instanceof Float) {
+                output = (float) value;
+            }
+
+            return output;
         }
 
         public void setAmount(double amount){
