@@ -33,7 +33,7 @@ class PacketInjector extends ChannelDuplexHandler {
      */
     PacketInjector(Player player){
         Objects.requireNonNull(player, "player can not be null!");
-        
+
         playerWeakReference = new WeakReference<>(player);
 
         try{
@@ -129,6 +129,15 @@ class PacketInjector extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext channelHandlerContext, Object packet, ChannelPromise channelPromise)
             throws Exception{
+
+        if(playerWeakReference == null || playerWeakReference.get() == null){
+            // bubble up
+            super.write(channelHandlerContext, packet, channelPromise);
+            LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
+                    "Please report the error on github.");
+            return;
+        }
+
         PacketEvent event = new PacketEvent(
                 packet,
                 PacketEvent.ConnectionDirection.TO_CLIENT,
@@ -152,6 +161,14 @@ class PacketInjector extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object packet) throws Exception{
+        if(playerWeakReference == null || playerWeakReference.get() == null){
+            // bubble up
+            super.read(channelHandlerContext);
+            LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
+                    "Please report the error on github.");
+            return;
+        }
+
         PacketEvent event = new PacketEvent(
                 packet,
                 PacketEvent.ConnectionDirection.TO_SERVER,
