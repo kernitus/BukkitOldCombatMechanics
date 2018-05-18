@@ -32,12 +32,15 @@ class PacketInjector extends ChannelDuplexHandler {
      * @param player The player to attach into
      */
     PacketInjector(Player player){
+        Objects.requireNonNull(player, "player can not be null!");
+        
+        playerWeakReference = new WeakReference<>(player);
+
         try{
             attach(player);
         } catch(Exception e){
             throw new RuntimeException(e);
         }
-        playerWeakReference = new WeakReference<>(player);
     }
 
     /**
