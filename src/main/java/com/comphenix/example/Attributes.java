@@ -211,7 +211,12 @@ public class Attributes {
         }
 
         public double getAmount(){
-            return data.getDouble("Amount", 0.0);
+            // Hack for bad Bukkit plugins which don't realize that THESE ARE SUPPOSED TO BE DOUBLES!!! *le sigh*
+            Object value = data.get("Amount");
+            if(value instanceof Number){
+                return ((Number) value).doubleValue();
+            }
+            return 0.0;
         }
 
         public void setAmount(double amount){
