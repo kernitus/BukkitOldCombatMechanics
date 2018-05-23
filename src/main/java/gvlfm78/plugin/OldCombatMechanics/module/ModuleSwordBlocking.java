@@ -230,7 +230,7 @@ public class ModuleSwordBlocking extends Module {
                 }
             }
         };
-        checkBlocking.runTaskTimer(plugin, 5L, 2L);
+        checkBlocking.runTaskTimer(plugin, 10L, 2L);
 
         correspondingTasks.put(player.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
