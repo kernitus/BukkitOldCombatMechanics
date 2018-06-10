@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
  */
 class PacketInjector extends ChannelDuplexHandler {
 
-    private static final Logger LOGGER = Logger.getLogger("PacketInjector");
+    private static final Logger LOGGER = OCMMain.getInstance().getLogger();
 
     private boolean isClosed;
     private Channel channel;
@@ -76,13 +77,17 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
         isClosed = true;
-        channel.eventLoop().submit(() -> channel.pipeline().remove(this));
+        channel.eventLoop().submit(() -> {
+            channel.pipeline().remove(this);
+
+            // only clear the channel after the last access
+            channel = null;
+        });
 
         // clear references. Probably not needed, but I am not sure about the
         // channel.
         playerWeakReference.clear();
         packetListeners.clear();
-        channel = null;
     }
 
     /**
@@ -134,7 +139,7 @@ class PacketInjector extends ChannelDuplexHandler {
             // bubble up
             super.write(channelHandlerContext, packet, channelPromise);
             LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
-                    "Please report the error on github.");
+                    "Please report the error on github. (write@" + hashCode() + ")");
             return;
         }
 
@@ -165,7 +170,7 @@ class PacketInjector extends ChannelDuplexHandler {
             // bubble up
             super.read(channelHandlerContext);
             LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
-                    "Please report the error on github.");
+                    "Please report the error on github. (read)");
             return;
         }
 
