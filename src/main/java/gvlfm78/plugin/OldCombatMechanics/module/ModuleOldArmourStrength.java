@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleOldArmourStrength extends Module {
+    private static final String ARMOR_MARK = "ArmorModifier";
 
     private static ModuleOldArmourStrength INSTANCE;
 
@@ -31,74 +32,70 @@ public class ModuleOldArmourStrength extends Module {
         INSTANCE = this;
     }
 
-    private static ItemStack apply(ItemStack is, boolean enable){
-        String slot;
-        String type = is.getType().toString().toLowerCase();
+    private static ItemStack apply(ItemStack item, boolean enable){
+        if(item == null || item.getType() == Material.AIR){
+            return item;
+        }
 
-        if(type.contains("helmet"))
-            slot = "head";
-        else if(type.contains("chestplate"))
-            slot = "chest";
-        else if(type.contains("leggings"))
-            slot = "legs";
-        else if(type.contains("boots"))
-            slot = "feet";
-        else return is; //Not an armour piece
+        String slot = getSlotForType(item.getType());
+        if(slot == null){
+            //Not an armour piece
+            return item;
+        }
 
-        double strength = ArmourValues.getValue(is.getType());
+        Attributes attributes = new Attributes(item);
 
-        Attributes attributes = new Attributes(is);
+        double strength = ArmourValues.getValue(item.getType());
+        double toughness = enable ? Config.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(item.getType());
 
-        double toughness = enable ? Config.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(is.getType());
-
-        boolean armourTagPresent = false, toughnessTagPresent = false;
-
-        List<Attribute> toRemove = new ArrayList<>();
-
-        for(int i = 0; i < attributes.size(); i++){
-            Attribute att = attributes.get(i);
-            if(att == null) continue;
-
-            AttributeType attType = att.getAttributeType();
-
-            if(attType == AttributeType.GENERIC_ARMOR){ //Found a generic armour tag
-                if(armourTagPresent) //If we've already found another tag
-                    toRemove.add(att); //Remove this one as it's a duplicate
-                else {
-                    if(att.getAmount() != strength){ //If its value does not match what it should be, remove it
-                        toRemove.add(att);
-                        armourTagPresent = false; //Set armour value anew
-                    } else armourTagPresent = true;
-                }
-            } else if(attType == AttributeType.GENERIC_ARMOR_TOUGHNESS){ //Found a generic armour toughness tag
-                if(toughnessTagPresent) //If we've already found another tag
-                    toRemove.add(att); //Remove this one as it's a duplicate
-                else {
-                    if(att.getAmount() != toughness){ //If its value does not match what it should be, remove it
-                        toRemove.add(att);
-                        toughnessTagPresent = false; //Set armour value anew
-                    } else toughnessTagPresent = true;
+        if(!ItemData.hasMark(item, ARMOR_MARK)){
+            for(Attribute attribute : attributes.values()){
+                if(attribute.getAttributeType() == AttributeType.GENERIC_ARMOR || attribute.getAttributeType() == AttributeType.GENERIC_ARMOR_TOUGHNESS){
+                    // Hasn't been marked but has custom attributes - it must be a custom item.
+                    return item;
                 }
             }
         }
 
-        // So we don't remove while iterating
+        ItemData.mark(item, ARMOR_MARK);
+
+        ensureAttributeAmount(attributes, AttributeType.GENERIC_ARMOR, "Armor", slot, strength);
+        ensureAttributeAmount(attributes, AttributeType.GENERIC_ARMOR_TOUGHNESS, "ArmorToughness", slot, toughness);
+
+        return item;
+    }
+
+    private static void ensureAttributeAmount(Attributes attributes, AttributeType type, String name, String slot, double amount){
+        List<Attribute> toRemove = new ArrayList<>();
+        boolean found = false;
+
+        // Ensure only one attribute of the right value
+        for(Attribute attribute : attributes.values()){
+            if(attribute.getAttributeType() == type && attribute.getSlot().equals(slot)){
+                if(found || attribute.getAmount() != amount){
+                    // Remove others
+                    toRemove.add(attribute);
+                } else {
+                    // Keep this attribute
+                    found = true;
+                }
+            }
+        }
+
         toRemove.forEach(attributes::remove);
 
-        //If there's no armour tag present add it
-        if(!armourTagPresent){
-            attributes.add(Attributes.Attribute.newBuilder().name("Armor").type(Attributes.AttributeType.GENERIC_ARMOR).amount(strength).slot(slot).build());
-            Messenger.debug("Added generic armour tag");
-        }
-        //If there's no toughness tag present add it
-        if(!toughnessTagPresent){
-            attributes.add(Attributes.Attribute.newBuilder().name("ArmorToughness").type(Attributes.AttributeType.GENERIC_ARMOR_TOUGHNESS).amount(toughness).slot(slot).build());
-            Messenger.debug("Added toughness tag");
-        }
+        if(!found){
+            attributes.add(
+                    Attributes.Attribute.newBuilder()
+                            .name(name)
+                            .type(type)
+                            .amount(amount)
+                            .slot(slot)
+                            .build()
+            );
 
-        ItemData.mark(is, "ArmorModifier");
-
-        return is;
+            Messenger.debug(String.format("Added '%s' flag on slot '%s' and set it to %f", name, slot, amount));
+        }
     }
 
     private static int getDefaultToughness(Material mat){
@@ -111,6 +108,22 @@ public class ModuleOldArmourStrength extends Module {
             default:
                 return 0;
         }
+    }
+
+    private static String getSlotForType(Material type){
+        String typeName = type.toString().toLowerCase();
+
+        if(typeName.endsWith("helmet")){
+            return "head";
+        } else if(typeName.endsWith("chestplate")){
+            return "chest";
+        } else if(typeName.endsWith("leggings")){
+            return "legs";
+        } else if(typeName.endsWith("boots")){
+            return "feet";
+        }
+
+        return null;
     }
 
     public static void applyArmour(Player player){
