@@ -290,6 +290,12 @@ disable-bow-boost:
   worlds: []
 
 ################################
+#### SUPPORT SETTINGS BELOW ####
+################################
+support:
+  spartan-cancel-ticks: 1
+
+################################
 #### SPECIAL SETTINGS BELOW ####
 ################################
   
