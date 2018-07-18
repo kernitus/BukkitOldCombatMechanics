@@ -2,6 +2,7 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.utilities.MathHelper;
+import me.vagdedes.spartan.system.Enums;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EntityType;
@@ -17,16 +18,20 @@ import java.util.UUID;
 public class ModulePlayerRegen extends Module {
 
     private Map<UUID, Long> healTimes = new HashMap<>();
+    private boolean spartanInstalled;
 
     public ModulePlayerRegen(OCMMain plugin){
         super(plugin, "old-player-regen");
+
+        initSpartan();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRegen(EntityRegainHealthEvent e){
 
-        if(e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
+        if(e.getEntityType() != EntityType.PLAYER || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED){
             return;
+        }
 
         final Player p = (Player) e.getEntity();
 
@@ -45,6 +50,8 @@ public class ModulePlayerRegen extends Module {
         if(p.getHealth() < maxHealth){
             p.setHealth(MathHelper.clamp(p.getHealth() + module().getInt("amount"), 0.0, maxHealth));
             healTimes.put(p.getUniqueId(), currentTime);
+
+            disableSpartanRegenCheck(p);
         }
 
         final float previousExhaustion = p.getExhaustion();
@@ -59,5 +66,18 @@ public class ModulePlayerRegen extends Module {
 
     private long getLastHealTime(Player p){
         return healTimes.computeIfAbsent(p.getUniqueId(), id -> System.currentTimeMillis() / 1000);
+    }
+
+    private void disableSpartanRegenCheck(Player player){
+        if(!spartanInstalled){
+            return;
+        }
+
+        int ticksToCancel = plugin.getConfig().getInt("support.spartan-cancel-ticks", 1);
+        me.vagdedes.spartan.api.API.cancelCheck(player, Enums.HackType.FastHeal, ticksToCancel);
+    }
+
+    private void initSpartan(){
+        spartanInstalled = Bukkit.getPluginManager().getPlugin("Spartan") != null;
     }
 }
