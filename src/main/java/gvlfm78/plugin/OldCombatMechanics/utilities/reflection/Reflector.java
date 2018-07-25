@@ -86,8 +86,33 @@ public class Reflector {
     }
 
     public static Object getFieldValue(Object object, String fieldName) throws Exception{
-        return getInaccessibleField(object.getClass(), fieldName).get(object);
+        return findFieldWithinHierarchy(object, fieldName).get(object);
     }
+
+    /**
+     * Finds a field within the class or any superclasses (but ignored interfaces).
+     *
+     * @param object    the handle and start for the search
+     * @param fieldName the name of the field
+     * @return the found field
+     * @throws NoSuchFieldException if the field couldn't be found
+     */
+    private static Field findFieldWithinHierarchy(Object object, String fieldName) throws NoSuchFieldException{
+        Class<?> clazz = object.getClass();
+
+        while(clazz != null){
+            for(Field field : clazz.getDeclaredFields()){
+                if(field.getName().equals(fieldName)){
+                    field.setAccessible(true);
+                    return field;
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        throw new NoSuchFieldException(fieldName);
+    }
+
 
     public static Object getFieldValue(Field field, Object handle){
         field.setAccessible(true);
