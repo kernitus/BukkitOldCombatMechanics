@@ -255,7 +255,9 @@ public class ModuleSwordBlocking extends Module {
 
     private void postponeRestoring(Player p){
         UUID id = p.getUniqueId();
-        correspondingTasks.get(id).cancelAll();
+        Optional.ofNullable(correspondingTasks.get(id))
+                .ifPresent(RunnableSeries::cancelAll);
+
         correspondingTasks.remove(id);
         scheduleRestore(p);
     }
