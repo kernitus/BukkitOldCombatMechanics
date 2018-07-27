@@ -152,9 +152,9 @@ public class OCMMain extends JavaPlugin {
         disableListeners.add(action);
     }
     /**
-     * Registers a runnable to run when the plugin gets disabled.
+     * Registers a runnable to run when the plugin gets enabled.
      *
-     * @param action the {@link Runnable} to run when the plugin gets disabled
+     * @param action the {@link Runnable} to run when the plugin gets enabled
      */
     public void addEnableListener(Runnable action){
         enableListeners.add(action);
