@@ -23,13 +23,6 @@ public class PacketManager implements Listener {
 
     private final Map<UUID, PacketInjector> injectorMap = new HashMap<>();
 
-    {
-        OCMMain.getInstance().addDisableListener(() -> {
-            removeAll();
-            instance = null;
-        });
-    }
-
     /**
      * Instantiates a new PacketManager
      *
@@ -37,6 +30,11 @@ public class PacketManager implements Listener {
      */
     private PacketManager(Plugin plugin){
         Bukkit.getPluginManager().registerEvents(this, plugin);
+
+        OCMMain.getInstance().addDisableListener(() -> {
+            removeAll();
+            instance = null;
+        });
     }
 
     /**
