@@ -5,6 +5,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import java.util.Objects;
+import java.util.logging.Level;
 
 /**
  * Created by Rayzr522 on 6/21/16.
@@ -35,6 +36,11 @@ public class Messenger {
         Objects.requireNonNull(message, "message cannot be null!");
 
         sender.sendMessage(TextUtils.colorize(String.format(message, args)));
+    }
+
+    public static void debug(String message, Throwable throwable){
+        if(!DEBUG_ENABLED) return;
+        plugin.getLogger().log(Level.INFO, message, throwable);
     }
 
     public static void debug(String message, Object... args){
