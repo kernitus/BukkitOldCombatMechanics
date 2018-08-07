@@ -7,6 +7,8 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.packet.PacketManager;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.TeamUtils;
 import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -19,6 +21,13 @@ public class ModulePlayerCollisions extends Module {
 
     public ModulePlayerCollisions(OCMMain plugin){
         super(plugin, "disable-player-collisions");
+
+        // inject all players at startup, so the plugin still works properly after a reload
+        OCMMain.getInstance().addEnableListener(() -> {
+            for(Player player : Bukkit.getOnlinePlayers()){
+                PacketManager.getInstance().addListener(collisionPacketListener, player);
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -1,6 +1,7 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities.packet;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -23,13 +24,6 @@ public class PacketManager implements Listener {
 
     private final Map<UUID, PacketInjector> injectorMap = new HashMap<>();
 
-    {
-        OCMMain.getInstance().addDisableListener(() -> {
-            removeAll();
-            instance = null;
-        });
-    }
-
     /**
      * Instantiates a new PacketManager
      *
@@ -37,6 +31,11 @@ public class PacketManager implements Listener {
      */
     private PacketManager(Plugin plugin){
         Bukkit.getPluginManager().registerEvents(this, plugin);
+
+        OCMMain.getInstance().addDisableListener(() -> {
+            removeAll();
+            instance = null;
+        });
     }
 
     /**
@@ -70,9 +69,13 @@ public class PacketManager implements Listener {
             if(injectorMap.containsKey(player.getUniqueId())){
                 injectorMap.get(player.getUniqueId()).addPacketListener(listener);
             } else {
-                PacketInjector injector = new PacketInjector(player);
-                injector.addPacketListener(listener);
-                injectorMap.put(player.getUniqueId(), injector);
+                try{
+                    PacketInjector injector = new PacketInjector(player);
+                    injector.addPacketListener(listener);
+                    injectorMap.put(player.getUniqueId(), injector);
+                } catch(Exception e){
+                    Messenger.debug("Error attaching packet listener!", e);
+                }
             }
         }
     }
