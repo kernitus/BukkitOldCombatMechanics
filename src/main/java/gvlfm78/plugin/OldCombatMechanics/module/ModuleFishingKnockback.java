@@ -7,8 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FishHook;
@@ -90,16 +88,40 @@ public class ModuleFishingKnockback extends Module {
 
         player.damage(damage);
 
-        Block block = player.getEyeLocation().getBlock().getRelative(BlockFace.UP);
+        player.setVelocity(calculateKnockbackVelocity(player.getVelocity(), player.getLocation(), hook.getLocation()));
+    }
 
-        Vector offset = new Vector(0, 0.5, 0);
-        if(block != null && block.getType().isSolid()){
-            offset = new Vector(0, block.getY() - player.getLocation().getY() + 1.0, 0);
+    private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location entity){
+        double xDistance = entity.getX() - player.getX();
+        double zDistance = entity.getZ() - player.getZ();
+
+        // ensure distance is not zero and randomise in that case (I guess?)
+        while(xDistance * xDistance + zDistance * zDistance < 0.0001){
+            xDistance = (Math.random() - Math.random()) * 0.01D;
+            zDistance = (Math.random() - Math.random()) * 0.01D;
         }
 
-        Location loc = player.getLocation().add(offset);
-        player.teleport(loc);
-        player.setVelocity(player.getVelocity().add(loc.subtract(rodder.getLocation()).toVector().normalize().multiply(0.4)));
+        double distance = Math.sqrt(xDistance * xDistance + zDistance * zDistance);
+
+        double y = currentVelocity.getY() / 2;
+        double x = currentVelocity.getX() / 2;
+        double z = currentVelocity.getZ() / 2;
+
+        // Normalize distance to have similar knockback, no matter the distance
+        x -= xDistance / distance * 0.4;
+
+        // slow the fall or throw upwards
+        y += 0.4;
+
+        // Normalize distance to have similar knockback, no matter the distance
+        z -= zDistance / distance * 0.4;
+
+        // do not shoot too high up
+        if(y >= 0.4){
+            y = 0.4;
+        }
+
+        return new Vector(x, y, z);
     }
 
     /**
