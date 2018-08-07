@@ -1,12 +1,12 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
+import gvlfm78.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
+import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.potion.PotionType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -53,5 +53,31 @@ public class ConfigUtils {
                 .map(Material::matchMaterial)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets potion duration values from config
+     * @param section The section from which to load the duration values
+     * @return HashMap of PotionType and PotionDurations
+     */
+    public static HashMap<PotionType, PotionDurations> loadPotionDurationsList(ConfigurationSection section){
+        Objects.requireNonNull(section, "section cannot be null!");
+        HashMap<PotionType, PotionDurations> durationsHashMap = new HashMap<>();
+        ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
+
+        for(String potionName : durationsSection.getKeys(false)){
+            ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
+            ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
+            ConfigurationSection splash = potionSection.getConfigurationSection("splash");
+
+            PotionType potionType = PotionType.valueOf(potionName.toUpperCase());
+            durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
+        }
+
+        return durationsHashMap;
+    }
+
+    private static GenericPotionDurations getGenericDurations(ConfigurationSection section){
+        return new GenericPotionDurations(section.getInt("base"), section.getInt("II"), section.getInt("extended"));
     }
 }
