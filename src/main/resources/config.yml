@@ -266,15 +266,6 @@ old-armour-strength:
     DIAMOND_CHESTPLATE: 8
     DIAMOND_LEGGINGS: 6
     DIAMOND_BOOTS: 3
-
-old-potion-effects:
-  # This is to restore the 1.8 potion effects before they were nerfed
-  enabled: true
-  # Strength potion
-  8228:
-    poison:
-      duration: 440
-      amplifier: 1????
     
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
@@ -288,6 +279,116 @@ disable-bow-boost:
   # This module just stops them from hitting themselves with arrows entirely
   enabled: false
   worlds: []
+
+old-potion-effects:
+  # This is to restore the 1.8 potion effects and duration
+  enabled: true
+
+### DURATION: (in seconds)
+  potion-durations:
+    regen: # Regeneration
+      drinkable:
+        base: 45
+        II: 22
+        extended: 120
+      splash:
+        base: 33
+        II: 16
+        extended: 90
+
+    speed: # Swiftness
+      drinkable:
+        base: 180
+        II: 90
+        extended: 480
+      splash:
+        base: 135
+        II: 67
+        extended: 360
+
+    fire_resistance:
+      drinkable:
+        base: 180
+        extended: 480
+      splash:
+        base: 135
+        extended: 360
+
+    poison:
+      drinkable:
+        base: 45
+        II: 22
+        extended: 120
+      splash:
+        base: 33
+        II: 16
+        extended: 90
+
+    night_vision:
+      drinkable:
+        base: 180
+        extended: 480
+      splash:
+        base: 180
+        extended: 480
+
+    weakness:
+      drinkable:
+        base: 90
+        extended: 240
+      splash:
+        base: 90
+        extended: 240
+
+    strength:
+      drinkable:
+        base: 180
+        II: 90
+        extended: 480
+      splash:
+        base: 135
+        II: 67
+        extended: 360
+
+    slowness:
+      drinkable:
+        base: 90
+        extended: 240
+      splash:
+        base: 67
+        extended: 180
+
+    jump: # Leaping
+      drinkable:
+        base: 180
+        II: 90
+        extended: 480
+      splash:
+        base: 135
+        II: 67
+        extended: 360
+
+    water_breathing:
+      drinkable:
+        base: 180
+        extended: 480
+      splash:
+        base: 135
+        extended: 360
+
+    invisibility:
+      drinkable:
+        base: 180
+        extended: 480
+      splash:
+        base: 135
+        extended: 360
+
+  # EFFECTS
+  # Strength potion, damage is % increase
+  strength:
+    damageI: 130
+    damageII: 260
 
 ################################
 #### SUPPORT SETTINGS BELOW ####
@@ -304,4 +405,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 25
+config-version: 27
