@@ -3,7 +3,6 @@ package kernitus.plugin.OldCombatMechanics;
 import com.codingforcookies.armourequip.ArmourListener;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
@@ -24,6 +23,7 @@ public class OCMMain extends JavaPlugin {
     private Logger logger = getLogger();
     private OCMConfigHandler CH = new OCMConfigHandler(this);
     private List<Runnable> disableListeners = new ArrayList<>();
+    private List<Runnable> enableListeners = new ArrayList<>();
     private List<Hook> hooks = new ArrayList<>();
 
     public static OCMMain getInstance(){
@@ -79,6 +79,8 @@ public class OCMMain extends JavaPlugin {
                                 .collect(Collectors.toMap(Module::toString, module -> 1))
                 )
         );
+
+        enableListeners.forEach(Runnable::run);
 
         // Logging to console the enabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
@@ -148,5 +150,13 @@ public class OCMMain extends JavaPlugin {
      */
     public void addDisableListener(Runnable action){
         disableListeners.add(action);
+    }
+    /**
+     * Registers a runnable to run when the plugin gets enabled.
+     *
+     * @param action the {@link Runnable} to run when the plugin gets enabled
+     */
+    public void addEnableListener(Runnable action){
+        enableListeners.add(action);
     }
 }

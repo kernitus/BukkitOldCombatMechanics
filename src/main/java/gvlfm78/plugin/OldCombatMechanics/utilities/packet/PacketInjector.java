@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -66,7 +67,11 @@ class PacketInjector extends ChannelDuplexHandler {
             channel.pipeline().remove("ocm_handler");
         }
 
-        channel.pipeline().addBefore("packet_handler", "ocm_handler", this);
+        try{
+            channel.pipeline().addBefore("packet_handler", "ocm_handler", this);
+        } catch(NoSuchElementException e){
+            throw new NoSuchElementException("No base handler found. Was the player instantly disconnected?");
+        }
     }
 
     /**
@@ -140,6 +145,7 @@ class PacketInjector extends ChannelDuplexHandler {
             super.write(channelHandlerContext, packet, channelPromise);
             LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
                     "Please report the error on github. (write@" + hashCode() + ")");
+            detach();
             return;
         }
 
@@ -171,6 +177,7 @@ class PacketInjector extends ChannelDuplexHandler {
             super.read(channelHandlerContext);
             LOGGER.warning("playerWeakReference or its value is null. This should NOT happen at this stage." +
                     "Please report the error on github. (read)");
+            detach();
             return;
         }
 
