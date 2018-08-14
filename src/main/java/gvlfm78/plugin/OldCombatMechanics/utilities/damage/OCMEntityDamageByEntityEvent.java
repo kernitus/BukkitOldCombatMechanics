@@ -5,6 +5,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -14,8 +15,9 @@ import org.bukkit.potion.PotionEffectType;
 
 import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
 
-public class OCMEntityDamageByEntityEvent extends Event {
+public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
+    private boolean cancelled;
     private static final HandlerList handlers = new HandlerList();
 
     @Override
@@ -49,7 +51,11 @@ public class OCMEntityDamageByEntityEvent extends Event {
         this.cause = cause;
         this.rawDamage = rawDamage;
 
-        if(!(damager instanceof LivingEntity)) return;
+        if(!(damager instanceof LivingEntity)){
+            setCancelled(true);
+            return;
+        }
+
         LivingEntity le = (LivingEntity) damager;
 
         EntityEquipment equipment = le.getEquipment();
@@ -189,5 +195,15 @@ public class OCMEntityDamageByEntityEvent extends Event {
 
     public void setCriticalMultiplier(double criticalMultiplier){
         this.criticalMultiplier = criticalMultiplier;
+    }
+
+    @Override
+    public boolean isCancelled(){
+        return cancelled;
+    }
+
+    @Override
+    public void setCancelled(boolean cancelled){
+        this.cancelled = cancelled;
     }
 }

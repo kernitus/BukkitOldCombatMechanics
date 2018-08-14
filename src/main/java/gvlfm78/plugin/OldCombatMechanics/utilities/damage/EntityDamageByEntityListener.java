@@ -38,6 +38,8 @@ public class EntityDamageByEntityListener extends Module {
 
         plugin.getServer().getPluginManager().callEvent(e);
 
+        if(e.isCancelled()) return;
+
         //Re-calculate modified damage and set it back to original event
         // Damage order: base + potion effects + critical hit + enchantments + armour effects
         double newDamage = e.getBaseDamage();
