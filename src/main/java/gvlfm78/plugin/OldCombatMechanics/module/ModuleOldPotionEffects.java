@@ -125,7 +125,7 @@ public class ModuleOldPotionEffects extends Module {
         return duration * 20;
     }
 
-    @EventHandler
+    @EventHandler (ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event){
         Entity damager = event.getDamager();
 

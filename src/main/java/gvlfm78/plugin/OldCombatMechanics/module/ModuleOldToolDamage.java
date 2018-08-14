@@ -17,7 +17,7 @@ public class ModuleOldToolDamage extends Module {
         super(plugin, "old-tool-damage");
     }
 
-    @EventHandler
+    @EventHandler (ignoreCancelled = true)
     public void onEntityDamaged(OCMEntityDamageByEntityEvent event){
         Entity damager = event.getDamager();
 
