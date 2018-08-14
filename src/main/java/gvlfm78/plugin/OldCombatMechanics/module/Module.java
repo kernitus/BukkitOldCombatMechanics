@@ -6,8 +6,8 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 /**
@@ -50,9 +50,9 @@ public class Module implements Listener {
         Messenger.debug("[" + moduleName + "] " + text);
     }
 
-    protected void debug(String text, Player p){
+    protected void debug(String text, CommandSender sender){
         if(Config.debugEnabled()){
-            Messenger.send(p, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
+            Messenger.send(sender, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
         }
     }
 

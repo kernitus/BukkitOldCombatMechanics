@@ -7,6 +7,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.*;
 import gvlfm78.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import gvlfm78.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -114,6 +115,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleSwordSweep(this));
 
         ModuleLoader.addModule(new ModuleOldPotionEffects(this));
+        ModuleLoader.addModule(new EntityDamageByEntityListener(this));
         ModuleLoader.addModule(new ModuleGoldenApple(this));
         ModuleLoader.addModule(new ModuleFishingKnockback(this));
         ModuleLoader.addModule(new ModulePlayerRegen(this));

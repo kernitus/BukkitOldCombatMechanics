@@ -1,6 +1,7 @@
-package gvlfm78.plugin.OldCombatMechanics.utilities;
+package gvlfm78.plugin.OldCombatMechanics.utilities.damage;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -12,7 +13,7 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
 
-    static void initialise(OCMMain plugin){
+    public static void initialise(OCMMain plugin){
         WeaponDamages.plugin = plugin;
         reload();
     }
