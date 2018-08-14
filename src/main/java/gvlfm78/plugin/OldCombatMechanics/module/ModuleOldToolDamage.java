@@ -1,71 +1,46 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.MobDamage;
-import kernitus.plugin.OldCombatMechanics.utilities.WeaponDamages;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.inventory.ItemStack;
 
 public class ModuleOldToolDamage extends Module {
 
-    private static ModuleOldToolDamage INSTANCE;
     private String[] weapons = {"sword", "axe", "pickaxe", "spade", "hoe"};
 
     public ModuleOldToolDamage(OCMMain plugin){
         super(plugin, "old-tool-damage");
-        INSTANCE = this;
     }
 
-    public static void onAttack(EntityDamageByEntityEvent e){
-        INSTANCE.onEntityDamaged(e);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDamaged(EntityDamageByEntityEvent e){
-        Entity damager = e.getDamager();
+    @EventHandler
+    public void onEntityDamaged(OCMEntityDamageByEntityEvent event){
+        Entity damager = event.getDamager();
 
         World world = damager.getWorld();
 
-        if(!(damager instanceof Player)) return;
+        if(!isEnabled(world)) return;
 
-        Player p = (Player) damager;
-        if(p.getInventory().getItemInMainHand() == null) return;
+        Material mat = event.getWeapon().getType();
 
-        Material mat = p.getInventory().getItemInMainHand().getType();
+        if(!isHolding(mat, weapons)) return;
 
-        if(isHolding(mat, weapons) && isEnabled(world))
-            onAttack(e, p, mat);
-    }
+        double weaponDamage = WeaponDamages.getDamage(mat);
+        if(weaponDamage <= 0) weaponDamage = 1;
 
-    private void onAttack(EntityDamageByEntityEvent e, Player p, Material mat){
-        ItemStack item = p.getInventory().getItemInMainHand();
-        EntityType entity = e.getEntityType();
+        double baseDamage = event.getBaseDamage();
 
-        double baseDamage = e.getDamage();
-        double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, baseDamage)
-                + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - baseDamage;
+        event.setBaseDamage(weaponDamage);
+        debug("Old tool damage: " + baseDamage + " New tool damage: " + weaponDamage, damager);
 
-        double divider = WeaponDamages.getDamage(mat);
-        if(divider <= 0) divider = 1;
-        double newDamage = (baseDamage - enchantmentDamage) / divider;
-        newDamage += enchantmentDamage;//Re-add damage from enchantments
-        if(newDamage < 0) newDamage = 0;
-        e.setDamage(newDamage);
-        debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage +
-                        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
-                , p);
-    }
-
-    private double getSharpnessDamage(int level){
-        return level >= 1 ? level * 1.25 : 0;
+        //Set sharpness to 1.8 damage value
+        double newSharpnessDamage = DamageUtils.getOldSharpnessDamage(event.getSharpnessLevel());
+        debug("Old sharpness damage: " + event.getSharpnessDamage() + " New: " + newSharpnessDamage, damager);
+        event.setSharpnessDamage(newSharpnessDamage);
     }
 
     private boolean isHolding(Material mat, String type){
@@ -79,5 +54,4 @@ public class ModuleOldToolDamage extends Module {
                 hasAny = true;
         return hasAny;
     }
-
 }

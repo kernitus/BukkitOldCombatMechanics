@@ -2,18 +2,17 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.MobDamage;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -40,6 +39,10 @@ public class ModuleOldPotionEffects extends Module {
         durations = ConfigUtils.loadPotionDurationsList(module());
     }
 
+    /**
+     * Change the duration using values defined in config
+     * for drinking potions
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
         ItemStack item = event.getItem();
@@ -70,11 +73,13 @@ public class ModuleOldPotionEffects extends Module {
         else pi.setItemInOffHand(new ItemStack(Material.AIR));
     }
 
+    /**
+     * Change the duration using values defined in config
+     * for splash potions
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPotionSplash(PotionSplashEvent event){
         event.setCancelled(true);
-        //Change the duration using item meta and set it back
-        //Use durations defined in config
 
         ThrownPotion thrownPotion = event.getPotion();
         ItemStack potion = thrownPotion.getItem();
@@ -108,10 +113,6 @@ public class ModuleOldPotionEffects extends Module {
         } else livingEntity.addPotionEffect(pe, false);
     }
 
-    private void amendPotionDuration(PotionMeta potionMeta){
-
-    }
-
     private int getPotionDuration(PotionData potionData){
         PotionType potionType = potionData.getType();
         GenericPotionDurations potionDurations = durations.get(potionType).getSplash();
@@ -124,95 +125,26 @@ public class ModuleOldPotionEffects extends Module {
         return duration * 20;
     }
 
-    // Original code for strength potions by Byteflux at https://github.com/MinelinkNetwork/LegacyStrength
-    // Heavily modified by kernitus to change 1.9+ effects into 1.8 effects
-    //@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onDamageByEntity(EntityDamageByEntityEvent event) {
-        Messenger.debug("Old potion effects module called");
+    @EventHandler
+    public void onDamageByEntity(OCMEntityDamageByEntityEvent event){
+        Entity damager = event.getDamager();
 
-        // Do nothing if event is inherited (hacky way to ignore mcMMO AoE attacks)
-        if (event.getClass() != EntityDamageByEntityEvent.class) return;
+        double weaknessModifier = event.getWeaknessModifier();
 
-        Messenger.debug("Event is not inherited");
+        if(weaknessModifier != 0){
+            event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
+            double newWeaknessModifier = module().getDouble("weakness.modifier");
+            event.setWeaknessModifier(newWeaknessModifier);
+            debug("Old weakness modifier: " + weaknessModifier + " New: " + newWeaknessModifier, damager);
+        }
 
-        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
+        double strengthModifier = event.getStrengthModifier();
 
-        Messenger.debug("It is an entity attack");
-
-        // Do nothing if damage is not directly from a player
-        Entity entity = event.getDamager();
-        if (!(entity instanceof Player)) return;
-
-        Messenger.debug("Damager is a player");
-
-        // Do nothing if player doesn't have the Strength effect
-        Player player = (Player) event.getDamager();
-        if (!player.hasPotionEffect(PotionEffectType.INCREASE_DAMAGE)) return;
-
-        Messenger.debug("Player has strength effect");
-
-        // event.setDamage(StrengthDamageHelper.convertDamage(player, event.getDamage()));
-
-        // Change damage to have Strength I be 130% instead of +3 and Strength II 260% instead of +6
-
-        // A critical hit is 150% of the weapon's damage including potion effects, but before enchantments are applied, rounded down to the nearest hit point
-
-        //todo try-catch in case number already used
-        /*PotionEffectType.INCREASE_DAMAGE.createEffect(1,1);
-        PotionEffectType.registerPotionEffectType(new PotionEffectType(50){
-            @Override
-            public double getDurationModifier() {
-                return 1;
-            }
-
-            @Override
-            public String getName() {
-                return "Old_Strength";
-            }
-
-            @Override
-            public boolean isInstant() {
-                return false;
-            }
-
-            @Override
-            public Color getColor(){
-                return Color.PURPLE;
-            }
-        });
-
-        onAttack(event, player);*/
-    }
-
-    private void onAttack(EntityDamageByEntityEvent e, Player p) {
-        ItemStack item = p.getInventory().getItemInMainHand();
-        Material mat = item.getType();
-        EntityType entity = e.getEntityType();
-
-        //The raw amount of damage, including enchantments, potion effects and critical hits (?)
-        double rawDamage = e.getDamage();
-
-        //The total damage added because of enchantments
-        double enchantmentDamage = (MobDamage.applyEntityBasedDamage(entity, item, rawDamage)
-                + getSharpnessDamage(item.getEnchantmentLevel(Enchantment.DAMAGE_ALL))) - rawDamage;
-
-        //Amount of damage including potion effects and critical hits
-        double noEnchDamage = rawDamage - enchantmentDamage;
-
-        PotionEffect fx = p.getPotionEffect(PotionEffectType.INCREASE_DAMAGE);
-        int amplifier = fx.getAmplifier();
-        //amp 0 = Strength I    amp 1 = Strength II
-
-        /*double newDamage = (baseDamage - enchantmentDamage) / divider;
-        newDamage += enchantmentDamage;//Re-add damage from enchantments
-        if (newDamage < 0) newDamage = 0;
-        e.setDamage(newDamage);
-        debug("Item: " + mat.toString() + " Old Damage: " + baseDamage + " Enchantment Damage: " + enchantmentDamage +
-                        " Divider: " + divider + " Afterwards damage: " + e.getFinalDamage() + " ======== New damage: " + newDamage
-                , p);*/
-    }
-
-    private double getSharpnessDamage(int level) {
-        return level >= 1 ? level * 1.25 : 0;
+        if(strengthModifier != 0){
+            event.setIsStrengthModifierMultiplier(module().getBoolean("strength.multiplier"));
+            double newStrengthModifier = module().getDouble("strength.modifier");
+            event.setStrengthModifier(newStrengthModifier);
+            debug("Old strength modifier: " + strengthModifier + " New: " + newStrengthModifier, damager);
+        }
     }
 }

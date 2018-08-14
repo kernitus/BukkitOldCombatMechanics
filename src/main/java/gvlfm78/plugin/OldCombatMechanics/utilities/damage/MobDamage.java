@@ -1,4 +1,4 @@
-package kernitus.plugin.OldCombatMechanics.utilities;
+package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import com.google.common.collect.ImmutableMap;
 import org.bukkit.enchantments.Enchantment;

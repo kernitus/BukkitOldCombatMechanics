@@ -5,6 +5,8 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -69,6 +71,10 @@ public class Config {
 
         // Load all interactive blocks (used by sword blocking and elytra modules)
         reloadInteractiveBlocks();
+
+        //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
+        EntityDamageByEntityListener.getINSTANCE().setEnabled(
+                moduleEnabled("old-tool-damage") || moduleEnabled("old-potion-effects"));
 
         // Dynamically registers / unregisters all event listeners for optimal performance!
         ModuleLoader.toggleModules();

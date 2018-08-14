@@ -1,11 +1,12 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.ToolDamage;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -59,15 +60,17 @@ public class ModuleSwordSweep extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e){
-        World world = e.getDamager().getWorld();
+        Entity damager = e.getDamager();
+        World world = damager.getWorld();
 
         if(!isEnabled(world)) return;
 
-        if(!(e.getDamager() instanceof Player)) return;
+        if(!(damager instanceof Player)) return;
 
         if(sweepDamageCause != null){
             if(e.getCause() == sweepDamageCause){
                 e.setCancelled(true);
+                debug("Sweep cancelled", damager);
             }
             // sweep attack detected or not, we do not need to fall back to the guessing implementation
             return;
@@ -103,7 +106,8 @@ public class ModuleSwordSweep extends Module {
             sweepLocations.add(location);
         }
 
-        ModuleOldToolDamage.onAttack(e);
+        //todo is this still necessary?
+        //ModuleOldToolDamage.onAttack(e);
     }
 
     private boolean isHoldingSword(Material mat){

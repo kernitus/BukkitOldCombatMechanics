@@ -1,6 +1,7 @@
-package kernitus.plugin.OldCombatMechanics.utilities;
+package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -12,7 +13,7 @@ public class WeaponDamages {
 
     private static OCMMain plugin;
 
-    static void initialise(OCMMain plugin){
+    public static void initialise(OCMMain plugin){
         WeaponDamages.plugin = plugin;
         reload();
     }

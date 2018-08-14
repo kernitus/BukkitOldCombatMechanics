@@ -89,6 +89,7 @@ disable-enderpearl-cooldown:
   
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
+  # IMPORTANT: Also enable disable-sword-sweep module or sweeps will have the damage value of the weapon in hand
   # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damage
   enabled: true
   worlds: []
@@ -101,29 +102,29 @@ old-tool-damage:
   # and adds back on the enchantment-added damage.
   damages:
     # Axe damages
-    GOLD_AXE: 2.333333
-    WOOD_AXE: 2.333333
-    STONE_AXE: 2.25
-    IRON_AXE: 1.8
-    DIAMOND_AXE: 1.5
+    GOLD_AXE: 3
+    WOOD_AXE: 3
+    STONE_AXE: 4
+    IRON_AXE: 5
+    DIAMOND_AXE: 6
     # Shovel damages
-    GOLD_SPADE: 2.5
-    WOOD_SPADE: 2.5
-    STONE_SPADE: 1.75
-    IRON_SPADE: 1.5
-    DIAMOND_SPADE: 1.375
+    GOLD_SPADE: 1
+    WOOD_SPADE: 1
+    STONE_SPADE: 2
+    IRON_SPADE: 3
+    DIAMOND_SPADE: 4
     # Sword damages
-    GOLD_SWORD: 1
-    WOOD_SWORD: 1
-    STONE_SWORD: 1
-    IRON_SWORD: 1
-    DIAMOND_SWORD: 1
+    GOLD_SWORD: 4
+    WOOD_SWORD: 4
+    STONE_SWORD: 5
+    IRON_SWORD: 6
+    DIAMOND_SWORD: 7
     # Pickaxe damages
-    GOLD_PICKAXE: 1
-    WOOD_PICKAXE: 1
-    STONE_PICKAXE: 1
-    IRON_PICKAXE: 1
-    DIAMOND_PICKAXE: 1
+    GOLD_PICKAXE: 2
+    WOOD_PICKAXE: 2
+    STONE_PICKAXE: 3
+    IRON_PICKAXE: 4
+    DIAMOND_PICKAXE: 5
     # Hoe damages
     GOLD_HOE: 1
     WOOD_HOE: 1
@@ -142,7 +143,7 @@ sword-blocking:
   # Whether shields can block damage entirely
   # In 1.8 blocking could only reduce to 1/2 a heart
   shieldFullBlock: false
-  # The minimum amount of damage, in half-hearts, if shieldFullBlock is enabled
+  # The minimum amount of damage, in half-hearts, if shieldFullBlock is disabled
   minimumDamage: 1.0
   # How often, it ticks, should OCM check if the player is still blocking with the shield and remove it if not
   # If this is too fast the player will have their shield disappear before they're able to block again causing a slight delay
@@ -385,10 +386,17 @@ old-potion-effects:
         extended: 360
 
   # EFFECTS
-  # Strength potion, damage is % increase
+  # If 'multiplier' is true value is multiplied by base tool damage, otherwise added
+  # Strength potion
+  # 1.9: I = +3; II = +6;    1.8: I = +130%; II = +260%
   strength:
-    damageI: 130
-    damageII: 260
+    modifier: 2.3
+    multiplier: true
+  # Weakness potion
+  # 1.9 value: -4   1.8 value: -0.5
+  weakness:
+    modifier: -0.5
+    multiplier: false
 
 ################################
 #### SUPPORT SETTINGS BELOW ####
@@ -405,4 +413,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 27
+config-version: 28
