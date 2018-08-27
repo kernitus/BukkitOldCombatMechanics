@@ -5,6 +5,7 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
+import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -28,6 +29,10 @@ import java.util.HashMap;
 public class ModuleOldPotionEffects extends Module {
 
     private HashMap<PotionType, PotionDurations> durations;
+    private PotionType[] excludedPotionTypes =
+            {PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL, PotionType.LUCK,
+                    PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK,
+                    PotionType.UNCRAFTABLE, PotionType.WATER};
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -47,11 +52,13 @@ public class ModuleOldPotionEffects extends Module {
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
         ItemStack item = event.getItem();
         if(item.getType() != Material.POTION) return;
-        event.setCancelled(true);
 
         PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
         PotionData potionData = potionMeta.getBasePotionData();
         PotionType potionType = potionData.getType();
+
+        if(isExcludedPotion(potionType)) return;
+        event.setCancelled(true);
 
         int duration = getPotionDuration(potionData);
 
@@ -68,9 +75,23 @@ public class ModuleOldPotionEffects extends Module {
         if(player.getGameMode() != GameMode.SURVIVAL) return;
 
         PlayerInventory pi = player.getInventory();
-        if(pi.getItemInMainHand().getType() == Material.POTION)
-            pi.setItemInMainHand(new ItemStack(Material.AIR));
-        else pi.setItemInOffHand(new ItemStack(Material.AIR));
+        ItemStack potionItem = pi.getItemInMainHand();
+        boolean isInMainHand = false;
+        if(item.equals(potionItem)) isInMainHand = true;
+
+        ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
+
+        int amount = item.getAmount() - 1;
+        //If it was just one potion set item to glass bottle
+        if(amount < 1)
+            item = glassBottle;
+        else {
+            item.setAmount(amount);
+            player.getInventory().addItem(glassBottle);
+        }
+
+        if(isInMainHand) pi.setItemInMainHand(item);
+        else pi.setItemInOffHand(item);
     }
 
     /**
@@ -79,14 +100,15 @@ public class ModuleOldPotionEffects extends Module {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPotionSplash(PotionSplashEvent event){
-        event.setCancelled(true);
-
         ThrownPotion thrownPotion = event.getPotion();
         ItemStack potion = thrownPotion.getItem();
         PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
 
         PotionEffect potionEffect = (PotionEffect) thrownPotion.getEffects().toArray()[0];
         PotionData potionData = potionMeta.getBasePotionData();
+
+        if(isExcludedPotion(potionData.getType())) return;
+        event.setCancelled(true);
 
         int duration = getPotionDuration(potionData);
 
@@ -95,6 +117,10 @@ public class ModuleOldPotionEffects extends Module {
         PotionEffect pe = new PotionEffect(pet, duration, potionEffect.getAmplifier());
 
         event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity,pet,pe));
+    }
+
+    private boolean isExcludedPotion(PotionType pt){
+        return ArrayUtils.contains(excludedPotionTypes, pt);
     }
 
     private void setNewPotionEffect(LivingEntity livingEntity, PotionEffectType pet, PotionEffect pe){
@@ -115,6 +141,7 @@ public class ModuleOldPotionEffects extends Module {
 
     private int getPotionDuration(PotionData potionData){
         PotionType potionType = potionData.getType();
+        debug("Potion type: " + potionType.name());
         GenericPotionDurations potionDurations = durations.get(potionType).getSplash();
 
         int duration;
