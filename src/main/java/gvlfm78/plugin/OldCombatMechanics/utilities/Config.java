@@ -17,6 +17,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -81,7 +82,14 @@ public class Config {
 
         ModuleLoader.getModules().stream()
                 .filter(Module::isEnabled)
-                .forEach(Module::reload);
+                .forEach(module -> {
+                    try{
+                        module.reload();
+                    } catch(Exception e){
+                        plugin.getLogger()
+                                .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
+                    }
+                });
 
         //Setting correct attack speed and armour values for online players
         Bukkit.getOnlinePlayers().forEach(player -> {
