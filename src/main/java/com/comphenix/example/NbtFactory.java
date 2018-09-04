@@ -6,6 +6,8 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.google.common.primitives.Primitives;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -50,7 +52,7 @@ public class NbtFactory {
 
                 // Prepare NBT
                 COMPOUND_CLASS = getMethod(0, Modifier.STATIC, offlinePlayer, "getData").getReturnType();
-                BASE_CLASS = COMPOUND_CLASS.getSuperclass();
+                BASE_CLASS = Reflector.getClass(ClassType.NMS, "NBTBase");
                 NBT_GET_TYPE = getMethod(0, Modifier.STATIC, BASE_CLASS, "getTypeId");
                 NBT_CREATE_TAG = getMethod(Modifier.STATIC, 0, BASE_CLASS, "createTag", byte.class);
 
