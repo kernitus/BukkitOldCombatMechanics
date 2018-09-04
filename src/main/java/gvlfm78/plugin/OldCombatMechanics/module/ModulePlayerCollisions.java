@@ -45,7 +45,9 @@ public class ModulePlayerCollisions extends Module {
         if(isEnabled(e.getPlayer().getWorld())){
             TeamUtils.sendTeamPacket(e.getPlayer());
         } else {
-            TeamUtils.sendTeamRemovePacket(e.getPlayer());
+            if(module().getBoolean("enableTeamDisbanding", true)){
+                TeamUtils.sendTeamRemovePacket(e.getPlayer());
+            }
         }
     }
 
