@@ -55,10 +55,12 @@ public class ModuleSwordSweep extends Module {
                 sweepLocations.clear();
             }
         };
+
         task.runTaskTimer(plugin, 0, 1);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    //Changed from HIGHEST to LOWEST to support DamageIndicator plugin
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e){
         Entity damager = e.getDamager();
         World world = damager.getWorld();
@@ -91,8 +93,7 @@ public class ModuleSwordSweep extends Module {
 
         try{ //In a try catch for servers that haven't updated
             level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
-        } catch(NoSuchFieldError ignored){
-        }
+        } catch(NoSuchFieldError ignored) { }
 
         float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
@@ -105,9 +106,6 @@ public class ModuleSwordSweep extends Module {
         } else {
             sweepLocations.add(location);
         }
-
-        //todo is this still necessary?
-        //ModuleOldToolDamage.onAttack(e);
     }
 
     private boolean isHoldingSword(Material mat){
