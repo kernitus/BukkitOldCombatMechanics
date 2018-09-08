@@ -17,7 +17,6 @@ import java.util.Arrays;
  */
 
 public class Reflector {
-    private static Method PLAYER_HANDLE;
     private static String version = "";
 
     static{
@@ -26,8 +25,6 @@ public class Reflector {
 
             Class<?> CRAFT_PLAYER = getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer");
             assert CRAFT_PLAYER != null;
-
-            PLAYER_HANDLE = getMethod(CRAFT_PLAYER, "getHandle");
 
         } catch(Exception e){
             System.err.println("Failed to load Reflector");
@@ -113,7 +110,7 @@ public class Reflector {
         }
     }
 
-    public static Field getInaccessibleField(Class<?> clazz, String fieldName) throws Exception{
+    public static Field getInaccessibleField(Class<?> clazz, String fieldName){
         Field field = getField(clazz, fieldName);
         field.setAccessible(true);
         return field;

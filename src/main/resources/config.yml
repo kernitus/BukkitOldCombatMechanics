@@ -40,7 +40,6 @@ disable-player-collisions:
   # This is now compatible with scoreboard and tablist-editing plugins
   enabled: false
   worlds: []
-  enableTeamDisbanding: true
 
 disable-sword-sweep:
   # This is to disable the sword sweep attack
