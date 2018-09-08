@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.io.File;
+import java.util.Locale;
 
 public class ModuleUpdateChecker extends Module {
     private static Module INSTANCE;
@@ -22,7 +23,7 @@ public class ModuleUpdateChecker extends Module {
     }
 
     public static String getMode(){
-        return INSTANCE.module().getString("mode").toLowerCase();
+        return INSTANCE.module().getString("mode").toLowerCase(Locale.ROOT);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
