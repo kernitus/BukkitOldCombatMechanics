@@ -21,6 +21,7 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ModuleOldArmourStrength extends Module {
     private static final String ARMOR_MARK = "ArmorModifier";
@@ -111,7 +112,7 @@ public class ModuleOldArmourStrength extends Module {
     }
 
     private static String getSlotForType(Material type){
-        String typeName = type.toString().toLowerCase();
+        String typeName = type.toString().toLowerCase(Locale.ROOT);
 
         if(typeName.endsWith("helmet")){
             return "head";

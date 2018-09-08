@@ -6,6 +6,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
+import java.util.Locale;
+
 public class ModuleProjectileKnockback extends Module {
 
     public ModuleProjectileKnockback(OCMMain plugin){
@@ -22,7 +24,7 @@ public class ModuleProjectileKnockback extends Module {
             case SNOWBALL:
             case EGG:
             case ENDER_PEARL:
-                e.setDamage(module().getDouble("damage." + type.toString().toLowerCase()));
+                e.setDamage(module().getDouble("damage." + type.toString().toLowerCase(Locale.ROOT)));
             default:
                 break;
         }

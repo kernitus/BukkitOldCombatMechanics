@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 
 import java.io.File;
+import java.util.Locale;
 
 public class OCMCommandHandler implements CommandExecutor {
     private static final String NO_PERMISSION = "&cYou need the permission '%s' to do that!";
@@ -47,7 +48,7 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         // Get the sub-command
-        String sub = args[0].toLowerCase();
+        String sub = args[0].toLowerCase(Locale.ROOT);
 
         if(sub.equals("reload")){// Reloads config
             if(!sender.hasPermission("oldcombatmechanics.reload")){

@@ -9,6 +9,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 
+import java.util.Locale;
+
 public class ModuleOldToolDamage extends Module {
 
     private String[] weapons = {"sword", "axe", "pickaxe", "spade", "hoe"};
@@ -44,7 +46,7 @@ public class ModuleOldToolDamage extends Module {
     }
 
     private boolean isHolding(Material mat, String type){
-        return mat.toString().endsWith("_" + type.toUpperCase());
+        return mat.toString().endsWith("_" + type.toUpperCase(Locale.ROOT));
     }
 
     private boolean isHolding(Material mat, String[] types){
