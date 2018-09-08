@@ -60,7 +60,7 @@ public class ModuleOldPotionEffects extends Module {
         if(isExcludedPotion(potionType)) return;
         event.setCancelled(true);
 
-        int duration = getPotionDuration(potionData);
+        int duration = getPotionDuration(potionData, true);
 
         PotionEffectType pet = potionType.getEffectType();
 
@@ -110,7 +110,7 @@ public class ModuleOldPotionEffects extends Module {
         if(isExcludedPotion(potionData.getType())) return;
         event.setCancelled(true);
 
-        int duration = getPotionDuration(potionData);
+        int duration = getPotionDuration(potionData, true);
 
         PotionEffectType pet = potionEffect.getType();
 
@@ -139,10 +139,14 @@ public class ModuleOldPotionEffects extends Module {
         } else livingEntity.addPotionEffect(pe, false);
     }
 
-    private int getPotionDuration(PotionData potionData){
+    private int getPotionDuration(PotionData potionData, boolean splash){
         PotionType potionType = potionData.getType();
         debug("Potion type: " + potionType.name());
-        GenericPotionDurations potionDurations = durations.get(potionType).getSplash();
+
+        GenericPotionDurations potionDurations;
+
+        if(splash) potionDurations = durations.get(potionType).getSplash();
+        else potionDurations = durations.get(potionType).getDrinkable();
 
         int duration;
         if(potionData.isExtended()) duration = potionDurations.getExtendedTime();
