@@ -70,7 +70,7 @@ public class ConfigUtils {
             ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
             ConfigurationSection splash = potionSection.getConfigurationSection("splash");
 
-            PotionType potionType = PotionType.valueOf(potionName.toUpperCase());
+            PotionType potionType = PotionType.valueOf(potionName.toUpperCase(Locale.ROOT));
             durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
         }
 
