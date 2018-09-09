@@ -1,7 +1,13 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep.SweepPacketDetector;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -12,6 +18,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -26,9 +33,12 @@ public class ModuleSwordSweep extends Module {
     private BukkitRunnable task;
     private List<Location> sweepLocations = new ArrayList<>();
     private EntityDamageEvent.DamageCause sweepDamageCause;
+    private ParticleListener particleListener;
 
     public ModuleSwordSweep(OCMMain plugin){
         super(plugin, "disable-sword-sweep");
+
+        this.particleListener = new ParticleListener();
 
         try{
             // Will be available from some 1.11 version onwards
@@ -36,6 +46,14 @@ public class ModuleSwordSweep extends Module {
         } catch(IllegalArgumentException e){
             sweepDamageCause = null;
         }
+
+
+        // inject all players at startup, so the plugin still works properly after a reload
+        OCMMain.getInstance().addEnableListener(() -> {
+            for(Player player : Bukkit.getOnlinePlayers()){
+                PacketManager.getInstance().addListener(particleListener, player);
+            }
+        });
     }
 
     @Override
@@ -57,6 +75,12 @@ public class ModuleSwordSweep extends Module {
         };
 
         task.runTaskTimer(plugin, 0, 1);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerLogin(PlayerJoinEvent e){
+        // always attach the listener, it checks internally
+        PacketManager.getInstance().addListener(particleListener, e.getPlayer());
     }
 
     //Changed from HIGHEST to LOWEST to support DamageIndicator plugin
@@ -112,4 +136,29 @@ public class ModuleSwordSweep extends Module {
         return mat.toString().endsWith("_SWORD");
     }
 
+    private class ParticleListener extends PacketAdapter {
+
+        private boolean disabledDueToError;
+
+        @Override
+        public void onPacketSend(PacketEvent packetEvent){
+            if(disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())){
+                return;
+            }
+
+            try{
+                if(SweepPacketDetector.getInstance().isSweepPacket(packetEvent.getPacket())){
+                    packetEvent.setCancelled(true);
+                }
+            } catch(Exception e){
+                disabledDueToError = true;
+                Messenger.warn(
+                        e,
+                        "Error detecting sweep packets. Please report it along with the following exception " +
+                                "on github." +
+                                "Sweep cancellation should still work, but particles might show up."
+                );
+            }
+        }
+    }
 }
