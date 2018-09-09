@@ -40,6 +40,44 @@ public class Reflector {
         return version;
     }
 
+    /**
+     * Checks if the current server version is newer or equal to the one provided.
+     *
+     * @param major the target major version
+     * @param minor the target minor version. 0 for all
+     * @param patch the target patch version. 0 for all
+     * @return true of the server version is newer or equal to the one provided
+     */
+    public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch){
+        if(getMajorVersion() < major){
+            return false;
+        }
+        if(getMinorVersion() < minor){
+            return false;
+        }
+        return getPatchVersion() >= patch;
+    }
+
+    private static int getMajorVersion(){
+        return Integer.parseInt(getVersionSanitized().split("_")[0]);
+    }
+
+    private static String getVersionSanitized(){
+        return getVersion().replaceAll("[^\\d_]", "");
+    }
+
+    private static int getMinorVersion(){
+        return Integer.parseInt(getVersionSanitized().split("_")[1]);
+    }
+
+    private static int getPatchVersion(){
+        String[] split = getVersionSanitized().split("_");
+        if(split.length < 3){
+            return 0;
+        }
+        return Integer.parseInt(split[2]);
+    }
+
     public static Class<?> getClass(ClassType type, String name){
         try{
             return Class.forName(String.format("%s.%s.%s", type.getPackage(), version, name));
@@ -55,10 +93,6 @@ public class Reflector {
                 .filter(method -> method.getName().equals(name))
                 .findFirst()
                 .orElse(null);
-    }
-
-    public static void invokeMethod(Object object, String name, Object... params) throws InvocationTargetException, IllegalAccessException{
-        getMethod((object.getClass()), name).invoke(object, params);
     }
 
     public static <T> T invokeMethod(Method method, Object handle, Object... params){
