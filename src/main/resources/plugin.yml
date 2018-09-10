@@ -6,6 +6,7 @@ description: Reverts to pre-1.9 combat mechanics
 website: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics
 load: POSTWORLD
 softdepend: [PlaceholderAPI, Spartan]
+api-version: 1.13
 
 commands:
   OldCombatMechanics:
