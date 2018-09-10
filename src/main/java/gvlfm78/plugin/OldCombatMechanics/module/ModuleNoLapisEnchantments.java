@@ -15,9 +15,16 @@ import org.bukkit.permissions.Permissible;
 
 public class ModuleNoLapisEnchantments extends Module {
 
+    private Material lapisLazuliMaterial;
 
     public ModuleNoLapisEnchantments(OCMMain plugin){
         super(plugin, "no-lapis-enchantments");
+
+        try{
+            lapisLazuliMaterial = Material.valueOf("INK_SACK");
+        } catch(IllegalArgumentException ignored){
+            lapisLazuliMaterial = Material.LAPIS_LAZULI;
+        }
     }
 
     @EventHandler
@@ -40,10 +47,16 @@ public class ModuleNoLapisEnchantments extends Module {
         if(!hasPermission(e.getWhoClicked())) return;
 
         ItemStack item = e.getCurrentItem();
-        if(item != null && (
-                (item.getType() == Material.INK_SACK && e.getRawSlot() == 1) ||
-                        (e.getCursor() != null && e.getCursor().getType() == Material.INK_SACK && e.getClick() == ClickType.DOUBLE_CLICK)))
+
+        if(item == null){
+            return;
+        }
+
+        if(item.getType() == lapisLazuliMaterial && e.getRawSlot() == 1){
             e.setCancelled(true);
+        } else if(e.getCursor() != null && e.getCursor().getType() == lapisLazuliMaterial && e.getClick() == ClickType.DOUBLE_CLICK){
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
