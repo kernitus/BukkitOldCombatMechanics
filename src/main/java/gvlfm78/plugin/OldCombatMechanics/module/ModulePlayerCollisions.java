@@ -30,7 +30,7 @@ public class ModulePlayerCollisions extends Module {
         });
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLogin(PlayerJoinEvent e){
         if(isEnabled(e.getPlayer().getWorld())){
             TeamUtils.sendTeamPacket(e.getPlayer());
