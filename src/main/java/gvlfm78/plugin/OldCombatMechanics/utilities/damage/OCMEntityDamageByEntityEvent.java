@@ -11,6 +11,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
@@ -25,7 +26,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         return handlers;
     }
 
-    public static HandlerList getHandlerList(){ return handlers;}
+    public static HandlerList getHandlerList(){
+        return handlers;
+    }
 
     private Entity damager, damagee;
     private DamageCause cause;
@@ -63,19 +66,19 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         EntityType entity = damagee.getType();
 
-        debug(le,"Raw damage: " + rawDamage);
+        debug(le, "Raw damage: " + rawDamage);
 
         mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(entity, weapon, rawDamage) - rawDamage;
 
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
-        debug(le,"Mob: " + mobEnchantmentsDamage + " Sharpness: " + sharpnessDamage);
+        debug(le, "Mob: " + mobEnchantmentsDamage + " Sharpness: " + sharpnessDamage);
 
         //Amount of damage including potion effects and critical hits
-        double tempDamage =  rawDamage - mobEnchantmentsDamage - sharpnessDamage;
+        double tempDamage = rawDamage - mobEnchantmentsDamage - sharpnessDamage;
 
-        debug(le,"No ench damage: " + tempDamage);
+        debug(le, "No ench damage: " + tempDamage);
 
         //Check if it's a critical hit
         if(le instanceof Player){
@@ -83,26 +86,29 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             if(DamageUtils.isCriticalHit(player)){
                 criticalMultiplier = 1.5;
                 tempDamage /= 1.5;
-                debug(player,"Critical hit detected");
+                debug(player, "Critical hit detected");
             }
         }
 
         //amplifier 0 = Strength I    amplifier 1 = Strength II
-        int amplifier = le.hasPotionEffect(PotionEffectType.INCREASE_DAMAGE) ?
-                le.getPotionEffect(PotionEffectType.INCREASE_DAMAGE).getAmplifier() : -1;
+        int amplifier = le.getActivePotionEffects().stream()
+                .filter(potionEffect -> potionEffect.getType().equals(PotionEffectType.INCREASE_DAMAGE))
+                .findAny()
+                .map(PotionEffect::getAmplifier)
+                .orElse(-1);
 
         strengthLevel = ++amplifier;
 
-        strengthModifier = strengthLevel *3;
+        strengthModifier = strengthLevel * 3;
 
-        debug(le,"Strength Modifier: " + strengthModifier);
+        debug(le, "Strength Modifier: " + strengthModifier);
 
         if(le.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
 
-        debug(le,"Weakness Modifier: " + weaknessModifier);
+        debug(le, "Weakness Modifier: " + weaknessModifier);
 
         baseDamage = tempDamage + weaknessModifier - strengthModifier;
-        debug(le,"Base tool damage: " + baseDamage);
+        debug(le, "Base tool damage: " + baseDamage);
     }
 
     public Entity getDamager(){

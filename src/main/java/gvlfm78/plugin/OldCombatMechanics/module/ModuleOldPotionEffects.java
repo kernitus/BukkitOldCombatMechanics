@@ -34,7 +34,7 @@ public class ModuleOldPotionEffects extends Module {
                     PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK,
                     PotionType.UNCRAFTABLE, PotionType.WATER};
 
-    public ModuleOldPotionEffects(OCMMain plugin) {
+    public ModuleOldPotionEffects(OCMMain plugin){
         super(plugin, "old-potion-effects");
         reload();
     }
@@ -69,7 +69,7 @@ public class ModuleOldPotionEffects extends Module {
         PotionEffect pe = new PotionEffect(pet, duration, amplifier);
 
         Player player = event.getPlayer();
-        setNewPotionEffect(player,pet,pe);
+        setNewPotionEffect(player, pet, pe);
 
         //Remove item from hand since we cancelled the event
         if(player.getGameMode() != GameMode.SURVIVAL) return;
@@ -116,7 +116,7 @@ public class ModuleOldPotionEffects extends Module {
 
         PotionEffect pe = new PotionEffect(pet, duration, potionEffect.getAmplifier());
 
-        event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity,pet,pe));
+        event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity, pet, pe));
     }
 
     private boolean isExcludedPotion(PotionType pt){
@@ -125,7 +125,10 @@ public class ModuleOldPotionEffects extends Module {
 
     private void setNewPotionEffect(LivingEntity livingEntity, PotionEffectType pet, PotionEffect pe){
         if(livingEntity.hasPotionEffect(pet)){
-            PotionEffect activepe = livingEntity.getPotionEffect(pet);
+            PotionEffect activepe = livingEntity.getActivePotionEffects().stream()
+                    .filter(potionEffect -> potionEffect.getType().equals(pet))
+                    .findAny()
+                    .orElseThrow(() -> new RuntimeException("Couldn't find potion effect"));
 
             int remainingDuration = activepe.getDuration();
 
@@ -156,7 +159,7 @@ public class ModuleOldPotionEffects extends Module {
         return duration * 20;
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event){
         Entity damager = event.getDamager();
 
