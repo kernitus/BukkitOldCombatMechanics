@@ -13,26 +13,27 @@ If you are interested in contributing, please [check this page first](.github/CO
 
 ## Features
 - Master & per-world toggle for each module
+- All modules are fully customisable
 - Remove weapon cooldown
-- Disable player collisions
-- Setting tool damage as in pre-1.9 (customisable)
+- Setting tool damage as in pre-1.9
+- Make players regenerate like in pre-1.9 & with correct exhaustion
+- Give players a shield while they right click with a sword
+- Have armour be as strong as in pre-1.9
 - Disable sword sweep attack
+- Option to disable shield crafting
+- Disable off-hand (with white/blacklist)
+- Make shields block 1/2 a heart instead of reduce damage to 33%
+- Have arrows not be stopped by shields
+- Re-add snowball, egg & enderpearl knockback
+- Disable player collisions
 - Enchanted golden apple crafting
 - Customisable enchanted & golden apple potion effects
 - Fishing rods knockback and damage like in pre-1.9 (customisable)
-- Make players regenerate like in pre-1.9 & with correct exhaustion (customisable)
-- Give players a shield while they right click with a sword
-- Have armour be as strong as in pre-1.9 (customisable)
-- Option to disable shield crafting
-- Disable off-hand (with white/blacklist)
 - Automatically add blaze powder to brewing stands
 - Automatically add lapis in enchanting tables
 - Stop usage of elytra
-- Make shields block 1/2 a heart instead of reduce damage to 33%
-- Have arrows not be stopped by shields
 - Disable random projectile trajectories
 - Disable bow boosting
-- Re-add snowball, egg & enderpearl knockback
 
 ## Installing
 To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
@@ -51,9 +52,6 @@ Development versions are available on the [OldCombatMechanics Jenkins server](ht
     <img src="https://media-elerium.cursecdn.com/attachments/202/434/jenkins.png" alt="Jenkins" height="100">
 </a>
 
+<hr/>
 
-<!--
-MCStats is broken :(
-
-![MCStats](http://i.mcstats.org/OldCombatMechanics/Global+Statistics.borderless.png)
--->
+![bStats](https://bstats.org/signatures/Bukkit/OldCombatMechanics.svg)
