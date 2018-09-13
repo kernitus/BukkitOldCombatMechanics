@@ -5,6 +5,7 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
+import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -34,7 +35,7 @@ public class ModuleOldPotionEffects extends Module {
                     PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK,
                     PotionType.UNCRAFTABLE, PotionType.WATER};
 
-    public ModuleOldPotionEffects(OCMMain plugin) {
+    public ModuleOldPotionEffects(OCMMain plugin){
         super(plugin, "old-potion-effects");
         reload();
     }
@@ -69,7 +70,7 @@ public class ModuleOldPotionEffects extends Module {
         PotionEffect pe = new PotionEffect(pet, duration, amplifier);
 
         Player player = event.getPlayer();
-        setNewPotionEffect(player,pet,pe);
+        setNewPotionEffect(player, pet, pe);
 
         //Remove item from hand since we cancelled the event
         if(player.getGameMode() != GameMode.SURVIVAL) return;
@@ -116,7 +117,7 @@ public class ModuleOldPotionEffects extends Module {
 
         PotionEffect pe = new PotionEffect(pet, duration, potionEffect.getAmplifier());
 
-        event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity,pet,pe));
+        event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity, pet, pe));
     }
 
     private boolean isExcludedPotion(PotionType pt){
@@ -125,7 +126,7 @@ public class ModuleOldPotionEffects extends Module {
 
     private void setNewPotionEffect(LivingEntity livingEntity, PotionEffectType pet, PotionEffect pe){
         if(livingEntity.hasPotionEffect(pet)){
-            PotionEffect activepe = livingEntity.getPotionEffect(pet);
+            PotionEffect activepe = PotionEffects.getOrNull(livingEntity, pet);
 
             int remainingDuration = activepe.getDuration();
 
@@ -156,7 +157,7 @@ public class ModuleOldPotionEffects extends Module {
         return duration * 20;
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event){
         Entity damager = event.getDamager();
 
