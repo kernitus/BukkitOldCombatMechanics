@@ -48,7 +48,7 @@ Development versions are available on the [OldCombatMechanics Jenkins server](ht
 <a href="http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/">
     <img src="https://media-elerium.cursecdn.com/attachments/202/436/bukkit.png" alt="Bukkit" height="100">
 </a>
-<a href="https://jenkinsgvl-jenkins-gvl.1d35.starter-us-east-1.openshiftapps.com/job/OldCombatMechanics">
+<a href="http://ci.rayzr.tech/job/OldCombatMechanics/">
     <img src="https://media-elerium.cursecdn.com/attachments/202/434/jenkins.png" alt="Jenkins" height="100">
 </a>
 
