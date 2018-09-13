@@ -5,6 +5,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -125,10 +126,7 @@ public class ModuleOldPotionEffects extends Module {
 
     private void setNewPotionEffect(LivingEntity livingEntity, PotionEffectType pet, PotionEffect pe){
         if(livingEntity.hasPotionEffect(pet)){
-            PotionEffect activepe = livingEntity.getActivePotionEffects().stream()
-                    .filter(potionEffect -> potionEffect.getType().equals(pet))
-                    .findAny()
-                    .orElseThrow(() -> new RuntimeException("Couldn't find potion effect"));
+            PotionEffect activepe = PotionEffects.getOrNull(livingEntity, pet);
 
             int remainingDuration = activepe.getDuration();
 

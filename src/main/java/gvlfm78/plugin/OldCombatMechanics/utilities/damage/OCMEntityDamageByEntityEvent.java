@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -91,9 +92,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         }
 
         //amplifier 0 = Strength I    amplifier 1 = Strength II
-        int amplifier = le.getActivePotionEffects().stream()
-                .filter(potionEffect -> potionEffect.getType().equals(PotionEffectType.INCREASE_DAMAGE))
-                .findAny()
+        int amplifier = PotionEffects.get(le, PotionEffectType.INCREASE_DAMAGE)
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1);
 
