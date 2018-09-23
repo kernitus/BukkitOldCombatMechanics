@@ -61,7 +61,7 @@ public class ModuleOldPotionEffects extends Module {
         if(isExcludedPotion(potionType)) return;
         event.setCancelled(true);
 
-        int duration = getPotionDuration(potionData, true);
+        int duration = getPotionDuration(potionData, false);
 
         PotionEffectType pet = potionType.getEffectType();
 
