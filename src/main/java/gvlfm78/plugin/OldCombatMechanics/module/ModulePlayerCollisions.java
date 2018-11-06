@@ -68,6 +68,7 @@ public class ModulePlayerCollisions extends Module {
             teamPacket.setCollisionRule(collisionRule);
             teamPacket.send(player);
         } else {
+            debug("Fake collision team created for you.", player);
             createAndSendNewTeam(player, collisionRule);
         }
     }
@@ -106,10 +107,6 @@ public class ModulePlayerCollisions extends Module {
                 return;
             }
 
-            if(!isEnabled(packetEvent.getPlayer().getWorld())){
-                return;
-            }
-
             Object nmsPacket = packetEvent.getPacket().getNMSPacket();
 
             CollisionRule collisionRule = isEnabled(packetEvent.getPlayer().getWorld())
@@ -119,36 +116,46 @@ public class ModulePlayerCollisions extends Module {
             updateToPacket(
                     packetEvent.getPlayer(),
                     playerTeamMap.computeIfAbsent(packetEvent.getPlayer(), player -> new TeamPacket()),
-                    nmsPacket,
-                    collisionRule
+                    nmsPacket
             );
 
             // Also update the team when a player was added/removed
             if(TeamUtils.targetsPlayer(nmsPacket, packetEvent.getPlayer())){
                 updateToPacket(
-                        packetEvent.getPlayer(), playerTeamMap.get(packetEvent.getPlayer()), nmsPacket, collisionRule
+                        packetEvent.getPlayer(), playerTeamMap.get(packetEvent.getPlayer()), nmsPacket
                 );
             }
 
+            // always update, only react when enabled
+            if(!isEnabled(packetEvent.getPlayer().getWorld())){
+                return;
+            }
+
             Messenger.debug(
-                    "Collision rule is %s for action %s in world %sA",
+                    "Collision rule set to %s for action %s in world %s.",
                     collisionRule,
                     TeamUtils.getPacketAction(nmsPacket),
                     packetEvent.getPlayer().getWorld().getName()
             );
 
             TeamUtils.setCollisionRule(nmsPacket, collisionRule);
+
+            // Reinstate if it was disbanded to have the correct rule
+            TeamPacket teamPacket = playerTeamMap.get(packetEvent.getPlayer());
+            if(teamPacket == null || !teamPacket.teamExists()){
+                createAndSendNewTeam(packetEvent.getPlayer(), collisionRule);
+            }
         }
 
         /**
          * Updates the given {@link TeamPacket} to the NMS packet and removes it from the cache, if it was disbanded.
          */
-        private void updateToPacket(Player player, TeamPacket teamPacket, Object nmsPacket, CollisionRule collisionRule){
+        private void updateToPacket(Player player, TeamPacket teamPacket, Object nmsPacket){
             teamPacket.adjustToUpdate(nmsPacket);
 
             if(!teamPacket.teamExists()){
-                debug("Recreated team due to disband", player);
-                createAndSendNewTeam(player, collisionRule);
+                playerTeamMap.remove(player);
+                debug("Your team was disbanded.", player);
             }
         }
     }
