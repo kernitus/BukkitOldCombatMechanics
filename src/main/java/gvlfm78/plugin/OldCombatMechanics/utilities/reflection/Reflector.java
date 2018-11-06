@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.function.Function;
 
 /**
  * Created by Rayzr522 on 7/11/16.
@@ -100,6 +101,23 @@ public class Reflector {
         } catch(IllegalAccessException | InvocationTargetException e){
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Resolves the given method, caches it and then uses that instance for all future invocations.
+     * <p>
+     * The returned function just invokes the cached method for a given target.
+     *
+     * @param clazz  the clazz the method is in
+     * @param name   the name of the method
+     * @param params the parameters for the method call
+     * @param <T>    the type of the handle
+     * @param <R>    the type of the method result
+     * @return a function that invokes the retrieved cached method for its argument
+     */
+    public static <T, R> Function<T, R> memoizeMethodAndInvoke(Class<T> clazz, String name, Object... params){
+        Method method = getMethod(clazz, name);
+        return t -> invokeMethod(method, t, params);
     }
 
     public static Field getField(Class<?> clazz, String fieldName){
