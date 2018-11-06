@@ -9,10 +9,10 @@ import io.netty.channel.ChannelPromise;
 import org.bukkit.entity.Player;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +25,8 @@ class PacketInjector extends ChannelDuplexHandler {
 
     private boolean isClosed;
     private Channel channel;
-    private List<PacketListener> packetListeners = new ArrayList<>();
+    // There are a lot more reads than writes, so performance should be okay
+    private List<PacketListener> packetListeners = new CopyOnWriteArrayList<>();
     private WeakReference<Player> playerWeakReference;
 
     /**
@@ -157,7 +158,9 @@ class PacketInjector extends ChannelDuplexHandler {
 
         for(PacketListener packetListener : packetListeners){
             try{
-                packetListener.onPacketSend(event);
+                if(!isClosed){
+                    packetListener.onPacketSend(event);
+                }
             } catch(Exception e){
                 LOGGER.log(Level.WARNING,
                         "Error in a Packet Listener (send). Nag the author of that plugin!", e);
@@ -189,7 +192,9 @@ class PacketInjector extends ChannelDuplexHandler {
 
         for(PacketListener packetListener : packetListeners){
             try{
-                packetListener.onPacketReceived(event);
+                if(!isClosed){
+                    packetListener.onPacketReceived(event);
+                }
             } catch(Exception e){
                 LOGGER.log(Level.WARNING,
                         "Error in a Packet Listener (receive). Nag the author of that plugin!", e);
