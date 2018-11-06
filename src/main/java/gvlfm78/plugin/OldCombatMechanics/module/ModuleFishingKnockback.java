@@ -3,6 +3,8 @@ package gvlfm78.plugin.OldCombatMechanics.module;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.MemoizingFeatureBranch;
+import gvlfm78.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -25,8 +27,18 @@ import java.util.EnumMap;
 
 public class ModuleFishingKnockback extends Module {
 
+    private MemoizingFeatureBranch<PlayerFishEvent, Entity> hookEntityFeature;
+
     public ModuleFishingKnockback(OCMMain plugin){
         super(plugin, "old-fishing-knockback");
+
+        //noinspection Convert2MethodRef as the Method reference would error at initialization, not just when invoked
+        hookEntityFeature = MemoizingFeatureBranch.onException(
+                playerFishEvent -> playerFishEvent.getHook(),
+                playerFishEvent -> playerFishEvent.getHook(),
+                // fall back to reflection on 1.12 and suck up some performance penalty
+                Reflector.memoizeMethodAndInvoke(PlayerFishEvent.class, "getHook")
+        );
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -130,7 +142,7 @@ public class ModuleFishingKnockback extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e){
         if(!isSettingEnabled("cancelDraggingIn") || e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
-        e.getHook().remove(); //Nuke the bobber and don't do anything else
+        hookEntityFeature.apply(e).remove(); //Nuke the bobber and don't do anything else
         e.setCancelled(true);
     }
 
