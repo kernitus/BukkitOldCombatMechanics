@@ -24,14 +24,10 @@ import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.util.Vector;
 
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class ModuleFishingKnockback extends Module {
 
     private MemoizingFeatureBranch<PlayerFishEvent, Entity> hookEntityFeature;
-    private Map<UUID, Long> lastHitTime = new HashMap<>();
 
     public ModuleFishingKnockback(OCMMain plugin){
         super(plugin, "old-fishing-knockback");
@@ -43,11 +39,6 @@ public class ModuleFishingKnockback extends Module {
                 // fall back to reflection on 1.12 and suck up some performance penalty
                 Reflector.memoizeMethodAndInvoke(PlayerFishEvent.class, "getHook")
         );
-    }
-
-    @Override
-    public void reload(){
-        lastHitTime.clear();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -87,11 +78,8 @@ public class ModuleFishingKnockback extends Module {
         if(player.getGameMode() == GameMode.CREATIVE) return;
 
         //Check if cooldown time has elapsed
-        UUID playerUUID = player.getUniqueId();
-        if(lastHitTime.containsKey(playerUUID)){
-            long lastHitTime = this.lastHitTime.get(playerUUID);
-            if(System.currentTimeMillis() - lastHitTime < module().getLong("hitCooldown"))
-                return;
+        if(player.getNoDamageTicks() > player.getMaximumNoDamageTicks() / 2f){
+            return;
         }
 
         double damage = module().getDouble("damage");
@@ -117,8 +105,6 @@ public class ModuleFishingKnockback extends Module {
         player.damage(damage);
 
         player.setVelocity(calculateKnockbackVelocity(player.getVelocity(), player.getLocation(), hook.getLocation()));
-
-        lastHitTime.put(playerUUID, System.currentTimeMillis());
     }
 
     private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location entity){
