@@ -39,12 +39,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private int sharpnessLevel;
     private int strengthLevel;
 
-    // base item damage, potion effect modifier, critical effect, enchantments, (possibly armour?)
+
     private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
-    // For strength and weakness potions
     private double strengthModifier = 0, weaknessModifier = 0;
 
-    // In 1.9 this is an addend, in 1.8 it is a multiplier
+    // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier
     private boolean isStrengthModifierMultiplier = false;
     private boolean isWeaknessModifierMultiplier = false;
 
