@@ -2,7 +2,7 @@
 
 ## Info
 
-<!-- For the last two, please post links to a hastebin/pastebin upload of the file -->
+<!-- For the last two, please post links to a pastebin.com upload of the file -->
 - Server version: 
 - OldCombatMechanics version: 
 - Server log file: 
