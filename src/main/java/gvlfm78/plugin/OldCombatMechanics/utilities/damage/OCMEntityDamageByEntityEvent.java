@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
+import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -63,6 +64,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         EntityEquipment equipment = le.getEquipment();
         weapon = equipment.getItemInMainHand();
+        // Yay paper. Why do you need to return null here?
+        if(weapon == null){
+            weapon = new ItemStack(Material.AIR);
+        }
 
         EntityType entity = damagee.getType();
 
