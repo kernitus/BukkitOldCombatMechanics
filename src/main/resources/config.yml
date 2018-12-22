@@ -93,38 +93,33 @@ old-tool-damage:
   # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damage
   enabled: true
   worlds: []
-  # This will allow you to set the damage divider
-  # The default values below are obtained by doing (1.8 value)/(1.9 value)
-  # Only axes and shovel values changed between the versions, so all others here have a divider of 1
-  # We put them here anyway in case you wished to change them.
-  # The plugin subtracts the enchantment-added damage,
-  # divides the damage done while holding the weapon by the following values,
-  # and adds back on the enchantment-added damage.
+  # Damage values shown in 1.9 representation (actual damage)
+  # In 1.8 the damage tooltip value would be added to 1 'base damage', yielding the values below
   damages:
     # Axe damages
-    GOLD_AXE: 3
-    WOOD_AXE: 3
-    STONE_AXE: 4
-    IRON_AXE: 5
-    DIAMOND_AXE: 6
+    GOLD_AXE: 4
+    WOOD_AXE: 4
+    STONE_AXE: 5
+    IRON_AXE: 6
+    DIAMOND_AXE: 7
     # Shovel damages
-    GOLD_SPADE: 1
-    WOOD_SPADE: 1
-    STONE_SPADE: 2
-    IRON_SPADE: 3
-    DIAMOND_SPADE: 4
+    GOLD_SPADE: 2
+    WOOD_SPADE: 2
+    STONE_SPADE: 3
+    IRON_SPADE: 4
+    DIAMOND_SPADE: 5
     # Sword damages
-    GOLD_SWORD: 4
-    WOOD_SWORD: 4
-    STONE_SWORD: 5
-    IRON_SWORD: 6
-    DIAMOND_SWORD: 7
+    GOLD_SWORD: 5
+    WOOD_SWORD: 5
+    STONE_SWORD: 6
+    IRON_SWORD: 7
+    DIAMOND_SWORD: 8
     # Pickaxe damages
-    GOLD_PICKAXE: 2
-    WOOD_PICKAXE: 2
-    STONE_PICKAXE: 3
-    IRON_PICKAXE: 4
-    DIAMOND_PICKAXE: 5
+    GOLD_PICKAXE: 3
+    WOOD_PICKAXE: 3
+    STONE_PICKAXE: 4
+    IRON_PICKAXE: 5
+    DIAMOND_PICKAXE: 6
     # Hoe damages
     GOLD_HOE: 1
     WOOD_HOE: 1
@@ -415,4 +410,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 29
+config-version: 30
