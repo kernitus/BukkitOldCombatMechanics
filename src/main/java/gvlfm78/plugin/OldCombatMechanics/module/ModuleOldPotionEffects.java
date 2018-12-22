@@ -174,6 +174,7 @@ public class ModuleOldPotionEffects extends Module {
 
         if(strengthModifier != 0){
             event.setIsStrengthModifierMultiplier(module().getBoolean("strength.multiplier"));
+            event.setIsStrengthModifierAddend(module().getBoolean("strength.addend"));
             double newStrengthModifier = module().getDouble("strength.modifier");
             event.setStrengthModifier(newStrengthModifier);
             debug("Old strength modifier: " + strengthModifier + " New: " + newStrengthModifier, damager);

@@ -383,12 +383,14 @@ old-potion-effects:
         extended: 360
 
   # EFFECTS
-  # If 'multiplier' is true value is multiplied by base tool damage, otherwise added
+  # If 'multiplier' is true value is multiplied by base tool damage
+  # If false it is added. If both true it is first increased by 1 then multiplied
   # Strength potion
   # 1.9: I = +3; II = +6;    1.8: I = +130%; II = +260%
   strength:
-    modifier: 2.3
+    modifier: 1.3
     multiplier: true
+    addend: true
   # Weakness potion
   # 1.9 value: -4   1.8 value: -0.5
   weakness:
@@ -410,4 +412,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 30
+config-version: 31
