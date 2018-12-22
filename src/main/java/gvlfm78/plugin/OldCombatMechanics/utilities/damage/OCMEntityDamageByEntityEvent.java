@@ -44,8 +44,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
     private double strengthModifier = 0, weaknessModifier = 0;
 
-    // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier
+    // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier and addend (+130%)
     private boolean isStrengthModifierMultiplier = false;
+    private boolean isStrengthModifierAddend = true;
     private boolean isWeaknessModifierMultiplier = false;
 
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage){
@@ -166,12 +167,20 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         this.isStrengthModifierMultiplier = isStrengthModifierMultiplier;
     }
 
+    public void setIsStrengthModifierAddend(boolean isStrengthModifierAddend){
+        this.isStrengthModifierAddend = isStrengthModifierAddend;
+    }
+
     public boolean isWeaknessModifierMultiplier(){
         return isWeaknessModifierMultiplier;
     }
 
     public void setIsWeaknessModifierMultiplier(boolean weaknessModifierMultiplier){
         isWeaknessModifierMultiplier = weaknessModifierMultiplier;
+    }
+
+    public boolean isStrengthModifierAddend(){
+        return isStrengthModifierAddend;
     }
 
     public double getBaseDamage(){
