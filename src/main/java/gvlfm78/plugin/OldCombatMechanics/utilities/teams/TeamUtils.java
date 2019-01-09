@@ -71,7 +71,8 @@ public class TeamUtils {
      * @return true if the packet targets the player
      */
     public static boolean targetsPlayer(Object packet, Player player){
-        return getTeamMembers(packet).contains(player.getName());
+        Collection<String> teamMembers = getTeamMembers(packet);
+        return teamMembers != null && teamMembers.contains(player.getName());
     }
 
     /**
