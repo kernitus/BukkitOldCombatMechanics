@@ -113,7 +113,7 @@ public class ModuleSwordBlocking extends Module {
             if(blockingDamageReduction.matches("\\d{1,3}%")){
                 //Reduce damage by percentage
                 int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
-                damageReduction = damageReduction * percentage / 100;
+                damageReduction = (damageReduction - 1) * percentage / 100;
             } else if(blockingDamageReduction.matches("\\d+")){
                 //Reduce by specified amount of half-hearts
                 damageReduction = Integer.parseInt(blockingDamageReduction);
@@ -129,15 +129,6 @@ public class ModuleSwordBlocking extends Module {
 
             if(e.getFinalDamage() >= damageReduction)
                 e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
-
-            //Make maximum reduction possible be up to amount specified in config
-
-            if(!isSettingEnabled("shieldFullBlock")){
-                double minDamage = module().getDouble("minimumDamage");
-                if(e.getFinalDamage() < minDamage)
-                    e.setDamage(minDamage);
-            }
-
 
             debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
         }

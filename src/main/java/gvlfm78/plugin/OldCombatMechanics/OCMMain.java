@@ -110,7 +110,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleAttackCooldown(this));
         ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
-        //Apparently listeners registered after get priority
+        //Listeners registered after with same priority appear to be called later
         ModuleLoader.addModule(new ModuleOldToolDamage(this));
         ModuleLoader.addModule(new ModuleSwordSweep(this));
 

@@ -134,10 +134,8 @@ sword-blocking:
   # How much damage should blocking reduce
   # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
   # 1.8 default: 50%             1.9 default: 33%
+  # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
   blockingDamageReduction: 50%
-  # Whether shields can block damage entirely
-  # In 1.8 blocking could only reduce to 1/2 a heart
-  shieldFullBlock: false
   # The minimum amount of damage, in half-hearts, if shieldFullBlock is disabled
   minimumDamage: 1.0
   # How often, it ticks, should OCM check if the player is still blocking with the shield and remove it if not

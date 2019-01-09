@@ -1,31 +1,15 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.codingforcookies.armourequip.ArmourEquipEvent;
-import com.comphenix.example.Attributes;
-import com.comphenix.example.Attributes.Attribute;
-import com.comphenix.example.Attributes.AttributeType;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.ArmourValues;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.ItemData;
-import org.apache.commons.lang.ArrayUtils;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 
 public class ModuleOldArmourStrength extends Module {
-    private static final String ARMOR_MARK = "ArmorModifier";
-
+    //private static final String ARMOR_MARK = "ArmorModifier";
     private static ModuleOldArmourStrength INSTANCE;
 
     public ModuleOldArmourStrength(OCMMain plugin){
@@ -33,7 +17,25 @@ public class ModuleOldArmourStrength extends Module {
         INSTANCE = this;
     }
 
-    private static ItemStack apply(ItemStack item, boolean enable){
+    @EventHandler (priority = EventPriority.HIGHEST)
+    public static void onEntityDamage(EntityDamageEvent e){
+        Entity entity = e.getEntity();
+        if(!(entity instanceof LivingEntity)) return;
+        LivingEntity le = (LivingEntity) entity;
+
+        double armourDamageReduction = e.getDamage(EntityDamageEvent.DamageModifier.ARMOR);
+        double armourPoints = le.getAttribute(Attribute.GENERIC_ARMOR).getValue();
+        double newReduction = armourPoints * 0.04 * -
+                (e.getDamage() + e.getDamage(EntityDamageEvent.DamageModifier.BLOCKING)); //todo don't hardcode this value
+
+        e.setDamage (EntityDamageEvent.DamageModifier.ARMOR, newReduction);
+
+        INSTANCE.debug("Armour points: " + armourPoints
+                + " Reduction: " + armourDamageReduction
+                + " After: " + newReduction, le);
+    }
+
+    /*private static ItemStack apply(ItemStack item, boolean enable){
         if(item == null || item.getType() == Material.AIR){
             return item;
         }
@@ -48,6 +50,8 @@ public class ModuleOldArmourStrength extends Module {
 
         double strength = ArmourValues.getValue(item.getType());
         double toughness = enable ? Config.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(item.getType());
+
+        INSTANCE.debug("Toughness: " + toughness);
 
         if(!ItemData.hasMark(item, ARMOR_MARK)){
             for(Attribute attribute : attributes.values()){
@@ -140,6 +144,9 @@ public class ModuleOldArmourStrength extends Module {
         ItemStack newPiece = e.getNewArmourPiece();
         if(newPiece != null && newPiece.getType() != Material.AIR){
             debug("Equip detected, applying armour value to new armour piece", p);
+
+            debug("Is enabled: " + isEnabled(p.getWorld()));
+
             e.setNewArmourPiece(apply(newPiece, isEnabled(p.getWorld())));
         }
 
@@ -201,5 +208,5 @@ public class ModuleOldArmourStrength extends Module {
         }
 
         player.getInventory().setContents(armours);
-    }
+    }*/
 }

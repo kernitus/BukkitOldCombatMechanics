@@ -4,7 +4,6 @@ import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
@@ -94,7 +93,7 @@ public class Config {
         //Setting correct attack speed and armour values for online players
         Bukkit.getOnlinePlayers().forEach(player -> {
             ModuleAttackCooldown.applyAttackSpeed(player);
-            ModuleOldArmourStrength.applyArmour(player);
+            //ModuleOldArmourStrength.applyArmour(player);
         });
     }
 
