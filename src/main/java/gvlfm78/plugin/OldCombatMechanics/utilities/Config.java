@@ -4,7 +4,6 @@ import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
@@ -94,7 +93,7 @@ public class Config {
         //Setting correct attack speed and armour values for online players
         Bukkit.getOnlinePlayers().forEach(player -> {
             ModuleAttackCooldown.applyAttackSpeed(player);
-            ModuleOldArmourStrength.applyArmour(player);
+            //ModuleOldArmourStrength.applyArmour(player);
         });
     }
 
