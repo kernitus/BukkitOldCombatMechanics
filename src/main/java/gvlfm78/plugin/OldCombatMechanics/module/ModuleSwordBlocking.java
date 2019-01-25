@@ -1,38 +1,42 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
-import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.*;
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
 
-/**
- * Created by Rayzr522 on 7/4/16.
- */
 public class ModuleSwordBlocking extends Module {
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
     private final Map<UUID, RunnableSeries> correspondingTasks = new HashMap<>();
     private int restoreDelay;
-    private String blockingDamageReduction;
     private boolean blacklist;
     private List<Material> noBlockingItems = new ArrayList<>();
 
@@ -43,8 +47,6 @@ public class ModuleSwordBlocking extends Module {
     @Override
     public void reload(){
         restoreDelay = module().getInt("restoreDelay", 40);
-        blockingDamageReduction = module().getString("blockingDamageReduction", "1")
-                .replaceAll(" ", "");
         blacklist = module().getBoolean("blacklist");
         noBlockingItems = ConfigUtils.loadMaterialList(module(), "noBlockingItems");
     }
@@ -93,45 +95,6 @@ public class ModuleSwordBlocking extends Module {
     public void onHotBarChange(PlayerItemHeldEvent e){
         tryCancelTask(e.getPlayer().getUniqueId());
         restore(e.getPlayer());
-    }
-
-    @SuppressWarnings("deprecation")
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onHit(EntityDamageByEntityEvent e){
-        Entity ent = e.getEntity();
-
-        if(!(ent instanceof Player)) return;
-
-        Player p = (Player) ent;
-
-        if(isBlocking(p.getUniqueId())){
-            //If it's a player blocking
-            //Instead of reducing damage to 33% apply config reduction
-
-            double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
-
-            if(blockingDamageReduction.matches("\\d{1,3}%")){
-                //Reduce damage by percentage
-                int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
-                damageReduction = (damageReduction - 1) * percentage / 100;
-            } else if(blockingDamageReduction.matches("\\d+")){
-                //Reduce by specified amount of half-hearts
-                damageReduction = Integer.parseInt(blockingDamageReduction);
-            } else damageReduction = 0;
-
-            if(damageReduction < 0) damageReduction = 0;
-
-            //Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
-            if(e.getDamage(DamageModifier.BLOCKING) >= 0) return;
-
-            //Also make sure reducing the damage doesn't result in negative damage
-            e.setDamage(DamageModifier.BLOCKING, 0);
-
-            if(e.getFinalDamage() >= damageReduction)
-                e.setDamage(DamageModifier.BLOCKING, damageReduction * -1);
-
-            debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING), p);
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
