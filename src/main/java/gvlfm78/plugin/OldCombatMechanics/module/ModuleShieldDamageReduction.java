@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
@@ -12,7 +13,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 @SuppressWarnings("deprecation")
 public class ModuleShieldDamageReduction extends Module {
 
-	private String blockingDamageReduction;
+	private String genericDamageReduction, projectileDamageReduction;
 
 	public ModuleShieldDamageReduction(OCMMain plugin) {
 		super(plugin, "shield-damage-reduction");
@@ -21,8 +22,12 @@ public class ModuleShieldDamageReduction extends Module {
 
 	@Override
 	public void reload(){
-		blockingDamageReduction = module()
-				.getString("blockingDamageReduction", "50%")
+		genericDamageReduction = module()
+				.getString("genericDamageReduction", "50%")
+				.replaceAll(" ", "");
+		
+		projectileDamageReduction = module()
+				.getString("projectileDamageReduction", "50%")
 				.replaceAll(" ", "");
 	}
 
@@ -43,14 +48,17 @@ public class ModuleShieldDamageReduction extends Module {
 		//Instead of reducing damage to 33% apply config reduction
 
 		double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
+		
+		String damageReductionString = e.getCause() == DamageCause.PROJECTILE ? 
+				projectileDamageReduction : genericDamageReduction;
 
-		if(blockingDamageReduction.matches("\\d{1,3}%")){
+		if(damageReductionString.matches("\\d{1,3}%")){
 			//Reduce damage by percentage
-			int percentage = Integer.parseInt(blockingDamageReduction.replace("%", ""));
+			int percentage = Integer.parseInt(damageReductionString.replace("%", ""));
 			damageReduction = (damageReduction - 1) * percentage / 100;
-		} else if(blockingDamageReduction.matches("\\d+")){
+		} else if(damageReductionString.matches("\\d+")){
 			//Reduce by specified amount of half-hearts
-			damageReduction = Integer.parseInt(blockingDamageReduction);
+			damageReduction = Integer.parseInt(damageReductionString);
 		} else damageReduction = 0;
 
 		if(damageReduction < 0) damageReduction = 0;
