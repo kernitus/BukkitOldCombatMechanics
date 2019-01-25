@@ -142,7 +142,8 @@ sword-blocking:
   blacklist: true
   
 shield-damage-reduction:
-  # This module allows changing the damage reduction behaviour of shiels
+  # This module allows changing the damage reduction behaviour of shields
+  enabled: true
   # How much damage should blocking reduce
   # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
   # 1.8 default: 50%             1.9 default: 33%
