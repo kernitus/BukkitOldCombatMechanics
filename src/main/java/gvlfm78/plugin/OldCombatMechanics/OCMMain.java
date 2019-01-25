@@ -120,6 +120,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleFishingKnockback(this));
         ModuleLoader.addModule(new ModulePlayerRegen(this));
         ModuleLoader.addModule(new ModuleSwordBlocking(this));
+        ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
         ModuleLoader.addModule(new ModuleOldArmourStrength(this));
         ModuleLoader.addModule(new ModuleDisableCrafting(this));
         ModuleLoader.addModule(new ModuleDisableOffHand(this));
