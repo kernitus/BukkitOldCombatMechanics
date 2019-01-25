@@ -131,13 +131,6 @@ sword-blocking:
   # This is to allow players to block with swords again by getting a shield while they hold right click with a sword
   enabled: true
   worlds: []
-  # How much damage should blocking reduce
-  # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
-  # 1.8 default: 50%             1.9 default: 33%
-  # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
-  blockingDamageReduction: 50%
-  # The minimum amount of damage, in half-hearts, if shieldFullBlock is disabled
-  minimumDamage: 1.0
   # How often, it ticks, should OCM check if the player is still blocking with the shield and remove it if not
   # If this is too fast the player will have their shield disappear before they're able to block again causing a slight delay
   # If this is too slow players will have a shield in their hand well after they've stopped blocking
@@ -147,6 +140,14 @@ sword-blocking:
   noBlockingItems: []
   # Whether the above list should act as a blacklist (i.e. only items in it stop the blocking mechanic)
   blacklist: true
+  
+shield-damage-reduction:
+  # This module allows changing the damage reduction behaviour of shiels
+  # How much damage should blocking reduce
+  # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
+  # 1.8 default: 50%             1.9 default: 33%
+  # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
+  blockingDamageReduction: 50%
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
