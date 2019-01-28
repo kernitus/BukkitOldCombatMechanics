@@ -1,3 +1,5 @@
+<!-- Before reporting, please try the latest test version from here https://ci.rayzr.tech/job/OldCombatMechanics/ as often bugs have already been fixed there. ->
+
 <!-- Please fill out all fields as applicable, providing as many details as possible -->
 
 ## Info
