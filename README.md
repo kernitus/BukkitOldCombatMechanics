@@ -45,10 +45,10 @@ Development versions are available on the [OldCombatMechanics Jenkins server](ht
 <a href="https://www.spigotmc.org/resources/oldcombatmechanics.19510/">
     <img src="https://media-elerium.cursecdn.com/attachments/202/435/spigot.png" alt="Spigot" height="100">
 </a>
-<a href="http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/">
+<a href="https://dev.bukkit.org/projects/oldcombatmechanics">
     <img src="https://media-elerium.cursecdn.com/attachments/202/436/bukkit.png" alt="Bukkit" height="100">
 </a>
-<a href="http://ci.rayzr.tech/job/OldCombatMechanics/">
+<a href="https://ci.rayzr.dev/job/OldCombatMechanics/">
     <img src="https://media-elerium.cursecdn.com/attachments/202/434/jenkins.png" alt="Jenkins" height="100">
 </a>
 
