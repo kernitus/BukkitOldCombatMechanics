@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -12,19 +13,17 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * Created by Rayzr522 on 6/25/16.
+ * Disables the attack cooldown.
  */
 public class ModuleAttackCooldown extends Module {
 
-    private static ModuleAttackCooldown INSTANCE;
-
     public ModuleAttackCooldown(OCMMain plugin){
         super(plugin, "disable-attack-cooldown");
-
-        INSTANCE = this;
     }
 
     @Override
@@ -34,31 +33,44 @@ public class ModuleAttackCooldown extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogin(PlayerJoinEvent e){
-        checkAttackSpeed(e.getPlayer());
+        adjustAttackSpeed(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onWorldChange(PlayerChangedWorldEvent e){
-        checkAttackSpeed(e.getPlayer());
+        adjustAttackSpeed(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent e){
         Player player = e.getPlayer();
-        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-        double baseValue = attribute.getBaseValue();
-        if(baseValue != 4){ //If basevalue is not 1.9 default, set it back
-            attribute.setBaseValue(4);
-            player.saveData();
-        }
+
+        // TODO: Why is it reset here? To make uninstalling the plugin easier?
+        setAttackSpeed(player, PVPMode.NEW_PVP.getBaseAttackSpeed());
     }
 
-    private void checkAttackSpeed(Player player){
+    /**
+     * Adjusts the attack speed to the default or configured value, depending on whether the module is enabled.
+     *
+     * @param player the player to set it for
+     */
+    private void adjustAttackSpeed(Player player){
         World world = player.getWorld();
 
-        //If module is disabled, set attack speed to 1.9 default
-        double attackSpeed = Config.moduleEnabled("disable-attack-cooldown", world) ? module().getDouble("generic-attack-speed") : 4;
+        double attackSpeed = Config.moduleEnabled("disable-attack-cooldown", world)
+                ? module().getDouble("generic-attack-speed")
+                : PVPMode.NEW_PVP.getBaseAttackSpeed();
 
+        setAttackSpeed(player, attackSpeed);
+    }
+
+    /**
+     * Sets the attack speed to the given value.
+     *
+     * @param player      the player to set it for
+     * @param attackSpeed the attack speed to set it to
+     */
+    private void setAttackSpeed(Player player, double attackSpeed){
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         double baseValue = attribute.getBaseValue();
 
