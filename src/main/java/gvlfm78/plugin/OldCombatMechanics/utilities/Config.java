@@ -89,12 +89,6 @@ public class Config {
                                 .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
                     }
                 });
-
-        //Setting correct attack speed and armour values for online players
-        Bukkit.getOnlinePlayers().forEach(player -> {
-            ModuleAttackCooldown.applyAttackSpeed(player);
-            //ModuleOldArmourStrength.applyArmour(player);
-        });
     }
 
     public static boolean moduleEnabled(String name, World world){
