@@ -8,6 +8,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.util.Locale;
 
+/**
+ * Adds knockback to eggs, snowballs and ender pearls.
+ */
 public class ModuleProjectileKnockback extends Module {
 
     public ModuleProjectileKnockback(OCMMain plugin){
