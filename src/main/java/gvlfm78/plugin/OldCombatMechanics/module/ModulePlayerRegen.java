@@ -15,6 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Establishes custom health regeneration rules.
+ */
 public class ModulePlayerRegen extends Module {
 
     private Map<UUID, Long> healTimes = new HashMap<>();
