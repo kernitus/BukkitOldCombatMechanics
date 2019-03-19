@@ -66,6 +66,10 @@ public class ModuleFishingKnockback extends Module {
         if(hitEntity == null) return;
         if(!(hitEntity instanceof Player)) return;
 
+        // Do not move Citizens NPCs
+        // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
+        if(hitEntity.hasMetadata("NPC")) return;
+
         FishHook hook = (FishHook) hookEntity;
         Player rodder = (Player) hook.getShooter();
         Player player = (Player) hitEntity;
