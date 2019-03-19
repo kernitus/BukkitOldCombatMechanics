@@ -14,11 +14,17 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.BiPredicate;
 
+/**
+ * Disables usage of the off hand.
+ */
 public class ModuleDisableOffHand extends Module {
 
-    private List<Material> mats = new ArrayList<>();
+    private static final int OFFHAND_SLOT = 40;
+    private List<Material> materials = new ArrayList<>();
 
     public ModuleDisableOffHand(OCMMain plugin){
         super(plugin, "disable-offhand");
@@ -26,7 +32,7 @@ public class ModuleDisableOffHand extends Module {
 
     @Override
     public void reload(){
-        mats = ConfigUtils.loadMaterialList(module(), "items");
+        materials = ConfigUtils.loadMaterialList(module(), "items");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -38,9 +44,9 @@ public class ModuleDisableOffHand extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent e){
-        if(!isEnabled(e.getWhoClicked().getWorld()) ||
-                e.getInventory().getType() != InventoryType.CRAFTING || //Making sure it's a survival player's inventory
-                e.getSlot() != 40) return; // If they didn't click into the offhand slot, return
+        if(!isEnabled(e.getWhoClicked().getWorld())
+                || e.getInventory().getType() != InventoryType.CRAFTING  //Making sure it's a survival player's inventory
+                || e.getSlot() != OFFHAND_SLOT) return;
 
         if(e.getClick().equals(ClickType.NUMBER_KEY) || shouldWeCancel(e.getCursor())){
             e.setResult(Event.Result.DENY);
@@ -50,9 +56,9 @@ public class ModuleDisableOffHand extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent e){
-        if(!isEnabled(e.getWhoClicked().getWorld()) ||
-                e.getInventory().getType() != InventoryType.CRAFTING ||
-                !e.getInventorySlots().contains(40)) return;
+        if(!isEnabled(e.getWhoClicked().getWorld())
+                || e.getInventory().getType() != InventoryType.CRAFTING
+                || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
 
         if(shouldWeCancel(e.getOldCursor())){
             e.setResult(Event.Result.DENY);
@@ -65,9 +71,36 @@ public class ModuleDisableOffHand extends Module {
             return false;
         }
 
-        boolean isContained = mats.contains(item.getType());
-        boolean isWhitelist = module().getBoolean("whitelist");
+        return !getBlockType().isAllowed(materials, item.getType());
+    }
 
-        return isWhitelist != isContained;
+    private BlockType getBlockType(){
+        return module().getBoolean("whitelist") ? BlockType.WHITELIST : BlockType.BLACKLIST;
+    }
+
+    private enum BlockType {
+        WHITELIST(Collection::contains),
+        BLACKLIST(not(Collection::contains));
+
+        private BiPredicate<Collection<Material>, Material> filter;
+
+        BlockType(BiPredicate<Collection<Material>, Material> filter){
+            this.filter = filter;
+        }
+
+        /**
+         * Checks whether the given material is allowed.
+         *
+         * @param list    the list to use for checking
+         * @param toCheck the material to check
+         * @return true if the item is allowed, based on the list and the current mode
+         */
+        boolean isAllowed(Collection<Material> list, Material toCheck){
+            return filter.test(list, toCheck);
+        }
+    }
+
+    private static <T, U> BiPredicate<T, U> not(BiPredicate<T, U> predicate){
+        return predicate.negate();
     }
 }
