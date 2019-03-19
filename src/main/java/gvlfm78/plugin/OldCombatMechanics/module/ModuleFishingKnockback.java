@@ -154,17 +154,17 @@ public class ModuleFishingKnockback extends Module {
         e.setCancelled(true);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked", "deprecation"})
+    @SuppressWarnings({"rawtypes", "deprecation"})
     private EntityDamageEvent makeEvent(Player rodder, Player player, double damage){
         if(module().getBoolean("useEntityDamageEvent"))
             return new EntityDamageEvent(player,
                     EntityDamageEvent.DamageCause.PROJECTILE,
-                    new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-                    new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
         else
             return new EntityDamageByEntityEvent(rodder, player,
                     EntityDamageEvent.DamageCause.PROJECTILE,
-                    new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-                    new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
     }
 }
