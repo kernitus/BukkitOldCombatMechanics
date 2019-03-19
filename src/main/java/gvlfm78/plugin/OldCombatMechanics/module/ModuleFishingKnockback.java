@@ -25,6 +25,9 @@ import org.bukkit.util.Vector;
 
 import java.util.EnumMap;
 
+/**
+ * Brings back the old fishing knockback.
+ */
 public class ModuleFishingKnockback extends Module {
 
     private MemoizingFeatureBranch<PlayerFishEvent, Entity> hookEntityFeature;
@@ -76,7 +79,7 @@ public class ModuleFishingKnockback extends Module {
 
         debug("You were hit by a fishing rod!", player);
 
-        if(player.getUniqueId().equals(rodder.getUniqueId()))
+        if(player.equals(rodder))
             return;
 
         if(player.getGameMode() == GameMode.CREATIVE) return;
@@ -94,11 +97,11 @@ public class ModuleFishingKnockback extends Module {
 
         if(module().getBoolean("checkCancelled") && event.isCancelled()){
 
-            //This is to check what plugins are listening to the event
             if(plugin.getConfig().getBoolean("debug.enabled")){
                 debug("You can't do that here!", rodder);
                 HandlerList hl = event.getHandlers();
 
+                // This is to check what plugins are listening to the event
                 for(RegisteredListener rl : hl.getRegisteredListeners())
                     debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
             }
@@ -111,9 +114,9 @@ public class ModuleFishingKnockback extends Module {
         player.setVelocity(calculateKnockbackVelocity(player.getVelocity(), player.getLocation(), hook.getLocation()));
     }
 
-    private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location entity){
-        double xDistance = entity.getX() - player.getX();
-        double zDistance = entity.getZ() - player.getZ();
+    private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location hook){
+        double xDistance = hook.getX() - player.getX();
+        double zDistance = hook.getZ() - player.getZ();
 
         // ensure distance is not zero and randomise in that case (I guess?)
         while(xDistance * xDistance + zDistance * zDistance < 0.0001){
@@ -150,7 +153,7 @@ public class ModuleFishingKnockback extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e){
         if(!isSettingEnabled("cancelDraggingIn") || e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
-        hookEntityFeature.apply(e).remove(); //Nuke the bobber and don't do anything else
+        hookEntityFeature.apply(e).remove(); // Nuke the bobber and don't do anything else
         e.setCancelled(true);
     }
 
