@@ -1,7 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.ArrayUtils;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import org.apache.commons.lang.WordUtils;
@@ -29,7 +28,7 @@ public abstract class Module implements Listener {
     protected Module(OCMMain plugin, String configName){
         this.plugin = plugin;
         this.configName = configName;
-        moduleName = ArrayUtils.last(getClass().getSimpleName().split("\\."));
+        this.moduleName = getClass().getSimpleName();
     }
 
     /**
