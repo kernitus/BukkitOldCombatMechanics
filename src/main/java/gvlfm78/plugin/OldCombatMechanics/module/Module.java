@@ -1,7 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.ArrayUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.apache.commons.lang.WordUtils;
@@ -29,7 +28,7 @@ public abstract class Module implements Listener {
     protected Module(OCMMain plugin, String configName){
         this.plugin = plugin;
         this.configName = configName;
-        moduleName = ArrayUtils.last(getClass().getSimpleName().split("\\."));
+        this.moduleName = getClass().getSimpleName();
     }
 
     /**
