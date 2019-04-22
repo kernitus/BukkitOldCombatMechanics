@@ -12,6 +12,9 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
+/**
+ * Makes the specified materials uncraftable.
+ */
 public class ModuleDisableCrafting extends Module {
 
     private List<Material> denied;

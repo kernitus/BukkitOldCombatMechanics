@@ -7,54 +7,66 @@ import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.projectiles.ProjectileSource;
 
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Allows you to throw enderpearls as often as you like, not only after a cooldown.
+ */
 public class ModuleDisableEnderpearlCooldown extends Module {
+
+    /**
+     * Contains players that threw an ender pearl. As the handler calls launchProjectile, which also calls the event,
+     * we need to ignore that event call.
+     */
+    private Set<Player> ignoredPlayers;
 
     public ModuleDisableEnderpearlCooldown(OCMMain plugin){
         super(plugin, "disable-enderpearl-cooldown");
+
+        ignoredPlayers = new HashSet<>();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerShoot(PlayerInteractEvent e){
+    public void onPlayerShoot(ProjectileLaunchEvent e){
+        if(!(e.getEntity() instanceof EnderPearl)) return;
+        ProjectileSource shooter = e.getEntity().getShooter();
 
-        Action action = e.getAction();
+        if(!(shooter instanceof Player)) return;
+        Player player = (Player) shooter;
 
-        if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
-
-        Player player = e.getPlayer();
-
-        if(!isEnabled(player.getWorld())) return;
-
-        if(e.getMaterial() != Material.ENDER_PEARL) return;
-
-        if(e.isCancelled()) return;
+        if(ignoredPlayers.contains(player)) return;
 
         e.setCancelled(true);
 
+        // ignore the event triggered by launchProjectile
+        ignoredPlayers.add(player);
+
         EnderPearl pearl = player.launchProjectile(EnderPearl.class);
+
+        ignoredPlayers.remove(player);
 
         pearl.setVelocity(player.getEyeLocation().getDirection().multiply(2));
 
-        GameMode mode = player.getGameMode();
+        if(player.getGameMode() == GameMode.CREATIVE) return;
 
-        if(mode != GameMode.CREATIVE){
-            PlayerInventory inv = player.getInventory();
-
-            boolean offhand = e.getHand() == EquipmentSlot.OFF_HAND;
-            ItemStack hand = e.getItem();
-
-            hand.setAmount(hand.getAmount() - 1);
-
-            if(e.getHand() == EquipmentSlot.HAND){
-                inv.setItemInMainHand(hand);
-            } else {
-                inv.setItemInOffHand(hand);
-            }
+        ItemStack enderpearlItemStack;
+        if(isEnderPearl(player.getInventory().getItemInMainHand())){
+            enderpearlItemStack = player.getInventory().getItemInMainHand();
+        } else if(isEnderPearl(player.getInventory().getItemInOffHand())){
+            enderpearlItemStack = player.getInventory().getItemInOffHand();
+        } else {
+            return;
         }
+
+        enderpearlItemStack.setAmount(enderpearlItemStack.getAmount() - 1);
+    }
+
+    private boolean isEnderPearl(ItemStack itemStack){
+        return itemStack != null && itemStack.getType() == Material.ENDER_PEARL;
     }
 }

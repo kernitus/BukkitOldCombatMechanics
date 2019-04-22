@@ -22,6 +22,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ * Disables player collisions.
+ */
 public class ModulePlayerCollisions extends Module {
 
     private CollisionPacketListener collisionPacketListener = new CollisionPacketListener();
