@@ -102,33 +102,34 @@ public class ModuleSwordSweep extends Module {
             return;
         }
 
-        Player p = (Player) e.getDamager();
-        ItemStack weapon = p.getInventory().getItemInMainHand();
+        Player attacker = (Player) e.getDamager();
+        ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
         if(isHoldingSword(weapon.getType()))
-            onSwordAttack(e, p, weapon);
+            onSwordAttack(e, attacker, weapon);
     }
 
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player p, ItemStack weapon){
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player attacker, ItemStack weapon){
         //Disable sword sweep
-        Location location = p.getLocation(); // ATTACKER
+        Location attackerLocation = attacker.getLocation();
 
         int level = 0;
 
         try{ //In a try catch for servers that haven't updated
             level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
-        } catch(NoSuchFieldError ignored) { }
+        } catch(NoSuchFieldError ignored){
+        }
 
         float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
         if(e.getDamage() == damage){
             // Possibly a sword-sweep attack
-            if(sweepLocations.contains(location)){
-                debug("Cancelling sweep...", p);
+            if(sweepLocations.contains(attackerLocation)){
+                debug("Cancelling sweep...", attacker);
                 e.setCancelled(true);
             }
         } else {
-            sweepLocations.add(location);
+            sweepLocations.add(attackerLocation);
         }
     }
 
@@ -136,6 +137,9 @@ public class ModuleSwordSweep extends Module {
         return mat.toString().endsWith("_SWORD");
     }
 
+    /**
+     * Hides sweep particles.
+     */
     private class ParticleListener extends PacketAdapter {
 
         private boolean disabledDueToError;

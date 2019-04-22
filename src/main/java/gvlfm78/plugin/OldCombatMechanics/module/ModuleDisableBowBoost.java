@@ -8,6 +8,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
+/**
+ * Prevents players from propelling themselves forward by shooting themselves.
+ */
 public class ModuleDisableBowBoost extends Module {
 
 

@@ -6,7 +6,6 @@ import gvlfm78.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntit
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import gvlfm78.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
-import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -25,15 +24,26 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Set;
 
+/**
+ * Allows configurable potion effect durations.
+ */
 public class ModuleOldPotionEffects extends Module {
 
+    private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
+            // TODO: Why exclude this? Yea, it wasn't in 1.8, but still
+            PotionType.LUCK,
+            // instant potions have no duration that could be modified
+            PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL,
+            // base potions without any effect
+            PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.UNCRAFTABLE, PotionType.WATER
+    );
+
+
     private HashMap<PotionType, PotionDurations> durations;
-    private PotionType[] excludedPotionTypes =
-            {PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL, PotionType.LUCK,
-                    PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK,
-                    PotionType.UNCRAFTABLE, PotionType.WATER};
 
     public ModuleOldPotionEffects(OCMMain plugin){
         super(plugin, "old-potion-effects");
@@ -51,48 +61,48 @@ public class ModuleOldPotionEffects extends Module {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
-        ItemStack item = event.getItem();
-        if(item.getType() != Material.POTION) return;
+        ItemStack potionItem = event.getItem();
+        if(potionItem.getType() != Material.POTION) return;
 
-        PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
+        PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         PotionData potionData = potionMeta.getBasePotionData();
         PotionType potionType = potionData.getType();
 
-        if(isExcludedPotion(potionType)) return;
+        if(EXCLUDED_POTION_TYPES.contains(potionType)) return;
+
         event.setCancelled(true);
 
         int duration = getPotionDuration(potionData, false);
 
-        PotionEffectType pet = potionType.getEffectType();
+        PotionEffectType effectType = potionType.getEffectType();
 
         int amplifier = potionData.isUpgraded() ? 1 : 0;
 
-        PotionEffect pe = new PotionEffect(pet, duration, amplifier);
+        PotionEffect potionEffect = new PotionEffect(effectType, duration, amplifier);
 
         Player player = event.getPlayer();
-        setNewPotionEffect(player, pet, pe);
+        setNewPotionEffect(player, potionEffect);
 
-        //Remove item from hand since we cancelled the event
+        // Remove item from hand since we cancelled the event
         if(player.getGameMode() != GameMode.SURVIVAL) return;
 
-        PlayerInventory pi = player.getInventory();
-        ItemStack potionItem = pi.getItemInMainHand();
-        boolean isInMainHand = false;
-        if(item.equals(potionItem)) isInMainHand = true;
+        PlayerInventory playerInventory = player.getInventory();
 
         ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
 
-        int amount = item.getAmount() - 1;
-        //If it was just one potion set item to glass bottle
-        if(amount < 1)
-            item = glassBottle;
+        int amount = potionItem.getAmount();
+        // If it was just one potion set item to glass bottle
+        if(amount == 1)
+            potionItem = glassBottle;
         else {
-            item.setAmount(amount);
+            potionItem.setAmount(amount - 1);
             player.getInventory().addItem(glassBottle);
         }
 
-        if(isInMainHand) pi.setItemInMainHand(item);
-        else pi.setItemInOffHand(item);
+        if(potionItem.equals(playerInventory.getItemInMainHand()))
+            playerInventory.setItemInMainHand(potionItem);
+        else
+            playerInventory.setItemInOffHand(potionItem);
     }
 
     /**
@@ -102,42 +112,44 @@ public class ModuleOldPotionEffects extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPotionSplash(PotionSplashEvent event){
         ThrownPotion thrownPotion = event.getPotion();
-        ItemStack potion = thrownPotion.getItem();
-        PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
+        PotionMeta potionMeta = (PotionMeta) thrownPotion.getItem().getItemMeta();
 
-        PotionEffect potionEffect = (PotionEffect) thrownPotion.getEffects().toArray()[0];
-        PotionData potionData = potionMeta.getBasePotionData();
+        for(PotionEffect potionEffect : thrownPotion.getEffects()){
+            PotionData potionData = potionMeta.getBasePotionData();
 
-        if(isExcludedPotion(potionData.getType())) return;
-        event.setCancelled(true);
+            if(EXCLUDED_POTION_TYPES.contains(potionData.getType())) return;
 
-        int duration = getPotionDuration(potionData, true);
+            event.setCancelled(true);
 
-        PotionEffectType pet = potionEffect.getType();
+            int duration = getPotionDuration(potionData, true);
 
-        PotionEffect pe = new PotionEffect(pet, duration, potionEffect.getAmplifier());
+            PotionEffect newEffect = new PotionEffect(potionEffect.getType(), duration, potionEffect.getAmplifier());
 
-        event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity, pet, pe));
+            event.getAffectedEntities()
+                    .forEach(livingEntity -> setNewPotionEffect(livingEntity, newEffect));
+        }
     }
 
-    private boolean isExcludedPotion(PotionType pt){
-        return ArrayUtils.contains(excludedPotionTypes, pt);
-    }
+    private void setNewPotionEffect(LivingEntity livingEntity, PotionEffect potionEffect){
+        if(livingEntity.hasPotionEffect(potionEffect.getType())){
+            PotionEffect activeEffect = PotionEffects.getOrNull(livingEntity, potionEffect.getType());
 
-    private void setNewPotionEffect(LivingEntity livingEntity, PotionEffectType pet, PotionEffect pe){
-        if(livingEntity.hasPotionEffect(pet)){
-            PotionEffect activepe = PotionEffects.getOrNull(livingEntity, pet);
+            int remainingDuration = activeEffect.getDuration();
 
-            int remainingDuration = activepe.getDuration();
-
-            //If new effect it type II while old wasn't, or
+            // If new effect it type II while old wasn't, or
             // new would last longer than remaining time but isn't a level downgrade (eg II -> I), set it
-            int newAmplifier = pe.getAmplifier();
-            int activeAmplifier = activepe.getAmplifier();
-            if(newAmplifier > activeAmplifier ||
-                    (newAmplifier == activeAmplifier && remainingDuration < pe.getDuration()))
-                livingEntity.addPotionEffect(pe, true);
-        } else livingEntity.addPotionEffect(pe, false);
+            int newAmplifier = potionEffect.getAmplifier();
+            int activeAmplifier = activeEffect.getAmplifier();
+
+            if(newAmplifier < activeAmplifier)
+                return;
+
+            if(newAmplifier > activeAmplifier || remainingDuration < potionEffect.getDuration()){
+                livingEntity.addPotionEffect(potionEffect, true);
+            }
+        } else {
+            livingEntity.addPotionEffect(potionEffect, false);
+        }
     }
 
     private int getPotionDuration(PotionData potionData, boolean splash){
@@ -154,6 +166,7 @@ public class ModuleOldPotionEffects extends Module {
         else if(potionData.isUpgraded()) duration = potionDurations.getIITime();
         else duration = potionDurations.getBaseTime();
 
+        // seconds to ticks conversion
         return duration * 20;
     }
 

@@ -3,10 +3,8 @@ package gvlfm78.plugin.OldCombatMechanics.utilities;
 import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
 import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import gvlfm78.plugin.OldCombatMechanics.module.Module;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -89,12 +87,6 @@ public class Config {
                                 .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
                     }
                 });
-
-        //Setting correct attack speed and armour values for online players
-        Bukkit.getOnlinePlayers().forEach(player -> {
-            ModuleAttackCooldown.applyAttackSpeed(player);
-            //ModuleOldArmourStrength.applyArmour(player);
-        });
     }
 
     public static boolean moduleEnabled(String name, World world){
