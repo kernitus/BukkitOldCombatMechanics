@@ -32,26 +32,26 @@ public abstract class Module implements Listener {
     }
 
     /**
-     * Checks whether the plugin is enabled in the given world.
+     * Checks whether the module is enabled in the given world.
      *
      * @param world the world to check. Null to check whether it is globally disabled
-     * @return true if the plugin is enabled in that world
+     * @return true if the module is enabled in that world
      */
     public boolean isEnabled(World world){
         return Config.moduleEnabled(configName, world);
     }
 
     /**
-     * Checks whether this plugin is globally en/disabled.
+     * Checks whether this module is globally en/disabled.
      *
-     * @return true if this plugin is globally enabled
+     * @return true if this module is globally enabled
      */
     public boolean isEnabled(){
         return isEnabled(null);
     }
 
     /**
-     * Checks whether a given setting for this plugin is enabled.
+     * Checks whether a given setting for this module is enabled.
      *
      * @param name the name of the setting
      * @return true if the setting with that name is enabled. Returns false if the setting did not exist.
