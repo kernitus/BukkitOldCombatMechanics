@@ -3,7 +3,7 @@ name: OldCombatMechanics
 version: ${project.version}
 authors: [gvlfm78, Rayzr522]
 description: Reverts to pre-1.9 combat mechanics
-website: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics
+website: https://github.com/gvlfm78/BukkitOldCombatMechanics
 load: POSTWORLD
 softdepend: [PlaceholderAPI, Spartan]
 api-version: 1.13
