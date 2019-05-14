@@ -60,6 +60,9 @@ public class ModuleOldArmourStrength extends Module {
         double enchantmentReductionPercentage = calculateEnchantmentReductionPercentage(
                 damagedEntity.getEquipment(), e.getCause());
 
+        //Reset MAGIC (Armour enchants) damage
+        e.setDamage(EntityDamageEvent.DamageModifier.MAGIC, 0);
+
         if(enchantmentReductionPercentage > 0){
             e.setDamage(
                     EntityDamageEvent.DamageModifier.MAGIC,
