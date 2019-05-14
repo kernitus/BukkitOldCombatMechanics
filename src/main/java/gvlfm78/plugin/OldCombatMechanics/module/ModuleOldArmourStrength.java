@@ -1,213 +1,163 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+
+/**
+ * Reverts the armor strength changes.
+ * <p>
+ * It is based on <a href="https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187">this revision</a>
+ * of the minecraft wiki:.
+ */
 public class ModuleOldArmourStrength extends Module {
-    //private static final String ARMOR_MARK = "ArmorModifier";
-    private static ModuleOldArmourStrength INSTANCE;
+
+    private static final double REDUCTION_PER_ARMOR_POINT = 0.04;
+
+    private static final Set<EntityDamageEvent.DamageCause> NON_REDUCED_CAUSES = EnumSet.of(
+            EntityDamageEvent.DamageCause.FIRE_TICK,
+            EntityDamageEvent.DamageCause.VOID,
+            EntityDamageEvent.DamageCause.SUFFOCATION,
+            EntityDamageEvent.DamageCause.DROWNING,
+            EntityDamageEvent.DamageCause.STARVATION,
+            EntityDamageEvent.DamageCause.FALL,
+            EntityDamageEvent.DamageCause.MAGIC,
+            EntityDamageEvent.DamageCause.LIGHTNING
+    );
 
     public ModuleOldArmourStrength(OCMMain plugin){
         super(plugin, "old-armour-strength");
-        INSTANCE = this;
     }
 
-    @EventHandler (priority = EventPriority.HIGHEST)
-    public static void onEntityDamage(EntityDamageEvent e){
-        Entity entity = e.getEntity();
-        if(!(entity instanceof LivingEntity)) return;
-        LivingEntity le = (LivingEntity) entity;
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityDamage(EntityDamageEvent e){
+        if(!(e.getEntity() instanceof LivingEntity)) return;
 
-        double armourDamageReduction = e.getDamage(EntityDamageEvent.DamageModifier.ARMOR);
-        double armourPoints = le.getAttribute(Attribute.GENERIC_ARMOR).getValue();
-        double newReduction = armourPoints * 0.04 * -
-                (e.getDamage() + e.getDamage(EntityDamageEvent.DamageModifier.BLOCKING)); //todo don't hardcode this value
+        LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
-        if(e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR))
-            e.setDamage (EntityDamageEvent.DamageModifier.ARMOR, newReduction);
+        double armorPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
+        double reductionPercentage = armorPoints * REDUCTION_PER_ARMOR_POINT;
 
-        INSTANCE.debug("Armour points: " + armourPoints
-                + " Reduction: " + armourDamageReduction
-                + " After: " + newReduction, le);
-    }
+        double reducedDamage = e.getDamage() * reductionPercentage;
 
-    /*private static ItemStack apply(ItemStack item, boolean enable){
-        if(item == null || item.getType() == Material.AIR){
-            return item;
+        if(!NON_REDUCED_CAUSES.contains(e.getCause()) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)){
+            System.out.println("Apllicable!");
+            e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
 
-        String slot = getSlotForType(item.getType());
-        if(slot == null){
-            //Not an armour piece
-            return item;
-        }
+        double enchantmentReductionPercentage = calculateEnchantmentReductionPercentage(
+                damagedEntity.getEquipment(), e.getCause()
+        );
 
-        Attributes attributes = new Attributes(item);
-
-        double strength = ArmourValues.getValue(item.getType());
-        double toughness = enable ? Config.getConfig().getDouble("old-armour-strength.toughness") : getDefaultToughness(item.getType());
-
-        INSTANCE.debug("Toughness: " + toughness);
-
-        if(!ItemData.hasMark(item, ARMOR_MARK)){
-            for(Attribute attribute : attributes.values()){
-                if(attribute.getAttributeType() == AttributeType.GENERIC_ARMOR || attribute.getAttributeType() == AttributeType.GENERIC_ARMOR_TOUGHNESS){
-                    // Hasn't been marked but has custom attributes - it must be a custom item.
-                    return item;
-                }
-            }
-        }
-
-        ItemData.mark(item, ARMOR_MARK);
-
-        ensureAttributeAmount(attributes, AttributeType.GENERIC_ARMOR, "Armor", slot, strength);
-        ensureAttributeAmount(attributes, AttributeType.GENERIC_ARMOR_TOUGHNESS, "ArmorToughness", slot, toughness);
-
-        return item;
-    }
-
-    private static void ensureAttributeAmount(Attributes attributes, AttributeType type, String name, String slot, double amount){
-        List<Attribute> toRemove = new ArrayList<>();
-        boolean found = false;
-
-        // Ensure only one attribute of the right value
-        for(Attribute attribute : attributes.values()){
-            if(attribute.getAttributeType() == type && attribute.getSlot().equals(slot)){
-                if(found || attribute.getAmount() != amount){
-                    // Remove others
-                    toRemove.add(attribute);
-                } else {
-                    // Keep this attribute
-                    found = true;
-                }
-            }
-        }
-
-        toRemove.forEach(attributes::remove);
-
-        if(!found){
-            attributes.add(
-                    Attributes.Attribute.newBuilder()
-                            .name(name)
-                            .type(type)
-                            .amount(amount)
-                            .slot(slot)
-                            .build()
+        if(enchantmentReductionPercentage > 0){
+            e.setDamage(
+                    EntityDamageEvent.DamageModifier.MAGIC,
+                    -e.getFinalDamage() * enchantmentReductionPercentage
             );
-
-            Messenger.debug(String.format("Added '%s' flag on slot '%s' and set it to %f", name, slot, amount));
-        }
-    }
-
-    private static int getDefaultToughness(Material mat){
-        switch(mat){
-            case DIAMOND_CHESTPLATE:
-            case DIAMOND_HELMET:
-            case DIAMOND_LEGGINGS:
-            case DIAMOND_BOOTS:
-                return 2;
-            default:
-                return 0;
-        }
-    }
-
-    private static String getSlotForType(Material type){
-        String typeName = type.toString().toLowerCase(Locale.ROOT);
-
-        if(typeName.endsWith("helmet")){
-            return "head";
-        } else if(typeName.endsWith("chestplate")){
-            return "chest";
-        } else if(typeName.endsWith("leggings")){
-            return "legs";
-        } else if(typeName.endsWith("boots")){
-            return "feet";
         }
 
-        return null;
+        debug("Armor reduction: " + reductionPercentage + "%, final damage is " + e.getFinalDamage());
     }
 
-    public static void applyArmour(Player player){
-        INSTANCE.setArmourAccordingly(player);
-    }
+    private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause){
+        int totalEpf = 0;
+        for(ItemStack armorItem : equipment.getArmorContents()){
+            if(armorItem != null && armorItem.getType() != Material.AIR){
+                for(EnchantmentType enchantmentType : EnchantmentType.values()){
+                    if(!enchantmentType.protectsAgainst(cause)){
+                        continue;
+                    }
 
-    @EventHandler
-    public void onArmourEquip(ArmourEquipEvent e){
-        final Player p = e.getPlayer();
-        debug("OnArmourEquip was called", p);
+                    int enchantmentLevel = armorItem.getEnchantmentLevel(enchantmentType.getEnchantment());
 
-        //Equipping
-        ItemStack newPiece = e.getNewArmourPiece();
-        if(newPiece != null && newPiece.getType() != Material.AIR){
-            debug("Equip detected, applying armour value to new armour piece", p);
-
-            debug("Is enabled: " + isEnabled(p.getWorld()));
-
-            e.setNewArmourPiece(apply(newPiece, isEnabled(p.getWorld())));
-        }
-
-        //Unequipping
-        ItemStack oldPiece = e.getOldArmourPiece();
-        if(oldPiece != null && oldPiece.getType() != Material.AIR){
-            debug("Unequip detected, applying armour value to old armour piece", p);
-            e.setOldArmourPiece(apply(oldPiece, false));
-        }
-
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent e){
-        final Player player = e.getPlayer();
-        debug("onPlayerJoin armour event was called", player);
-        setArmourAccordingly(player);
-    }
-
-    @EventHandler
-    public void onPlayerLeave(PlayerQuitEvent e){
-        final Player player = e.getPlayer();
-        debug("onPlayerLeave armour event was called", player);
-        setArmourToDefault(player);
-    }
-
-    @EventHandler
-    public void onWorldChange(PlayerChangedWorldEvent e){
-        final Player player = e.getPlayer();
-        debug("onWorldChange armour event was called", player);
-        setArmourAccordingly(player);
-    }
-
-    private void setArmourToDefault(final Player player){
-        // Tells method that module is disabled in this world
-        setArmourAccordingly(player, false);
-    }
-
-    private void setArmourAccordingly(final Player player){
-        setArmourAccordingly(player, isEnabled(player.getWorld()));
-    }
-
-    private void setArmourAccordingly(final Player player, boolean enabled){
-        final PlayerInventory inv = player.getInventory();
-        ItemStack[] armours = inv.getContents();
-        // Check the whole inventory for armour pieces
-
-        for(int i = 0; i < armours.length; i++){
-            ItemStack piece = armours[i];
-
-            if(piece != null && piece.getType() != Material.AIR){
-                Messenger.debug("Attempting to apply armour value to item", player);
-
-                //If this piece is one of the ones being worn right now
-                if(ArrayUtils.contains(inv.getArmorContents(), armours[i]))
-                    armours[i] = apply(piece, enabled); //Apply/remove values according state of module in this world
-                else armours[i] = apply(piece, false); //Otherwise set values back to default
+                    if(enchantmentLevel > 0){
+                        totalEpf += enchantmentType.getEpf(enchantmentLevel);
+                    }
+                }
             }
         }
 
-        player.getInventory().setContents(armours);
-    }*/
+        debug("Initial total EPF: " + totalEpf);
+
+        // capped at 25
+        totalEpf = Math.min(25, totalEpf);
+
+        totalEpf = (int) Math.ceil(totalEpf * ThreadLocalRandom.current().nextDouble(0.5, 1));
+
+        // capped at 20
+        totalEpf = Math.min(20, totalEpf);
+
+        return REDUCTION_PER_ARMOR_POINT * totalEpf;
+    }
+
+    private enum EnchantmentType {
+        PROTECTION(EnumSet.allOf(EntityDamageEvent.DamageCause.class), 0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
+        FIRE_PROTECTION(EnumSet.of(
+                EntityDamageEvent.DamageCause.FIRE,
+                EntityDamageEvent.DamageCause.FIRE_TICK,
+                EntityDamageEvent.DamageCause.LAVA,
+                EntityDamageEvent.DamageCause.HOT_FLOOR
+        ), 1.25, Enchantment.PROTECTION_FIRE),
+        BLAST_PROTECTION(EnumSet.of(
+                EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
+                EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
+        ), 1.5, Enchantment.PROTECTION_EXPLOSIONS),
+        PROJECTILE_PROTECTION(EnumSet.of(
+                EntityDamageEvent.DamageCause.PROJECTILE
+        ), 1.5, Enchantment.PROTECTION_PROJECTILE),
+        FALL_PROTECTION(EnumSet.of(
+                EntityDamageEvent.DamageCause.FALL
+        ), 2.5, Enchantment.PROTECTION_FALL);
+
+        private Set<EntityDamageEvent.DamageCause> protection;
+        private double typeModifier;
+        private Enchantment enchantment;
+
+        EnchantmentType(Set<EntityDamageEvent.DamageCause> protection, double typeModifier, Enchantment enchantment){
+            this.protection = protection;
+            this.typeModifier = typeModifier;
+            this.enchantment = enchantment;
+        }
+
+        /**
+         * Returns whether the armor protects against the given damage cause.
+         *
+         * @param cause the damage cause
+         * @return true if the armor protects against the given damage cause
+         */
+        public boolean protectsAgainst(EntityDamageEvent.DamageCause cause){
+            return protection.contains(cause);
+        }
+
+        /**
+         * Returns the bukkit enchantment.
+         *
+         * @return the bukkit enchantment
+         */
+        public Enchantment getEnchantment(){
+            return enchantment;
+        }
+
+        /**
+         * Returns the enchantment protection factor (EPF).
+         *
+         * @param level the level of the enchantment
+         * @return the EPF
+         */
+        public int getEpf(int level){
+            // floor ( (6 + level^2) * TypeModifier / 3 )
+            return (int) Math.floor((6 + level * level) * typeModifier / 3);
+        }
+    }
 }
