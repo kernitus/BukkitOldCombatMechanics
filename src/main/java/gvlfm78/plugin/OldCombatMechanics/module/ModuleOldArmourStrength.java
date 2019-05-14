@@ -53,7 +53,7 @@ public class ModuleOldArmourStrength extends Module {
         EntityDamageEvent.DamageCause damageCause = e.getCause();
 
         if(!NON_REDUCED_CAUSES.contains(damageCause) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)){
-            debug("Damage Cause: " + damageCause + " is applicable");
+            //debug("Damage Cause: " + damageCause + " is applicable");
             e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
 
@@ -70,7 +70,7 @@ public class ModuleOldArmourStrength extends Module {
             );
         }
 
-        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.0f, Final Damage: %.2f", reductionPercentage * 100,
+        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
                 enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
                 e.getFinalDamage()));
     }
@@ -92,7 +92,7 @@ public class ModuleOldArmourStrength extends Module {
             }
         }
 
-        debug("Initial total EPF: " + totalEpf);
+        //debug("Initial total EPF: " + totalEpf);
 
         // capped at 25
         totalEpf = Math.min(25, totalEpf);
