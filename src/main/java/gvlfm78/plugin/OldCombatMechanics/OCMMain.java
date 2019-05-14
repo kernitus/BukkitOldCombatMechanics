@@ -112,17 +112,26 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
         //Listeners registered after with same priority appear to be called later
+
+        //These three listen to OCMEntityDamageByEntityEvent:
         ModuleLoader.addModule(new ModuleOldToolDamage(this));
         ModuleLoader.addModule(new ModuleSwordSweep(this));
-
         ModuleLoader.addModule(new ModuleOldPotionEffects(this));
+
+        //Next block are all on LOWEST priority, so will be called in the following order:
+        //Damage order: base -> potion effects -> critical hit -> enchantments -> blocking -> armour effects
+        //EntityDamageByEntityListener calls OCMEntityDamageByEntityEvent, see modules above
         ModuleLoader.addModule(new EntityDamageByEntityListener(this));
+        //Then ModuleSwordBlocking to calculate blocking
+        ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
+        //Then OldArmourStrength to recalculate armour defense accordingly
+        ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+
+        ModuleLoader.addModule(new ModuleSwordBlocking(this));
         ModuleLoader.addModule(new ModuleGoldenApple(this));
         ModuleLoader.addModule(new ModuleFishingKnockback(this));
         ModuleLoader.addModule(new ModulePlayerRegen(this));
-        ModuleLoader.addModule(new ModuleSwordBlocking(this));
-        ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
-        ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+
         ModuleLoader.addModule(new ModuleDisableCrafting(this));
         ModuleLoader.addModule(new ModuleDisableOffHand(this));
         ModuleLoader.addModule(new ModuleOldBrewingStand(this));
