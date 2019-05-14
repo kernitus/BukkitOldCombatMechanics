@@ -16,14 +16,14 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Reverts the armor strength changes.
+ * Reverts the armour strength changes.
  * <p>
  * It is based on <a href="https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187">this revision</a>
- * of the minecraft wiki:.
+ * of the minecraft wiki.
  */
 public class ModuleOldArmourStrength extends Module {
 
-    private static final double REDUCTION_PER_ARMOR_POINT = 0.04;
+    private static final double REDUCTION_PER_ARMOUR_POINT = 0.04;
 
     private static final Set<EntityDamageEvent.DamageCause> NON_REDUCED_CAUSES = EnumSet.of(
             EntityDamageEvent.DamageCause.FIRE_TICK,
@@ -46,19 +46,19 @@ public class ModuleOldArmourStrength extends Module {
 
         LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
-        double armorPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
-        double reductionPercentage = armorPoints * REDUCTION_PER_ARMOR_POINT;
+        double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
+        double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
         double reducedDamage = e.getDamage() * reductionPercentage;
+        EntityDamageEvent.DamageCause damageCause = e.getCause();
 
-        if(!NON_REDUCED_CAUSES.contains(e.getCause()) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)){
-            System.out.println("Apllicable!");
+        if(!NON_REDUCED_CAUSES.contains(damageCause) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)){
+            debug("Damage Cause: " + damageCause + " is applicable");
             e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
 
         double enchantmentReductionPercentage = calculateEnchantmentReductionPercentage(
-                damagedEntity.getEquipment(), e.getCause()
-        );
+                damagedEntity.getEquipment(), e.getCause());
 
         if(enchantmentReductionPercentage > 0){
             e.setDamage(
@@ -67,19 +67,20 @@ public class ModuleOldArmourStrength extends Module {
             );
         }
 
-        debug("Armor reduction: " + reductionPercentage + "%, final damage is " + e.getFinalDamage());
+        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.0f, Final Damage: %.2f", reductionPercentage * 100,
+                enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
+                e.getFinalDamage()));
     }
 
     private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause){
         int totalEpf = 0;
-        for(ItemStack armorItem : equipment.getArmorContents()){
-            if(armorItem != null && armorItem.getType() != Material.AIR){
+        for(ItemStack armourItem : equipment.getArmorContents()){
+            if(armourItem != null && armourItem.getType() != Material.AIR){
                 for(EnchantmentType enchantmentType : EnchantmentType.values()){
-                    if(!enchantmentType.protectsAgainst(cause)){
-                        continue;
-                    }
 
-                    int enchantmentLevel = armorItem.getEnchantmentLevel(enchantmentType.getEnchantment());
+                    if(!enchantmentType.protectsAgainst(cause)) continue;
+
+                    int enchantmentLevel = armourItem.getEnchantmentLevel(enchantmentType.getEnchantment());
 
                     if(enchantmentLevel > 0){
                         totalEpf += enchantmentType.getEpf(enchantmentLevel);
@@ -98,7 +99,7 @@ public class ModuleOldArmourStrength extends Module {
         // capped at 20
         totalEpf = Math.min(20, totalEpf);
 
-        return REDUCTION_PER_ARMOR_POINT * totalEpf;
+        return REDUCTION_PER_ARMOUR_POINT * totalEpf;
     }
 
     private enum EnchantmentType {
@@ -131,10 +132,10 @@ public class ModuleOldArmourStrength extends Module {
         }
 
         /**
-         * Returns whether the armor protects against the given damage cause.
+         * Returns whether the armour protects against the given damage cause.
          *
          * @param cause the damage cause
-         * @return true if the armor protects against the given damage cause
+         * @return true if the armour protects against the given damage cause
          */
         public boolean protectsAgainst(EntityDamageEvent.DamageCause cause){
             return protection.contains(cause);

@@ -3,6 +3,7 @@ package gvlfm78.plugin.OldCombatMechanics;
 import com.codingforcookies.armourequip.ArmourListener;
 import gvlfm78.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import gvlfm78.plugin.OldCombatMechanics.hooks.api.Hook;
+import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import gvlfm78.plugin.OldCombatMechanics.module.*;
 import gvlfm78.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
