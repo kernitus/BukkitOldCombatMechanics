@@ -384,6 +384,24 @@ old-potion-effects:
         base: 135
         extended: 360
 
+    slow_falling:
+      drinkable:
+        base: 90
+        extended: 240
+      splash:
+        base: 90
+        extended: 240
+
+    turtle_master:
+      drinkable:
+        base: 20
+        II: 20
+        extended: 40
+      splash:
+        base: 20
+        II: 20
+        extended: 40
+
   # EFFECTS
   # If 'multiplier' is true value is multiplied by base tool damage
   # If false it is added. If both true it is first increased by 1 then multiplied
@@ -414,4 +432,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 32
+config-version: 33
