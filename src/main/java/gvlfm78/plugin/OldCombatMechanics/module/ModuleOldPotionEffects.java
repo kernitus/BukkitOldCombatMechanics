@@ -89,20 +89,18 @@ public class ModuleOldPotionEffects extends Module {
         PlayerInventory playerInventory = player.getInventory();
 
         ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
-
         int amount = potionItem.getAmount();
-        // If it was just one potion set item to glass bottle
-        if(amount == 1)
-            potionItem = glassBottle;
-        else {
+
+        if(amount > 1){
             potionItem.setAmount(amount - 1);
             player.getInventory().addItem(glassBottle);
+        } else {
+            // If it was just one potion set item to glass bottle
+            if (potionItem.equals(playerInventory.getItemInMainHand()))
+                playerInventory.setItemInMainHand(glassBottle);
+            else
+                playerInventory.setItemInOffHand(glassBottle);
         }
-
-        if(potionItem.equals(playerInventory.getItemInMainHand()))
-            playerInventory.setItemInMainHand(potionItem);
-        else
-            playerInventory.setItemInOffHand(potionItem);
     }
 
     /**
