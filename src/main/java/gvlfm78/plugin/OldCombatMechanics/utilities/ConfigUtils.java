@@ -65,14 +65,21 @@ public class ConfigUtils {
         HashMap<PotionType, PotionDurations> durationsHashMap = new HashMap<>();
         ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
 
-        for(String potionName : durationsSection.getKeys(false)){
-            ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
-            ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
-            ConfigurationSection splash = potionSection.getConfigurationSection("splash");
+            for (String potionName : durationsSection.getKeys(false)) {
+                ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
+                ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
+                ConfigurationSection splash = potionSection.getConfigurationSection("splash");
 
-            PotionType potionType = PotionType.valueOf(potionName.toUpperCase(Locale.ROOT));
-            durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
-        }
+                potionName = potionName.toUpperCase(Locale.ROOT);
+
+                try {
+                    PotionType potionType = PotionType.valueOf(potionName);
+                    durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
+
+                } catch (IllegalArgumentException e){ //In case the potion doesn't exist in the version running on the server
+                    Messenger.debug("Skipping loading " + potionName + " potion");
+                }
+            }
 
         return durationsHashMap;
     }
