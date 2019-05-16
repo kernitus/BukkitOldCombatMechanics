@@ -34,19 +34,25 @@ import java.util.Set;
 public class ModuleOldPotionEffects extends Module {
 
     private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
-            // TODO: Why exclude this? Yea, it wasn't in 1.8, but still
-            PotionType.LUCK,
-            // instant potions have no duration that could be modified
+            //this only includes 1.9 potions, others are added later for compatibility
+            //instant potions have no duration that can be modified
             PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL,
-            // base potions without any effect
+            //base potions without any effect
             PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.UNCRAFTABLE, PotionType.WATER
     );
-
 
     private HashMap<PotionType, PotionDurations> durations;
 
     public ModuleOldPotionEffects(OCMMain plugin){
         super(plugin, "old-potion-effects");
+
+            try {
+                //Turtle Master potion has two effects and Bukkit only returns one with #getEffectType()
+                EXCLUDED_POTION_TYPES.add(PotionType.TURTLE_MASTER);
+            } catch (NoSuchFieldError e) {
+                debug("Skipping excluding a potion (probably older server version)");
+            }
+
         reload();
     }
 
