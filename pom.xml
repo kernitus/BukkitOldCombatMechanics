@@ -3,9 +3,16 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>gvlfm78.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>1.7.0</version>
+    <version>1.7.1</version>
     <name>OldCombatMechanics</name>
     <description>Implements pre-1.9 combat-related mechanics</description>
+    <url>https://github.com/gvlfm78/BukkitOldCombatMechanics</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
     <repositories>
         <repository>
             <id>bukkit</id>
@@ -32,7 +39,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.13.1-R0.1-SNAPSHOT</version>
+            <version>1.13.2-R0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.gravitydevelopment.updater</groupId>
@@ -84,7 +91,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -93,7 +100,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -123,5 +130,4 @@
             </plugin>
         </plugins>
     </build>
-    <url>www.spigotmc.org/resources/oldcombatmechanics.19510</url>
 </project>
