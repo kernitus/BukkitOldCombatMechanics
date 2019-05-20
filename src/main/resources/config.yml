@@ -18,12 +18,12 @@ update-checker:
 enableIndividualToggle: false
 
 # List of interactive blocks that right clicking on will be ignored
-# This is for modules such as sword blocking and elytra
+# This is for modules such as sword blocking and disable-elytra
 interactive: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box]
  
 
-# To use the per-world feature you specify a list of the worlds in the []
-# For example: (names are case sensitive)
+# To use the per-world feature you must specify a list of worlds in square brackets []
+# For example (names are case sensitive):
 # worlds: [world,survival,creative,SkyWars]
 # Another example (for 1 world): 
 # worlds: [bestWorld]
@@ -36,14 +36,14 @@ disable-attack-cooldown:
   generic-attack-speed: 24
   
 disable-player-collisions:
-  # This is to disable player collision
+  # This is to disable player collisions
   # This is now compatible with scoreboard and tablist-editing plugins
   enabled: false
   worlds: []
 
 disable-sword-sweep:
   # This is to disable the sword sweep attack
-  # The particle effect will still be present but will not affect surrounding entities
+  # Particle effect is also now removed
   enabled: true
   worlds: []
   
@@ -59,9 +59,9 @@ disable-offhand:
   # Won't affect sword-blocking module
   enabled: true
   worlds: []
-  # Whether the following list blocks items or allows them
+  # Whether the following list allows items or blocks them
   whitelist: true
-  # List of items that should be allowed/not
+  # List of items that should be allowed/blocked
   # Example: [diamond_sword,BOW]
   items: []
   
@@ -128,28 +128,28 @@ old-tool-damage:
     DIAMOND_HOE: 1
 
 sword-blocking:
-  # This is to allow players to block with swords again by getting a shield while they hold right click with a sword
+  # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
   enabled: true
   worlds: []
-  # How often, it ticks, should OCM check if the player is still blocking with the shield and remove it if not
+  # How often, in ticks, OCM should check if the player is still blocking with a shield, and remove it if not
   # If this is too fast the player will have their shield disappear before they're able to block again causing a slight delay
   # If this is too slow players will have a shield in their hand well after they've stopped blocking
   # 20 ticks = 1 second
   restoreDelay: 40
   # List of items that holding in the offhand while right-clicking with a sword doesn't trigger blocking e.g. bow
   noBlockingItems: []
-  # Whether the above list should act as a blacklist (i.e. only items in it stop the blocking mechanic)
+  # Whether the above list should act as a blacklist (i.e. only items listed stop the blocking mechanic)
   blacklist: true
   
 shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
   enabled: true
-  # How much damage should blocking reduce
+  # How much damage blocking should reduce
   # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
   # 1.8 default: 50%             1.9 default: 33%
   # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
   generalDamageReduction: 50%
-  # This value works the same but exclusively for projectile damage
+  # This value works the same but is exclusively for projectile damage
   projectileDamageReduction: 50%
 
 old-golden-apples:
@@ -228,44 +228,16 @@ old-player-regen:
   frequency: 3
   # How many half-hearts the player should heal by, every seconds specified above
   amount: 1
-  # How much exhaustion healing should give to the player. In 1.8: 3 In 1.9: 4 in 1.11: 6
+  # How much exhaustion healing should give to the player. In 1.8: 3    In 1.9: 4    In 1.11: 6
   # If, after adding this, Minecraft finds the value is above 4, it subtracts 4
   # and either reduces saturation or, if saturation is 0, reduces food level by 1 (1/2 a stick)
   exhaustion: 3
 
 old-armour-strength:
-  # This is to set armour strength values as in pre-1.9
+  # This is to make armour calculations like in 1.8
+  # Based on this: https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187
   enabled: true
   worlds: []
-  # The higher the armour toughness value the closer the damage done while wearing armour is to pre-1.9 values
-  toughness: 9999
-  # This is to change the armour strength values if you so wish
-  strength:
-    # Leather armour
-    LEATHER_HELMET: 1
-    LEATHER_CHESTPLATE: 3
-    LEATHER_LEGGINGS: 2
-    LEATHER_BOOTS: 1
-    # Chainmail armour
-    CHAINMAIL_HELMET: 2
-    CHAINMAIL_CHESTPLATE: 5
-    CHAINMAIL_LEGGINGS: 4
-    CHAINMAIL_BOOTS: 1
-    # Golden armour
-    GOLD_HELMET: 2
-    GOLD_CHESTPLATE: 5
-    GOLD_LEGGINGS: 3
-    GOLD_BOOTS: 1
-    # Iron armour
-    IRON_HELMET: 2
-    IRON_CHESTPLATE: 6
-    IRON_LEGGINGS: 5
-    IRON_BOOTS: 2
-    # Diamond armour
-    DIAMOND_HELMET: 3
-    DIAMOND_CHESTPLATE: 8
-    DIAMOND_LEGGINGS: 6
-    DIAMOND_BOOTS: 3
     
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
@@ -276,7 +248,7 @@ disable-projectile-randomness:
 disable-bow-boost:
   # This is to stop players from boosting themselves forward by hitting themselves
   # while running with a punch II arrow from their bow
-  # This module just stops them from hitting themselves with arrows entirely
+  # This module simply stops them from hitting themselves with arrows entirely
   enabled: false
   worlds: []
 
@@ -384,7 +356,8 @@ old-potion-effects:
         base: 135
         extended: 360
 
-  #1.9+ potions
+  # 1.9+ potions
+  # Turtle Master potion currently incompatible, will just work like default
     luck:
       drinkable:
         base: 300
@@ -398,8 +371,8 @@ old-potion-effects:
         base: 90
 
   # EFFECTS
-  # If 'multiplier' is true value is multiplied by base tool damage
-  # If false it is added. If both true it is first increased by 1 then multiplied
+  # If 'multiplier' is true value is multiplied by base tool damage. If false it is added.
+  # If both true it is first increased by 1 then multiplied (same as +xx%)
   # Strength potion
   # 1.9: I = +3; II = +6;    1.8: I = +130%; II = +260%
   strength:
@@ -427,4 +400,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 34
+config-version: 35

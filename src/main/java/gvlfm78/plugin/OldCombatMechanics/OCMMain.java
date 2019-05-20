@@ -1,6 +1,5 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import com.codingforcookies.armourequip.ArmourListener;
 import gvlfm78.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import gvlfm78.plugin.OldCombatMechanics.hooks.api.Hook;
 import gvlfm78.plugin.OldCombatMechanics.module.Module;
@@ -107,7 +106,6 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
 
         // Module listeners
-        ModuleLoader.addModule(new ArmourListener(this));
         ModuleLoader.addModule(new ModuleAttackCooldown(this));
         ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
