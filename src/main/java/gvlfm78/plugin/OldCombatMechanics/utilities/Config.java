@@ -65,7 +65,6 @@ public class Config {
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
 
         WeaponDamages.initialise(plugin); //Reload weapon damages from config
-        ArmourValues.initialise(plugin); //Reload armour values from config
 
         // Load all interactive blocks (used by sword blocking and elytra modules)
         reloadInteractiveBlocks();
