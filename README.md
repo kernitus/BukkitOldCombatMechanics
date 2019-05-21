@@ -13,16 +13,19 @@ If you are interested in contributing, please [check this page first](.github/CO
 
 ## Features
 - Master & per-world toggle for each module
-- All modules are fully customisable
+- All modules fully customisable
 - Remove weapon cooldown
 - Setting tool damage as in pre-1.9
 - Make players regenerate like in pre-1.9 & with correct exhaustion
 - Give players a shield while they right click with a sword
 - Have armour be as strong as in pre-1.9
+- Have configurable old potion durations
+- Have configurable old potion effects (strength & weakness)
 - Disable sword sweep attack
 - Option to disable shield crafting
 - Disable off-hand (with white/blacklist)
 - Make shields block 1/2 a heart instead of reduce damage to 33%
+- Configurable general & projectile damage reduction for shields
 - Have arrows not be stopped by shields
 - Re-add snowball, egg & enderpearl knockback
 - Disable player collisions
@@ -35,7 +38,7 @@ If you are interested in contributing, please [check this page first](.github/CO
 - Disable random projectile trajectories
 - Disable bow boosting
 
-## Installing
+## Installation
 To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
 
 Development versions are available on the [OldCombatMechanics Jenkins server](https://jenkinsgvl-jenkins-gvl.1d35.starter-us-east-1.openshiftapps.com/job/OldCombatMechanics).
