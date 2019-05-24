@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>1.7.1</version>
+    <version>1.7.2beta</version>
     <name>OldCombatMechanics</name>
     <description>Implements pre-1.9 combat-related mechanics</description>
     <url>https://github.com/kernitus/BukkitOldCombatMechanics</url>

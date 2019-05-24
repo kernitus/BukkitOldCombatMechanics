@@ -26,7 +26,8 @@ public class UpdateChecker {
                 this.updateSource = new BukkitUpdateSource(plugin, pluginFile);
                 break;
             case "auto":
-                if(Bukkit.getVersion().toLowerCase(Locale.ROOT).contains("spigot")){
+                String serverVersion = Bukkit.getVersion().toLowerCase(Locale.ROOT);
+                if(serverVersion.contains("spigot") || serverVersion.contains("paper")){
                     this.updateSource = new SpigotUpdateSource();
                 } else {
                     this.updateSource = new BukkitUpdateSource(plugin, pluginFile);

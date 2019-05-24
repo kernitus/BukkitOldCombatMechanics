@@ -31,6 +31,10 @@ public class OCMMain extends JavaPlugin {
         return INSTANCE;
     }
 
+    public static String getVersion(){
+        return INSTANCE.getDescription().getVersion();
+    }
+
     @Override
     public void onEnable(){
         INSTANCE = this;

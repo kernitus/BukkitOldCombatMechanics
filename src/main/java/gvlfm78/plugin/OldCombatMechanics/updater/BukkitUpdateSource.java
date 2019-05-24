@@ -23,7 +23,7 @@ public class BukkitUpdateSource implements UpdateSource {
         if(updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE){
             //Updater knows local and remote versions are different, but not if it's an update
             String remoteVersion = updater.getLatestName().replaceAll("[A-Za-z\\s]", "");
-            if(VersionChecker.shouldUpdate(currentVersion)){
+            if(VersionChecker.shouldUpdate(remoteVersion, currentVersion)){
                 return Arrays.asList(
                         ChatColor.BLUE + "An update for OldCombatMechanics to version " + remoteVersion + " is available!",
                         ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + updater.getLatestFileLink()
