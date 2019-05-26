@@ -28,6 +28,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
+
 /**
  * Allows configurable potion effect durations.
  */
@@ -57,7 +60,7 @@ public class ModuleOldPotionEffects extends Module {
     }
 
     @Override
-    public void reload(){
+    public void reload() {
         durations = ConfigUtils.loadPotionDurationsList(module());
     }
 
@@ -65,48 +68,53 @@ public class ModuleOldPotionEffects extends Module {
      * Change the duration using values defined in config
      * for drinking potions
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
-        ItemStack potionItem = event.getItem();
-        if(potionItem.getType() != Material.POTION) return;
 
-        PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
-        PotionData potionData = potionMeta.getBasePotionData();
-        PotionType potionType = potionData.getType();
+        final ItemStack potionItem = event.getItem();
+        if (potionItem.getType() != Material.POTION) return;
 
-        if(EXCLUDED_POTION_TYPES.contains(potionType)) return;
+        final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
+        if (potionMeta == null) return;
+
+        final PotionData potionData = potionMeta.getBasePotionData();
+        final PotionType potionType = potionData.getType();
+
+        if (EXCLUDED_POTION_TYPES.contains(potionType)) return;
 
         event.setCancelled(true);
 
-        int duration = getPotionDuration(potionData, false);
+        final int amplifier = potionData.isUpgraded() ? 1 : 0;
+        final int duration = getPotionDuration(potionData, false);
 
-        PotionEffectType effectType = potionType.getEffectType();
+        final PotionEffectType effectType = requireNonNull(potionType.getEffectType());
+        final PotionEffect potionEffect = new PotionEffect(effectType, duration, amplifier);
 
-        int amplifier = potionData.isUpgraded() ? 1 : 0;
-
-        PotionEffect potionEffect = new PotionEffect(effectType, duration, amplifier);
-
-        Player player = event.getPlayer();
+        final Player player = event.getPlayer();
         setNewPotionEffect(player, potionEffect);
 
         // Remove item from hand since we cancelled the event
-        if(player.getGameMode() != GameMode.SURVIVAL) return;
+        if (player.getGameMode() == GameMode.CREATIVE) return;
 
-        PlayerInventory playerInventory = player.getInventory();
+        final PlayerInventory playerInventory = player.getInventory();
 
-        ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
-        int amount = potionItem.getAmount();
+        final ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
+        final int amount = potionItem.getAmount();
 
-        if(amount > 1){
+        if (amount > 1) {
             potionItem.setAmount(amount - 1);
-            player.getInventory().addItem(glassBottle);
-        } else {
-            // If it was just one potion set item to glass bottle
-            if (potionItem.equals(playerInventory.getItemInMainHand()))
-                playerInventory.setItemInMainHand(glassBottle);
-            else
-                playerInventory.setItemInOffHand(glassBottle);
+            playerInventory.addItem(glassBottle);
+            return;
         }
+
+        // If it was just one potion set item to glass bottle
+        if (potionItem.equals(playerInventory.getItemInMainHand())) {
+            playerInventory.setItemInMainHand(glassBottle);
+        }
+        else {
+            playerInventory.setItemInOffHand(glassBottle);
+        }
+
     }
 
     /**
