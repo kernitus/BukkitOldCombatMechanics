@@ -46,6 +46,8 @@ public class ModuleOldArmourStrength extends Module {
 
         LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
+        if(!e.isApplicable(EntityDamageEvent.DamageModifier.MAGIC)) return;
+
         double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
         double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
