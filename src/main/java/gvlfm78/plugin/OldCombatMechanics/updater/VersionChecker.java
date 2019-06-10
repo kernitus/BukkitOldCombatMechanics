@@ -28,7 +28,7 @@ public class VersionChecker {
     }
 
     private static int[] getVersionNumbers(String ver){
-        Matcher m = Pattern.compile("(\\d+)\\.(\\d+)\\.*(\\d*)(beta(\\d*))?").matcher(ver);
+        Matcher m = Pattern.compile("(\\d+)\\.(\\d+)\\.*(\\d*)(-beta(\\d*))?", Pattern.CASE_INSENSITIVE).matcher(ver);
         if(!m.matches()) throw new IllegalArgumentException("Plugin version formatted wrong!");
 
         // Group 1 = MAJOR
