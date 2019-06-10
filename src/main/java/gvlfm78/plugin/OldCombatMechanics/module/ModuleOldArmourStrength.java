@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.enchantments.Enchantment;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 /**
  * Reverts the armour strength changes.
@@ -36,17 +38,17 @@ public class ModuleOldArmourStrength extends Module {
             EntityDamageEvent.DamageCause.LIGHTNING
     );
 
-    public ModuleOldArmourStrength(OCMMain plugin){
+    public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityDamage(EntityDamageEvent e){
-        if(!(e.getEntity() instanceof LivingEntity)) return;
+    public void onEntityDamage(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof LivingEntity)) return;
 
         LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
-        if(!e.isApplicable(EntityDamageEvent.DamageModifier.MAGIC)) return;
+        if (!e.isApplicable(EntityDamageEvent.DamageModifier.MAGIC)) return;
 
         double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
         double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
@@ -54,7 +56,7 @@ public class ModuleOldArmourStrength extends Module {
         double reducedDamage = e.getDamage() * reductionPercentage;
         EntityDamageEvent.DamageCause damageCause = e.getCause();
 
-        if(!NON_REDUCED_CAUSES.contains(damageCause) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)){
+        if (!NON_REDUCED_CAUSES.contains(damageCause) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)) {
             //debug("Damage Cause: " + damageCause + " is applicable");
             e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
@@ -62,7 +64,7 @@ public class ModuleOldArmourStrength extends Module {
         double enchantmentReductionPercentage = calculateEnchantmentReductionPercentage(
                 damagedEntity.getEquipment(), e.getCause());
 
-        if(enchantmentReductionPercentage > 0){
+        if (enchantmentReductionPercentage > 0) {
             //Reset MAGIC (Armour enchants) damage
             e.setDamage(EntityDamageEvent.DamageModifier.MAGIC, 0);
 
@@ -76,17 +78,17 @@ public class ModuleOldArmourStrength extends Module {
                 e.getFinalDamage()));
     }
 
-    private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause){
+    private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause) {
         int totalEpf = 0;
-        for(ItemStack armourItem : equipment.getArmorContents()){
-            if(armourItem != null && armourItem.getType() != Material.AIR){
-                for(EnchantmentType enchantmentType : EnchantmentType.values()){
+        for (ItemStack armourItem : equipment.getArmorContents()) {
+            if (armourItem != null && armourItem.getType() != Material.AIR) {
+                for (EnchantmentType enchantmentType : EnchantmentType.values()) {
 
-                    if(!enchantmentType.protectsAgainst(cause)) continue;
+                    if (!enchantmentType.protectsAgainst(cause)) continue;
 
                     int enchantmentLevel = armourItem.getEnchantmentLevel(enchantmentType.getEnchantment());
 
-                    if(enchantmentLevel > 0){
+                    if (enchantmentLevel > 0) {
                         totalEpf += enchantmentType.getEpf(enchantmentLevel);
                     }
                 }
@@ -107,21 +109,28 @@ public class ModuleOldArmourStrength extends Module {
     }
 
     private enum EnchantmentType {
-        PROTECTION(EnumSet.allOf(EntityDamageEvent.DamageCause.class), 0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
-        FIRE_PROTECTION(EnumSet.of(
-                EntityDamageEvent.DamageCause.FIRE,
-                EntityDamageEvent.DamageCause.FIRE_TICK,
-                EntityDamageEvent.DamageCause.LAVA,
-                EntityDamageEvent.DamageCause.HOT_FLOOR
-        ), 1.25, Enchantment.PROTECTION_FIRE),
-        BLAST_PROTECTION(EnumSet.of(
+        PROTECTION(() -> EnumSet.allOf(EntityDamageEvent.DamageCause.class), 0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
+        FIRE_PROTECTION(() -> {
+            EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
+                    EntityDamageEvent.DamageCause.FIRE,
+                    EntityDamageEvent.DamageCause.FIRE_TICK,
+                    EntityDamageEvent.DamageCause.LAVA
+            );
+
+            if (Reflector.versionIsNewerOrEqualAs(1, 10, 0)) {
+                damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
+            }
+
+            return damageCauses;
+        }, 1.25, Enchantment.PROTECTION_FIRE),
+        BLAST_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
                 EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
         ), 1.5, Enchantment.PROTECTION_EXPLOSIONS),
-        PROJECTILE_PROTECTION(EnumSet.of(
+        PROJECTILE_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.PROJECTILE
         ), 1.5, Enchantment.PROTECTION_PROJECTILE),
-        FALL_PROTECTION(EnumSet.of(
+        FALL_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.FALL
         ), 2.5, Enchantment.PROTECTION_FALL);
 
@@ -129,8 +138,8 @@ public class ModuleOldArmourStrength extends Module {
         private double typeModifier;
         private Enchantment enchantment;
 
-        EnchantmentType(Set<EntityDamageEvent.DamageCause> protection, double typeModifier, Enchantment enchantment){
-            this.protection = protection;
+        EnchantmentType(Supplier<Set<EntityDamageEvent.DamageCause>> protection, double typeModifier, Enchantment enchantment) {
+            this.protection = protection.get();
             this.typeModifier = typeModifier;
             this.enchantment = enchantment;
         }
@@ -141,7 +150,7 @@ public class ModuleOldArmourStrength extends Module {
          * @param cause the damage cause
          * @return true if the armour protects against the given damage cause
          */
-        public boolean protectsAgainst(EntityDamageEvent.DamageCause cause){
+        public boolean protectsAgainst(EntityDamageEvent.DamageCause cause) {
             return protection.contains(cause);
         }
 
@@ -150,7 +159,7 @@ public class ModuleOldArmourStrength extends Module {
          *
          * @return the bukkit enchantment
          */
-        public Enchantment getEnchantment(){
+        public Enchantment getEnchantment() {
             return enchantment;
         }
 
@@ -160,7 +169,7 @@ public class ModuleOldArmourStrength extends Module {
          * @param level the level of the enchantment
          * @return the EPF
          */
-        public int getEpf(int level){
+        public int getEpf(int level) {
             // floor ( (6 + level^2) * TypeModifier / 3 )
             return (int) Math.floor((6 + level * level) * typeModifier / 3);
         }
