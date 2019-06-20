@@ -70,7 +70,6 @@ public class ModuleOldPotionEffects extends Module {
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
-
         final ItemStack potionItem = event.getItem();
         if (potionItem.getType() != Material.POTION) return;
 
@@ -98,23 +97,23 @@ public class ModuleOldPotionEffects extends Module {
 
         final PlayerInventory playerInventory = player.getInventory();
 
-        final ItemStack glassBottle = new ItemStack(Material.GLASS_BOTTLE);
         final int amount = potionItem.getAmount();
+        ItemStack toSet = new ItemStack(Material.GLASS_BOTTLE);
 
-        if (amount > 1) {
-            potionItem.setAmount(amount - 1);
-            playerInventory.addItem(glassBottle);
-            return;
+        boolean isInMainHand = potionItem.equals(playerInventory.getItemInMainHand());
+
+        //There was more than one potion in the stack
+        if(amount > 1){
+            playerInventory.addItem(toSet);
+            toSet = potionItem;
+            toSet.setAmount(amount - 1);
         }
 
-        // If it was just one potion set item to glass bottle
-        if (potionItem.equals(playerInventory.getItemInMainHand())) {
-            playerInventory.setItemInMainHand(glassBottle);
-        }
-        else {
-            playerInventory.setItemInOffHand(glassBottle);
-        }
-
+        // If potion was in main hand
+        if (isInMainHand)
+            playerInventory.setItemInMainHand(toSet);
+        else
+            playerInventory.setItemInOffHand(toSet);
     }
 
     /**
