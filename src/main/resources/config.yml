@@ -367,8 +367,10 @@ old-potion-effects:
     slow_falling:
       drinkable:
         base: 90
+        extended: 240
       splash:
         base: 90
+        extended: 240
 
   # EFFECTS
   # If 'multiplier' is true value is multiplied by base tool damage. If false it is added.
@@ -400,4 +402,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 35
+config-version: 36
