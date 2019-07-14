@@ -2,18 +2,23 @@ package gvlfm78.plugin.OldCombatMechanics;
 
 import gvlfm78.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import gvlfm78.plugin.OldCombatMechanics.hooks.api.Hook;
-import gvlfm78.plugin.OldCombatMechanics.module.Module;
 import gvlfm78.plugin.OldCombatMechanics.module.*;
 import gvlfm78.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
 import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
 import gvlfm78.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import org.bstats.bukkit.Metrics;
+import org.bukkit.Bukkit;
+import org.bukkit.event.EventException;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -87,9 +92,27 @@ public class OCMMain extends JavaPlugin {
 
         enableListeners.forEach(Runnable::run);
 
+        // Properly handle Plugman load/unload.
+        List<RegisteredListener> joinListeners = Arrays.stream(PlayerJoinEvent.getHandlerList().getRegisteredListeners())
+                .filter(registeredListener -> registeredListener.getPlugin().equals(this))
+                .collect(Collectors.toList());
+
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            PlayerJoinEvent event = new PlayerJoinEvent(player, "");
+
+            // Trick all the modules into thinking the player just joined in case the plugin was loaded with Plugman.
+            // This way attack speeds, item modifications, etc. will be applied immediately instead of after a re-log.
+            joinListeners.forEach(registeredListener -> {
+                try{
+                    registeredListener.callEvent(event);
+                } catch(EventException e){
+                    e.printStackTrace();
+                }
+            });
+        });
+
         // Logging to console the enabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
-
     }
 
     @Override
@@ -99,7 +122,24 @@ public class OCMMain extends JavaPlugin {
 
         disableListeners.forEach(Runnable::run);
 
-        //if (task != null) task.cancel();
+        // Properly handle Plugman load/unload.
+        List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
+                .filter(registeredListener -> registeredListener.getPlugin().equals(this))
+                .collect(Collectors.toList());
+
+        // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
+        // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            PlayerQuitEvent event = new PlayerQuitEvent(player, "");
+
+            quitListeners.forEach(registeredListener -> {
+                try{
+                    registeredListener.callEvent(event);
+                } catch(EventException e){
+                    e.printStackTrace();
+                }
+            });
+        });
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
@@ -167,6 +207,7 @@ public class OCMMain extends JavaPlugin {
     public void addDisableListener(Runnable action){
         disableListeners.add(action);
     }
+
     /**
      * Registers a runnable to run when the plugin gets enabled.
      *
