@@ -1,16 +1,12 @@
 package kernitus.plugin.OldCombatMechanics;
 
-import kernitus.plugin.OldCombatMechanics.updater.BukkitUpdateSource;
-import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.updater.SpigotUpdateSource;
 import kernitus.plugin.OldCombatMechanics.updater.UpdateSource;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.io.File;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -18,21 +14,7 @@ public class UpdateChecker {
     private UpdateSource updateSource;
 
     public UpdateChecker(OCMMain plugin, File pluginFile){
-        switch(ModuleUpdateChecker.getMode()){
-            case "spigot":
-                this.updateSource = new SpigotUpdateSource();
-                break;
-            case "bukkit":
-                this.updateSource = new BukkitUpdateSource(plugin, pluginFile);
-                break;
-            case "auto":
-                String serverVersion = Bukkit.getVersion().toLowerCase(Locale.ROOT);
-                if(serverVersion.contains("spigot") || serverVersion.contains("paper")){
-                    this.updateSource = new SpigotUpdateSource();
-                } else {
-                    this.updateSource = new BukkitUpdateSource(plugin, pluginFile);
-                }
-        }
+        this.updateSource = new SpigotUpdateSource();
     }
 
     public void sendUpdateMessages(CommandSender sender){
