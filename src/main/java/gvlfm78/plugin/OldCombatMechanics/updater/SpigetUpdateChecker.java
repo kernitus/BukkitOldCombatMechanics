@@ -1,14 +1,21 @@
 package kernitus.plugin.OldCombatMechanics.updater;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.List;
 
+/**
+ * Checks <a href="https://spiget.org">Spiget</a> for updates.
+ */
 public class SpigetUpdateChecker {
 
     private static final String USER_AGENT = "OldCombatMechanics";
@@ -16,43 +23,122 @@ public class SpigetUpdateChecker {
     private static final String UPDATES_URL = "https://api.spiget.org/v2/resources/19510/updates?size=15000";
     private String latestVersion = "";
 
+    /**
+     * Returns whether an update is available.
+     *
+     * @return true if an update is available
+     */
     public boolean isUpdateAvailable(){
         try{
-            JSONArray versionsArray = getArray(VERSIONS_URL);
-            latestVersion = ((JSONObject) versionsArray.get(versionsArray.size() - 1)).get("name").toString();
+            List<VersionPojo> versions = getVersions(VERSIONS_URL);
+
+            if(versions.isEmpty()){
+                return false;
+            }
+
+            VersionPojo currentVersion = versions.get(versions.size() - 1);
+            latestVersion = currentVersion.getName();
+
             return VersionChecker.shouldUpdate(latestVersion);
         } catch(Exception e){
             return false;
         }
     }
 
+    /**
+     * Returns the URL for the update.
+     *
+     * @return the URL for the update
+     */
     public String getUpdateURL(){
         try{
-            JSONArray updatesArray = getArray(UPDATES_URL);
-            String updateId = ((JSONObject) updatesArray.get(updatesArray.size() - 1)).get("id").toString();
+            List<VersionPojo> versions = getVersions(UPDATES_URL);
+
+            if(versions.isEmpty()){
+                return "Error getting update URL";
+            }
+
+            VersionPojo currentVersion = versions.get(versions.size() - 1);
+
+            String updateId = currentVersion.getId();
             return "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update=" + updateId;
         } catch(Exception e){
             return "Error getting update URL";
         }
     }
 
+    /**
+     * Returns the latest found version. Only populated after a call to {@link #isUpdateAvailable()}.
+     *
+     * @return the latest found version
+     */
     public String getLatestVersion(){
         return latestVersion;
     }
 
-    private JSONArray getArray(String urlString){
+    /**
+     * Returns all versions.
+     *
+     * @param urlString the url to read the json from
+     * @return a list with all found versions
+     */
+    private List<VersionPojo> getVersions(String urlString){
         try{
-            URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("User-Agent", USER_AGENT); // Set User-Agent
+            InputStreamReader reader = fetchPage(urlString);
 
-            InputStream inputStream = connection.getInputStream();
-            InputStreamReader reader = new InputStreamReader(inputStream);
+            Type pojoType = new TypeToken<List<VersionPojo>>() {
+            }.getType();
 
-            return (JSONArray) JSONValue.parseWithException(reader);
-        } catch(Exception e){
+            List<VersionPojo> parsedVersions = new Gson().fromJson(reader, pojoType);
+
+            if(parsedVersions == null){
+                System.err.println("JSON was at EOF when checking for spiget updates!");
+                return Collections.emptyList();
+            }
+
+            return parsedVersions;
+        } catch(JsonSyntaxException | IOException e){
             e.printStackTrace();
-            return null;
+            return Collections.emptyList();
         }
     }
+
+    private InputStreamReader fetchPage(String urlString) throws IOException{
+        URL url = new URL(urlString);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.addRequestProperty("User-Agent", USER_AGENT);
+
+        InputStream inputStream = connection.getInputStream();
+        return new InputStreamReader(inputStream);
+    }
+
+    /**
+     * A pojo for a version returned by Spiget.
+     */
+    private static class VersionPojo {
+        // Created by GSON
+        @SuppressWarnings("unused")
+        private String name;
+        @SuppressWarnings("unused")
+        private String id;
+
+        /**
+         * The name. Might be null, if this was an update request.
+         *
+         * @return the name of this version
+         */
+        String getName(){
+            return name;
+        }
+
+        /**
+         * The id of this version.
+         *
+         * @return the id of this version
+         */
+        String getId(){
+            return id;
+        }
+    }
+
 }
