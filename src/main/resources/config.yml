@@ -10,8 +10,6 @@
 # This is to toggle the update checker
 update-checker:
   enabled: true
-  # Modes: auto, bukkit, spigot
-  mode: auto
     
 # Enable the oldcombatmechanics.toggle permission
 # for players to individually /ocm toggle their cooldown
@@ -402,4 +400,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 36
+config-version: 37

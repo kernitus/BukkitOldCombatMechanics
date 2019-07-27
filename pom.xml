@@ -19,10 +19,6 @@
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
-            <id>gravity-repo</id>
-            <url>http://repo.gravitydevelopment.net</url>
-        </repository>
-        <repository>
             <id>bstats-repo</id>
             <url>http://repo.bstats.org/content/repositories/releases/</url>
         </repository>
@@ -41,11 +37,6 @@
             <artifactId>bukkit</artifactId>
             <version>1.13.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.gravitydevelopment.updater</groupId>
-            <artifactId>updater</artifactId>
-            <version>2.4</version>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>
@@ -111,7 +102,6 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>net.gravitydevelopment.updater:*</include>
                                     <include>org.bstats:*</include>
                                 </includes>
                             </artifactSet>
@@ -119,10 +109,6 @@
                                 <relocation>
                                     <pattern>org.bstats</pattern>
                                     <shadedPattern>gvlfm78.plugin.OldCombatMechanics.lib.bstats</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>net.gravitydevelopment.updater</pattern>
-                                    <shadedPattern>gvlfm78.plugin.OldCombatMechanics.lib.updater</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
