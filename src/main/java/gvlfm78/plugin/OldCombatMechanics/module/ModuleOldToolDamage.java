@@ -40,7 +40,7 @@ public class ModuleOldToolDamage extends Module {
         double oldBaseDamage = event.getBaseDamage();
 
         event.setBaseDamage(weaponDamage);
-        debug("Old tool damage: " + oldBaseDamage + " New tool damage: " + weaponDamage, damager);
+        debug("Old " + weaponMaterial + " damage: " + oldBaseDamage + " New tool damage: " + weaponDamage, damager);
 
         // Set sharpness to 1.8 damage value
         double newSharpnessDamage = DamageUtils.getOldSharpnessDamage(event.getSharpnessLevel());
