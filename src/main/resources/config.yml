@@ -1,4 +1,3 @@
-
 ############# OldCombatMechanics Plugin by kernitus and Rayzr522 #############
 #                                                                           #
 # Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/     #
@@ -10,7 +9,7 @@
 # This is to toggle the update checker
 update-checker:
   enabled: true
-    
+
 # Enable the oldcombatmechanics.toggle permission
 # for players to individually /ocm toggle their cooldown
 enableIndividualToggle: false
@@ -18,7 +17,7 @@ enableIndividualToggle: false
 # List of interactive blocks that right clicking on will be ignored
 # This is for modules such as sword blocking and disable-elytra
 interactive: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box]
- 
+
 
 # To use the per-world feature you must specify a list of worlds in square brackets []
 # For example (names are case sensitive):
@@ -32,7 +31,7 @@ disable-attack-cooldown:
   worlds: []
   # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
   generic-attack-speed: 24
-  
+
 disable-player-collisions:
   # This is to disable player collisions
   # This is now compatible with scoreboard and tablist-editing plugins
@@ -44,14 +43,14 @@ disable-sword-sweep:
   # Particle effect is also now removed
   enabled: true
   worlds: []
-  
+
 disable-crafting:
   # Disable the crafting of specified items
   enabled: true
   worlds: []
   # List of denied items
   denied: [shield]
-  
+
 disable-offhand:
   # Disable the usage of the offhand
   # Won't affect sword-blocking module
@@ -62,29 +61,29 @@ disable-offhand:
   # List of items that should be allowed/blocked
   # Example: [diamond_sword,BOW]
   items: []
-  
+
 old-brewing-stand:
   # Automatically refuels brewing stands
   enabled: true
   worlds: []
-  
+
 no-lapis-enchantments:
   # Automatically adds lapis to enchantment tables upon opening
   enabled: false
   worlds: []
   # Whether to only allow this for players with oldcombatmechanics.nolapis permission
   usePermission: false
-  
+
 disable-elytra:
   # Do not allow players to wear elytra
   enabled: false
   worlds: []
-  
+
 disable-enderpearl-cooldown:
   # Disables enderpearl cooldown
   enabled: true
   worlds: []
-  
+
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   # IMPORTANT: Also enable disable-sword-sweep module or sweeps will have the damage value of the weapon in hand
@@ -138,7 +137,7 @@ sword-blocking:
   noBlockingItems: []
   # Whether the above list should act as a blacklist (i.e. only items listed stop the blocking mechanic)
   blacklist: true
-  
+
 shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
   enabled: true
@@ -205,7 +204,7 @@ old-fishing-knockback:
   cancelDraggingIn: true
   # This is the delay in milliseconds in-between rod damage, so the player hit has time to fall back down
   hitCooldown: 1000
-  
+
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
   # This has been a Bukkit bug for so long people thought it was vanilla when it was recently patched
@@ -236,13 +235,13 @@ old-armour-strength:
   # Based on this: https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187
   enabled: true
   worlds: []
-    
+
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
   # This is actually a very old feature and has been in the game for quite some time
   enabled: false
   worlds: []
-    
+
 disable-bow-boost:
   # This is to stop players from boosting themselves forward by hitting themselves
   # while running with a punch II arrow from their bow
@@ -254,7 +253,7 @@ old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
   enabled: true
 
-### DURATION: (in seconds)
+  ### DURATION: (in seconds)
   potion-durations:
     regen: # Regeneration
       drinkable:
@@ -354,8 +353,8 @@ old-potion-effects:
         base: 135
         extended: 360
 
-  # 1.9+ potions
-  # Turtle Master potion currently incompatible, will just work like default
+    # 1.9+ potions
+    # Turtle Master potion currently incompatible, will just work like default
     luck:
       drinkable:
         base: 300
@@ -385,6 +384,21 @@ old-potion-effects:
     modifier: -0.5
     multiplier: false
 
+chorus-fruit:
+  # This makes the chorus fruit behaviour configurable
+  enabled: true
+  worlds: []
+  # The maximum distance the fruit can teleport the player. This a PER AXIS value, so this outlines a cube with
+  # 2 * max-teleportation-distance as the side length
+  # Vanilla default is 8.
+  max-teleportation-distance: 8
+  # Whether to prevent eating the fruit completely
+  prevent-eating: false
+  # The saturation value of the chorus fruit. Default is 2.4
+  saturation-value: 2.4
+  # The hunger value of the chorus fruit. Default is 4 (2 bars)
+  hunger-value: 4
+
 ################################
 #### SUPPORT SETTINGS BELOW ####
 ################################
@@ -394,10 +408,10 @@ support:
 ################################
 #### SPECIAL SETTINGS BELOW ####
 ################################
-  
+
 # This enables debug messages, only enable when troubleshooting
 debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 37
+config-version: 38
