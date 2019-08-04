@@ -14,8 +14,6 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class ModuleChorusFruit extends Module {
 
-    public static final String LAST_TELEPORT_METADATA_KEY = "last-chorous-teleport";
-
     /**
      * Creates a new module.
      *
