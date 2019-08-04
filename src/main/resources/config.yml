@@ -392,6 +392,9 @@ chorus-fruit:
   # 2 * max-teleportation-distance as the side length
   # Vanilla default is 8.
   # Setting this to 0 disables chorus fruit teleport.
+  # Setting this to a value greater than 8 MIGHT CAUSE CONFLICTS with bukkit's internal anti cheat
+  # and *potentially* any other anti-cheat you use. Please make sure this is not an issue before increasing
+  # this value.
   max-teleportation-distance: 8
   # Whether to prevent eating the fruit completely. This also prevents the teleportation.
   prevent-eating: false
