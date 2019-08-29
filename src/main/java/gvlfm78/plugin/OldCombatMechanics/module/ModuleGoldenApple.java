@@ -2,10 +2,8 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
+import org.bukkit.advancement.Advancement;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -13,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerStatisticIncrementEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.ShapedRecipe;
@@ -91,10 +90,12 @@ public class ModuleGoldenApple extends Module {
     public void onItemConsume(PlayerItemConsumeEvent e){
         if(e.isCancelled()) return; // Don't do anything if another plugin cancelled the event
 
-        if(e.getItem().getType() != Material.GOLDEN_APPLE && !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem()))
-            return;
-
         if(!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) return;
+
+        Material consumedMaterial = e.getItem().getType();
+
+        if(consumedMaterial != Material.GOLDEN_APPLE && !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem()))
+            return;
 
         e.setCancelled(true);
 
@@ -145,6 +146,23 @@ public class ModuleGoldenApple extends Module {
         // The bug occurs here, so we must check which hand has the apples
         // A player can't eat food in the offhand if there is any in the main hand
         // On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
+
+        // Below here are fixes for statistics & advancements, given we are cancelling the event
+        int initialValue = p.getStatistic(Statistic.USE_ITEM, consumedMaterial);
+
+        // We need to increment player statistics for having eaten a gapple
+        p.incrementStatistic(Statistic.USE_ITEM, consumedMaterial);
+
+        // Call the event as .incrementStatistic doesn't seem to, and other plugins may rely on it
+        PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p,Statistic.USE_ITEM,initialValue,initialValue+1,consumedMaterial);
+        Bukkit.getServer().getPluginManager().callEvent(psie);
+
+        NamespacedKey nsk = NamespacedKey.minecraft("husbandry/balanced_diet");
+        Advancement advancement = Bukkit.getAdvancement(nsk);
+
+        // Award advancement criterion for having eaten gapple, as incrementing statistic or calling event doesn't seem to
+        if(advancement != null)
+            p.getAdvancementProgress(advancement).awardCriteria(consumedMaterial.name().toLowerCase());
     }
 
     private List<PotionEffect> getPotionEffects(String apple){
