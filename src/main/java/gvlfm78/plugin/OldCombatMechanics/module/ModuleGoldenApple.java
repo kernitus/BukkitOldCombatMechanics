@@ -27,7 +27,7 @@ import java.util.OptionalInt;
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
 /**
- * Customize the golden apple effects.
+ * Customise the golden apple effects.
  */
 public class ModuleGoldenApple extends Module {
 
@@ -70,8 +70,6 @@ public class ModuleGoldenApple extends Module {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareItemCraft(PrepareItemCraftEvent e){
-        if(e.getInventory() == null) return;
-
         ItemStack item = e.getInventory().getResult();
         if(item == null)
             return; // This should never ever ever ever run. If it does then you probably screwed something up.
@@ -91,7 +89,7 @@ public class ModuleGoldenApple extends Module {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onItemConsume(PlayerItemConsumeEvent e){
-        if(e.getItem() == null) return;
+        if(e.isCancelled()) return; // Don't do anything if another plugin cancelled the event
 
         if(e.getItem().getType() != Material.GOLDEN_APPLE && !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem()))
             return;
@@ -109,7 +107,7 @@ public class ModuleGoldenApple extends Module {
 
         //Hunger level
         int foodLevel = p.getFoodLevel();
-        foodLevel = foodLevel + 4 > 20 ? 20 : foodLevel + 4;
+        foodLevel = Math.min(foodLevel + 4, 20);
 
         item.setAmount(item.getAmount() - 1);
 
