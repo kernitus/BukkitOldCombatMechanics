@@ -54,3 +54,8 @@ To install OldCombatMechanics, please download the latest version from the [rele
 </a>
 
 <hr/>
+
+
+<a href="https://bstats.org/plugin/bukkit/OldCombatMechanics">
+    <img src="https://bstats.org/signatures/Bukkit/OldCombatMechanics.svg" alt="bStats">
+</a>
