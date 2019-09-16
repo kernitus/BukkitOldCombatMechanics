@@ -81,6 +81,8 @@ public class OCMMain extends JavaPlugin {
         //BStats Metrics
         Metrics metrics = new Metrics(this);
 
+
+        /*Custom bar charts currently disabled on bStats
         metrics.addCustomChart(
                 new Metrics.SimpleBarChart(
                         "enabled_modules",
@@ -88,7 +90,14 @@ public class OCMMain extends JavaPlugin {
                                 .filter(Module::isEnabled)
                                 .collect(Collectors.toMap(Module::toString, module -> 1))
                 )
-        );
+        );*/
+
+        // Custom Advanced Pie Chart:
+        metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
+                () -> ModuleLoader.getModules().stream()
+                    .filter(Module::isEnabled)
+                    .collect(Collectors.toMap(Module::toString, module -> 1))
+        ));
 
         enableListeners.forEach(Runnable::run);
 
