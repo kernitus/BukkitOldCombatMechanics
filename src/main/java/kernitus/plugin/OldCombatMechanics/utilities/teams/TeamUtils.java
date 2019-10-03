@@ -105,6 +105,10 @@ public class TeamUtils {
             @SuppressWarnings("unchecked")
             Collection<String> identifiers = (Collection<String>) VERSION_DATA.getFieldPlayerNames().get(packet);
 
+            if (identifiers == null) {
+                return Collections.emptyList();
+            }
+
             return identifiers;
         } catch(IllegalAccessException e){
             // should not happen if the getting works
