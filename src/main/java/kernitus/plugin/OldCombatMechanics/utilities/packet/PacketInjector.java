@@ -1,12 +1,12 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.entity.Player;
 
 import java.lang.ref.WeakReference;
@@ -150,6 +150,11 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
 
+        if(!Packet.isNmsPacket(packet)){
+            debug("Received a packet THAT IS NO PACKET: " + packet.getClass() + " " + packet);
+            return;
+        }
+
         PacketEvent event = new PacketEvent(
                 packet,
                 PacketEvent.ConnectionDirection.TO_CLIENT,
@@ -183,6 +188,11 @@ class PacketInjector extends ChannelDuplexHandler {
 
             // bubble up
             super.channelRead(channelHandlerContext, packet);
+            return;
+        }
+
+        if(!Packet.isNmsPacket(packet)){
+            debug("Received a packet THAT IS NO PACKET: " + packet.getClass() + " " + packet);
             return;
         }
 

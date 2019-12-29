@@ -104,7 +104,7 @@ public class Packet {
             throw new IllegalStateException("Could not find packet class! Therefore this class is broken.");
         }
 
-        if(!Reflector.inheritsFrom(nmsPacket.getClass(), NMS_PACKET_CLASS)){
+        if(!isNmsPacket(nmsPacket)){
             throw new IllegalArgumentException("You must pass a 'Packet' object!");
         }
 
@@ -113,6 +113,16 @@ public class Packet {
         } catch(Exception e){
             throw new RuntimeException("Failed to create packet!", e);
         }
+    }
+
+    /**
+     * Returns true if the given object is a NMS packet.
+     *
+     * @param nmsPacket the object to check
+     * @return true if the given object is a NMS packet
+     */
+    public static boolean isNmsPacket(Object nmsPacket){
+        return Reflector.inheritsFrom(nmsPacket.getClass(), NMS_PACKET_CLASS);
     }
 
     /**
