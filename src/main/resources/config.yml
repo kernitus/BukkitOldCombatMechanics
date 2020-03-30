@@ -236,6 +236,20 @@ old-armour-strength:
   enabled: true
   worlds: []
 
+old-arrows:
+  # This is to rollback old arrow behavior without effects or anything of the sort
+  # This is based on https://minecraft.gamepedia.com/Arrow and the Minecraft 1.8 source code
+  # Using MCP
+  enabled: true
+  worlds: []
+  # If you wish to remove the custom arrow effects implemented in 1.9
+  clear-effects: false
+  # If you wish to modify the speed an arrow is travelling at. This modifier is impacted by many factors, such
+  # as Gravity, Motion and such. This is for those who wish to have 'slower' or 'faster' arrows.
+  velocity-multiplier:
+    horizontal: 1.0
+    vertical: 1.0
+
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
   # This is actually a very old feature and has been in the game for quite some time
