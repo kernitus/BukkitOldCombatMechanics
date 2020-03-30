@@ -20,7 +20,7 @@
         </repository>
         <repository>
             <id>bstats-repo</id>
-            <url>http://repo.bstats.org/content/repositories/releases/</url>
+            <url>https://mvnrepository.com/artifact/org.bstats/bstats-bukkit</url>
         </repository>
         <repository>
             <id>placeholderapi-repo</id>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.14.4-R0.1-SNAPSHOT</version>
+            <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
