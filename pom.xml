@@ -14,13 +14,13 @@
     </properties>
 
     <repositories>
+		<repository>
+		  <id>CodeMC</id>
+		  <url>https://repo.codemc.org/repository/maven-public/</url>
+		</repository>
         <repository>
-            <id>bukkit</id>
+            <id>bukkit-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-        <repository>
-            <id>bstats-repo</id>
-            <url>https://mvnrepository.com/artifact/org.bstats/bstats-bukkit</url>
         </repository>
         <repository>
             <id>placeholderapi-repo</id>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>1.2</version>
+            <version>1.6</version>
         </dependency>
         <!--Shaded in by bukkit -->
         <dependency>
