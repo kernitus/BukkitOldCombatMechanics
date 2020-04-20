@@ -17,7 +17,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Collections;
 import java.util.Map;
@@ -54,12 +53,6 @@ public class ModulePlayerCollisions extends Module {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangeWorld(PlayerChangedWorldEvent e){
         createOrUpdateTeam(e.getPlayer());
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent e) {
-        PacketManager.getInstance().removeListener(collisionPacketListener, e.getPlayer());
-        playerTeamMap.remove(e.getPlayer());
     }
 
     /**
