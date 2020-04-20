@@ -105,6 +105,7 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogout(PlayerQuitEvent e){
         restore(e.getPlayer());
+        tryCancelTask(e.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
