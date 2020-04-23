@@ -30,6 +30,10 @@
             <id>local-file-repo</id>
             <url>file://${basedir}/internal-file-repo</url>
         </repository>
+        <repository>
+            <id>CodeMC</id>
+            <url>https://repo.codemc.org/repository/maven-public</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -41,7 +45,7 @@
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>1.2</version>
+            <version>1.5</version>
         </dependency>
         <!--Shaded in by bukkit -->
         <dependency>
