@@ -88,7 +88,7 @@ public class ModuleSwordBlocking extends Module {
             inv.setItemInOffHand(SHIELD);
         }
 
-        scheduleRestore(p);
+        postponeRestoring(p);
     }
 
     @EventHandler
