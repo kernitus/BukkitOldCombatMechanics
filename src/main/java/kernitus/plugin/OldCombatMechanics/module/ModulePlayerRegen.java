@@ -66,6 +66,11 @@ public class ModulePlayerRegen extends Module {
             debug("Exhaustion before: " + previousExhaustion + " Now: " + p.getExhaustion() + " Saturation: " + p.getSaturation(), p);
         }, 1L);
     }
+    
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e){
+        healTimes.remove(e.getPlayer().getUniqueId());
+    }
 
     private long getLastHealTime(Player p){
         return healTimes.computeIfAbsent(p.getUniqueId(), id -> System.currentTimeMillis() / 1000);
