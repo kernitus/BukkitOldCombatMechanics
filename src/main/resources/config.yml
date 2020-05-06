@@ -405,6 +405,10 @@ chorus-fruit:
   # Vanilla default is 4 (2 bars)
   hunger-value: 4
 
+fire-damage:
+  enabled: true
+  fire-ticks: 120
+
 ################################
 #### SUPPORT SETTINGS BELOW ####
 ################################
@@ -420,4 +424,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 38
+config-version: 39
