@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.UUID;
  */
 public class ModulePlayerRegen extends Module {
 
-    private Map<UUID, Long> healTimes = new HashMap<>();
+    private final Map<UUID, Long> healTimes = new HashMap<>();
     private boolean spartanInstalled;
 
     public ModulePlayerRegen(OCMMain plugin){
