@@ -44,13 +44,13 @@ To install OldCombatMechanics, please download the latest version from the [rele
 <hr/>
 
 <a href="https://www.spigotmc.org/resources/oldcombatmechanics.19510/">
-    <img src="https://media-elerium.cursecdn.com/attachments/202/435/spigot.png" alt="Spigot" height="100">
+    <img src="res/spigot.png" alt="Spigot" height="100">
 </a>
 <a href="https://dev.bukkit.org/projects/oldcombatmechanics">
-    <img src="https://media-elerium.cursecdn.com/attachments/202/436/bukkit.png" alt="Bukkit" height="100">
+    <img src="res/bukkit.png" alt="Bukkit" height="100">
 </a>
 <a href="https://ci.rayzr.dev/job/OldCombatMechanics/">
-    <img src="https://media-elerium.cursecdn.com/attachments/202/434/jenkins.png" alt="Jenkins" height="100">
+    <img src="res/jenkins.png" alt="Jenkins" height="100">
 </a>
 
 <hr/>
