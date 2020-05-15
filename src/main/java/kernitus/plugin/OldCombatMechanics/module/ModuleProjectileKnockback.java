@@ -5,6 +5,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Locale;
 
@@ -24,12 +25,9 @@ public class ModuleProjectileKnockback extends Module {
         EntityType type = e.getDamager().getType();
 
         switch(type){
-            case SNOWBALL:
-            case EGG:
-            case ENDER_PEARL:
+            case SNOWBALL: case EGG: case ENDER_PEARL:
                 e.setDamage(module().getDouble("damage." + type.toString().toLowerCase(Locale.ROOT)));
-            default:
-                break;
+                if(e.isApplicable(EntityDamageEvent.DamageModifier.ABSORPTION)) e.setDamage(EntityDamageEvent.DamageModifier.ABSORPTION, 0);
         }
 
     }
