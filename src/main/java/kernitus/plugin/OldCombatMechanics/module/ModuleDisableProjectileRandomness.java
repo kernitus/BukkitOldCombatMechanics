@@ -13,8 +13,15 @@ import org.bukkit.util.Vector;
  */
 public class ModuleDisableProjectileRandomness extends Module {
 
+    private static double EPSILON;
     public ModuleDisableProjectileRandomness(OCMMain plugin){
         super(plugin, "disable-projectile-randomness");
+        reload();
+    }
+
+    @Override
+    public void reload(){
+        EPSILON = module().getDouble("epsilon");
     }
 
     @EventHandler
@@ -28,10 +35,31 @@ public class ModuleDisableProjectileRandomness extends Module {
             debug("Making projectile go straight", player);
 
             Vector playerDirection = player.getLocation().getDirection().normalize();
-            // keep original speed
-            Vector arrowVelocity = playerDirection.multiply(projectile.getVelocity().length());
+            Vector projectileDirection = projectile.getVelocity();
 
-            projectile.setVelocity(arrowVelocity);
+            // Keep original speed
+            double originalMagnitude = projectileDirection.length();
+            projectileDirection.normalize();
+
+            // The following works because using rotate modifies the vector, so we must double it to undo the rotation
+            // The vector is rotated around the Y axis and matched by checking only the X and Z values
+            // Angles is specified in radians, where 10° = 0.17 radians
+            if(!fuzzyVectorEquals(projectileDirection, playerDirection)) { // If the projectile is not going straight
+                if (fuzzyVectorEquals(projectileDirection, playerDirection.rotateAroundY(0.17))) {
+                    debug("10° Offset", player);
+                }
+                else if (fuzzyVectorEquals(projectileDirection, playerDirection.rotateAroundY(-0.35)))
+                    //arrowVelocity.rotateAroundY(-10);
+                    debug("-10° Offset", player);
+            }
+
+            playerDirection.multiply(originalMagnitude);
+            projectile.setVelocity(playerDirection);
         }
+    }
+
+    private boolean fuzzyVectorEquals(Vector a, Vector b){
+        return Math.abs(a.getX() - b.getX()) < EPSILON &&
+                Math.abs(a.getZ() - b.getZ()) < EPSILON;
     }
 }
