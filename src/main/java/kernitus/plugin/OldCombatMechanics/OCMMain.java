@@ -3,7 +3,6 @@ package kernitus.plugin.OldCombatMechanics;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
 import kernitus.plugin.OldCombatMechanics.module.*;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -80,7 +79,7 @@ public class OCMMain extends JavaPlugin {
         }
 
         //BStats Metrics
-        Metrics metrics = new Metrics(this);
+        Metrics metrics = new Metrics(this, 53);
 
 
         /*Custom bar charts currently disabled on bStats

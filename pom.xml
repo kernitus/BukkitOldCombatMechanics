@@ -20,7 +20,7 @@
         </repository>
         <repository>
             <id>bstats-repo</id>
-            <url>http://repo.bstats.org/content/repositories/releases/</url>
+            <url>https://repo.codemc.org/repository/maven-public/</url>
         </repository>
         <repository>
             <id>placeholderapi-repo</id>
@@ -45,7 +45,8 @@
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>1.5</version>
+            <version>1.7</version>
+            <scope>compile</scope>
         </dependency>
         <!--Shaded in by bukkit -->
         <dependency>
