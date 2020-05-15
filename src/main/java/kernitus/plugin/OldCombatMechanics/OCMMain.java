@@ -2,7 +2,6 @@ package kernitus.plugin.OldCombatMechanics;
 
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
@@ -17,7 +16,6 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,17 +69,8 @@ public class OCMMain extends JavaPlugin {
         // Initialise Config utility
         Config.initialise(this);
 
-        // MCStats Metrics
-        try{
-            MetricsLite metrics = new MetricsLite(this);
-            metrics.start();
-        } catch(IOException e){
-            // Failed to submit the stats
-        }
-
         //BStats Metrics
-        Metrics metrics = new Metrics(this);
-
+        Metrics metrics = new Metrics(this, 53);
 
         /*Custom bar charts currently disabled on bStats
         metrics.addCustomChart(

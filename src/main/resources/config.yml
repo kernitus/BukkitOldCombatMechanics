@@ -16,7 +16,7 @@ enableIndividualToggle: false
 
 # List of interactive blocks that right clicking on will be ignored
 # This is for modules such as sword blocking and disable-elytra
-interactive: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box]
+interactive: [enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box,barrel]
 
 
 # To use the per-world feature you must specify a list of worlds in square brackets []
@@ -212,9 +212,9 @@ projectile-knockback:
   worlds: []
   # This is the damage done by each projectile
   damage:
-    snowball: 0.1
-    egg: 0.1
-    ender_pearl: 0.1
+    snowball: 0.0001
+    egg: 0.0001
+    ender_pearl: 0.0001
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
@@ -241,6 +241,10 @@ disable-projectile-randomness:
   # This is actually a very old feature and has been in the game for quite some time
   enabled: false
   worlds: []
+  # This is the threshold between projectiles' (X,Z) values before they're considered the same and straightened
+  # This value is only useful for multishot. The default of 0.1 works at all but extremely shallow angles,
+  # where arrows end up bunched together. Set to 1 if you want multishots to all follow the same path.
+  epsilon: 0.1
 
 disable-bow-boost:
   # This is to stop players from boosting themselves forward by hitting themselves

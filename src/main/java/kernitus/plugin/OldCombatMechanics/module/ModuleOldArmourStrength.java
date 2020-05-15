@@ -73,9 +73,9 @@ public class ModuleOldArmourStrength extends Module {
                     -e.getFinalDamage() * enchantmentReductionPercentage);
         }
 
-        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
+        /*debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
                 enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
-                e.getFinalDamage()));
+                e.getFinalDamage()));*/
     }
 
     private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause) {
