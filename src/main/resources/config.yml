@@ -205,7 +205,8 @@ old-fishing-knockback:
   # Set to true when using plugins like NCP that check range
   useEntityDamageEvent: false
   # This is to cancel dragging in the entity attached to the fishing rod when reeling in, like in 1.8
-  cancelDraggingIn: true
+  # Options: all, players, mobs, none. players allows compatibility with WorldGuard pvp-deny regions
+  cancelDraggingIn: players
   # This is the delay in milliseconds in-between rod damage, so the player hit has time to fall back down
   hitCooldown: 1000
 

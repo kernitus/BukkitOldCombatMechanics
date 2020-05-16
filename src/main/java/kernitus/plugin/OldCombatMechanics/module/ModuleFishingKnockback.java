@@ -9,10 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FishHook;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -152,9 +149,16 @@ public class ModuleFishingKnockback extends Module {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e){
-        if(!isSettingEnabled("cancelDraggingIn") || e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
-        hookEntityFeature.apply(e).remove(); // Nuke the bobber and don't do anything else
-        e.setCancelled(true);
+        if(e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
+
+        final String cancelDraggingIn = module().getString("cancelDraggingIn");
+        final boolean isPlayer = e.getCaught() instanceof HumanEntity;
+        if((cancelDraggingIn.equals("players") && isPlayer) ||
+                cancelDraggingIn.equals("mobs") && !isPlayer ||
+                cancelDraggingIn.equals("all")) {
+            hookEntityFeature.apply(e).remove(); // Remove the bobber and don't do anything else
+            e.setCancelled(true);
+        }
     }
 
     @SuppressWarnings({"rawtypes", "deprecation"})
