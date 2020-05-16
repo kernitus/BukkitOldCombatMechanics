@@ -12,13 +12,13 @@ public class ModuleOldFireDamageDelay extends Module {
      * @param plugin the plugin instance
      */
     public ModuleOldFireDamageDelay(OCMMain plugin) {
-        super(plugin, "fire-damage");
+        super(plugin, "old-fire-damage-delay");
     }
 
     @EventHandler
     public void onFireTick(EntityDamageEvent entityDamageEvent) {
         if (entityDamageEvent.getCause() == EntityDamageEvent.DamageCause.FIRE) {
-            entityDamageEvent.getEntity().setFireTicks(this.module().getInt("fire-ticks"));
+            entityDamageEvent.getEntity().setFireTicks(module().getInt("fire-ticks"));
         }
     }
 }
