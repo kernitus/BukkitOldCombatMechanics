@@ -156,6 +156,8 @@ old-golden-apples:
   # WARNING: If on 1.12 or above and you disable this module you must reload the server for the recipe to disappear
   enabled: true
   worlds: []
+  # Cooldown between eating the apples, in seconds
+  cooldown: 0
   # If you want to allow enchanted golden apple crafting
   enchanted-golden-apple-crafting: true
   # Enabling this makes the potion effects gained by eating golden apples

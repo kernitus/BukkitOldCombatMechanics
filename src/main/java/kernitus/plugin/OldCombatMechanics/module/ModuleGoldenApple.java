@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerStatisticIncrementEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -18,10 +19,7 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.OptionalInt;
+import java.util.*;
 
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
@@ -33,6 +31,9 @@ public class ModuleGoldenApple extends Module {
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
 
+    private Map<UUID, Long> lastEaten;
+    private long cooldown;
+
     public ModuleGoldenApple(OCMMain plugin){
         super(plugin, "old-golden-apples");
     }
@@ -40,6 +41,13 @@ public class ModuleGoldenApple extends Module {
     @SuppressWarnings("deprecated")
     @Override
     public void reload(){
+        cooldown = module().getInt("cooldown");
+        if(cooldown > 0) {
+            if (lastEaten == null) lastEaten = new HashMap<>();
+        } else{
+            lastEaten = null; // disable tracking eating times
+        }
+
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");
 
@@ -90,31 +98,37 @@ public class ModuleGoldenApple extends Module {
     public void onItemConsume(PlayerItemConsumeEvent e){
         if(e.isCancelled()) return; // Don't do anything if another plugin cancelled the event
 
-        if(!isEnabled(e.getPlayer().getWorld()) || !isSettingEnabled("old-potion-effects")) return;
+        final Player p = e.getPlayer();
 
-        Material consumedMaterial = e.getItem().getType();
+        if(!isEnabled(p.getWorld()) || !isSettingEnabled("old-potion-effects")) return;
 
-        if(consumedMaterial != Material.GOLDEN_APPLE && !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem()))
-            return;
+        ItemStack item = e.getItem();
+        final Material consumedMaterial = item.getType();
+
+        if(consumedMaterial != Material.GOLDEN_APPLE &&
+                !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem())) return;
 
         e.setCancelled(true);
 
-        ItemStack originalItem = e.getItem();
+        // Check if the cooldown has expired yet
+        if(lastEaten != null) {
+            final long currentTime = System.currentTimeMillis() / 1000;
+            final UUID uuid = p.getUniqueId();
+            if (lastEaten.containsKey(uuid) && currentTime - lastEaten.get(uuid) < cooldown)
+                return;
 
-        ItemStack item = e.getItem();
+            lastEaten.put(uuid, currentTime);
+        }
 
-        Player p = e.getPlayer();
-        PlayerInventory inv = p.getInventory();
+        final ItemStack originalItem = e.getItem();
+        final PlayerInventory inv = p.getInventory();
 
         //Hunger level
-        int foodLevel = p.getFoodLevel();
-        foodLevel = Math.min(foodLevel + 4, 20);
+        int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
+        p.setFoodLevel(foodLevel);
 
         item.setAmount(item.getAmount() - 1);
 
-        p.setFoodLevel(foodLevel);
-
-        // Saturation
         // Gapple and Napple saturation is 9.6
         float saturation = p.getSaturation() + 9.6f;
         // "The total saturation never gets higher than the total number of hunger points"
@@ -123,24 +137,16 @@ public class ModuleGoldenApple extends Module {
 
         p.setSaturation(saturation);
 
-        if(ENCHANTED_GOLDEN_APPLE.isSame(item)){
-            applyEffects(p, enchantedGoldenAppleEffects);
-        } else {
-            applyEffects(p, goldenAppleEffects);
-        }
+        if(ENCHANTED_GOLDEN_APPLE.isSame(item)) applyEffects(p, enchantedGoldenAppleEffects);
+        else applyEffects(p, goldenAppleEffects);
 
-        if(item.getAmount() <= 0)
-            item = null;
+        if(item.getAmount() <= 0) item = null;
 
         ItemStack mainHand = inv.getItemInMainHand();
         ItemStack offHand = inv.getItemInOffHand();
 
-        if(mainHand.equals(originalItem))
-            inv.setItemInMainHand(item);
-
-        else if(offHand.equals(originalItem))
-            inv.setItemInOffHand(item);
-
+        if(mainHand.equals(originalItem)) inv.setItemInMainHand(item);
+        else if(offHand.equals(originalItem)) inv.setItemInOffHand(item);
         else if(mainHand.getType() == Material.GOLDEN_APPLE || ENCHANTED_GOLDEN_APPLE.isSame(mainHand))
             inv.setItemInMainHand(item);
         // The bug occurs here, so we must check which hand has the apples
@@ -197,5 +203,10 @@ public class ModuleGoldenApple extends Module {
 
             target.addPotionEffect(effect);
         }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e){
+        if(lastEaten != null) lastEaten.remove(e.getPlayer().getUniqueId());
     }
 }
