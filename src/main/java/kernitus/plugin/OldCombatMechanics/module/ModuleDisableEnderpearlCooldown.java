@@ -25,7 +25,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
      * we need to ignore that event call.
      */
     private final Set<UUID> ignoredPlayers = new HashSet<>();
-    private final Map<UUID, Long> lastLaunched = new HashMap<>();
+    private Map<UUID, Long> lastLaunched;
     private int cooldown;
 
     public ModuleDisableEnderpearlCooldown(OCMMain plugin){
@@ -35,6 +35,9 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
     public void reload(){
         cooldown = module().getInt("cooldown");
+        if(cooldown > 0) {
+            if (lastLaunched == null) lastLaunched = new HashMap<>();
+        } else lastLaunched = null;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -51,11 +54,13 @@ public class ModuleDisableEnderpearlCooldown extends Module {
         e.setCancelled(true);
 
         // Check if the cooldown has expired yet
-        final long currentTime = System.currentTimeMillis() / 1000;
-        if(lastLaunched.containsKey(uuid) && currentTime - lastLaunched.get(uuid) < cooldown)
-            return;
+        if(lastLaunched != null) {
+            final long currentTime = System.currentTimeMillis() / 1000;
+            if (lastLaunched.containsKey(uuid) && currentTime - lastLaunched.get(uuid) < cooldown)
+                return;
 
-        lastLaunched.put(uuid, currentTime);
+            lastLaunched.put(uuid, currentTime);
+        }
 
         // Make sure we ignore the event triggered by launchProjectile
         ignoredPlayers.add(uuid);
@@ -84,6 +89,6 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
-        lastLaunched.remove(e.getPlayer().getUniqueId());
+        if(lastLaunched != null) lastLaunched.remove(e.getPlayer().getUniqueId());
     }
 }
