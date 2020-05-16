@@ -43,28 +43,28 @@ public class ModuleFishingKnockback extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRodLand(ProjectileHitEvent e){
-
         Entity hookEntity = e.getEntity();
         World world = hookEntity.getWorld();
 
         if(!isEnabled(world)) return;
 
-        if(e.getEntityType() != EntityType.FISHING_HOOK)
-            return;
+        if(e.getEntityType() != EntityType.FISHING_HOOK) return;
 
+        final boolean knockbackNonPlayerEntities = isSettingEnabled("knockbackNonPlayerEntities");
         Entity hitEntity;
 
         try{
             hitEntity = e.getHitEntity();
         } catch(NoSuchMethodError e1){ //For older version that don't have such method
             hitEntity = world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
-                    .filter(entity -> entity instanceof Player)
+                    .filter(entity -> !knockbackNonPlayerEntities && entity instanceof Player)
                     .findFirst()
                     .orElse(null);
         }
 
         if(hitEntity == null) return;
-        if(!(hitEntity instanceof Player)) return;
+        if(!(hitEntity instanceof LivingEntity)) return;
+        if(!knockbackNonPlayerEntities && !(hitEntity instanceof Player)) return;
 
         // Do not move Citizens NPCs
         // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
@@ -72,24 +72,26 @@ public class ModuleFishingKnockback extends Module {
 
         FishHook hook = (FishHook) hookEntity;
         Player rodder = (Player) hook.getShooter();
-        Player player = (Player) hitEntity;
 
-        debug("You were hit by a fishing rod!", player);
+        if(!knockbackNonPlayerEntities) {
+            Player player = (Player) hitEntity;
 
-        if(player.equals(rodder))
-            return;
+            debug("You were hit by a fishing rod!", player);
 
-        if(player.getGameMode() == GameMode.CREATIVE) return;
+            if (player.equals(rodder)) return;
+
+            if (player.getGameMode() == GameMode.CREATIVE) return;
+        }
+
+        LivingEntity livingEntity = (LivingEntity) hitEntity;
 
         //Check if cooldown time has elapsed
-        if(player.getNoDamageTicks() > player.getMaximumNoDamageTicks() / 2f){
-            return;
-        }
+        if(livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f) return;
 
         double damage = module().getDouble("damage");
         if(damage < 0) damage = 0.2;
 
-        EntityDamageEvent event = makeEvent(rodder, player, damage);
+        EntityDamageEvent event = makeEvent(rodder, hitEntity, damage);
         Bukkit.getPluginManager().callEvent(event);
 
         if(module().getBoolean("checkCancelled") && event.isCancelled()){
@@ -102,13 +104,11 @@ public class ModuleFishingKnockback extends Module {
                 for(RegisteredListener rl : hl.getRegisteredListeners())
                     debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
             }
-
             return;
         }
 
-        player.damage(damage);
-
-        player.setVelocity(calculateKnockbackVelocity(player.getVelocity(), player.getLocation(), hook.getLocation()));
+        livingEntity.damage(damage);
+        livingEntity.setVelocity(calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
     }
 
     private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location hook){
@@ -145,7 +145,7 @@ public class ModuleFishingKnockback extends Module {
     }
 
     /**
-     * This is to cancel dragging the player closer when you reel in
+     * This is to cancel dragging the entity closer when you reel in
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e){
@@ -161,15 +161,15 @@ public class ModuleFishingKnockback extends Module {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "deprecation"})
-    private EntityDamageEvent makeEvent(Player rodder, Player player, double damage){
+    @SuppressWarnings({"deprecation"})
+    private EntityDamageEvent makeEvent(Player rodder, Entity entity, double damage){
         if(module().getBoolean("useEntityDamageEvent"))
-            return new EntityDamageEvent(player,
+            return new EntityDamageEvent(entity,
                     EntityDamageEvent.DamageCause.PROJECTILE,
                     new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
                     new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
         else
-            return new EntityDamageByEntityEvent(rodder, player,
+            return new EntityDamageByEntityEvent(rodder, entity,
                     EntityDamageEvent.DamageCause.PROJECTILE,
                     new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
                     new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
