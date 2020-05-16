@@ -409,8 +409,10 @@ chorus-fruit:
   # Vanilla default is 4 (2 bars)
   hunger-value: 4
 
-fire-damage:
+old-fire-damage-delay:
+  # This makes it so entities will immediately be damaged by fire when entering it
   enabled: true
+  # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
 ################################
