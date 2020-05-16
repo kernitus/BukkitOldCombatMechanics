@@ -127,13 +127,13 @@ public class ModuleFishingKnockback extends Module {
         double x = currentVelocity.getX() / 2;
         double z = currentVelocity.getZ() / 2;
 
-        // Normalize distance to have similar knockback, no matter the distance
+        // Normalise distance to have similar knockback, no matter the distance
         x -= xDistance / distance * 0.4;
 
         // slow the fall or throw upwards
         y += 0.4;
 
-        // Normalize distance to have similar knockback, no matter the distance
+        // Normalise distance to have similar knockback, no matter the distance
         z -= zDistance / distance * 0.4;
 
         // do not shoot too high up

@@ -199,7 +199,7 @@ old-fishing-knockback:
   # Set to false to always have rod damage
   checkCancelled: false
   # This is the damage done by the fishing rod attack
-  damage: 0.2
+  damage: 0.0001
   # Whether the EntityDamageEvent should be used instead of the EntityDamageByEntityEvent
   # Set to true when using plugins like NCP that check range
   useEntityDamageEvent: false
