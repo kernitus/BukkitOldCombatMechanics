@@ -184,7 +184,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
         ModuleLoader.addModule(new ModuleChorusFruit(this));
 
-        ModuleLoader.addModule(new ModuleBurnDamage(this));
+        ModuleLoader.addModule(new ModuleOldFireDamageDelay(this));
     }
 
     private void registerHooks(){
