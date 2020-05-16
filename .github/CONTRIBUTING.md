@@ -1,5 +1,5 @@
 # Contributing
-All contributions should be in the form of [pull requests](https://github.com/kernitus/BukkitOldCombatMechanics/pulls), and should use the formatting profiles provided at the bottom of this page. All pull requests must be fully functional and able to compile, and should be fully tested.
+All contributions should be in the form of [pull requests](https://github.com/kernitus/BukkitOldCombatMechanics/pulls), and should use the formatting profiles provided at the bottom of this page. All pull requests must be fully functional and able to compile, and should be fully tested. Please submit **monofocal** pull requests, i.e.if you're making unrelated changes to two different modules, or decide to also update the version of a dependency, *those should be separate pull requests*.
 
 ## Formatting profiles
 ### IntelliJ
