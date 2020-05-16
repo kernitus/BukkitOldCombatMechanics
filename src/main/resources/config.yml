@@ -83,6 +83,8 @@ disable-enderpearl-cooldown:
   # Disables enderpearl cooldown
   enabled: true
   worlds: []
+  # The cooldown, in seconds
+  cooldown: 0
 
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9

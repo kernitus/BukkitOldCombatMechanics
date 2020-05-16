@@ -8,11 +8,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.projectiles.ProjectileSource;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Allows you to throw enderpearls as often as you like, not only after a cooldown.
@@ -23,12 +24,17 @@ public class ModuleDisableEnderpearlCooldown extends Module {
      * Contains players that threw an ender pearl. As the handler calls launchProjectile, which also calls the event,
      * we need to ignore that event call.
      */
-    private Set<Player> ignoredPlayers;
+    private final Set<UUID> ignoredPlayers = new HashSet<>();
+    private final Map<UUID, Long> lastLaunched = new HashMap<>();
+    private int cooldown;
 
     public ModuleDisableEnderpearlCooldown(OCMMain plugin){
         super(plugin, "disable-enderpearl-cooldown");
+        reload();
+    }
 
-        ignoredPlayers = new HashSet<>();
+    public void reload(){
+        cooldown = module().getInt("cooldown");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -38,35 +44,46 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
         if(!(shooter instanceof Player)) return;
         Player player = (Player) shooter;
+        UUID uuid = player.getUniqueId();
 
-        if(ignoredPlayers.contains(player)) return;
+        if(ignoredPlayers.contains(uuid)) return;
 
         e.setCancelled(true);
 
-        // ignore the event triggered by launchProjectile
-        ignoredPlayers.add(player);
+        // Check if the cooldown has expired yet
+        final long currentTime = System.currentTimeMillis() / 1000;
+        if(lastLaunched.containsKey(uuid) && currentTime - lastLaunched.get(uuid) < cooldown)
+            return;
 
+        lastLaunched.put(uuid, currentTime);
+
+        // Make sure we ignore the event triggered by launchProjectile
+        ignoredPlayers.add(uuid);
         EnderPearl pearl = player.launchProjectile(EnderPearl.class);
-
-        ignoredPlayers.remove(player);
+        ignoredPlayers.remove(uuid);
 
         pearl.setVelocity(player.getEyeLocation().getDirection().multiply(2));
 
         if(player.getGameMode() == GameMode.CREATIVE) return;
 
         ItemStack enderpearlItemStack;
-        if(isEnderPearl(player.getInventory().getItemInMainHand())){
-            enderpearlItemStack = player.getInventory().getItemInMainHand();
-        } else if(isEnderPearl(player.getInventory().getItemInOffHand())){
-            enderpearlItemStack = player.getInventory().getItemInOffHand();
-        } else {
-            return;
-        }
+        PlayerInventory playerInventory = player.getInventory();
+        ItemStack mainHand = playerInventory.getItemInMainHand();
+        ItemStack offHand = playerInventory.getItemInOffHand();
+
+        if(isEnderPearl(mainHand)) enderpearlItemStack = mainHand;
+        else if(isEnderPearl(offHand)) enderpearlItemStack = offHand;
+        else return;
 
         enderpearlItemStack.setAmount(enderpearlItemStack.getAmount() - 1);
     }
 
     private boolean isEnderPearl(ItemStack itemStack){
         return itemStack != null && itemStack.getType() == Material.ENDER_PEARL;
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e){
+        lastLaunched.remove(e.getPlayer().getUniqueId());
     }
 }
