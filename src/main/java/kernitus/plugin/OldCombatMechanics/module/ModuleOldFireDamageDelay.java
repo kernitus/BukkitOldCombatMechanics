@@ -4,14 +4,14 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 
-public class ModuleBurnDamage extends Module {
+public class ModuleOldFireDamageDelay extends Module {
 
     /**
-     * Bring back old fire behavior
+     * Bring back old fire damage delay behaviour
      *
      * @param plugin the plugin instance
      */
-    public ModuleBurnDamage(OCMMain plugin) {
+    public ModuleOldFireDamageDelay(OCMMain plugin) {
         super(plugin, "fire-damage");
     }
 
