@@ -167,29 +167,6 @@ public class ModuleSwordBlocking extends Module {
         }
     }
 
-    private void scheduleRestore(final Player player){
-        BukkitRunnable removeItem = new BukkitRunnable() {
-            @Override
-            public void run(){
-                restore(player);
-            }
-        };
-        removeItem.runTaskLater(plugin, restoreDelay);
-
-        BukkitRunnable checkBlocking = new BukkitRunnable() {
-            @Override
-            public void run(){
-                if(!player.isBlocking()){
-                    restore(player);
-                    tryCancelTask(player.getUniqueId());
-                }
-            }
-        };
-        checkBlocking.runTaskTimer(plugin, 10L, 2L);
-
-        correspondingTasks.put(player.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
-    }
-
     private void restore(Player p){
         UUID id = p.getUniqueId();
 
@@ -214,7 +191,34 @@ public class ModuleSwordBlocking extends Module {
                 .ifPresent(RunnableSeries::cancelAll);
 
         correspondingTasks.remove(id);
-        scheduleRestore(p);
+
+        BukkitRunnable removeItem = new BukkitRunnable() {
+            @Override
+            public void run(){
+                restore(p);
+            }
+        };
+        removeItem.runTaskLater(plugin, restoreDelay);
+
+        BukkitRunnable checkBlocking = new BukkitRunnable() {
+            @Override
+            public void run(){
+                if(!p.isOnline()) {
+                    removeItem.cancel();
+                    cancel();
+                    return;
+                }
+
+                if(!p.isBlocking()) {
+                    restore(p);
+                    removeItem.cancel();
+                    cancel();
+                }
+            }
+        };
+        checkBlocking.runTaskTimer(plugin, 10L, 2L);
+
+        correspondingTasks.put(p.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
 
     private boolean isBlocking(UUID uuid){
