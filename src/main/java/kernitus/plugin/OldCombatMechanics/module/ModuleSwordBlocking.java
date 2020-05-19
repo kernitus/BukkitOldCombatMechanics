@@ -55,6 +55,7 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRightClick(PlayerInteractEvent e){
         if(e.getItem() == null) return;
+        if(e.getClickedBlock() == null) return;
 
         Action action = e.getAction();
 
@@ -70,9 +71,7 @@ public class ModuleSwordBlocking extends Module {
 
         UUID id = p.getUniqueId();
 
-        if(p.isBlocking()){
-            tryCancelTask(id);
-        } else {
+        if(!p.isBlocking()){
             ItemStack item = e.getItem();
 
             if(!isHoldingSword(item.getType()) || hasShield(p)) return;
@@ -88,12 +87,11 @@ public class ModuleSwordBlocking extends Module {
             inv.setItemInOffHand(SHIELD);
         }
 
-        postponeRestoring(p);
+        scheduleRestore(p);
     }
 
     @EventHandler
     public void onHotBarChange(PlayerItemHeldEvent e){
-        tryCancelTask(e.getPlayer().getUniqueId());
         restore(e.getPlayer());
     }
 
@@ -105,7 +103,6 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogout(PlayerQuitEvent e){
         restore(e.getPlayer());
-        tryCancelTask(e.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -123,8 +120,6 @@ public class ModuleSwordBlocking extends Module {
             return item;
         });
 
-        // No need for any restore tasks, we've already done that
-        tryCancelTask(id);
         // Handle keepInventory = true
         restore(p);
     }
@@ -170,10 +165,12 @@ public class ModuleSwordBlocking extends Module {
     private void restore(Player p){
         UUID id = p.getUniqueId();
 
+        tryCancelTask(id);
+
         if(!isBlocking(id)) return;
 
         if(p.isBlocking()) //They are still blocking with the shield so postpone restoring
-            postponeRestoring(p);
+            scheduleRestore(p);
         else {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
             storedOffhandItems.remove(id);
@@ -181,16 +178,13 @@ public class ModuleSwordBlocking extends Module {
     }
 
     private void tryCancelTask(UUID id){
-        RunnableSeries series = correspondingTasks.remove(id);
-        if(series != null) series.cancelAll();
+        Optional.ofNullable(correspondingTasks.remove(id))
+                .ifPresent(RunnableSeries::cancelAll);
     }
 
-    private void postponeRestoring(Player p){
+    private void scheduleRestore(Player p){
         UUID id = p.getUniqueId();
-        Optional.ofNullable(correspondingTasks.get(id))
-                .ifPresent(RunnableSeries::cancelAll);
-
-        correspondingTasks.remove(id);
+        tryCancelTask(id);
 
         BukkitRunnable removeItem = new BukkitRunnable() {
             @Override
@@ -203,16 +197,8 @@ public class ModuleSwordBlocking extends Module {
         BukkitRunnable checkBlocking = new BukkitRunnable() {
             @Override
             public void run(){
-                if(!p.isOnline()) {
-                    removeItem.cancel();
-                    cancel();
-                    return;
-                }
-
                 if(!p.isBlocking()) {
                     restore(p);
-                    removeItem.cancel();
-                    cancel();
                 }
             }
         };
