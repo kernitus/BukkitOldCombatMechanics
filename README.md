@@ -37,6 +37,7 @@ If you are interested in contributing, please [check this page first](.github/CO
 - Stop usage of elytra
 - Disable random projectile trajectories
 - Disable bow boosting
+- Configure Chorus Fruit properties
 - Old armour durability mechanics
 - Old burn delay when entering fire
 - Configurable gapple & enderpearl cooldown
