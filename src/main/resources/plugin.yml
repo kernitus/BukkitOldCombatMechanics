@@ -28,5 +28,5 @@ permissions:
     description: Notifies of new OCM updates
     default: op
   OldCombatMechanics.nolapis:
-    description: Allows lapis to be auto-place in enchantment tables
+    description: Allows lapis to be auto-placed in enchantment tables
     default: op
