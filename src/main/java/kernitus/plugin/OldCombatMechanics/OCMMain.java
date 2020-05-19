@@ -169,6 +169,8 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleOldArmourStrength(this));
 
         ModuleLoader.addModule(new ModuleSwordBlocking(this));
+        ModuleLoader.addModule(new ModuleOldArmourDurability(this));
+
         ModuleLoader.addModule(new ModuleGoldenApple(this));
         ModuleLoader.addModule(new ModuleFishingKnockback(this));
         ModuleLoader.addModule(new ModulePlayerRegen(this));

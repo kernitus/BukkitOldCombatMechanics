@@ -242,6 +242,13 @@ old-armour-strength:
   enabled: true
   worlds: []
 
+old-armour-durability:
+  # This makes armour take a constant amount of durability damage (except for explosions)
+  enabled: true
+  worlds: []
+  # By how much to reduce durability every attack. 1.8 default is 1
+  reduction: 1
+
 disable-projectile-randomness:
   # This is to remove projectile randomness while firing arrows with a bow
   # This is actually a very old feature and has been in the game for quite some time
@@ -430,4 +437,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 39
+config-version: 40
