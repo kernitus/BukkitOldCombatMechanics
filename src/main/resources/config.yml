@@ -411,7 +411,7 @@ chorus-fruit:
 
 old-fire-damage-delay:
   # This makes it so entities will immediately be damaged by fire when entering it
-  enabled: true
+  enabled: false
   # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
