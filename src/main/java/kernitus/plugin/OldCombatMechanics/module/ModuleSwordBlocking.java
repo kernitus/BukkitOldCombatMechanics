@@ -1,14 +1,12 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
+import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,20 +14,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
-import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
+import java.util.*;
 
 public class ModuleSwordBlocking extends Module {
 
@@ -55,13 +45,14 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRightClick(PlayerInteractEvent e){
         if(e.getItem() == null) return;
-        if(e.getClickedBlock() == null) return;
 
         Action action = e.getAction();
 
         if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        if(action == Action.RIGHT_CLICK_BLOCK && Config.getInteractiveBlocks().contains(e.getClickedBlock().getType()))
+        final Block block = e.getClickedBlock();
+        if(action == Action.RIGHT_CLICK_BLOCK && block != null &&
+                Config.getInteractiveBlocks().contains(block.getType()))
             return;
 
         Player p = e.getPlayer();
