@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -44,7 +45,15 @@ public class ModuleOldArmourDurability extends Module {
             if(!matchedPieces.isEmpty()) return;
         }
 
-        final int reduction = module().getInt("reduction");
+        int reduction = module().getInt("reduction");
+
+        // 60 + (40 / (level + 1) ) % chance that durability is reduced (for each point of durability)
+        final int damageChance = 60 + (40 / (item.getEnchantmentLevel(Enchantment.DURABILITY) + 1));
+        Random random = new Random();
+        final int randomInt = random.nextInt(100); // between 0 (inclusive) and 100 (exclusive)
+        if(randomInt >= damageChance)
+            reduction = 0;
+
         debug("Item damaged: " + itemType + " Damage: " + e.getDamage() + " Changed to: " + reduction, player);
         e.setDamage(reduction);
     }
