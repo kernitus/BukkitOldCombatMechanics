@@ -16,10 +16,11 @@ assignees: ''
 * Server Version: 
 
 <!-- Version of OldCombatMechanics, e.g. 1.7.2 or dev build #46 -->
-<!-- Please don't say 'latest', that is meaningless when a version is released -->
+<!-- Please don't say 'latest', that is meaningless when a new version is released -->
 * OldCombatMechanics version: 
 
 <!-- Console log from the server, please upload this to e.g. pastebin and link the file here -->
+<!-- Please do NOT use hastebin, they seem to disappeared way too fast! -->
 * Server Log File: 
 
 <!-- OldCombatMechanics config.yml, please upload this to e.g. pastebin and link the file here -->
