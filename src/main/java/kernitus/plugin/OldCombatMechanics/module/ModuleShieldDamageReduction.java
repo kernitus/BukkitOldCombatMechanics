@@ -10,7 +10,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 
 /**
- * Allows customizing the shield damage reduction percentages.
+ * Allows customising the shield damage reduction percentages.
  */
 public class ModuleShieldDamageReduction extends Module {
 
@@ -40,6 +40,8 @@ public class ModuleShieldDamageReduction extends Module {
         if(!(entity instanceof Player)) return;
 
         Player player = (Player) entity;
+
+        if(!isEnabled(player.getWorld())) return;
 
         if(!shieldBlockedDamage(e)) return;
 
