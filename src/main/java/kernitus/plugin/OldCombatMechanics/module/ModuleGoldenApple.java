@@ -127,7 +127,7 @@ public class ModuleGoldenApple extends Module {
         int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
         p.setFoodLevel(foodLevel);
 
-        item.setAmount(item.getAmount() - 1);
+        if(p.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
 
         // Gapple and Napple saturation is 9.6
         float saturation = p.getSaturation() + 9.6f;
