@@ -26,7 +26,7 @@ public class WeaponDamages {
 
     public static double getDamage(Material mat){
         //Replace 1.14 material names to ones used in config.yml
-        String name = mat.name().replace("GOLDEN", "GOLD").replace("WOODEN", "WOOD");
+        String name = mat.name().replace("GOLDEN", "GOLD").replace("WOODEN", "WOOD").replace("SHOVEL", "SPADE");
         return damages.getOrDefault(name, -1.0);
     }
 }

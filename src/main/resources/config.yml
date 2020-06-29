@@ -101,30 +101,35 @@ old-tool-damage:
     STONE_AXE: 5
     IRON_AXE: 6
     DIAMOND_AXE: 7
+    NETHERITE_AXE: 8
     # Shovel damages
     GOLD_SPADE: 2
     WOOD_SPADE: 2
     STONE_SPADE: 3
     IRON_SPADE: 4
     DIAMOND_SPADE: 5
+    NETHERITE_SPADE: 6
     # Sword damages
     GOLD_SWORD: 5
     WOOD_SWORD: 5
     STONE_SWORD: 6
     IRON_SWORD: 7
     DIAMOND_SWORD: 8
+    NETHERITE_SWORD: 9
     # Pickaxe damages
     GOLD_PICKAXE: 3
     WOOD_PICKAXE: 3
     STONE_PICKAXE: 4
     IRON_PICKAXE: 5
     DIAMOND_PICKAXE: 6
+    NETHERITE_PICKAXE: 7
     # Hoe damages
     GOLD_HOE: 1
     WOOD_HOE: 1
     STONE_HOE: 1
     IRON_HOE: 1
     DIAMOND_HOE: 1
+    NETHERITE_HOE: 1
 
 sword-blocking:
   # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
@@ -443,4 +448,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 40
+config-version: 41

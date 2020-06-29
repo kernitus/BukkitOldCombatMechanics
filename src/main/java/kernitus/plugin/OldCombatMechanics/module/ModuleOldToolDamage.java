@@ -16,7 +16,7 @@ import java.util.Locale;
  */
 public class ModuleOldToolDamage extends Module {
 
-    private static final String[] WEAPONS = {"sword", "axe", "pickaxe", "spade", "hoe"};
+    private static final String[] WEAPONS = {"sword", "axe", "pickaxe", "spade", "shovel", "hoe"};
 
     public ModuleOldToolDamage(OCMMain plugin){
         super(plugin, "old-tool-damage");
@@ -35,7 +35,10 @@ public class ModuleOldToolDamage extends Module {
         if(!isTool(weaponMaterial)) return;
 
         double weaponDamage = WeaponDamages.getDamage(weaponMaterial);
-        if(weaponDamage <= 0) weaponDamage = 1;
+        if(weaponDamage <= 0){
+            debug("Unknown tool type: " + weaponMaterial, damager);
+            return;
+        }
 
         double oldBaseDamage = event.getBaseDamage();
 
