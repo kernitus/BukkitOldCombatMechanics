@@ -163,12 +163,14 @@ public class ModuleGoldenApple extends Module {
         PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p,Statistic.USE_ITEM,initialValue,initialValue+1,consumedMaterial);
         Bukkit.getServer().getPluginManager().callEvent(psie);
 
-        NamespacedKey nsk = NamespacedKey.minecraft("husbandry/balanced_diet");
-        Advancement advancement = Bukkit.getAdvancement(nsk);
+        try {
+            NamespacedKey nsk = NamespacedKey.minecraft("husbandry/balanced_diet");
+            Advancement advancement = Bukkit.getAdvancement(nsk);
 
-        // Award advancement criterion for having eaten gapple, as incrementing statistic or calling event doesn't seem to
-        if(advancement != null)
-            p.getAdvancementProgress(advancement).awardCriteria(consumedMaterial.name().toLowerCase());
+            // Award advancement criterion for having eaten gapple, as incrementing statistic or calling event doesn't seem to
+            if (advancement != null)
+                p.getAdvancementProgress(advancement).awardCriteria(consumedMaterial.name().toLowerCase());
+        } catch (NoClassDefFoundError ignored){} // Pre 1.12 does not have advancements
     }
 
     private List<PotionEffect> getPotionEffects(String apple){
