@@ -32,7 +32,10 @@ public class ModuleOldArmourDurability extends Module {
 
         // Check if it's a piece of armour they're currently wearing
         if(Arrays.stream(player.getInventory().getArmorContents())
-                .noneMatch(armourPiece -> armourPiece != null && armourPiece.getType() == itemType)) return;
+                .noneMatch(armourPiece -> armourPiece != null &&
+                        armourPiece.getType() == itemType &&
+                        armourPiece.getType() != Material.ELYTRA // ignore elytra as it doesn't provide any protection anyway
+                )) return;
 
         final UUID uuid = player.getUniqueId();
         if(explosionDamaged.containsKey(uuid)){
