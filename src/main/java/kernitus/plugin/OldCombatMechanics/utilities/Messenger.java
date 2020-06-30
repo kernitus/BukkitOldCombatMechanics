@@ -28,6 +28,10 @@ public class Messenger {
         plugin.getLogger().log(Level.WARNING, TextUtils.stripColor(String.format(message, args)), e);
     }
 
+    public static void warn(String message, Object... args){
+        plugin.getLogger().log(Level.WARNING, TextUtils.stripColor(String.format(message, args)));
+    }
+
     /**
      * This will format any ampersand (&) color codes, format any args passed to it using {@link String#format(String, Object...)}, and then send the message to the specified {@link CommandSender}.
      *
