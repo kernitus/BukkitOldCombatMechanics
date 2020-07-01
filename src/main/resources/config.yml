@@ -44,6 +44,18 @@ disable-sword-sweep:
   enabled: true
   worlds: []
 
+disable-attack-sounds:
+  enabled: false
+  worlds: []
+  # The sounds that will be blocked by this module
+  blocked-sounds:
+    - "minecraft:entity.player.attack.strong"
+    - "minecraft:entity.player.attack.sweep"
+    - "minecraft:entity.player.attack.nodamage"
+    - "minecraft:entity.player.attack.knockback"
+    - "minecraft:entity.player.attack.crit"
+    - "minecraft:entity.player.attack.weak"
+
 disable-crafting:
   # Disable the crafting of specified items
   enabled: true
@@ -448,4 +460,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 41
+config-version: 42
