@@ -9,29 +9,45 @@ import java.util.Map;
 
 public class MobDamage {
 
-    private static final Map<EntityType, Enchantment> enchants = ImmutableMap.<EntityType, Enchantment>builder()
+    private static final Map<EntityType, Enchantment> enchants;
 
-            // Undead (https://minecraft.gamepedia.com/Undead)
-            .put(EntityType.SKELETON, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.ZOMBIE, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.WITHER, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.WITHER_SKELETON, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.ZOMBIFIED_PIGLIN, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.SKELETON_HORSE, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.STRAY, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.HUSK, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.PHANTOM, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.DROWNED, Enchantment.DAMAGE_UNDEAD)
-            .put(EntityType.ZOGLIN, Enchantment.DAMAGE_UNDEAD)
+    static {
+        Map<String, Enchantment> allMobs = ImmutableMap.<String, Enchantment>builder()
 
-            // Arthropods (https://minecraft.gamepedia.com/Arthropod)
-            .put(EntityType.SPIDER, Enchantment.DAMAGE_ARTHROPODS)
-            .put(EntityType.CAVE_SPIDER, Enchantment.DAMAGE_ARTHROPODS)
-            .put(EntityType.BEE, Enchantment.DAMAGE_ARTHROPODS)
-            .put(EntityType.SILVERFISH, Enchantment.DAMAGE_ARTHROPODS)
-            .put(EntityType.ENDERMITE, Enchantment.DAMAGE_ARTHROPODS)
+                // Undead (https://minecraft.gamepedia.com/Undead)
+                .put("SKELETON", Enchantment.DAMAGE_UNDEAD)
+                .put("ZOMBIE", Enchantment.DAMAGE_UNDEAD)
+                .put("WITHER", Enchantment.DAMAGE_UNDEAD)
+                .put("WITHER_SKELETON", Enchantment.DAMAGE_UNDEAD)
+                .put("ZOMBIFIED_PIGLIN", Enchantment.DAMAGE_UNDEAD)
+                .put("SKELETON_HORSE", Enchantment.DAMAGE_UNDEAD)
+                .put("STRAY", Enchantment.DAMAGE_UNDEAD)
+                .put("HUSK", Enchantment.DAMAGE_UNDEAD)
+                .put("PHANTOM", Enchantment.DAMAGE_UNDEAD)
+                .put("DROWNED", Enchantment.DAMAGE_UNDEAD)
+                .put("ZOGLIN", Enchantment.DAMAGE_UNDEAD)
 
-            .build();
+                // Arthropods (https://minecraft.gamepedia.com/Arthropod)
+                .put("SPIDER", Enchantment.DAMAGE_ARTHROPODS)
+                .put("CAVE_SPIDER", Enchantment.DAMAGE_ARTHROPODS)
+                .put("BEE", Enchantment.DAMAGE_ARTHROPODS)
+                .put("SILVERFISH", Enchantment.DAMAGE_ARTHROPODS)
+                .put("ENDERMITE", Enchantment.DAMAGE_ARTHROPODS)
+
+                .build();
+
+        ImmutableMap.Builder<EntityType, Enchantment> enchantsBuilder = ImmutableMap.builder();
+
+        // Add these individually because some may not exist in the Minecraft version we're running
+        allMobs.keySet().forEach(entityName -> {
+            try {
+                final EntityType entityType = EntityType.valueOf(entityName);
+                final Enchantment enchantment = allMobs.get(entityName);
+                enchantsBuilder.put(entityType, enchantment);
+            } catch(IllegalArgumentException ignored) {} // Mob not supported in this MC version
+        });
+        enchants = enchantsBuilder.build();
+    }
 
     public static double applyEntityBasedDamage(EntityType entity, ItemStack item, double startDamage){
         Enchantment enchantment = enchants.get(entity);
