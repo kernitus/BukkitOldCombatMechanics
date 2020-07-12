@@ -41,6 +41,7 @@ If you are interested in contributing, please [check this page first](.github/CO
 - Old armour durability mechanics
 - Old burn delay when entering fire
 - Configurable gapple & enderpearl cooldown
+- Disable new attack sounds
 
 ## Installation
 To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
