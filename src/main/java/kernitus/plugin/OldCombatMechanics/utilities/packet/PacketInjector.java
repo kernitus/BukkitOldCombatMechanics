@@ -113,6 +113,8 @@ class PacketInjector extends ChannelDuplexHandler {
         if(isClosed){
             throw new IllegalStateException("Channel already closed. Adding of listener invalid");
         }
+        // prevent duplicate registrations
+        packetListeners.remove(packetListener);
         packetListeners.add(packetListener);
     }
 
