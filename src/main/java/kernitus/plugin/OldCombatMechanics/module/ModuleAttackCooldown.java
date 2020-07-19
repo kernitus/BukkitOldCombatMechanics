@@ -72,6 +72,10 @@ public class ModuleAttackCooldown extends Module {
      */
     private void setAttackSpeed(Player player, double attackSpeed){
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+        if(attribute == null){
+            return;
+        }
+
         double baseValue = attribute.getBaseValue();
 
         if(baseValue != attackSpeed){
