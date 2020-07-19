@@ -110,6 +110,11 @@ public class ModuleGoldenApple extends Module {
 
         e.setCancelled(true);
 
+        // Client and server go out of sync causing the client to keep eating forever.
+        // It does not realise the server cancelled the action. This is probably a bukkit/spigot bug?
+        // To circumvent that we force-update the player's inventory
+        Bukkit.getScheduler().runTask(plugin, () -> e.getPlayer().updateInventory());
+
         // Check if the cooldown has expired yet
         if(lastEaten != null) {
             final long currentTime = System.currentTimeMillis() / 1000;
