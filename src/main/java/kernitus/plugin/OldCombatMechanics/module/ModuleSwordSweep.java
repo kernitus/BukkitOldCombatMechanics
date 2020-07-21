@@ -143,6 +143,11 @@ public class ModuleSwordSweep extends Module {
     private class ParticleListener extends PacketAdapter {
 
         private boolean disabledDueToError;
+        private final SweepPacketDetector packetDetector;
+
+        public ParticleListener(){
+            this.packetDetector = SweepPacketDetector.getInstance();
+        }
 
         @Override
         public void onPacketSend(PacketEvent packetEvent){
@@ -151,7 +156,7 @@ public class ModuleSwordSweep extends Module {
             }
 
             try{
-                if(SweepPacketDetector.getInstance().isSweepPacket(packetEvent.getPacket())){
+                if(packetDetector.isSweepPacket(packetEvent.getPacket())){
                     packetEvent.setCancelled(true);
                 }
             } catch(Exception e){
