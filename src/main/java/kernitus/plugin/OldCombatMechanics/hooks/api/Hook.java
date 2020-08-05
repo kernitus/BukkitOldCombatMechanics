@@ -4,4 +4,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 
 public interface Hook {
     void init(OCMMain plugin);
+
+    void deinit(OCMMain plugin);
 }
