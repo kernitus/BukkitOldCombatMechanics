@@ -46,7 +46,7 @@ public class ModuleGoldenApple extends Module {
     private ShapedRecipe enchantedAppleRecipe;
 
     private Map<UUID, LastEaten> lastEaten;
-    private long cooldown;
+    private Cooldown cooldown;
 
     public ModuleGoldenApple(OCMMain plugin){
         super(plugin, "old-golden-apples");
@@ -55,12 +55,12 @@ public class ModuleGoldenApple extends Module {
     @SuppressWarnings("deprecated")
     @Override
     public void reload(){
-        cooldown = module().getInt("cooldown");
-        if(cooldown > 0){
-            if(lastEaten == null) lastEaten = new HashMap<>();
-        } else {
-            lastEaten = null; // disable tracking eating times
-        }
+        cooldown = new Cooldown(
+                module().getLong("cooldown.normal"),
+                module().getLong("cooldown.enchanted"),
+                module().getBoolean("cooldown.is-shared")
+        );
+        lastEaten = new HashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");
@@ -125,20 +125,12 @@ public class ModuleGoldenApple extends Module {
         e.setCancelled(true);
 
         // Check if the cooldown has expired yet
-        if(lastEaten != null){
-            lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
+        lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
 
-            boolean isOnCooldown = lastEaten.get(p.getUniqueId())
-                    .getForItem(item)
-                    .map(it -> ChronoUnit.SECONDS.between(it, Instant.now()))
-                    .map(it -> it < cooldown)
-                    .orElse(false);
-
-            if(isOnCooldown){
-                return;
-            }
-            lastEaten.get(p.getUniqueId()).setForItem(item);
+        if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId()))){
+            return;
         }
+        lastEaten.get(p.getUniqueId()).setForItem(item);
 
         final ItemStack originalItem = e.getItem();
         final PlayerInventory inv = p.getInventory();
@@ -243,12 +235,47 @@ public class ModuleGoldenApple extends Module {
                     : Optional.ofNullable(lastNormalEaten);
         }
 
+        private Optional<Instant> getNewestEatTime(){
+            if(lastEnchantedEaten == null){
+                return Optional.ofNullable(lastNormalEaten);
+            }
+            if(lastNormalEaten == null){
+                return Optional.of(lastEnchantedEaten);
+            }
+            return Optional.of(
+                    lastNormalEaten.compareTo(lastEnchantedEaten) < 0 ? lastEnchantedEaten : lastNormalEaten
+            );
+        }
+
         private void setForItem(ItemStack item){
             if(ENCHANTED_GOLDEN_APPLE.isSame(item)){
                 lastEnchantedEaten = Instant.now();
             } else {
                 lastNormalEaten = Instant.now();
             }
+        }
+    }
+
+    private static class Cooldown {
+        private final long normal;
+        private final long enchanted;
+        private final boolean sharedCooldown;
+
+        Cooldown(long normal, long enchanted, boolean sharedCooldown){
+            this.normal = normal;
+            this.enchanted = enchanted;
+            this.sharedCooldown = sharedCooldown;
+        }
+
+        private long getCooldownForItem(ItemStack item){
+            return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
+        }
+
+        boolean isOnCooldown(ItemStack item, LastEaten lastEaten){
+            return (sharedCooldown ? lastEaten.getNewestEatTime() : lastEaten.getForItem(item))
+                    .map(it -> ChronoUnit.SECONDS.between(it, Instant.now()))
+                    .map(it -> it < getCooldownForItem(item))
+                    .orElse(false);
         }
     }
 }
