@@ -2,7 +2,12 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Statistic;
+import org.bukkit.World;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
@@ -19,7 +24,16 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.UUID;
 
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
@@ -31,8 +45,8 @@ public class ModuleGoldenApple extends Module {
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
 
-    private Map<UUID, Long> lastEaten;
-    private long cooldown;
+    private Map<UUID, LastEaten> lastEaten;
+    private Cooldown cooldown;
 
     public ModuleGoldenApple(OCMMain plugin){
         super(plugin, "old-golden-apples");
@@ -41,12 +55,12 @@ public class ModuleGoldenApple extends Module {
     @SuppressWarnings("deprecated")
     @Override
     public void reload(){
-        cooldown = module().getInt("cooldown");
-        if(cooldown > 0) {
-            if (lastEaten == null) lastEaten = new HashMap<>();
-        } else{
-            lastEaten = null; // disable tracking eating times
-        }
+        cooldown = new Cooldown(
+                module().getLong("cooldown.normal"),
+                module().getLong("cooldown.enchanted"),
+                module().getBoolean("cooldown.is-shared")
+        );
+        lastEaten = new HashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");
@@ -111,14 +125,12 @@ public class ModuleGoldenApple extends Module {
         e.setCancelled(true);
 
         // Check if the cooldown has expired yet
-        if(lastEaten != null) {
-            final long currentTime = System.currentTimeMillis() / 1000;
-            final UUID uuid = p.getUniqueId();
-            if (lastEaten.containsKey(uuid) && currentTime - lastEaten.get(uuid) < cooldown)
-                return;
+        lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
 
-            lastEaten.put(uuid, currentTime);
+        if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId()))){
+            return;
         }
+        lastEaten.get(p.getUniqueId()).setForItem(item);
 
         final ItemStack originalItem = e.getItem();
         final PlayerInventory inv = p.getInventory();
@@ -160,17 +172,18 @@ public class ModuleGoldenApple extends Module {
         p.incrementStatistic(Statistic.USE_ITEM, consumedMaterial);
 
         // Call the event as .incrementStatistic doesn't seem to, and other plugins may rely on it
-        PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p,Statistic.USE_ITEM,initialValue,initialValue+1,consumedMaterial);
+        PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p, Statistic.USE_ITEM, initialValue, initialValue + 1, consumedMaterial);
         Bukkit.getServer().getPluginManager().callEvent(psie);
 
-        try {
+        try{
             NamespacedKey nsk = NamespacedKey.minecraft("husbandry/balanced_diet");
             Advancement advancement = Bukkit.getAdvancement(nsk);
 
             // Award advancement criterion for having eaten gapple, as incrementing statistic or calling event doesn't seem to
-            if (advancement != null)
+            if(advancement != null)
                 p.getAdvancementProgress(advancement).awardCriteria(consumedMaterial.name().toLowerCase());
-        } catch (NoClassDefFoundError ignored){} // Pre 1.12 does not have advancements
+        } catch(NoClassDefFoundError ignored){
+        } // Pre 1.12 does not have advancements
     }
 
     private List<PotionEffect> getPotionEffects(String apple){
@@ -210,5 +223,59 @@ public class ModuleGoldenApple extends Module {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         if(lastEaten != null) lastEaten.remove(e.getPlayer().getUniqueId());
+    }
+
+    private static class LastEaten {
+        private Instant lastNormalEaten;
+        private Instant lastEnchantedEaten;
+
+        private Optional<Instant> getForItem(ItemStack item){
+            return ENCHANTED_GOLDEN_APPLE.isSame(item)
+                    ? Optional.ofNullable(lastEnchantedEaten)
+                    : Optional.ofNullable(lastNormalEaten);
+        }
+
+        private Optional<Instant> getNewestEatTime(){
+            if(lastEnchantedEaten == null){
+                return Optional.ofNullable(lastNormalEaten);
+            }
+            if(lastNormalEaten == null){
+                return Optional.of(lastEnchantedEaten);
+            }
+            return Optional.of(
+                    lastNormalEaten.compareTo(lastEnchantedEaten) < 0 ? lastEnchantedEaten : lastNormalEaten
+            );
+        }
+
+        private void setForItem(ItemStack item){
+            if(ENCHANTED_GOLDEN_APPLE.isSame(item)){
+                lastEnchantedEaten = Instant.now();
+            } else {
+                lastNormalEaten = Instant.now();
+            }
+        }
+    }
+
+    private static class Cooldown {
+        private final long normal;
+        private final long enchanted;
+        private final boolean sharedCooldown;
+
+        Cooldown(long normal, long enchanted, boolean sharedCooldown){
+            this.normal = normal;
+            this.enchanted = enchanted;
+            this.sharedCooldown = sharedCooldown;
+        }
+
+        private long getCooldownForItem(ItemStack item){
+            return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
+        }
+
+        boolean isOnCooldown(ItemStack item, LastEaten lastEaten){
+            return (sharedCooldown ? lastEaten.getNewestEatTime() : lastEaten.getForItem(item))
+                    .map(it -> ChronoUnit.SECONDS.between(it, Instant.now()))
+                    .map(it -> it < getCooldownForItem(item))
+                    .orElse(false);
+        }
     }
 }

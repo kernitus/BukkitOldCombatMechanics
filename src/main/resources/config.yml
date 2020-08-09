@@ -174,7 +174,25 @@ old-golden-apples:
   enabled: true
   worlds: []
   # Cooldown between eating the apples, in seconds
-  cooldown: 0
+  cooldown:
+    # The cooldown for normal golden apples
+    normal: 0
+    # The cooldown for enchanted golden apples
+    enchanted: 0
+    # Whether the two apple types share a cooldown.
+    # If this is true:
+    #   1. Eating any apple resets both cooldowns
+    #   2. Each apple type can only be eaten when its cooldown time is over
+    #      This means that when you eat *any* apple you start two parallel cooldowns: One for enchanted and one
+    #      for normal apples. Each type can only be eaten when its cooldown is over.
+    #      Once any apple is eaten, both cooldowns are restarted, so you can not eat either type again
+    #      before its full cooldown is over.
+    #   3. To have the plugin treat normal and enchanted golden apples as having the same cooldown,
+    #      then set the same cooldown time and enable shared mode. (This was the old mode)
+    # If this is false:
+    #   Eating an enchanted apple will prevent any *enchanted* apple type from being eaten before the cooldown is over
+    #   Eating a normal apple will prevent any *normal* apple type from being eaten before the normal cooldown is over
+    is-shared: false
   # If you want to allow enchanted golden apple crafting
   enchanted-golden-apple-crafting: true
   # Enabling this makes the potion effects gained by eating golden apples
@@ -460,4 +478,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 43
+config-version: 44
