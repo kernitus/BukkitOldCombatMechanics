@@ -18,7 +18,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -27,14 +26,16 @@ import java.util.WeakHashMap;
  */
 public class ModulePlayerCollisions extends Module {
 
-    private CollisionPacketListener collisionPacketListener = new CollisionPacketListener();
-    private Map<Player, TeamPacket> playerTeamMap = Collections.synchronizedMap(new WeakHashMap<>());
-
+    private final CollisionPacketListener collisionPacketListener;
+    private final Map<Player, TeamPacket> playerTeamMap;
 
     public ModulePlayerCollisions(OCMMain plugin){
         super(plugin, "disable-player-collisions");
 
         // inject all players at startup, so the plugin still works properly after a reload
+        collisionPacketListener = new CollisionPacketListener();
+        playerTeamMap = new WeakHashMap<>();
+
         OCMMain.getInstance().addEnableListener(() -> {
             for(Player player : Bukkit.getOnlinePlayers()){
                 PacketManager.getInstance().addListener(collisionPacketListener, player);
@@ -65,14 +66,16 @@ public class ModulePlayerCollisions extends Module {
                 ? CollisionRule.NEVER
                 : CollisionRule.ALWAYS;
 
-        if(playerTeamMap.containsKey(player)){
-            TeamPacket teamPacket = playerTeamMap.get(player);
-            teamPacket.setTeamAction(TeamAction.UPDATE);
-            teamPacket.setCollisionRule(collisionRule);
-            teamPacket.send(player);
-        } else {
-            debug("Fake collision team created for you.", player);
-            createAndSendNewTeam(player, collisionRule);
+        synchronized(playerTeamMap){
+            if(playerTeamMap.containsKey(player)){
+                TeamPacket teamPacket = playerTeamMap.get(player);
+                teamPacket.setTeamAction(TeamAction.UPDATE);
+                teamPacket.setCollisionRule(collisionRule);
+                teamPacket.send(player);
+            } else {
+                debug("Fake collision team created for you.", player);
+                createAndSendNewTeam(player, collisionRule);
+            }
         }
     }
 
@@ -84,7 +87,9 @@ public class ModulePlayerCollisions extends Module {
      */
     private void createAndSendNewTeam(Player player, CollisionRule collisionRule){
         TeamPacket newTeamPacket = TeamUtils.craftTeamCreatePacket(player, collisionRule);
-        playerTeamMap.put(player, newTeamPacket);
+        synchronized(playerTeamMap){
+            playerTeamMap.put(player, newTeamPacket);
+        }
 
         newTeamPacket.send(player);
     }
@@ -110,6 +115,12 @@ public class ModulePlayerCollisions extends Module {
                 return;
             }
 
+            synchronized(playerTeamMap){
+                handlePacket(packetEvent);
+            }
+        }
+
+        private void handlePacket(PacketEvent packetEvent){
             Object nmsPacket = packetEvent.getPacket().getNMSPacket();
 
             CollisionRule collisionRule = isEnabled(packetEvent.getPlayer().getWorld())
