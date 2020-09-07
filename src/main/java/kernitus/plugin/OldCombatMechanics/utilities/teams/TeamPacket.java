@@ -3,16 +3,16 @@ package kernitus.plugin.OldCombatMechanics.utilities.teams;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Objects;
+import java.util.Optional;
 
 public class TeamPacket {
-    private Object packetShallowClone;
+    private final Object packetShallowClone;
 
-    TeamPacket(Object packet){
-        this.packetShallowClone = packet;
+    public TeamPacket(Object packet){
+        this.packetShallowClone = Objects.requireNonNull(packet, "packet can not be null!");
     }
 
     public TeamPacket(){
@@ -22,37 +22,29 @@ public class TeamPacket {
     }
 
     /**
-     * Adjusts this team packet
+     * Adjusts this team packet to a given new update packet.
      *
      * @param updatePacket the sent team packet
+     * @param player       the player to check it for
+     * @return the new team packet or an empty optional if the team was disbanded
      */
-    public void adjustToUpdate(Object updatePacket){
+    public Optional<TeamPacket> adjustToUpdate(Object updatePacket, Player player){
         switch(TeamUtils.getPacketAction(updatePacket)){
-            case CREATE:
-                cloneFrom(updatePacket);
-                break;
-            case DISBAND:
-                packetShallowClone = null;
-                break;
+            case REMOVE_PLAYER:{
+                Collection<String> removedPlayers = TeamUtils.getTeamMembers(updatePacket);
+                if(removedPlayers.contains(player.getName())){
+                    return Optional.empty();
+                }
+                return Optional.of(new TeamPacket(updatePacket));
+            }
             case UPDATE:
-                cloneFrom(updatePacket);
-                break;
             case ADD_PLAYER:
-                adjustToPlayerAdded(updatePacket);
-                break;
-            case REMOVE_PLAYER:
-                adjustToPlayerRemoved(updatePacket);
-                break;
+            case CREATE:
+                return Optional.of(new TeamPacket(updatePacket));
+            case DISBAND:
+                return Optional.empty();
         }
-    }
-
-    /**
-     * Checks if this team still exists.
-     *
-     * @return true if this team still exists
-     */
-    public boolean teamExists(){
-        return packetShallowClone != null;
+        throw new IllegalArgumentException("Unknown team action");
     }
 
     /**
@@ -74,37 +66,21 @@ public class TeamPacket {
     }
 
     /**
+     * @return the team id or null if the team was disbanded
+     */
+    public String getTeamName(){
+        if(packetShallowClone == null){
+            return null;
+        }
+        return TeamUtils.getTeamName(packetShallowClone);
+    }
+
+    /**
      * Sends the packet to the given player.
      *
      * @param player the player to send it to
      */
     public void send(Player player){
         Reflector.Packets.sendPacket(player, packetShallowClone);
-    }
-
-    private void adjustToPlayerAdded(Object updatePacket){
-        Set<String> newMembers = new HashSet<>(TeamUtils.getTeamMembers(packetShallowClone));
-
-        newMembers.addAll(TeamUtils.getTeamMembers(updatePacket));
-
-        TeamUtils.setTeamMembers(packetShallowClone, newMembers);
-    }
-
-    private void adjustToPlayerRemoved(Object updatePacket){
-        Set<String> newMembers = new HashSet<>(TeamUtils.getTeamMembers(packetShallowClone));
-        newMembers.removeAll(TeamUtils.getTeamMembers(updatePacket));
-
-        TeamUtils.setTeamMembers(packetShallowClone, newMembers);
-    }
-
-    private void cloneFrom(Object packet){
-        try{
-            for(Field declaredField : packet.getClass().getDeclaredFields()){
-                declaredField.setAccessible(true);
-                declaredField.set(packetShallowClone, declaredField.get(packet));
-            }
-        } catch(IllegalAccessException e){
-            throw new RuntimeException("Error cloning packet", e);
-        }
     }
 }

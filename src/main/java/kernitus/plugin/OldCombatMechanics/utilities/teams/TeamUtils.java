@@ -8,7 +8,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class TeamUtils {
 
     private static final VersionData VERSION_DATA = new VersionData();
+    private static final AtomicInteger TEAM_NAME_COUNTER = new AtomicInteger();
 
     /**
      * Sets the collision rule of the packet.
@@ -71,8 +72,7 @@ public class TeamUtils {
      * @return true if the packet targets the player
      */
     public static boolean targetsPlayer(Object packet, Player player){
-        Collection<String> teamMembers = getTeamMembers(packet);
-        return teamMembers != null && teamMembers.contains(player.getName());
+        return getTeamMembers(packet).contains(player.getName());
     }
 
     /**
@@ -82,7 +82,8 @@ public class TeamUtils {
      * @param collisionRule the collision rule to use
      */
     public static TeamPacket craftTeamCreatePacket(Player player, CollisionRule collisionRule){
-        String teamName = UUID.randomUUID().toString().substring(0, 15);
+        // Has the right size (10) and is unique
+        String teamName = "OCM-" + TEAM_NAME_COUNTER.getAndIncrement() + "";
 
         Object teamPacket = VERSION_DATA.createTeamPacket(
                 TeamAction.CREATE,
@@ -95,17 +96,53 @@ public class TeamUtils {
     }
 
     /**
+     * @param name the name of the team
+     * @return true if the team was created by OCM
+     */
+    public static boolean isOcmTeam(String name){
+        return name.startsWith("OCM-");
+    }
+
+    /**
+     * Disbands a team.
+     *
+     * @param teamName the name of the team to disband
+     * @param player   the player to disband it for
+     */
+    public static void disband(String teamName, Player player){
+        Object nms = VERSION_DATA.createTeamPacket(
+                TeamAction.DISBAND,
+                CollisionRule.NEVER,
+                teamName,
+                Collections.singletonList(player)
+        );
+        new TeamPacket(nms).send(player);
+    }
+
+    /**
+     * @param packet the packet to get it for
+     * @return the team name
+     */
+    public static String getTeamName(Object packet){
+        try{
+            return (String) VERSION_DATA.getFieldName().get(packet);
+        } catch(IllegalAccessException e){
+            throw new RuntimeException("Error setting members", e);
+        }
+    }
+
+    /**
      * Returns all team members in the given packet.
      *
      * @param packet the packet
      * @return returns all team members
      */
-    static Collection<String> getTeamMembers(Object packet){
+    public static Collection<String> getTeamMembers(Object packet){
         try{
             @SuppressWarnings("unchecked")
             Collection<String> identifiers = (Collection<String>) VERSION_DATA.getFieldPlayerNames().get(packet);
 
-            if (identifiers == null) {
+            if(identifiers == null){
                 return Collections.emptyList();
             }
 
@@ -113,20 +150,6 @@ public class TeamUtils {
         } catch(IllegalAccessException e){
             // should not happen if the getting works
             throw new RuntimeException("Error getting players", e);
-        }
-    }
-
-    /**
-     * Sets the team members.
-     *
-     * @param packet     the packet
-     * @param newMembers the new team members
-     */
-    static void setTeamMembers(Object packet, Collection<?> newMembers){
-        try{
-            VERSION_DATA.getFieldPlayerNames().set(packet, newMembers);
-        } catch(IllegalAccessException e){
-            throw new RuntimeException("Error setting members", e);
         }
     }
 
@@ -174,6 +197,10 @@ public class TeamUtils {
 
         Field getFieldAction(){
             return fieldAction;
+        }
+
+        Field getFieldName(){
+            return fieldName;
         }
 
         Object createTeamPacket(TeamAction action, CollisionRule collisionRule, String name,
