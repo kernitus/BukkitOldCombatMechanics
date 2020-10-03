@@ -10,7 +10,7 @@ public enum TeamAction {
     ADD_PLAYER(3),
     REMOVE_PLAYER(4);
 
-    private int minecraftId;
+    private final int minecraftId;
 
     TeamAction(int minecraftId){
         this.minecraftId = minecraftId;
