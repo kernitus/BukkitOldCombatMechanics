@@ -188,6 +188,8 @@ public class OCMMain extends JavaPlugin {
 
         ModuleLoader.addModule(new ModuleAttackSounds(this));
         ModuleLoader.addModule(new ModuleOldBurnDelay(this));
+
+        ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
     }
 
     private void registerHooks(){
