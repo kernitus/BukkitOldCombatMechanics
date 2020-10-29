@@ -19,7 +19,7 @@ import java.util.Random;
 
 public class ModuleFishingRodVelocity extends Module {
     public static HashSet<FishHook> fishHooks = new HashSet<>();
-    boolean versionChagesGravity;
+    public static boolean versionChagesGravity;
     Random rand = new Random();
     Method getHook;
 
@@ -27,8 +27,8 @@ public class ModuleFishingRodVelocity extends Module {
      * This module uses the exact 1.8 formula in order to revert fishing rod gravity
      * and fishing rod velocity back to 1.8
      *
-     * Fishing rod gravity in 1.9+ is 0.04 while in 1.8 it is 0.03
-     * Launch velocity in 1.9+ was also changed from the 1.8 formula
+     * Fishing rod gravity in 1.14+ is 0.04 while in 1.8 it is 0.03
+     * Launch velocity in 1.9+ is also changed from the 1.8 formula
      */
 
     public ModuleFishingRodVelocity(OCMMain plugin) {
@@ -45,21 +45,24 @@ public class ModuleFishingRodVelocity extends Module {
             e.printStackTrace();
         }
 
-        OCMMain.getInstance().addEnableListener(() -> Bukkit.getScheduler().runTaskTimer(OCMMain.getInstance(), () -> {
-            Iterator<FishHook> fishingHookIterator = ModuleFishingRodVelocity.fishHooks.iterator();
+        if (versionChagesGravity) {
+            OCMMain.getInstance().addEnableListener(() -> Bukkit.getScheduler().runTaskTimer(OCMMain.getInstance(), () -> {
 
-            while (fishingHookIterator.hasNext()) {
-                FishHook fishHook = fishingHookIterator.next();
+                Iterator<FishHook> fishingHookIterator = ModuleFishingRodVelocity.fishHooks.iterator();
 
-                if (!fishHook.isValid()) {
-                    fishingHookIterator.remove();
-                } else if (versionChagesGravity && fishHook.getWorld().getBlockAt(fishHook.getLocation()).getType() != Material.WATER) {
-                    Vector fVelocity = fishHook.getVelocity();
-                    fVelocity.setY(fVelocity.getY() - 0.01);
-                    fishHook.setVelocity(fVelocity);
+                while (fishingHookIterator.hasNext()) {
+                    FishHook fishHook = fishingHookIterator.next();
+
+                    if (!fishHook.isValid()) {
+                        fishingHookIterator.remove();
+                    } else if (fishHook.getWorld().getBlockAt(fishHook.getLocation()).getType() != Material.WATER) {
+                        Vector fVelocity = fishHook.getVelocity();
+                        fVelocity.setY(fVelocity.getY() - 0.01);
+                        fishHook.setVelocity(fVelocity);
+                    }
                 }
-            }
-        }, 1, 1));
+            }, 1, 1));
+        }
     }
 
     @EventHandler
@@ -104,7 +107,7 @@ public class ModuleFishingRodVelocity extends Module {
 
         if(!isEnabled(fishHook.getWorld())) return;
 
-        if (event.getState() == PlayerFishEvent.State.FISHING) {
+        if (versionChagesGravity && event.getState() == PlayerFishEvent.State.FISHING) {
             fishHooks.add(fishHook);
         }
 
