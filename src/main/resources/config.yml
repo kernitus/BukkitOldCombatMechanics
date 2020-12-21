@@ -259,14 +259,14 @@ projectile-knockback:
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
-  # It's hard to make it behave exactly like before, but in general this makes it work like in pre-1.9
+  # Based on https://minecraft.gamepedia.com/Hunger?oldid=948685
   enabled: true
   worlds: []
-  # How often, in seconds, a player should regenerate health
-  frequency: 3
+  # How often a player should regenerate health, in milliseconds (In 1.8: 4 seconds)
+  interval: 4000
   # How many half-hearts the player should heal by, every seconds specified above
   amount: 1
-  # How much exhaustion healing should give to the player. In 1.8: 3    In 1.9: 4    In 1.11: 6
+  # How much exhaustion the player should get from healing. In 1.8: 3    In 1.9: 4    In 1.11: 6
   # If, after adding this, Minecraft finds the value is above 4, it subtracts 4
   # and either reduces saturation or, if saturation is 0, reduces food level by 1 (1/2 a stick)
   exhaustion: 3
@@ -478,4 +478,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 44
+config-version: 45
