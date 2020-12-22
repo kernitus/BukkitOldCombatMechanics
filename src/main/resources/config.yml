@@ -62,6 +62,9 @@ disable-crafting:
   worlds: []
   # List of denied items
   denied: [shield]
+  # Show the user a message if they try to craft a blacklisted item
+  showMessage: true
+  message: "&cYou cannot craft that item!"
 
 disable-offhand:
   # Disable the usage of the offhand
@@ -482,4 +485,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 46
+config-version: 47
