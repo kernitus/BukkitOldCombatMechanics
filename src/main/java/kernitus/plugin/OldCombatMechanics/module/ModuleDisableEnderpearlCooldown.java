@@ -47,6 +47,8 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerShoot(ProjectileLaunchEvent e) {
+        if(e.isCancelled()) return; // For compatibility with other plugins
+
         final Projectile projectile = e.getEntity();
         if (!(projectile instanceof EnderPearl)) return;
         final ProjectileSource shooter = projectile.getShooter();
