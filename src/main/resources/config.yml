@@ -97,6 +97,9 @@ disable-enderpearl-cooldown:
   worlds: []
   # The cooldown, in seconds
   cooldown: 0
+  # Show the user a message if they try to use an enderpearl and the cooldown has not expired yet
+  showMessage: true
+  message: "&cYou must wait &7%ds&c before using an enderpearl again!"
 
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
@@ -478,4 +481,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 45
+config-version: 46
