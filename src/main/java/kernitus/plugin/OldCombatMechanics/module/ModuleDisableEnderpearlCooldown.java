@@ -53,6 +53,9 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
         if (!(shooter instanceof Player)) return;
         final Player player = (Player) shooter;
+
+        if(!isEnabled(player.getWorld())) return;
+
         final UUID uuid = player.getUniqueId();
 
         if (ignoredPlayers.contains(uuid)) return;
