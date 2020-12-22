@@ -16,8 +16,8 @@ public abstract class Module implements Listener {
 
     protected OCMMain plugin;
 
-    private String configName;
-    private String moduleName;
+    private final String configName;
+    private final String moduleName;
 
     /**
      * Creates a new module.
