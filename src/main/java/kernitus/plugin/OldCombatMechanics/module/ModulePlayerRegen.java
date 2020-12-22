@@ -33,6 +33,7 @@ public class ModulePlayerRegen extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRegen(EntityRegainHealthEvent e) {
+        if(e.isCancelled()) return; // In case some other plugin cancelled the event
 
         if (e.getEntityType() != EntityType.PLAYER
                 || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
@@ -56,8 +57,10 @@ public class ModulePlayerRegen extends Module {
         final boolean hasLastHealTime = healTimes.containsKey(playerId);
         final long lastHealTime = healTimes.computeIfAbsent(playerId, id -> currentTime);
 
+        debug("Exh: " + previousExhaustion + " Sat: " + previousSaturation + " Time: " + (currentTime - lastHealTime), p);
+
         // If we're skipping this heal, we must fix the exhaustion in the following tick
-        if (hasLastHealTime && currentTime - lastHealTime < module().getLong("interval")) {
+        if (hasLastHealTime && currentTime - lastHealTime <= module().getLong("interval")) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> p.setExhaustion(previousExhaustion), 1L);
             return;
         }
@@ -77,8 +80,8 @@ public class ModulePlayerRegen extends Module {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             // We do this in the next tick because bukkit doesn't stop the exhaustion change when cancelling the event
             p.setExhaustion(previousExhaustion + exhaustionToApply);
-            debug("Exhaustion before: " + previousExhaustion + " Now: " + p.getExhaustion() +
-                    " Saturation now: " + previousSaturation, p);
+            debug("Exh before: " + previousExhaustion + " Now: " + p.getExhaustion() +
+                    " Sat now: " + previousSaturation, p);
         }, 1L);
     }
 

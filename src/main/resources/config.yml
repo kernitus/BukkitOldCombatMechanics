@@ -266,7 +266,8 @@ old-player-regen:
   enabled: true
   worlds: []
   # How often a player should regenerate health, in milliseconds (In 1.8: 4 seconds)
-  interval: 4000
+  # The foodTickerTimer might not be perfectly accurate so we give it ~10ms of leeway
+  interval: 3990
   # How many half-hearts the player should heal by, every seconds specified above
   amount: 1
   # How much exhaustion the player should get from healing. In 1.8: 3    In 1.9: 4    In 1.11: 6
