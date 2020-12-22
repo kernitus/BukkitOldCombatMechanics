@@ -42,8 +42,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
             if (lastLaunched == null) lastLaunched = new HashMap<>();
         } else lastLaunched = null;
 
-        if (module().getBoolean("showMessage"))
-            message = module().getString("message");
+        message = module().getBoolean("showMessage") ? module().getString("message") : null;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
