@@ -26,7 +26,7 @@ public class Config {
     private static FileConfiguration config;
     private static List<Material> interactive = new ArrayList<>();
 
-    public static void initialise(OCMMain plugin){
+    public static void initialise(OCMMain plugin) {
         Config.plugin = plugin;
         config = plugin.getConfig();
 
@@ -36,10 +36,10 @@ public class Config {
     /**
      * @return Whether config was changed or not
      */
-    private static boolean checkConfigVersion(){
+    private static boolean checkConfigVersion() {
         YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
 
-        if(config.getInt("config-version") != defaultConfig.getInt("config-version")){
+        if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
             plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
             plugin.upgradeConfig();
             reload();
@@ -50,14 +50,14 @@ public class Config {
     }
 
 
-    public static void reload(){
-        if(plugin.doesConfigExist()){
+    public static void reload() {
+        if (plugin.doesConfigExist()) {
             plugin.reloadConfig();
             config = plugin.getConfig();
         } else
             plugin.upgradeConfig();
 
-        if(checkConfigVersion()){
+        if (checkConfigVersion()) {
             // checkConfigVersion will call #reload() again anyways
             return;
         }
@@ -79,62 +79,63 @@ public class Config {
         ModuleLoader.getModules().stream()
                 .filter(Module::isEnabled)
                 .forEach(module -> {
-                    try{
+                    try {
                         module.reload();
-                    } catch(Exception e){
+                    } catch (Exception e) {
                         plugin.getLogger()
                                 .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
                     }
                 });
     }
 
-    public static boolean moduleEnabled(String name, World world){
+    public static boolean moduleEnabled(String name, World world) {
+        boolean isBlacklist = config.getBoolean("worlds-is-blacklist");
         ConfigurationSection section = config.getConfigurationSection(name);
 
-        if(section == null){
+        if (section == null) {
             plugin.getLogger().warning("Tried to check module '" + name + "', but it didn't exist!");
             return false;
         }
 
-        if(section.getBoolean("enabled")){
-            if(world == null){
-                return true;
-            }
+        if (!section.getBoolean("enabled")) return false;
+        if (world == null) return true;
 
-            List<String> list = section.getStringList("worlds");
+        final String worldName = world.getName();
+        final List<String> list = section.getStringList("worlds");
 
-            return list == null || list.size() <= 0 || list.stream().anyMatch(entry -> entry.equalsIgnoreCase(world.getName()));
-        }
+        // If the list is empty, the module should be enabled in all worlds
+        if (list.size() <= 0) return true;
 
-        return false;
+        boolean isInList = list.stream().anyMatch(entry -> entry.equalsIgnoreCase(worldName));
+        return isBlacklist != isInList;
     }
 
-    public static boolean moduleEnabled(String name){
+    public static boolean moduleEnabled(String name) {
         return moduleEnabled(name, null);
     }
 
-    public static boolean debugEnabled(){
+    public static boolean debugEnabled() {
         return moduleEnabled("debug", null);
     }
 
-    public static List<?> getWorlds(String moduleName){
+    public static List<?> getWorlds(String moduleName) {
         return config.getList(moduleName + ".worlds");
     }
 
-    public static boolean moduleSettingEnabled(String moduleName, String moduleSettingName){
+    public static boolean moduleSettingEnabled(String moduleName, String moduleSettingName) {
         return config.getBoolean(moduleName + "." + moduleSettingName);
     }
 
-    public static void setModuleSetting(String moduleName, String moduleSettingName, boolean value){
+    public static void setModuleSetting(String moduleName, String moduleSettingName, boolean value) {
         config.set(moduleName + "." + moduleSettingName, value);
         plugin.saveConfig();
     }
 
-    private static void reloadInteractiveBlocks(){
+    private static void reloadInteractiveBlocks() {
         interactive = ConfigUtils.loadMaterialList(config, "interactive");
     }
 
-    public static List<Material> getInteractiveBlocks(){
+    public static List<Material> getInteractiveBlocks() {
         return interactive;
     }
 
@@ -143,7 +144,7 @@ public class Config {
      *
      * @return config.yml instance
      */
-    public static FileConfiguration getConfig(){
+    public static FileConfiguration getConfig() {
         return plugin.getConfig();
     }
 }
