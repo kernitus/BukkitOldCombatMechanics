@@ -470,6 +470,14 @@ old-burn-delay:
   # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
+attack-frequency:
+  # Allows changing the player invulnerability between hits
+  enabled: true
+  worlds: []
+  # The hit delay to apply. Default for 1.9+ is 20 ticks (1 second)
+  playerDelay: 18
+  mobDelay: 16
+
 ################################
 #### SUPPORT SETTINGS BELOW ####
 ################################
@@ -485,4 +493,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 47
+config-version: 48
