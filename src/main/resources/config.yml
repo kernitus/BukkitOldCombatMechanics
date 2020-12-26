@@ -2,7 +2,7 @@
 #                                                                           #
 # Bukkit Page: http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/     #
 # Spigot Page: https://www.spigotmc.org/resources/oldcombatmechanics.19510/ #
-# GitHub Page: https://github.com/kernitus/BukkitOldCombatMechanics/         #
+# GitHub Page: https://github.com/kernitus/BukkitOldCombatMechanics/        #
 #                                                                           #
 #############################################################################
 
@@ -318,6 +318,7 @@ disable-bow-boost:
 old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
   enabled: true
+  worlds: []
 
   ### DURATION: (in seconds)
   potion-durations:

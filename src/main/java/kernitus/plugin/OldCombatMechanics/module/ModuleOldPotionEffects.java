@@ -37,24 +37,24 @@ import static java.util.Objects.requireNonNull;
 public class ModuleOldPotionEffects extends Module {
 
     private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
-            //this only includes 1.9 potions, others are added later for compatibility
-            //instant potions have no duration that can be modified
+            // This only includes 1.9 potions, others are added later for compatibility
+            // Instant potions have no duration that can be modified
             PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL,
-            //base potions without any effect
+            // Base potions without any effect
             PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.UNCRAFTABLE, PotionType.WATER
     );
 
     private HashMap<PotionType, PotionDurations> durations;
 
-    public ModuleOldPotionEffects(OCMMain plugin){
+    public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
 
-            try {
-                //Turtle Master potion has two effects and Bukkit only returns one with #getEffectType()
-                EXCLUDED_POTION_TYPES.add(PotionType.TURTLE_MASTER);
-            } catch (NoSuchFieldError e) {
-                debug("Skipping excluding a potion (probably older server version)");
-            }
+        try {
+            //Turtle Master potion has two effects and Bukkit only returns one with #getEffectType()
+            EXCLUDED_POTION_TYPES.add(PotionType.TURTLE_MASTER);
+        } catch (NoSuchFieldError e) {
+            debug("Skipping excluding a potion (probably older server version)");
+        }
 
         reload();
     }
@@ -65,11 +65,13 @@ public class ModuleOldPotionEffects extends Module {
     }
 
     /**
-     * Change the duration using values defined in config
-     * for drinking potions
+     * Change the duration using values defined in config for drinking potions
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onPlayerDrinksPotion(PlayerItemConsumeEvent event){
+    public void onPlayerDrinksPotion(PlayerItemConsumeEvent event) {
+        final Player player = event.getPlayer();
+        if (!isEnabled(player.getWorld())) return;
+
         final ItemStack potionItem = event.getItem();
         if (potionItem.getType() != Material.POTION) return;
 
@@ -89,7 +91,6 @@ public class ModuleOldPotionEffects extends Module {
         final PotionEffectType effectType = requireNonNull(potionType.getEffectType());
         final PotionEffect potionEffect = new PotionEffect(effectType, duration, amplifier);
 
-        final Player player = event.getPlayer();
         setNewPotionEffect(player, potionEffect);
 
         // Remove item from hand since we cancelled the event
@@ -100,108 +101,102 @@ public class ModuleOldPotionEffects extends Module {
         final int amount = potionItem.getAmount();
         ItemStack toSet = new ItemStack(Material.GLASS_BOTTLE);
 
-        boolean isInMainHand = potionItem.equals(playerInventory.getItemInMainHand());
+        final boolean isInMainHand = potionItem.equals(playerInventory.getItemInMainHand());
 
-        //There was more than one potion in the stack
-        if(amount > 1){
+        // There was more than one potion in the stack
+        if (amount > 1) {
             playerInventory.addItem(toSet);
             toSet = potionItem;
             toSet.setAmount(amount - 1);
         }
 
         // If potion was in main hand
-        if (isInMainHand)
-            playerInventory.setItemInMainHand(toSet);
-        else
-            playerInventory.setItemInOffHand(toSet);
+        if (isInMainHand) playerInventory.setItemInMainHand(toSet);
+        else playerInventory.setItemInOffHand(toSet);
     }
 
     /**
-     * Change the duration using values defined in config
-     * for splash potions
+     * Change the duration using values defined in config for splash potions
      */
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPotionSplash(PotionSplashEvent event){
-        ThrownPotion thrownPotion = event.getPotion();
-        PotionMeta potionMeta = (PotionMeta) thrownPotion.getItem().getItemMeta();
+    public void onPotionSplash(PotionSplashEvent event) {
+        if (!isEnabled(event.getEntity().getWorld())) return;
 
-        for(PotionEffect potionEffect : thrownPotion.getEffects()){
-            PotionData potionData = potionMeta.getBasePotionData();
+        final ThrownPotion thrownPotion = event.getPotion();
+        final PotionMeta potionMeta = (PotionMeta) thrownPotion.getItem().getItemMeta();
 
-            if(EXCLUDED_POTION_TYPES.contains(potionData.getType())) return;
+        for (PotionEffect potionEffect : thrownPotion.getEffects()) {
+            final PotionData potionData = potionMeta.getBasePotionData();
+
+            if (EXCLUDED_POTION_TYPES.contains(potionData.getType())) return;
 
             event.setCancelled(true);
 
-            int duration = getPotionDuration(potionData, true);
+            final int duration = getPotionDuration(potionData, true);
 
-            PotionEffect newEffect = new PotionEffect(potionEffect.getType(), duration, potionEffect.getAmplifier());
+            final PotionEffect newEffect = new PotionEffect(potionEffect.getType(), duration, potionEffect.getAmplifier());
 
-            event.getAffectedEntities()
-                    .forEach(livingEntity -> setNewPotionEffect(livingEntity, newEffect));
+            event.getAffectedEntities().forEach(livingEntity -> setNewPotionEffect(livingEntity, newEffect));
         }
-    }
-
-    private void setNewPotionEffect(LivingEntity livingEntity, PotionEffect potionEffect){
-        if(livingEntity.hasPotionEffect(potionEffect.getType())){
-            PotionEffect activeEffect = PotionEffects.getOrNull(livingEntity, potionEffect.getType());
-
-            int remainingDuration = activeEffect.getDuration();
-
-            // If new effect it type II while old wasn't, or
-            // new would last longer than remaining time but isn't a level downgrade (eg II -> I), set it
-            int newAmplifier = potionEffect.getAmplifier();
-            int activeAmplifier = activeEffect.getAmplifier();
-
-            if(newAmplifier < activeAmplifier)
-                return;
-
-            if(newAmplifier > activeAmplifier || remainingDuration < potionEffect.getDuration()){
-                livingEntity.addPotionEffect(potionEffect, true);
-            }
-        } else {
-            livingEntity.addPotionEffect(potionEffect, false);
-        }
-    }
-
-    private int getPotionDuration(PotionData potionData, boolean splash){
-        PotionType potionType = potionData.getType();
-        debug("Potion type: " + potionType.name());
-
-        GenericPotionDurations potionDurations;
-
-        if(splash) potionDurations = durations.get(potionType).getSplash();
-        else potionDurations = durations.get(potionType).getDrinkable();
-
-        int duration;
-        if(potionData.isExtended()) duration = potionDurations.getExtendedTime();
-        else if(potionData.isUpgraded()) duration = potionDurations.getIITime();
-        else duration = potionDurations.getBaseTime();
-
-        // seconds to ticks conversion
-        return duration * 20;
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onDamageByEntity(OCMEntityDamageByEntityEvent event){
-        Entity damager = event.getDamager();
+    public void onDamageByEntity(OCMEntityDamageByEntityEvent event) {
+        final Entity damager = event.getDamager();
+        if (!isEnabled(damager.getWorld())) return;
 
-        double weaknessModifier = event.getWeaknessModifier();
+        final double weaknessModifier = event.getWeaknessModifier();
 
-        if(weaknessModifier != 0){
+        if (weaknessModifier != 0) {
             event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
-            double newWeaknessModifier = module().getDouble("weakness.modifier");
+            final double newWeaknessModifier = module().getDouble("weakness.modifier");
             event.setWeaknessModifier(newWeaknessModifier);
             debug("Old weakness modifier: " + weaknessModifier + " New: " + newWeaknessModifier, damager);
         }
 
-        double strengthModifier = event.getStrengthModifier();
+        final double strengthModifier = event.getStrengthModifier();
 
-        if(strengthModifier != 0){
+        if (strengthModifier != 0) {
             event.setIsStrengthModifierMultiplier(module().getBoolean("strength.multiplier"));
             event.setIsStrengthModifierAddend(module().getBoolean("strength.addend"));
-            double newStrengthModifier = module().getDouble("strength.modifier");
+            final double newStrengthModifier = module().getDouble("strength.modifier");
             event.setStrengthModifier(newStrengthModifier);
             debug("Old strength modifier: " + strengthModifier + " New: " + newStrengthModifier, damager);
         }
+    }
+
+    private void setNewPotionEffect(LivingEntity livingEntity, PotionEffect potionEffect) {
+        if (!livingEntity.hasPotionEffect(potionEffect.getType())) {
+            livingEntity.addPotionEffect(potionEffect, false);
+            return;
+        }
+
+        final PotionEffect activeEffect = PotionEffects.getOrNull(livingEntity, potionEffect.getType());
+        final int remainingDuration = activeEffect.getDuration();
+
+        // If new effect it type II while old wasn't, or
+        // new would last longer than remaining time but isn't a level downgrade (eg II -> I), set it
+        final int newAmplifier = potionEffect.getAmplifier();
+        final int activeAmplifier = activeEffect.getAmplifier();
+
+        if (newAmplifier < activeAmplifier) return;
+
+        if (newAmplifier > activeAmplifier || remainingDuration < potionEffect.getDuration())
+            livingEntity.addPotionEffect(potionEffect, true);
+
+    }
+
+    private int getPotionDuration(PotionData potionData, boolean splash) {
+        final PotionType potionType = potionData.getType();
+        debug("Potion type: " + potionType.name());
+
+        final GenericPotionDurations potionDurations = splash ? durations.get(potionType).getSplash() : durations.get(potionType).getDrinkable();
+
+        int duration;
+        if (potionData.isExtended()) duration = potionDurations.getExtendedTime();
+        else if (potionData.isUpgraded()) duration = potionDurations.getIITime();
+        else duration = potionDurations.getBaseTime();
+
+        return duration * 20; // Convert seconds to ticks
     }
 }
