@@ -252,6 +252,13 @@ old-fishing-knockback:
   # This is the delay in milliseconds in-between rod damage, so the player hit has time to fall back down
   hitCooldown: 1000
 
+fishing-rod-velocity:
+  # In 1.9+ fishing rods go 8 blocks instead of 12 blocks
+  # This is due to both gravity and initial launch speed
+  # Set to true to revert back to the old calculations and gravity
+  enabled: true
+  worlds: []
+
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
   # This has been a Bukkit bug for so long people thought it was vanilla when it was recently patched
