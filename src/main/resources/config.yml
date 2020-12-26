@@ -453,7 +453,7 @@ old-potion-effects:
 
 chorus-fruit:
   # This makes the chorus fruit behaviour configurable
-  enabled: true
+  enabled: false
   worlds: []
   # The maximum distance the fruit can teleport the player. This a PER AXIS value, so this outlines a cube with
   # 2 * max-teleportation-distance as the side length
