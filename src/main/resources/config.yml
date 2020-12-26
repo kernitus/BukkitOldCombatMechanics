@@ -473,8 +473,9 @@ chorus-fruit:
   hunger-value: 4
 
 old-burn-delay:
-  # This makes it so entities will immediately be set on fire when entering it
+  # This makes it so entities will immediately start to burn when entering fire
   enabled: false
+  worlds: []
   # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
@@ -501,4 +502,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 48
+config-version: 49
