@@ -45,7 +45,7 @@ public class ModuleAttackCooldown extends Module {
     public void onPlayerQuit(PlayerQuitEvent e){
         Player player = e.getPlayer();
 
-        // TODO: Why is it reset here? To make uninstalling the plugin easier?
+        // This is here to make uninstalling the plugin easier
         setAttackSpeed(player, PVPMode.NEW_PVP.getBaseAttackSpeed());
     }
 
