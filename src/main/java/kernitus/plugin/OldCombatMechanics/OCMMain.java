@@ -173,6 +173,7 @@ public class OCMMain extends JavaPlugin {
 
         ModuleLoader.addModule(new ModuleGoldenApple(this));
         ModuleLoader.addModule(new ModuleFishingKnockback(this));
+        ModuleLoader.addModule(new ModulePlayerKnockback(this));
         ModuleLoader.addModule(new ModulePlayerRegen(this));
 
         ModuleLoader.addModule(new ModuleDisableCrafting(this));
