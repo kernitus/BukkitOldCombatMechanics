@@ -51,7 +51,7 @@ public class ModulePlayerKnockback extends Module {
         playerKnockbackHashMap.remove(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
         if (!isEnabled(event.getDamager().getWorld())) return;
         if (!(event.getDamager() instanceof Player)) return;
