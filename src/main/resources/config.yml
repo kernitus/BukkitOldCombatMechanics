@@ -286,11 +286,11 @@ old-player-knockback:
   # Horizontal knockback is reduced by 40% for every successful attack by the player, with no limit
   # Increase to make clicking more important, decrease to make it less important
   knockback-horizontal: 0.4
-  # Vertical knockback is not reduced by attacking
+  # Vertical knockback is not reduced by clicking faster
   # Increase to make clicking less important, decrease to make clicking more important
   knockback-vertical: 0.4
-  # Vertical knockback limit is applied after base vertical and extra vertical knockback are added together
-  # Increase to make clicking less important, decrease to make clicking more important
+  # Vertical knockback limit is applied after base vertical knockback
+  # This limit can be exceeded by sprint hitting or knockback enchantments, from the extra vertical knockback
   knockback-vertical-limit: 0.4
   # Extra horizontal knockback is applied for each level of knockback, and for sprinting
   # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important

@@ -39,7 +39,7 @@ public class ModulePlayerKnockback extends Module {
         knockbackVertical = module().getDouble("knockback-vertical", 0.4);
         knockbackVerticalLimit = module().getDouble("knockback-vertical-limit", 0.4);
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
-        knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.085);
+        knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
     }
 
     // vanilla does it's own knockback, so we need to set it again.
@@ -77,13 +77,17 @@ public class ModulePlayerKnockback extends Module {
         Vector playerVelocity = victim.getVelocity();
 
         // apply friction then add the base knockback
-        playerVelocity.setX(playerVelocity.getX() - (d0 / magnitude * knockbackHorizontal));
-        playerVelocity.setY(playerVelocity.getY() + knockbackVertical);
-        playerVelocity.setZ(playerVelocity.getZ() - (d1 / magnitude * knockbackHorizontal));
+        playerVelocity.setX((playerVelocity.getX() / 2) - (d0 / magnitude * knockbackHorizontal));
+        playerVelocity.setY((playerVelocity.getY() / 2) + knockbackVertical);
+        playerVelocity.setZ((playerVelocity.getZ() / 2) - (d1 / magnitude * knockbackHorizontal));
 
         // Calculate bonus knockback for sprinting or knockback enchantment levels
         int i = attacker.getItemInHand().getEnchantmentLevel(Enchantment.KNOCKBACK);
         if (attacker.isSprinting()) ++i;
+
+        if (playerVelocity.getY() > knockbackVerticalLimit) {
+            playerVelocity.setY(knockbackVerticalLimit);
+        }
 
         // Apply bonus knockback
         if (i > 0) {
@@ -91,10 +95,6 @@ public class ModulePlayerKnockback extends Module {
                     (float) i * knockbackExtraHorizontal), knockbackExtraVertical,
                     Math.cos(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
                             (float) i * knockbackExtraHorizontal));
-        }
-
-        if (playerVelocity.getY() > knockbackVerticalLimit) {
-            playerVelocity.setY(knockbackVerticalLimit);
         }
 
         // Knockback is sent immediately in 1.8+, there is no reason to send packets manually
