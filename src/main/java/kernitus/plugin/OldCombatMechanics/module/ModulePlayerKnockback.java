@@ -18,7 +18,7 @@ import java.util.HashMap;
 
 public class ModulePlayerKnockback extends Module {
     /**
-     * The knockbacck formula is changed in 1.9, especially with sprinting
+     * The knockback formula is changed in 1.9, especially with sprinting
      * Netherite knockback resistance in 1.16 also changes knockback
      *
      * This module is able to revert both back to 1.8 behavior
