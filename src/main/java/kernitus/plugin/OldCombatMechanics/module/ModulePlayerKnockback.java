@@ -2,7 +2,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
-import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
@@ -20,7 +19,7 @@ public class ModulePlayerKnockback extends Module {
     /**
      * The knockback formula is changed in 1.9, especially with sprinting
      * Netherite knockback resistance in 1.16 also changes knockback
-     *
+     * <p>
      * This module is able to revert both back to 1.8 behavior
      */
 
