@@ -1,7 +1,10 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,16 +18,18 @@ import java.util.HashMap;
 
 public class ModulePlayerKnockback extends Module {
     /**
-     * Creates a new module.
+     * The knockbacck formula is changed in 1.9, especially with sprinting
+     * Netherite knockback resistance in 1.16 also changes knockback
      *
-     * @param plugin     the plugin instance
-     * @param configName the name of the module in the config
+     * This module is able to revert both back to 1.8 behavior
      */
+
     double knockbackHorizontal;
     double knockbackVertical;
     double knockbackVerticalLimit;
     double knockbackExtraHorizontal;
     double knockbackExtraVertical;
+    boolean netheriteKnockbackResistance;
 
     HashMap<Player, Vector> playerKnockbackHashMap = new HashMap<>();
 
@@ -40,10 +45,11 @@ public class ModulePlayerKnockback extends Module {
         knockbackVerticalLimit = module().getDouble("knockback-vertical-limit", 0.4);
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
+        netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualAs(1, 16, 0);
     }
 
     // vanilla does it's own knockback, so we need to set it again.
-    // priority = lowest because we are velo
+    // priority = lowest because we are ignoring the existing velocity, which could break other plugins
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
         if (!playerKnockbackHashMap.containsKey(event.getPlayer())) return;
@@ -97,8 +103,19 @@ public class ModulePlayerKnockback extends Module {
                             (float) i * knockbackExtraHorizontal));
         }
 
+        // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
+        if (!netheriteKnockbackResistance)
+            for (AttributeModifier modifier : victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getModifiers()) {
+                victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).removeModifier(modifier);
+            }
+
+        // Allow netherite to affect the horizontal knockback
+        if (netheriteKnockbackResistance) {
+            double resistance = 1 - victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getValue();
+            playerVelocity.multiply(new Vector(resistance, 1, resistance));
+        }
+
         // Knockback is sent immediately in 1.8+, there is no reason to send packets manually
-        // or to listen to an event and set the knockback.
         playerKnockbackHashMap.put(victim, playerVelocity);
     }
 }

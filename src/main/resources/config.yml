@@ -300,6 +300,8 @@ old-player-knockback:
   # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
   # Increase to make clicking less important, decrease to make clicking more important
   knockback-extra-vertical: 0.1
+  # Should knockback resistance be enabled? Currently vanilla only uses this for netherite armor
+  enable-knockback-resistance: false
 
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
