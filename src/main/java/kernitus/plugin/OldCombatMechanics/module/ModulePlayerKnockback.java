@@ -4,6 +4,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
@@ -66,6 +67,15 @@ public class ModulePlayerKnockback extends Module {
         playerKnockbackHashMap.remove(uuid);
     }
 
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent event) {
+        // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
+        if (!(event.getEntity() instanceof Player) || netheriteKnockbackResistance) return;
+        final AttributeInstance attribute = ((Player) event.getEntity()).getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
+        for (AttributeModifier modifier : attribute.getModifiers())
+            attribute.removeModifier(modifier);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof LivingEntity)) return;
@@ -106,7 +116,7 @@ public class ModulePlayerKnockback extends Module {
                     equipment.getItemInOffHand() : equipment.getItemInMainHand();
 
             int bonusKnockback = heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK);
-            if(attacker instanceof Player && ((Player) attacker).isSprinting()) ++bonusKnockback;
+            if (attacker instanceof Player && ((Player) attacker).isSprinting()) ++bonusKnockback;
 
             if (playerVelocity.getY() > knockbackVerticalLimit) playerVelocity.setY(knockbackVerticalLimit);
 
@@ -117,16 +127,9 @@ public class ModulePlayerKnockback extends Module {
                                 (float) bonusKnockback * knockbackExtraHorizontal));
             }
         }
-
-        // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
-        if (!netheriteKnockbackResistance)
-            for (AttributeModifier modifier : victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getModifiers()) {
-                victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).removeModifier(modifier);
-            }
-
-        // Allow netherite to affect the horizontal knockback
         if (netheriteKnockbackResistance) {
-            double resistance = 1 - victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getValue();
+            // Allow netherite to affect the horizontal knockback. Each piece of armour yields 10% resistance
+            final double resistance = 1 - victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getValue();
             playerVelocity.multiply(new Vector(resistance, 1, resistance));
         }
 
