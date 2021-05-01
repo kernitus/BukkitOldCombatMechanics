@@ -76,7 +76,8 @@ public class ModulePlayerKnockback extends Module {
             attribute.removeModifier(modifier);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    // Monitor priority because we don't modify anything here, but apply on velocity change event
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof LivingEntity)) return;
         final LivingEntity attacker = (LivingEntity) event.getDamager();
