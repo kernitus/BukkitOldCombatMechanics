@@ -12,12 +12,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Reverts knockback formula to 1.8.
@@ -32,7 +34,7 @@ public class ModulePlayerKnockback extends Module {
     private double knockbackExtraVertical;
     private boolean netheriteKnockbackResistance;
 
-    private final HashMap<Player, Vector> playerKnockbackHashMap = new HashMap<>();
+    private final HashMap<UUID, Vector> playerKnockbackHashMap = new HashMap<>();
 
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");
@@ -49,14 +51,19 @@ public class ModulePlayerKnockback extends Module {
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualAs(1, 16, 0);
     }
 
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e) {
+        playerKnockbackHashMap.remove(e.getPlayer().getUniqueId());
+    }
+
     // Vanilla does its own knockback, so we need to set it again.
     // priority = lowest because we are ignoring the existing velocity, which could break other plugins
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
-        final Player player = event.getPlayer();
-        if (!playerKnockbackHashMap.containsKey(player)) return;
-        event.setVelocity(playerKnockbackHashMap.get(player));
-        playerKnockbackHashMap.remove(player);
+        final UUID uuid = event.getPlayer().getUniqueId();
+        if (!playerKnockbackHashMap.containsKey(uuid)) return;
+        event.setVelocity(playerKnockbackHashMap.get(uuid));
+        playerKnockbackHashMap.remove(uuid);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -124,6 +131,6 @@ public class ModulePlayerKnockback extends Module {
         }
 
         // Knockback is sent immediately in 1.8+, there is no reason to send packets manually
-        playerKnockbackHashMap.put(victim, playerVelocity);
+        playerKnockbackHashMap.put(victim.getUniqueId(), playerVelocity);
     }
 }
