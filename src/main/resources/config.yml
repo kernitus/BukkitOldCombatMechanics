@@ -270,6 +270,39 @@ projectile-knockback:
     egg: 0.0001
     ender_pearl: 0.0001
 
+old-player-knockback:
+  # This is to change knockback players receive from attacks.  Default values are as in 1.8.
+  #
+  # Practice servers tend to use lower knockback, for example:
+  # knockback-horizontal: 0.35
+  # knockback-vertical: 0.35
+  # knockback-vertical-limit: 0.4
+  # knockback-extra-horizontal: 0.425
+  # knockback-extra-vertical: 0.085
+  #
+  # Minigame servers use higher vertical knockback and lower horizontal knockback, exact values are unknown.
+  enabled: true
+  worlds: []
+  # Horizontal knockback is reduced by 40% for every successful attack by the player, with no limit
+  # Increase to make clicking more important, decrease to make it less important
+  knockback-horizontal: 0.4
+  # Vertical knockback is not reduced by clicking faster
+  # Increase to make clicking less important, decrease to make clicking more important
+  knockback-vertical: 0.4
+  # Vertical knockback limit is applied after base vertical knockback
+  # This limit can be exceeded by sprint hitting or knockback enchantments, from the extra vertical knockback
+  knockback-vertical-limit: 0.4
+  # Extra horizontal knockback is applied for each level of knockback enchant, and for sprinting
+  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
+  # Increase to make clicking more important, decrease to make clicking less important
+  knockback-extra-horizontal: 0.5
+  # Extra vertical knockback is applied for each level of knockback enchant, and for sprinting
+  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
+  # Increase to make clicking less important, decrease to make clicking more important
+  knockback-extra-vertical: 0.1
+  # Should knockback resistance be enabled? (e.g. netherite armour knockback resistance)
+  enable-knockback-resistance: false
+
 old-player-regen:
   # This is to make players' regeneration act mostly like it did in pre-1.9
   # Based on https://minecraft.gamepedia.com/Hunger?oldid=948685
@@ -502,4 +535,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 49
+config-version: 50
