@@ -2,35 +2,37 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 
+/**
+ * Reverts knockback formula to 1.8.
+ * Also disables netherite knockback resistance.
+ */
 public class ModulePlayerKnockback extends Module {
-    /**
-     * The knockback formula is changed in 1.9, especially with sprinting
-     * Netherite knockback resistance in 1.16 also changes knockback
-     * <p>
-     * This module is able to revert both back to 1.8 behavior
-     */
 
-    double knockbackHorizontal;
-    double knockbackVertical;
-    double knockbackVerticalLimit;
-    double knockbackExtraHorizontal;
-    double knockbackExtraVertical;
-    boolean netheriteKnockbackResistance;
+    private double knockbackHorizontal;
+    private double knockbackVertical;
+    private double knockbackVerticalLimit;
+    private double knockbackExtraHorizontal;
+    private double knockbackExtraVertical;
+    private boolean netheriteKnockbackResistance;
 
-    HashMap<Player, Vector> playerKnockbackHashMap = new HashMap<>();
+    private final HashMap<Player, Vector> playerKnockbackHashMap = new HashMap<>();
 
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");
@@ -47,25 +49,29 @@ public class ModulePlayerKnockback extends Module {
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualAs(1, 16, 0);
     }
 
-    // vanilla does it's own knockback, so we need to set it again.
+    // Vanilla does its own knockback, so we need to set it again.
     // priority = lowest because we are ignoring the existing velocity, which could break other plugins
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
-        if (!playerKnockbackHashMap.containsKey(event.getPlayer())) return;
-        event.setVelocity(playerKnockbackHashMap.get(event.getPlayer()));
-        playerKnockbackHashMap.remove(event.getPlayer());
+        final Player player = event.getPlayer();
+        if (!playerKnockbackHashMap.containsKey(player)) return;
+        event.setVelocity(playerKnockbackHashMap.get(player));
+        playerKnockbackHashMap.remove(player);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
-        if (!isEnabled(event.getDamager().getWorld())) return;
-        if (!(event.getDamager() instanceof Player)) return;
-        if (!(event.getEntity() instanceof Player)) return;
-        if (!event.getCause().equals(EntityDamageEvent.DamageCause.ENTITY_ATTACK)) return;
-        if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) != 0) return;
+        if (!(event.getDamager() instanceof LivingEntity)) return;
+        final LivingEntity attacker = (LivingEntity) event.getDamager();
 
-        Player attacker = (Player) event.getDamager();
-        Player victim = (Player) event.getEntity();
+        if (!isEnabled(attacker.getWorld())) return;
+
+        if (!(event.getEntity() instanceof Player)) return;
+
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
+        if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) > 0) return;
+
+        final Player victim = (Player) event.getEntity();
 
         // Figure out base knockback direction
         double d0 = attacker.getLocation().getX() - victim.getLocation().getX();
@@ -76,30 +82,33 @@ public class ModulePlayerKnockback extends Module {
             d0 = (Math.random() - Math.random()) * 0.01D;
         }
 
-        double magnitude = Math.sqrt(d0 * d0 + d1 * d1);
+        final double magnitude = Math.sqrt(d0 * d0 + d1 * d1);
 
-        // Get player knockback taken before any friction applied
-        Vector playerVelocity = victim.getVelocity();
+        // Get player knockback before any friction is applied
+        final Vector playerVelocity = victim.getVelocity();
 
-        // apply friction then add the base knockback
+        // Apply friction, then add base knockback
         playerVelocity.setX((playerVelocity.getX() / 2) - (d0 / magnitude * knockbackHorizontal));
         playerVelocity.setY((playerVelocity.getY() / 2) + knockbackVertical);
         playerVelocity.setZ((playerVelocity.getZ() / 2) - (d1 / magnitude * knockbackHorizontal));
 
         // Calculate bonus knockback for sprinting or knockback enchantment levels
-        int i = attacker.getItemInHand().getEnchantmentLevel(Enchantment.KNOCKBACK);
-        if (attacker.isSprinting()) ++i;
+        final EntityEquipment equipment = attacker.getEquipment();
+        if (equipment != null) {
+            final ItemStack heldItem = equipment.getItemInMainHand().getType() == Material.AIR ?
+                    equipment.getItemInOffHand() : equipment.getItemInMainHand();
 
-        if (playerVelocity.getY() > knockbackVerticalLimit) {
-            playerVelocity.setY(knockbackVerticalLimit);
-        }
+            int bonusKnockback = heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK);
+            if(attacker instanceof Player && ((Player) attacker).isSprinting()) ++bonusKnockback;
 
-        // Apply bonus knockback
-        if (i > 0) {
-            playerVelocity.add(new Vector((-Math.sin(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
-                    (float) i * knockbackExtraHorizontal), knockbackExtraVertical,
-                    Math.cos(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
-                            (float) i * knockbackExtraHorizontal));
+            if (playerVelocity.getY() > knockbackVerticalLimit) playerVelocity.setY(knockbackVerticalLimit);
+
+            if (bonusKnockback > 0) { // Apply bonus knockback
+                playerVelocity.add(new Vector((-Math.sin(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
+                        (float) bonusKnockback * knockbackExtraHorizontal), knockbackExtraVertical,
+                        Math.cos(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
+                                (float) bonusKnockback * knockbackExtraHorizontal));
+            }
         }
 
         // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
