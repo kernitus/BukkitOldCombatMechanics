@@ -2,12 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Statistic;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
@@ -26,14 +21,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.UUID;
+import java.util.*;
 
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
@@ -127,9 +115,28 @@ public class ModuleGoldenApple extends Module {
         // Check if the cooldown has expired yet
         lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
 
-        if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId()))){
+        if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId())))
+        {
+            long basecd = consumedMaterial == Material.GOLDEN_APPLE ? cooldown.normal : cooldown.enchanted;
+            Instant currentcd = consumedMaterial == Material.GOLDEN_APPLE ?
+                    lastEaten.get(p.getUniqueId()).lastNormalEaten :
+                    lastEaten.get(p.getUniqueId()).lastEnchantedEaten;
+            
+            long seconds = basecd - (Instant.now().getEpochSecond() - currentcd.getEpochSecond());
+            
+            String which = consumedMaterial == Material.GOLDEN_APPLE ?
+                    "old-golden-apples.cooldown.message-enchanted" :
+                    "old-golden-apples.cooldown.message-normal";
+
+            String msg = plugin.getConfig().getString(which,
+                    "&ePlease wait %seconds% seconds to eat the golden apple again.")
+                    .replace("%seconds%", String.valueOf(seconds));
+            
+            Messenger.send(e.getPlayer(), msg);
+            
             return;
         }
+        
         lastEaten.get(p.getUniqueId()).setForItem(item);
 
         final ItemStack originalItem = e.getItem();
