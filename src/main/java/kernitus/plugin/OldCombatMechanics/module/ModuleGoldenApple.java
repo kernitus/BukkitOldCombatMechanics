@@ -121,14 +121,12 @@ public class ModuleGoldenApple extends Module {
             Instant currentcd = consumedMaterial == Material.GOLDEN_APPLE ?
                     lastEaten.get(p.getUniqueId()).lastNormalEaten :
                     lastEaten.get(p.getUniqueId()).lastEnchantedEaten;
-            
+
             long seconds = basecd - (Instant.now().getEpochSecond() - currentcd.getEpochSecond());
             
-            String which = consumedMaterial == Material.GOLDEN_APPLE ?
-                    "old-golden-apples.cooldown.message-normal" :
-                    "old-golden-apples.cooldown.message-enchanted";
+            String which = consumedMaterial == Material.GOLDEN_APPLE ? "normal" : "enchanted";
 
-            String msg = plugin.getConfig().getString(which,
+            String msg = module().getString("cooldown.message-" + which,
                     "&ePlease wait %seconds% seconds to eat the golden apple again.")
                     .replace("%seconds%", String.valueOf(seconds));
             
