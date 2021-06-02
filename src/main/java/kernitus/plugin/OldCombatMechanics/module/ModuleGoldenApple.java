@@ -118,9 +118,15 @@ public class ModuleGoldenApple extends Module {
         if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId())))
         {
             long basecd = consumedMaterial == Material.GOLDEN_APPLE ? cooldown.normal : cooldown.enchanted;
+    
+            LastEaten lastEaten = this.lastEaten.get(p.getUniqueId());
+    
             Instant currentcd = consumedMaterial == Material.GOLDEN_APPLE ?
-                    lastEaten.get(p.getUniqueId()).lastNormalEaten :
-                    lastEaten.get(p.getUniqueId()).lastEnchantedEaten;
+                    lastEaten.lastNormalEaten :
+                    lastEaten.lastEnchantedEaten;
+            
+            if(cooldown.sharedCooldown && lastEaten.getNewestEatTime().isPresent())
+                currentcd = lastEaten.getNewestEatTime().get();
 
             long seconds = basecd - (Instant.now().getEpochSecond() - currentcd.getEpochSecond());
             
