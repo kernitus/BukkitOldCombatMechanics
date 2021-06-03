@@ -520,6 +520,21 @@ attack-frequency:
   playerDelay: 18
   mobDelay: 16
 
+old-critical-hits:
+  # Makes critical hits work like in 1.8
+  # In 1.8 damage would be increased by 0% to 50%, rounded down, plus one heart
+  # In 1.9 critical hits are always +50%
+  enabled: true
+  world: []
+  # What the damage, after applying potions effects, is multiplied by
+  multiplier: 1.5
+  # Whether the multiplier is a random decimal between 1 and multiplier
+  is-multiplier-random: true
+  # What is added to the damage, after applying potions effects and multiplying
+  addend: 1
+  # Whether to allow crits while sprinting. 1.8: true, 1.9: false
+  allow-sprinting: true
+
 ################################
 #### SUPPORT SETTINGS BELOW ####
 ################################
@@ -535,4 +550,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 50
+config-version: 51

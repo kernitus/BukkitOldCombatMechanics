@@ -2,8 +2,8 @@ package kernitus.plugin.OldCombatMechanics;
 
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
-import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -32,16 +32,16 @@ public class OCMMain extends JavaPlugin {
     private List<Runnable> enableListeners = new ArrayList<>();
     private List<Hook> hooks = new ArrayList<>();
 
-    public static OCMMain getInstance(){
+    public static OCMMain getInstance() {
         return INSTANCE;
     }
 
-    public static String getVersion(){
+    public static String getVersion() {
         return INSTANCE.getDescription().getVersion();
     }
 
     @Override
-    public void onEnable(){
+    public void onEnable() {
         INSTANCE = this;
 
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -86,8 +86,8 @@ public class OCMMain extends JavaPlugin {
         // Custom Advanced Pie Chart:
         metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
                 () -> ModuleLoader.getModules().stream()
-                    .filter(Module::isEnabled)
-                    .collect(Collectors.toMap(Module::toString, module -> 1))
+                        .filter(Module::isEnabled)
+                        .collect(Collectors.toMap(Module::toString, module -> 1))
         ));
 
         enableListeners.forEach(Runnable::run);
@@ -103,9 +103,9 @@ public class OCMMain extends JavaPlugin {
             // Trick all the modules into thinking the player just joined in case the plugin was loaded with Plugman.
             // This way attack speeds, item modifications, etc. will be applied immediately instead of after a re-log.
             joinListeners.forEach(registeredListener -> {
-                try{
+                try {
                     registeredListener.callEvent(event);
-                } catch(EventException e){
+                } catch (EventException e) {
                     e.printStackTrace();
                 }
             });
@@ -116,7 +116,7 @@ public class OCMMain extends JavaPlugin {
     }
 
     @Override
-    public void onDisable(){
+    public void onDisable() {
 
         PluginDescriptionFile pdfFile = this.getDescription();
 
@@ -133,9 +133,9 @@ public class OCMMain extends JavaPlugin {
             PlayerQuitEvent event = new PlayerQuitEvent(player, "");
 
             quitListeners.forEach(registeredListener -> {
-                try{
+                try {
                     registeredListener.callEvent(event);
-                } catch(EventException e){
+                } catch (EventException e) {
                     e.printStackTrace();
                 }
             });
@@ -145,7 +145,7 @@ public class OCMMain extends JavaPlugin {
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
     }
 
-    private void registerModules(){
+    private void registerModules() {
         // Update Checker (also a module so we can use the dynamic registering/unregistering)
         ModuleLoader.addModule(new ModuleUpdateChecker(this, this.getFile()));
 
@@ -155,10 +155,11 @@ public class OCMMain extends JavaPlugin {
 
         //Listeners registered after with same priority appear to be called later
 
-        //These three listen to OCMEntityDamageByEntityEvent:
+        //These four listen to OCMEntityDamageByEntityEvent:
         ModuleLoader.addModule(new ModuleOldToolDamage(this));
         ModuleLoader.addModule(new ModuleSwordSweep(this));
         ModuleLoader.addModule(new ModuleOldPotionEffects(this));
+        ModuleLoader.addModule(new ModuleOldCriticalHits(this));
 
         //Next block are all on LOWEST priority, so will be called in the following order:
         //Damage order: base -> potion effects -> critical hit -> enchantments -> blocking -> armour effects
@@ -194,17 +195,17 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
     }
 
-    private void registerHooks(){
-        if(getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")){
+    private void registerHooks() {
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             hooks.add(new PlaceholderAPIHook());
         }
     }
 
-    public void upgradeConfig(){
+    public void upgradeConfig() {
         CH.upgradeConfig();
     }
 
-    public boolean doesConfigExist(){
+    public boolean doesConfigExist() {
         return CH.doesConfigExist();
     }
 
@@ -213,7 +214,7 @@ public class OCMMain extends JavaPlugin {
      *
      * @param action the {@link Runnable} to run when the plugin gets disabled
      */
-    public void addDisableListener(Runnable action){
+    public void addDisableListener(Runnable action) {
         disableListeners.add(action);
     }
 
@@ -222,7 +223,7 @@ public class OCMMain extends JavaPlugin {
      *
      * @param action the {@link Runnable} to run when the plugin gets enabled
      */
-    public void addEnableListener(Runnable action){
+    public void addEnableListener(Runnable action) {
         enableListeners.add(action);
     }
 }
