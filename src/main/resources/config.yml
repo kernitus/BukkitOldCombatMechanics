@@ -168,11 +168,13 @@ shield-damage-reduction:
   enabled: true
   # How much damage blocking should reduce
   # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
-  # 1.8 default: 50%             1.9 default: 33%
-  # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
-  generalDamageReduction: 50%
+  # 1.8 default: (damage - 1) * 50%             1.9 default: 33%
+  # Damage reduction = (damage - damageReductionAmount) * damageReductionPercentage
+  generalDamageReductionAmount: 1
+  generalDamageReductionPercentage: 50
   # This value works the same but is exclusively for projectile damage
-  projectileDamageReduction: 50%
+  projectileDamageReductionAmount: 1
+  projectileDamageReductionPercentage: 50
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -550,4 +552,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 51
+config-version: 52
