@@ -534,6 +534,8 @@ old-critical-hits:
   is-multiplier-random: true
   # What is added to the damage, after applying potions effects and multiplying
   addend: 1
+  # Whether to round damage down to nearest integer (1.8 default: true)
+  round-down: true
   # Whether to allow crits while sprinting. 1.8: true, 1.9: false
   allow-sprinting: true
 

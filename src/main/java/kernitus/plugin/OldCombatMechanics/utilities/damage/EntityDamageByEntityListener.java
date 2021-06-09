@@ -64,8 +64,12 @@ public class EntityDamageByEntityListener extends Module {
 
         // Critical hit: 1.9 is *1.5, 1.8 is *rand(0%,50%) + 1
         // Bukkit 1.8_r3 code:     i += this.random.nextInt(i / 2 + 2);
-        newDamage = (int) (newDamage * e.getCriticalMultiplier()) + e.getCriticalAddend();
-        debug("Crit *" + e.getCriticalMultiplier() + " +" + e.getCriticalAddend(), damager);
+        if(e.was1_8Crit() && !e.wasSprinting()) {
+            newDamage *= e.getCriticalMultiplier();
+            if(e.RoundCritDamage()) newDamage = (int) newDamage;
+            newDamage += e.getCriticalAddend();
+            debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
+        }
 
         //Enchantments
         newDamage += e.getMobEnchantmentsDamage() + e.getSharpnessDamage();

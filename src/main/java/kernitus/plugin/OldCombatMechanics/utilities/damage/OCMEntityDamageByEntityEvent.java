@@ -32,9 +32,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         return handlers;
     }
 
-    private Entity damager, damagee;
-    private DamageCause cause;
-    private double rawDamage;
+    private final Entity damager, damagee;
+    private final DamageCause cause;
+    private final double rawDamage;
 
     private ItemStack weapon;
     private int sharpnessLevel;
@@ -50,9 +50,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private boolean was1_8Crit = false;
     private boolean wasSprinting = false;
+    private boolean roundCritDamage = false;
 
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
-
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
@@ -63,20 +63,20 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             return;
         }
 
-        LivingEntity le = (LivingEntity) damager;
+        final LivingEntity le = (LivingEntity) damager;
 
-        EntityEquipment equipment = le.getEquipment();
+        final EntityEquipment equipment = le.getEquipment();
         weapon = equipment.getItemInMainHand();
         // Yay paper. Why do you need to return null here?
-        if (weapon == null) {
-            weapon = new ItemStack(Material.AIR);
-        }
+        if (weapon == null) weapon = new ItemStack(Material.AIR);
+        // Technically the weapon could be in the offhand, i.e. a bow.
+        // However we are only concerned with melee weapons here which will always be in the main hand.
 
-        EntityType entity = damagee.getType();
+        final EntityType damageeType = damagee.getType();
 
         debug(le, "Raw damage: " + rawDamage);
 
-        mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(entity, weapon, rawDamage) - rawDamage;
+        mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(damageeType, weapon, rawDamage) - rawDamage;
 
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
@@ -254,5 +254,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public void setWas1_8Crit(boolean was1_8Crit) {
         this.was1_8Crit = was1_8Crit;
+    }
+
+    public boolean RoundCritDamage() {
+        return roundCritDamage;
+    }
+
+    public void setRoundCritDamage(boolean roundCritDamage) {
+        this.roundCritDamage = roundCritDamage;
     }
 }
