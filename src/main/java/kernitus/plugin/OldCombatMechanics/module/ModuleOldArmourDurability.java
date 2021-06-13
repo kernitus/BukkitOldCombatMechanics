@@ -17,8 +17,6 @@ import java.util.stream.Collectors;
 
 public class ModuleOldArmourDurability extends Module {
 
-    // TODO Netherite armor does not lose durability from lava or fire damage.
-
     private final Map<UUID, List<ItemStack>> explosionDamaged = new HashMap<>();
 
     public ModuleOldArmourDurability(OCMMain plugin) {

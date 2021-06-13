@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -27,6 +28,7 @@ public class ModuleOldToolDamage extends Module {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDamaged(OCMEntityDamageByEntityEvent event) {
         final Entity damager = event.getDamager();
+        if(event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
 
         final World world = damager.getWorld();
 
