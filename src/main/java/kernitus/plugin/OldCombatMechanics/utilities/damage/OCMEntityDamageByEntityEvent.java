@@ -52,6 +52,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private boolean wasSprinting = false;
     private boolean roundCritDamage = false;
 
+    // Whether this damage is reduced damage from a higher-damage attack occurring during a noDamageTicks invulnerability period
+    private boolean wasInvulnerabilityOverdamage = false;
+
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
         this.damager = damager;
         this.damagee = damagee;
@@ -75,6 +78,24 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         final EntityType damageeType = damagee.getType();
 
         debug(le, "Raw damage: " + rawDamage);
+
+        /*
+        Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable.
+        We must detect this and account for it, instead of setting the usual base weapon damage.
+        */
+        if (damagee instanceof LivingEntity) {
+            LivingEntity livingDamagee = (LivingEntity) damagee;
+            if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F){
+                // NMS code also checks if current damage is higher that previous damage. However, here the event
+                // directly has the difference between the two as the raw damage, and the event does not fire at all
+                // if this precondition is not met.
+                wasInvulnerabilityOverdamage = true;
+                debug(le, "Overdamaged!");
+            } else {
+                debug(le,livingDamagee.getNoDamageTicks() + "/" + livingDamagee.getMaximumNoDamageTicks() / 2.0F +
+                        " last: " + livingDamagee.getLastDamage());
+            }
+        }
 
         mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(damageeType, weapon, rawDamage) - rawDamage;
 
@@ -262,5 +283,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public void setRoundCritDamage(boolean roundCritDamage) {
         this.roundCritDamage = roundCritDamage;
+    }
+
+    public boolean wasInvulnerabilityOverdamage() {
+        return wasInvulnerabilityOverdamage;
+    }
+
+    public void setWasInvulnerabilityOverdamage(boolean wasInvulnerabilityOverdamage) {
+        this.wasInvulnerabilityOverdamage = wasInvulnerabilityOverdamage;
     }
 }

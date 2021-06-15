@@ -3,9 +3,11 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.Module;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class EntityDamageByEntityListener extends Module {
 
@@ -64,9 +66,9 @@ public class EntityDamageByEntityListener extends Module {
 
         // Critical hit: 1.9 is *1.5, 1.8 is *rand(0%,50%) + 1
         // Bukkit 1.8_r3 code:     i += this.random.nextInt(i / 2 + 2);
-        if(e.was1_8Crit() && !e.wasSprinting()) {
+        if (e.was1_8Crit() && !e.wasSprinting()) {
             newDamage *= e.getCriticalMultiplier();
-            if(e.RoundCritDamage()) newDamage = (int) newDamage;
+            if (e.RoundCritDamage()) newDamage = (int) newDamage;
             newDamage += e.getCriticalAddend();
             debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
         }
@@ -84,5 +86,26 @@ public class EntityDamageByEntityListener extends Module {
         debug("New Damage: " + newDamage, damager);
 
         event.setDamage(newDamage);
+    }
+
+    /**
+     * Set entity's last damage 1 tick after event. For some reason this is not updated to the final damage properly.
+     * (Maybe a Spigot bug?) Hopefully other plugins vibe with this. Otherwise can store this just for OCM.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void afterEntityDamage(EntityDamageByEntityEvent e) {
+        final Entity damagee = e.getEntity();
+        if (damagee instanceof LivingEntity) {
+            final double damage = e.getFinalDamage();
+
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    ((LivingEntity) damagee).setLastDamage(damage);
+                    debug("Set last damage to " + damage, damagee);
+                }
+            }.runTaskLater(plugin, 1);
+
+        }
     }
 }

@@ -8,6 +8,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 
@@ -28,8 +29,9 @@ public class ModuleOldToolDamage extends Module {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDamaged(OCMEntityDamageByEntityEvent event) {
         final Entity damager = event.getDamager();
-        if(event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
+        if (event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
 
+        final Entity damagee = event.getDamagee();
         final World world = damager.getWorld();
 
         if (!isEnabled(world)) return;
@@ -38,19 +40,29 @@ public class ModuleOldToolDamage extends Module {
 
         if (!isTool(weaponMaterial)) return;
 
-        final double weaponDamage = WeaponDamages.getDamage(weaponMaterial);
+        double weaponDamage = WeaponDamages.getDamage(weaponMaterial);
         if (weaponDamage <= 0) {
             debug("Unknown tool type: " + weaponMaterial, damager);
             return;
         }
 
         final double oldBaseDamage = event.getBaseDamage();
+        double expectedDamage = ToolDamage.getDamage(weaponMaterial);
+
+
+        if (event.wasInvulnerabilityOverdamage() && damagee instanceof LivingEntity) {
+            // We must subtract previous damage from new weapon damage for this attack
+            final LivingEntity livingDamagee = (LivingEntity) damagee;
+            final double lastDamage = livingDamagee.getLastDamage();
+            expectedDamage -= lastDamage;
+            weaponDamage -= lastDamage;
+        }
 
         // If the raw is not what we expect for 1.9 we should ignore it, for compatibility with other plugins
-        final float expectedDamage = ToolDamage.getDamage(weaponMaterial);
         if (oldBaseDamage == expectedDamage) event.setBaseDamage(weaponDamage);
 
-        debug("Old " + weaponMaterial + " damage: " + oldBaseDamage + " New tool damage: " + weaponDamage, damager);
+        debug("Old " + weaponMaterial + " damage: " + oldBaseDamage + " New tool damage: " + weaponDamage +
+                (event.wasInvulnerabilityOverdamage() ? " (overdamage)" : ""), damager);
 
         // Set sharpness to 1.8 damage value
         final double newSharpnessDamage = DamageUtils.getOldSharpnessDamage(event.getSharpnessLevel());
