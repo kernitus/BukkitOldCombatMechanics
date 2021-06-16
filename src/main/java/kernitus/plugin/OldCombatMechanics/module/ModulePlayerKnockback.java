@@ -2,11 +2,12 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -70,32 +71,36 @@ public class ModulePlayerKnockback extends Module {
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
-        if (!(event.getEntity() instanceof Player) || netheriteKnockbackResistance) return;
-        final AttributeInstance attribute = ((Player) event.getEntity()).getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
-        for (AttributeModifier modifier : attribute.getModifiers())
-            attribute.removeModifier(modifier);
+        final Entity entity = event.getEntity();
+        if (!(entity instanceof Player) || netheriteKnockbackResistance) return;
+        final AttributeInstance attribute = ((Player) entity).getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
+        attribute.getModifiers().forEach(attribute::removeModifier);
     }
 
     // Monitor priority because we don't modify anything here, but apply on velocity change event
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof LivingEntity)) return;
-        final LivingEntity attacker = (LivingEntity) event.getDamager();
+        final Entity damager = event.getDamager();
+        if (!(damager instanceof LivingEntity)) return;
+        final LivingEntity attacker = (LivingEntity) damager;
 
         if (!isEnabled(attacker.getWorld())) return;
 
-        if (!(event.getEntity() instanceof Player)) return;
+        final Entity damagee = event.getEntity();
+        if (!(damagee instanceof Player)) return;
 
         if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
         if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) > 0) return;
 
-        final Player victim = (Player) event.getEntity();
+        final Player victim = (Player) damagee;
 
         // Figure out base knockback direction
-        double d0 = attacker.getLocation().getX() - victim.getLocation().getX();
+        Location attackerLocation = attacker.getLocation();
+        Location victimLocation = victim.getLocation();
+        double d0 = attackerLocation.getX() - victimLocation.getX();
         double d1;
 
-        for (d1 = attacker.getLocation().getZ() - victim.getLocation().getZ();
+        for (d1 = attackerLocation.getZ() - victimLocation.getZ();
              d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
             d0 = (Math.random() - Math.random()) * 0.01D;
         }
@@ -128,6 +133,7 @@ public class ModulePlayerKnockback extends Module {
                                 (float) bonusKnockback * knockbackExtraHorizontal));
             }
         }
+
         if (netheriteKnockbackResistance) {
             // Allow netherite to affect the horizontal knockback. Each piece of armour yields 10% resistance
             final double resistance = 1 - victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getValue();
