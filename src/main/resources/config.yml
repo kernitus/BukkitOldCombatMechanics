@@ -168,11 +168,13 @@ shield-damage-reduction:
   enabled: true
   # How much damage blocking should reduce
   # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
-  # 1.8 default: 50%             1.9 default: 33%
-  # Before either is applied the plugin subtracts 1 as that is how it worked in 1.8
-  generalDamageReduction: 50%
+  # 1.8 default: (damage - 1) * 50%             1.9 default: 33%
+  # Damage reduction = (damage - damageReductionAmount) * damageReductionPercentage
+  generalDamageReductionAmount: 1
+  generalDamageReductionPercentage: 50
   # This value works the same but is exclusively for projectile damage
-  projectileDamageReduction: 50%
+  projectileDamageReductionAmount: 1
+  projectileDamageReductionPercentage: 50
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -523,6 +525,23 @@ attack-frequency:
   # The hit delay to apply. Default for 1.9+ is 20 ticks (1 second)
   playerDelay: 18
   mobDelay: 16
+
+old-critical-hits:
+  # Makes critical hits work like in 1.8
+  # In 1.8 damage would be increased by 0% to 50%, rounded down, plus one heart
+  # In 1.9 critical hits are always +50%
+  enabled: true
+  world: []
+  # What the damage, after applying potions effects, is multiplied by
+  multiplier: 1.5
+  # Whether the multiplier is a random decimal between 1 and multiplier
+  is-multiplier-random: true
+  # What is added to the damage, after applying potions effects and multiplying
+  addend: 1
+  # Whether to round damage down to nearest integer (1.8 default: true)
+  round-down: true
+  # Whether to allow crits while sprinting. 1.8: true, 1.9: false
+  allow-sprinting: true
 
 ################################
 #### SUPPORT SETTINGS BELOW ####

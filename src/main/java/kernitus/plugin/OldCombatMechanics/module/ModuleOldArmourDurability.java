@@ -26,6 +26,7 @@ public class ModuleOldArmourDurability extends Module {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onItemDamage(PlayerItemDamageEvent e){
         Player player = e.getPlayer();
+
         if(!isEnabled(player.getWorld())) return;
         final ItemStack item = e.getItem();
         final Material itemType = item.getType();

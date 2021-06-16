@@ -24,24 +24,23 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
 
     @Override
-    public HandlerList getHandlers(){
+    public HandlerList getHandlers() {
         return handlers;
     }
 
-    public static HandlerList getHandlerList(){
+    public static HandlerList getHandlerList() {
         return handlers;
     }
 
-    private Entity damager, damagee;
-    private DamageCause cause;
-    private double rawDamage;
+    private final Entity damager, damagee;
+    private final DamageCause cause;
+    private final double rawDamage;
 
     private ItemStack weapon;
     private int sharpnessLevel;
     private int strengthLevel;
 
-
-    private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
+    private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1, criticalAddend = 0;
     private double strengthModifier = 0, weaknessModifier = 0;
 
     // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier and addend (+130%)
@@ -49,32 +48,56 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private boolean isStrengthModifierAddend = true;
     private boolean isWeaknessModifierMultiplier = false;
 
-    public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage){
+    private boolean was1_8Crit = false;
+    private boolean wasSprinting = false;
+    private boolean roundCritDamage = false;
 
+    // Whether this damage is reduced damage from a higher-damage attack occurring during a noDamageTicks invulnerability period
+    private boolean wasInvulnerabilityOverdamage = false;
+
+    public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
         this.rawDamage = rawDamage;
 
-        if(!(damager instanceof LivingEntity)){
+        if (!(damager instanceof LivingEntity)) {
             setCancelled(true);
             return;
         }
 
-        LivingEntity le = (LivingEntity) damager;
+        final LivingEntity le = (LivingEntity) damager;
 
-        EntityEquipment equipment = le.getEquipment();
+        final EntityEquipment equipment = le.getEquipment();
         weapon = equipment.getItemInMainHand();
         // Yay paper. Why do you need to return null here?
-        if(weapon == null){
-            weapon = new ItemStack(Material.AIR);
-        }
+        if (weapon == null) weapon = new ItemStack(Material.AIR);
+        // Technically the weapon could be in the offhand, i.e. a bow.
+        // However we are only concerned with melee weapons here which will always be in the main hand.
 
-        EntityType entity = damagee.getType();
+        final EntityType damageeType = damagee.getType();
 
         debug(le, "Raw damage: " + rawDamage);
 
-        mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(entity, weapon, rawDamage) - rawDamage;
+        /*
+        Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable.
+        We must detect this and account for it, instead of setting the usual base weapon damage.
+        */
+        if (damagee instanceof LivingEntity) {
+            LivingEntity livingDamagee = (LivingEntity) damagee;
+            if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F){
+                // NMS code also checks if current damage is higher that previous damage. However, here the event
+                // directly has the difference between the two as the raw damage, and the event does not fire at all
+                // if this precondition is not met.
+                wasInvulnerabilityOverdamage = true;
+                debug(le, "Overdamaged!");
+            } else {
+                debug(le,livingDamagee.getNoDamageTicks() + "/" + livingDamagee.getMaximumNoDamageTicks() / 2.0F +
+                        " last: " + livingDamagee.getLastDamage());
+            }
+        }
+
+        mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(damageeType, weapon, rawDamage) - rawDamage;
 
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
@@ -87,12 +110,17 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         debug(le, "No ench damage: " + tempDamage);
 
         //Check if it's a critical hit
-        if(le instanceof Player){
-            Player player = (Player) le;
-            if(DamageUtils.isCriticalHit(player)){
-                criticalMultiplier = 1.5;
-                tempDamage /= 1.5;
-                debug(player, "Critical hit detected");
+        if (DamageUtils.isCriticalHit1_8(le)) {
+            was1_8Crit = true;
+            debug(le, "1.8 Critical hit detected");
+            // In 1.9 a crit also requires the player not to be sprinting
+            if (le instanceof Player) {
+                wasSprinting = ((Player) le).isSprinting();
+                if (!wasSprinting) {
+                    debug(le, "1.9 Critical hit detected");
+                    criticalMultiplier = 1.5;
+                    tempDamage /= 1.5;
+                }
             }
         }
 
@@ -107,7 +135,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         debug(le, "Strength Modifier: " + strengthModifier);
 
-        if(le.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
+        if (le.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
 
         debug(le, "Weakness Modifier: " + weaknessModifier);
 
@@ -115,113 +143,153 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         debug(le, "Base tool damage: " + baseDamage);
     }
 
-    public Entity getDamager(){
+    public Entity getDamager() {
         return damager;
     }
 
-    public Entity getDamagee(){
+    public Entity getDamagee() {
         return damagee;
     }
 
-    public DamageCause getCause(){
+    public DamageCause getCause() {
         return cause;
     }
 
-    public double getRawDamage(){
+    public double getRawDamage() {
         return rawDamage;
     }
 
-    public ItemStack getWeapon(){
+    public ItemStack getWeapon() {
         return weapon;
     }
 
-    public int getSharpnessLevel(){
+    public int getSharpnessLevel() {
         return sharpnessLevel;
     }
 
-    public double getStrengthModifier(){
+    public double getStrengthModifier() {
         return strengthModifier;
     }
 
-    public void setStrengthModifier(double strengthModifier){
+    public void setStrengthModifier(double strengthModifier) {
         this.strengthModifier = strengthModifier;
     }
 
-    public int getStrengthLevel(){
+    public int getStrengthLevel() {
         return strengthLevel;
     }
 
-    public double getWeaknessModifier(){
+    public double getWeaknessModifier() {
         return weaknessModifier;
     }
 
-    public void setWeaknessModifier(double weaknessModifier){
+    public void setWeaknessModifier(double weaknessModifier) {
         this.weaknessModifier = weaknessModifier;
     }
 
-    public boolean isStrengthModifierMultiplier(){
+    public boolean isStrengthModifierMultiplier() {
         return isStrengthModifierMultiplier;
     }
 
-    public void setIsStrengthModifierMultiplier(boolean isStrengthModifierMultiplier){
+    public void setIsStrengthModifierMultiplier(boolean isStrengthModifierMultiplier) {
         this.isStrengthModifierMultiplier = isStrengthModifierMultiplier;
     }
 
-    public void setIsStrengthModifierAddend(boolean isStrengthModifierAddend){
+    public void setIsStrengthModifierAddend(boolean isStrengthModifierAddend) {
         this.isStrengthModifierAddend = isStrengthModifierAddend;
     }
 
-    public boolean isWeaknessModifierMultiplier(){
+    public boolean isWeaknessModifierMultiplier() {
         return isWeaknessModifierMultiplier;
     }
 
-    public void setIsWeaknessModifierMultiplier(boolean weaknessModifierMultiplier){
+    public void setIsWeaknessModifierMultiplier(boolean weaknessModifierMultiplier) {
         isWeaknessModifierMultiplier = weaknessModifierMultiplier;
     }
 
-    public boolean isStrengthModifierAddend(){
+    public boolean isStrengthModifierAddend() {
         return isStrengthModifierAddend;
     }
 
-    public double getBaseDamage(){
+    public double getBaseDamage() {
         return baseDamage;
     }
 
-    public void setBaseDamage(double baseDamage){
+    public void setBaseDamage(double baseDamage) {
         this.baseDamage = baseDamage;
     }
 
-    public double getMobEnchantmentsDamage(){
+    public double getMobEnchantmentsDamage() {
         return mobEnchantmentsDamage;
     }
 
-    public void setMobEnchantmentsDamage(double mobEnchantmentsDamage){
+    public void setMobEnchantmentsDamage(double mobEnchantmentsDamage) {
         this.mobEnchantmentsDamage = mobEnchantmentsDamage;
     }
 
-    public double getSharpnessDamage(){
+    public double getSharpnessDamage() {
         return sharpnessDamage;
     }
 
-    public void setSharpnessDamage(double sharpnessDamage){
+    public void setSharpnessDamage(double sharpnessDamage) {
         this.sharpnessDamage = sharpnessDamage;
     }
 
-    public double getCriticalMultiplier(){
+    public double getCriticalMultiplier() {
         return criticalMultiplier;
     }
 
-    public void setCriticalMultiplier(double criticalMultiplier){
+    public void setCriticalMultiplier(double criticalMultiplier) {
         this.criticalMultiplier = criticalMultiplier;
     }
 
     @Override
-    public boolean isCancelled(){
+    public boolean isCancelled() {
         return cancelled;
     }
 
     @Override
-    public void setCancelled(boolean cancelled){
+    public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
+    }
+
+    public double getCriticalAddend() {
+        return criticalAddend;
+    }
+
+    public void setCriticalAddend(double criticalAddend) {
+        this.criticalAddend = criticalAddend;
+    }
+
+    public boolean wasSprinting() {
+        return wasSprinting;
+    }
+
+    public void setWasSprinting(boolean wasSprinting) {
+        this.wasSprinting = wasSprinting;
+    }
+
+    public boolean was1_8Crit() {
+        return was1_8Crit;
+    }
+
+    public void setWas1_8Crit(boolean was1_8Crit) {
+        this.was1_8Crit = was1_8Crit;
+    }
+
+    public boolean RoundCritDamage() {
+        return roundCritDamage;
+    }
+
+    public void setRoundCritDamage(boolean roundCritDamage) {
+        this.roundCritDamage = roundCritDamage;
+    }
+
+    public boolean wasInvulnerabilityOverdamage() {
+        return wasInvulnerabilityOverdamage;
+    }
+
+    public void setWasInvulnerabilityOverdamage(boolean wasInvulnerabilityOverdamage) {
+        this.wasInvulnerabilityOverdamage = wasInvulnerabilityOverdamage;
     }
 }

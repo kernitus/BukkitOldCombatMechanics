@@ -44,25 +44,29 @@ public class ModuleOldArmourStrength extends Module {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamage(EntityDamageEvent e) {
+        //1.8 NMS: Damage = 25 / (damage after blocking * (25 - total armour strength))
+
         if (!(e.getEntity() instanceof LivingEntity)) return;
 
         LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
         if (!e.isApplicable(EntityDamageEvent.DamageModifier.MAGIC)) return;
 
-        double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
-        double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
+        final double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
+        final double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
-        double reducedDamage = e.getDamage() * reductionPercentage;
-        EntityDamageEvent.DamageCause damageCause = e.getCause();
+        // Apply armour damage reduction after blocking reduction
+        final double reducedDamage = (e.getDamage() + e.getDamage(EntityDamageEvent.DamageModifier.BLOCKING)) * reductionPercentage;
+        final EntityDamageEvent.DamageCause damageCause = e.getCause();
 
         if (!NON_REDUCED_CAUSES.contains(damageCause) && e.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)) {
             //debug("Damage Cause: " + damageCause + " is applicable");
             e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
 
-        double enchantmentReductionPercentage = calculateEnchantmentReductionPercentage(
-                damagedEntity.getEquipment(), e.getCause());
+        // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
+        final double enchantmentReductionPercentage = e.getFinalDamage() <= 0 ? 0 :
+                calculateEnchantmentReductionPercentage(damagedEntity.getEquipment(), e.getCause());
 
         if (enchantmentReductionPercentage > 0) {
             //Reset MAGIC (Armour enchants) damage
@@ -73,9 +77,9 @@ public class ModuleOldArmourStrength extends Module {
                     -e.getFinalDamage() * enchantmentReductionPercentage);
         }
 
-        /*debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
+        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
                 enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
-                e.getFinalDamage()));*/
+                e.getFinalDamage()), damagedEntity);
     }
 
     private double calculateEnchantmentReductionPercentage(EntityEquipment equipment, EntityDamageEvent.DamageCause cause) {
@@ -109,7 +113,32 @@ public class ModuleOldArmourStrength extends Module {
     }
 
     private enum EnchantmentType {
-        PROTECTION(() -> EnumSet.allOf(EntityDamageEvent.DamageCause.class), 0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
+        // Data from https://minecraft.fandom.com/wiki/Armor#Mechanics
+        PROTECTION(() -> {
+            EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
+                    EntityDamageEvent.DamageCause.CONTACT,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK,
+                    EntityDamageEvent.DamageCause.PROJECTILE,
+                    EntityDamageEvent.DamageCause.FALL,
+                    EntityDamageEvent.DamageCause.FIRE,
+                    EntityDamageEvent.DamageCause.LAVA,
+                    EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
+                    EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
+                    EntityDamageEvent.DamageCause.LIGHTNING,
+                    EntityDamageEvent.DamageCause.POISON,
+                    EntityDamageEvent.DamageCause.MAGIC,
+                    EntityDamageEvent.DamageCause.WITHER,
+                    EntityDamageEvent.DamageCause.FALLING_BLOCK,
+                    EntityDamageEvent.DamageCause.THORNS,
+                    EntityDamageEvent.DamageCause.DRAGON_BREATH
+            );
+            if (Reflector.versionIsNewerOrEqualAs(1, 10, 0))
+                damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
+
+            return damageCauses;
+        },
+                0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
         FIRE_PROTECTION(() -> {
             EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
                     EntityDamageEvent.DamageCause.FIRE,
@@ -134,9 +163,9 @@ public class ModuleOldArmourStrength extends Module {
                 EntityDamageEvent.DamageCause.FALL
         ), 2.5, Enchantment.PROTECTION_FALL);
 
-        private Set<EntityDamageEvent.DamageCause> protection;
-        private double typeModifier;
-        private Enchantment enchantment;
+        private final Set<EntityDamageEvent.DamageCause> protection;
+        private final double typeModifier;
+        private final Enchantment enchantment;
 
         EnchantmentType(Supplier<Set<EntityDamageEvent.DamageCause>> protection, double typeModifier, Enchantment enchantment) {
             this.protection = protection.get();
