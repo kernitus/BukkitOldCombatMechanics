@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffectType;
@@ -46,9 +47,15 @@ public class DamageUtils {
         return le.getFallDistance() > 0.0F &&
                 !le.isOnGround() && // Although deprecated, auto falls back to Entity method which is server-side
                 !isLivingEntityClimbing(le) &&
-                !le.isInWater() &&
+                !isInWater(le) &&
                 le.getActivePotionEffects().stream().noneMatch(pe -> pe.getType() == PotionEffectType.BLINDNESS) &&
                 !le.isInsideVehicle();
+    }
+
+    private static boolean isInWater(LivingEntity le) {
+        if (Reflector.versionIsNewerOrEqualAs(1, 16, 0))
+            return le.isInWater();
+        else return le.getLocation().getBlock().getType() == Material.WATER;
     }
 
     private static boolean isLivingEntityClimbing(LivingEntity le) {
