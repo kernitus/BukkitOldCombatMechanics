@@ -2,12 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Statistic;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
@@ -26,14 +21,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.UUID;
+import java.util.*;
 
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
@@ -48,13 +36,18 @@ public class ModuleGoldenApple extends Module {
     private Map<UUID, LastEaten> lastEaten;
     private Cooldown cooldown;
 
-    public ModuleGoldenApple(OCMMain plugin){
+    private String normalCooldownMessage, enchantedCooldownMessage;
+
+    public ModuleGoldenApple(OCMMain plugin) {
         super(plugin, "old-golden-apples");
     }
 
     @SuppressWarnings("deprecated")
     @Override
-    public void reload(){
+    public void reload() {
+        normalCooldownMessage = module().getString("cooldown.message-normal");
+        enchantedCooldownMessage = module().getString("cooldown.message-enchanted");
+
         cooldown = new Cooldown(
                 module().getLong("cooldown.normal"),
                 module().getLong("cooldown.enchanted"),
@@ -65,12 +58,12 @@ public class ModuleGoldenApple extends Module {
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");
 
-        try{
+        try {
             enchantedAppleRecipe = new ShapedRecipe(
                     new NamespacedKey(plugin, "MINECRAFT"),
                     ENCHANTED_GOLDEN_APPLE.newInstance()
             );
-        } catch(NoClassDefFoundError e){
+        } catch (NoClassDefFoundError e) {
             enchantedAppleRecipe = new ShapedRecipe(ENCHANTED_GOLDEN_APPLE.newInstance());
         }
         enchantedAppleRecipe
@@ -81,55 +74,84 @@ public class ModuleGoldenApple extends Module {
         registerCrafting();
     }
 
-    private void registerCrafting(){
-        if(isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")){
-            if(Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).size() > 0) return;
+    private void registerCrafting() {
+        if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
+            if (Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).size() > 0) return;
             Bukkit.addRecipe(enchantedAppleRecipe);
             Messenger.debug("Added napple recipe");
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onPrepareItemCraft(PrepareItemCraftEvent e){
+    public void onPrepareItemCraft(PrepareItemCraftEvent e) {
         ItemStack item = e.getInventory().getResult();
-        if(item == null)
+        if (item == null)
             return; // This should never ever ever ever run. If it does then you probably screwed something up.
 
-        if(ENCHANTED_GOLDEN_APPLE.isSame(item)){
+        if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
 
             World world = e.getView().getPlayer().getWorld();
 
-            if(isSettingEnabled("no-conflict-mode")) return;
+            if (isSettingEnabled("no-conflict-mode")) return;
 
-            if(!isEnabled(world))
+            if (!isEnabled(world))
                 e.getInventory().setResult(null);
-            else if(isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting"))
+            else if (isEnabled(world) && !isSettingEnabled("enchanted-golden-apple-crafting"))
                 e.getInventory().setResult(null);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onItemConsume(PlayerItemConsumeEvent e){
-        if(e.isCancelled()) return; // Don't do anything if another plugin cancelled the event
+    public void onItemConsume(PlayerItemConsumeEvent e) {
+        if (e.isCancelled()) return; // Don't do anything if another plugin cancelled the event
 
         final Player p = e.getPlayer();
 
-        if(!isEnabled(p.getWorld()) || !isSettingEnabled("old-potion-effects")) return;
+        if (!isEnabled(p.getWorld()) || !isSettingEnabled("old-potion-effects")) return;
 
         ItemStack item = e.getItem();
         final Material consumedMaterial = item.getType();
 
-        if(consumedMaterial != Material.GOLDEN_APPLE &&
+        if (consumedMaterial != Material.GOLDEN_APPLE &&
                 !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem())) return;
 
         e.setCancelled(true);
 
-        // Check if the cooldown has expired yet
-        lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
+        final UUID uuid = p.getUniqueId();
 
-        if(cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId()))){
+        // Check if the cooldown has expired yet
+        lastEaten.putIfAbsent(uuid, new LastEaten());
+
+        // If on cooldown send appropriate cooldown message
+        if (cooldown.isOnCooldown(item, lastEaten.get(uuid))) {
+            final LastEaten le = lastEaten.get(uuid);
+
+            final long baseCooldown;
+            Instant current;
+            final String message;
+
+            if (consumedMaterial == Material.GOLDEN_APPLE) {
+                baseCooldown = cooldown.normal;
+                current = le.lastNormalEaten;
+                message = normalCooldownMessage;
+            } else {
+                baseCooldown = cooldown.enchanted;
+                current = le.lastEnchantedEaten;
+                message = enchantedCooldownMessage;
+            }
+
+            final Optional<Instant> newestEatTime = le.getNewestEatTime();
+            if (cooldown.sharedCooldown && newestEatTime.isPresent())
+                current = newestEatTime.get();
+
+            final long seconds = baseCooldown - (Instant.now().getEpochSecond() - current.getEpochSecond());
+
+            if (message != null && !message.isEmpty())
+                Messenger.sendNormalMessage(p, message.replaceAll("%seconds%", String.valueOf(seconds)));
+
             return;
         }
+
         lastEaten.get(p.getUniqueId()).setForItem(item);
 
         final ItemStack originalItem = e.getItem();
@@ -139,27 +161,27 @@ public class ModuleGoldenApple extends Module {
         int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
         p.setFoodLevel(foodLevel);
 
-        if(p.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
+        if (p.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
 
         // Gapple and Napple saturation is 9.6
         float saturation = p.getSaturation() + 9.6f;
         // "The total saturation never gets higher than the total number of hunger points"
-        if(saturation > foodLevel)
+        if (saturation > foodLevel)
             saturation = foodLevel;
 
         p.setSaturation(saturation);
 
-        if(ENCHANTED_GOLDEN_APPLE.isSame(item)) applyEffects(p, enchantedGoldenAppleEffects);
+        if (ENCHANTED_GOLDEN_APPLE.isSame(item)) applyEffects(p, enchantedGoldenAppleEffects);
         else applyEffects(p, goldenAppleEffects);
 
-        if(item.getAmount() <= 0) item = null;
+        if (item.getAmount() <= 0) item = null;
 
         ItemStack mainHand = inv.getItemInMainHand();
         ItemStack offHand = inv.getItemInOffHand();
 
-        if(mainHand.equals(originalItem)) inv.setItemInMainHand(item);
-        else if(offHand.equals(originalItem)) inv.setItemInOffHand(item);
-        else if(mainHand.getType() == Material.GOLDEN_APPLE || ENCHANTED_GOLDEN_APPLE.isSame(mainHand))
+        if (mainHand.equals(originalItem)) inv.setItemInMainHand(item);
+        else if (offHand.equals(originalItem)) inv.setItemInOffHand(item);
+        else if (mainHand.getType() == Material.GOLDEN_APPLE || ENCHANTED_GOLDEN_APPLE.isSame(mainHand))
             inv.setItemInMainHand(item);
         // The bug occurs here, so we must check which hand has the apples
         // A player can't eat food in the offhand if there is any in the main hand
@@ -175,22 +197,22 @@ public class ModuleGoldenApple extends Module {
         PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p, Statistic.USE_ITEM, initialValue, initialValue + 1, consumedMaterial);
         Bukkit.getServer().getPluginManager().callEvent(psie);
 
-        try{
+        try {
             NamespacedKey nsk = NamespacedKey.minecraft("husbandry/balanced_diet");
             Advancement advancement = Bukkit.getAdvancement(nsk);
 
             // Award advancement criterion for having eaten gapple, as incrementing statistic or calling event doesn't seem to
-            if(advancement != null)
+            if (advancement != null)
                 p.getAdvancementProgress(advancement).awardCriteria(consumedMaterial.name().toLowerCase());
-        } catch(NoClassDefFoundError ignored){
+        } catch (NoClassDefFoundError ignored) {
         } // Pre 1.12 does not have advancements
     }
 
-    private List<PotionEffect> getPotionEffects(String apple){
+    private List<PotionEffect> getPotionEffects(String apple) {
         List<PotionEffect> appleEffects = new ArrayList<>();
 
         ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
-        for(String key : sect.getKeys(false)){
+        for (String key : sect.getKeys(false)) {
             int duration = sect.getInt(key + ".duration");
             int amplifier = sect.getInt(key + ".amplifier");
 
@@ -203,15 +225,15 @@ public class ModuleGoldenApple extends Module {
         return appleEffects;
     }
 
-    private void applyEffects(LivingEntity target, List<PotionEffect> effects){
-        for(PotionEffect effect : effects){
+    private void applyEffects(LivingEntity target, List<PotionEffect> effects) {
+        for (PotionEffect effect : effects) {
             OptionalInt maxActiveAmplifier = target.getActivePotionEffects().stream()
                     .filter(potionEffect -> potionEffect.getType() == effect.getType())
                     .mapToInt(PotionEffect::getAmplifier)
                     .max();
 
             // the active one is stronger, so do not apply the weaker one
-            if(maxActiveAmplifier.orElse(-1) > effect.getAmplifier()) continue;
+            if (maxActiveAmplifier.orElse(-1) > effect.getAmplifier()) continue;
 
             // remove it, as the active one is weaker
             maxActiveAmplifier.ifPresent(ignored -> target.removePotionEffect(effect.getType()));
@@ -221,25 +243,25 @@ public class ModuleGoldenApple extends Module {
     }
 
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent e){
-        if(lastEaten != null) lastEaten.remove(e.getPlayer().getUniqueId());
+    public void onPlayerQuit(PlayerQuitEvent e) {
+        if (lastEaten != null) lastEaten.remove(e.getPlayer().getUniqueId());
     }
 
     private static class LastEaten {
         private Instant lastNormalEaten;
         private Instant lastEnchantedEaten;
 
-        private Optional<Instant> getForItem(ItemStack item){
+        private Optional<Instant> getForItem(ItemStack item) {
             return ENCHANTED_GOLDEN_APPLE.isSame(item)
                     ? Optional.ofNullable(lastEnchantedEaten)
                     : Optional.ofNullable(lastNormalEaten);
         }
 
-        private Optional<Instant> getNewestEatTime(){
-            if(lastEnchantedEaten == null){
+        private Optional<Instant> getNewestEatTime() {
+            if (lastEnchantedEaten == null) {
                 return Optional.ofNullable(lastNormalEaten);
             }
-            if(lastNormalEaten == null){
+            if (lastNormalEaten == null) {
                 return Optional.of(lastEnchantedEaten);
             }
             return Optional.of(
@@ -247,8 +269,8 @@ public class ModuleGoldenApple extends Module {
             );
         }
 
-        private void setForItem(ItemStack item){
-            if(ENCHANTED_GOLDEN_APPLE.isSame(item)){
+        private void setForItem(ItemStack item) {
+            if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
                 lastEnchantedEaten = Instant.now();
             } else {
                 lastNormalEaten = Instant.now();
@@ -261,17 +283,17 @@ public class ModuleGoldenApple extends Module {
         private final long enchanted;
         private final boolean sharedCooldown;
 
-        Cooldown(long normal, long enchanted, boolean sharedCooldown){
+        Cooldown(long normal, long enchanted, boolean sharedCooldown) {
             this.normal = normal;
             this.enchanted = enchanted;
             this.sharedCooldown = sharedCooldown;
         }
 
-        private long getCooldownForItem(ItemStack item){
+        private long getCooldownForItem(ItemStack item) {
             return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
         }
 
-        boolean isOnCooldown(ItemStack item, LastEaten lastEaten){
+        boolean isOnCooldown(ItemStack item, LastEaten lastEaten) {
             return (sharedCooldown ? lastEaten.getNewestEatTime() : lastEaten.getForItem(item))
                     .map(it -> ChronoUnit.SECONDS.between(it, Instant.now()))
                     .map(it -> it < getCooldownForItem(item))
