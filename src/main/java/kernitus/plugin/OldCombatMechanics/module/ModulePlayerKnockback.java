@@ -59,7 +59,7 @@ public class ModulePlayerKnockback extends Module {
 
     // Vanilla does its own knockback, so we need to set it again.
     // priority = lowest because we are ignoring the existing velocity, which could break other plugins
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
         final UUID uuid = event.getPlayer().getUniqueId();
         if (!playerKnockbackHashMap.containsKey(uuid)) return;
