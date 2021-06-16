@@ -36,6 +36,8 @@ public class ModuleGoldenApple extends Module {
     private Map<UUID, LastEaten> lastEaten;
     private Cooldown cooldown;
 
+    private String normalCooldownMessage, enchantedCooldownMessage;
+
     public ModuleGoldenApple(OCMMain plugin) {
         super(plugin, "old-golden-apples");
     }
@@ -43,6 +45,9 @@ public class ModuleGoldenApple extends Module {
     @SuppressWarnings("deprecated")
     @Override
     public void reload() {
+        normalCooldownMessage = module().getString("cooldown.message-normal");
+        enchantedCooldownMessage = module().getString("cooldown.message-enchanted");
+
         cooldown = new Cooldown(
                 module().getLong("cooldown.normal"),
                 module().getLong("cooldown.enchanted"),
@@ -112,32 +117,37 @@ public class ModuleGoldenApple extends Module {
 
         e.setCancelled(true);
 
+        final UUID uuid = p.getUniqueId();
+
         // Check if the cooldown has expired yet
-        lastEaten.putIfAbsent(p.getUniqueId(), new LastEaten());
+        lastEaten.putIfAbsent(uuid, new LastEaten());
 
-        if (cooldown.isOnCooldown(item, lastEaten.get(p.getUniqueId()))) {
-            long basecd = consumedMaterial == Material.GOLDEN_APPLE ? cooldown.normal : cooldown.enchanted;
+        // If on cooldown send appropriate cooldown message
+        if (cooldown.isOnCooldown(item, lastEaten.get(uuid))) {
+            final LastEaten le = lastEaten.get(uuid);
 
-            LastEaten lastEaten = this.lastEaten.get(p.getUniqueId());
+            final long baseCooldown;
+            Instant current;
+            final String message;
 
-            Instant current = consumedMaterial == Material.GOLDEN_APPLE ?
-                    lastEaten.lastNormalEaten :
-                    lastEaten.lastEnchantedEaten;
-
-            if (cooldown.sharedCooldown && lastEaten.getNewestEatTime().isPresent())
-                current = lastEaten.getNewestEatTime().get();
-
-            long seconds = basecd - (Instant.now().getEpochSecond() - current.getEpochSecond());
-
-            String which = consumedMaterial == Material.GOLDEN_APPLE ? "normal" : "enchanted";
-
-            String msg = module().getString("cooldown.message-" + which);
-
-            if (msg != null && !msg.isEmpty()) {
-                msg = msg.replace("%seconds%", String.valueOf(seconds));
-
-                Messenger.send(e.getPlayer(), msg);
+            if (consumedMaterial == Material.GOLDEN_APPLE) {
+                baseCooldown = cooldown.normal;
+                current = le.lastNormalEaten;
+                message = normalCooldownMessage;
+            } else {
+                baseCooldown = cooldown.enchanted;
+                current = le.lastEnchantedEaten;
+                message = enchantedCooldownMessage;
             }
+
+            final Optional<Instant> newestEatTime = le.getNewestEatTime();
+            if (cooldown.sharedCooldown && newestEatTime.isPresent())
+                current = newestEatTime.get();
+
+            final long seconds = baseCooldown - (Instant.now().getEpochSecond() - current.getEpochSecond());
+
+            if (message != null && !message.isEmpty())
+                Messenger.sendNormalMessage(p, message.replaceAll("%seconds%", String.valueOf(seconds)));
 
             return;
         }

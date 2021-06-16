@@ -183,10 +183,12 @@ old-golden-apples:
   cooldown:
     # The cooldown for normal golden apples
     normal: 0
-    message-normal: "&ePlease wait %seconds% seconds to eat the golden apple again."
+    # Message when user tries to eat golden apple during cooldown. Leave empty to disable.
+    message-normal: "&ePlease wait %seconds%s before eating another golden apple."
     # The cooldown for enchanted golden apples
     enchanted: 0
-    message-enchanted: "&ePlease wait %seconds% seconds to eat the enchanted golden apple again."
+    # Message when user tries to eat enchanted golden apple during cooldown. Leave empty to disable.
+    message-enchanted: "&ePlease wait %seconds%s before eating another enchanted golden apple."
     # Whether the two apple types share a cooldown.
     # If this is true:
     #   1. Eating any apple resets both cooldowns
@@ -537,4 +539,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 50
+config-version: 53
