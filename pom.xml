@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>1.9.0</version>
+    <version>1.10.0BETA</version>
     <name>OldCombatMechanics</name>
     <description>Implements pre-1.9 combat-related mechanics</description>
     <url>https://github.com/kernitus/BukkitOldCombatMechanics</url>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.4-R0.1-SNAPSHOT</version>
+            <version>1.17-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
