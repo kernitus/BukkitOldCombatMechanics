@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep;
 
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
@@ -11,36 +12,47 @@ class SweepPacketDetectorFrom1_13 extends AbstractSweepPacketDetector {
 
     private Field particleParamField;
     private Method particleParamNameMethod;
+    private boolean isSetup = false;
 
     SweepPacketDetectorFrom1_13(){
-        for(Field field : PACKET_CLASS.getDeclaredFields()){
-            if(field.getType().getSimpleName().equals("ParticleParam")){
-                particleParamField = field;
-                particleParamField.setAccessible(true);
+        try{
+            for(Field field : PACKET_CLASS.getDeclaredFields()){
+                if(field.getType().getSimpleName().equals("ParticleParam")){
+                    particleParamField = field;
+                    particleParamField.setAccessible(true);
+                }
             }
-        }
-        if(particleParamField == null){
-            throwNewElementNotFoundException("Particle param field");
-        }
-
-        Class<?> particleParamClass = Reflector.getClass(ClassType.NMS, "ParticleParam");
-        if(particleParamClass == null){
-            throwNewElementNotFoundException("ParticleParam class");
-        }
-
-        for(Method method : particleParamClass.getMethods()){
-            if(method.getReturnType() == String.class){
-                particleParamNameMethod = method;
+            if(particleParamField == null){
+                throwNewElementNotFoundException("Particle param field");
             }
-        }
-        if(particleParamNameMethod == null){
-            throwNewElementNotFoundException("Particle param description method");
+
+            Class<?> particleParamClass = Reflector.getClass(ClassType.NMS, "ParticleParam");
+            if(particleParamClass == null){
+                throwNewElementNotFoundException("ParticleParam class");
+            }
+
+            for(Method method : particleParamClass.getMethods()){
+                if(method.getReturnType() == String.class){
+                    particleParamNameMethod = method;
+                }
+            }
+            if(particleParamNameMethod == null){
+                throwNewElementNotFoundException("Particle param description method");
+            }
+            isSetup = true;
+        } catch(Exception e){
+            Messenger.warn(
+                    e,
+                    "Error setting up SweepPacketDetector. Please report it along with the following " +
+                            "exception on github." +
+                            "Sweep cancellation should still work, but particles might show up."
+            );
         }
     }
 
     @Override
     public boolean isSweepPacket(Packet packet){
-        if(isWrongPacketType(packet)){
+        if(!isSetup || isWrongPacketType(packet)){
             return false;
         }
 
