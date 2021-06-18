@@ -1,6 +1,5 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
@@ -41,12 +40,7 @@ class SweepPacketDetectorFrom1_13 extends AbstractSweepPacketDetector {
             }
             isSetup = true;
         } catch(Exception e){
-            Messenger.warn(
-                    e,
-                    "Error setting up SweepPacketDetector. Please report it along with the following " +
-                            "exception on github." +
-                            "Sweep cancellation should still work, but particles might show up."
-            );
+            e.printStackTrace();
         }
     }
 

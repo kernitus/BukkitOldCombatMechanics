@@ -1,6 +1,5 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 
 import java.lang.reflect.Field;
@@ -24,12 +23,7 @@ class SweepPacketDetectorUpTo1_12 extends AbstractSweepPacketDetector {
             }
             isSetup = true;
         } catch(Exception e){
-            Messenger.warn(
-                    e,
-                    "Error setting up SweepPacketDetector. Please report it along with the following " +
-                            "exception on github." +
-                            "Sweep cancellation should still work, but particles might show up."
-            );
+            e.printStackTrace();
         }
     }
 
