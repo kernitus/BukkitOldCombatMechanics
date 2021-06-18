@@ -1,10 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.entity.Player;
@@ -52,6 +48,11 @@ class PacketInjector extends ChannelDuplexHandler {
 
         Object playerConnection = PacketSender.getInstance().getConnection(player);
 
+        if(playerConnection == null){
+            debug("Could not get playerConnection for player(%s)! Did PacketSender fail to load? (%d)", player.getName(), hashCode());
+            return;
+        }
+
         Object manager = Reflector.getFieldValue(playerConnection, "networkManager");
 
         channel = (Channel) Reflector.getFieldValue(manager, "channel");
@@ -82,6 +83,10 @@ class PacketInjector extends ChannelDuplexHandler {
      */
     void detach(){
         debug("Detaching injector... (%d)", hashCode());
+        if(channel == null){
+            debug("Could not detach injector because it was never fully attached! (%d)", hashCode());
+            return;
+        }
         if(isClosed || !channel.isOpen()){
             debug("Closed(%b) or channel closed(%b) already! (%d)", isClosed, !channel.isOpen(), hashCode());
             return;

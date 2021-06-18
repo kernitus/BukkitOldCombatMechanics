@@ -13,25 +13,33 @@ import java.util.Objects;
  */
 class PacketSender {
 
-    private static final Class<?> CRAFT_PLAYER =
-            Objects.requireNonNull(Reflector.getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer"));
-    private static final Class<?> PLAYER_CONNECTION =
-            Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "PlayerConnection"));
-    private static final Class<?> ENTITY_PLAYER =
-            Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "EntityPlayer"));
+    private static Class<?> CRAFT_PLAYER;
+    private static Class<?> PLAYER_CONNECTION;
+    private static Class<?> ENTITY_PLAYER;
 
+    private static Method GET_HANDLE;
+    private static Method SEND_PACKET;
+    private static Field PLAYER_CONNECTION_FIELD;
 
-    private static final Method GET_HANDLE = Reflector.getMethod(
-            CRAFT_PLAYER, "getHandle"
-    );
-    private static final Method SEND_PACKET = Reflector.getMethod(
-            PLAYER_CONNECTION, "sendPacket"
-    );
-    private static final Field PLAYER_CONNECTION_FIELD = Reflector.getField(
-            ENTITY_PLAYER, "playerConnection"
-    );
+    private static boolean isSetup = false;
 
     private static final PacketSender instance = new PacketSender();
+
+    static{
+        try{
+            CRAFT_PLAYER = Objects.requireNonNull(Reflector.getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer"));
+            PLAYER_CONNECTION = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "PlayerConnection"));
+            ENTITY_PLAYER = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "EntityPlayer"));
+
+            GET_HANDLE = Reflector.getMethod(CRAFT_PLAYER, "getHandle");
+            SEND_PACKET = Reflector.getMethod(PLAYER_CONNECTION, "sendPacket");
+            PLAYER_CONNECTION_FIELD = Reflector.getField(ENTITY_PLAYER, "playerConnection");
+
+            isSetup = true;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private PacketSender(){
     }
@@ -50,10 +58,13 @@ class PacketSender {
      * @param player The Player to send it to
      */
     void sendPacket(Packet packet, Player player){
+        if(!isSetup) return;
         sendPacket(packet.getNMSPacket(), getConnection(player));
     }
 
     private void sendPacket(Object nmsPacket, Object playerConnection){
+        if(!isSetup) return;
+
         Reflector.invokeMethod(SEND_PACKET, playerConnection, nmsPacket);
     }
 
@@ -64,6 +75,8 @@ class PacketSender {
      * @return The Player's connection
      */
     Object getConnection(Player player){
+        if(!isSetup) return null;
+
         Object handle = Reflector.invokeMethod(GET_HANDLE, player);
 
         return Reflector.getFieldValue(PLAYER_CONNECTION_FIELD, handle);
