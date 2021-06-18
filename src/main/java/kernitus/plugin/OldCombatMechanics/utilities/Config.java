@@ -76,16 +76,14 @@ public class Config {
         // Dynamically registers / unregisters all event listeners for optimal performance!
         ModuleLoader.toggleModules();
 
-        ModuleLoader.getModules().stream()
-                .filter(Module::isEnabled)
-                .forEach(module -> {
-                    try {
-                        module.reload();
-                    } catch (Exception e) {
-                        plugin.getLogger()
-                                .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
-                    }
-                });
+        ModuleLoader.getModules().forEach(module -> {
+            try {
+                module.reload();
+            } catch (Exception e) {
+                plugin.getLogger()
+                        .log(Level.WARNING, "Error reloading module '" + module.toString() + "'", e);
+            }
+        });
     }
 
     public static boolean moduleEnabled(String name, World world) {

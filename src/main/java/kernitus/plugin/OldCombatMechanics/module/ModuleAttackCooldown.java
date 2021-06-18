@@ -57,7 +57,7 @@ public class ModuleAttackCooldown extends Module {
     private void adjustAttackSpeed(Player player){
         World world = player.getWorld();
 
-        double attackSpeed = Config.moduleEnabled("disable-attack-cooldown", world)
+        double attackSpeed = isEnabled(world)
                 ? module().getDouble("generic-attack-speed")
                 : PVPMode.NEW_PVP.getBaseAttackSpeed();
 
@@ -79,6 +79,8 @@ public class ModuleAttackCooldown extends Module {
         double baseValue = attribute.getBaseValue();
 
         if(baseValue != attackSpeed){
+            debug(String.format("Setting attack speed for player %s to %.2f (was: %.2f)", player.getName(), attackSpeed, baseValue));
+
             attribute.setBaseValue(attackSpeed);
             player.saveData();
         }
