@@ -39,6 +39,8 @@ public class ModulePlayerCollisions extends Module {
 
         // Disband our OCM teams in onDisable so they can be reused
         OCMMain.getInstance().addDisableListener(() -> {
+            if (!TeamUtils.isSetup()) return;
+
             synchronized(playerTeamMap){
                 for(Map.Entry<Player, TeamPacket> entry : playerTeamMap.entrySet()){
                     if(TeamUtils.isOcmTeam(entry.getValue().getTeamName())){
@@ -73,6 +75,8 @@ public class ModulePlayerCollisions extends Module {
      * @param player the player to send it to
      */
     private void createOrUpdateTeam(Player player){
+        if(!TeamUtils.isSetup()) return;
+
         CollisionRule collisionRule = isEnabled(player.getWorld())
                 ? CollisionRule.NEVER
                 : CollisionRule.ALWAYS;
@@ -97,6 +101,8 @@ public class ModulePlayerCollisions extends Module {
      * @param collisionRule the {@link CollisionRule} to use
      */
     private void createAndSendNewTeam(Player player, CollisionRule collisionRule){
+        if (!TeamUtils.isSetup()) return;
+
         synchronized(playerTeamMap){
             TeamPacket newTeamPacket = TeamUtils.craftTeamCreatePacket(player, collisionRule);
             playerTeamMap.put(player, newTeamPacket);

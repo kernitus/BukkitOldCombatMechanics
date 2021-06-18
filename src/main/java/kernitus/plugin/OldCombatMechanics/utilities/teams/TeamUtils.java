@@ -16,8 +16,29 @@ import java.util.stream.Collectors;
  */
 public class TeamUtils {
 
-    private static final VersionData VERSION_DATA = new VersionData();
     private static final AtomicInteger TEAM_NAME_COUNTER = new AtomicInteger();
+    private static VersionData VERSION_DATA;
+
+    private static boolean setup;
+
+    static{
+        try{
+            VERSION_DATA = new VersionData();
+            setup = true;
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean isSetup(){
+        return setup;
+    }
+
+    private static void checkSetup() {
+        if(!setup) {
+            throw new IllegalStateException("TeamUtils failed to set up!");
+        }
+    }
 
     /**
      * Sets the collision rule of the packet.
@@ -26,6 +47,7 @@ public class TeamUtils {
      * @param collisionRule the collision rule
      */
     public static void setCollisionRule(Object packet, CollisionRule collisionRule){
+        checkSetup();
         try{
             VERSION_DATA.getFieldCollisionRule().set(packet, collisionRule.getName());
         } catch(IllegalAccessException e){
@@ -41,6 +63,7 @@ public class TeamUtils {
      * @return the action for the packet
      */
     public static TeamAction getPacketAction(Object packet){
+        checkSetup();
         try{
             return TeamAction.fromId((Integer) VERSION_DATA.getFieldAction().get(packet));
         } catch(IllegalAccessException e){
@@ -56,6 +79,7 @@ public class TeamUtils {
      * @param action the new action
      */
     public static void setPacketAction(Object packet, TeamAction action){
+        checkSetup();
         try{
             VERSION_DATA.getFieldAction().set(packet, action.getMinecraftId());
         } catch(IllegalAccessException e){
@@ -82,6 +106,8 @@ public class TeamUtils {
      * @param collisionRule the collision rule to use
      */
     public static TeamPacket craftTeamCreatePacket(Player player, CollisionRule collisionRule){
+        checkSetup();
+
         // Has the right size (10) and is unique
         String teamName = "OCM-" + TEAM_NAME_COUNTER.getAndIncrement() + "";
 
@@ -110,6 +136,7 @@ public class TeamUtils {
      * @param player   the player to disband it for
      */
     public static void disband(String teamName, Player player){
+        checkSetup();
         Object nms = VERSION_DATA.createTeamPacket(
                 TeamAction.DISBAND,
                 CollisionRule.NEVER,
@@ -124,6 +151,7 @@ public class TeamUtils {
      * @return the team name
      */
     public static String getTeamName(Object packet){
+        checkSetup();
         try{
             return (String) VERSION_DATA.getFieldName().get(packet);
         } catch(IllegalAccessException e){
@@ -138,6 +166,7 @@ public class TeamUtils {
      * @return returns all team members
      */
     public static Collection<String> getTeamMembers(Object packet){
+        checkSetup();
         try{
             @SuppressWarnings("unchecked")
             Collection<String> identifiers = (Collection<String>) VERSION_DATA.getFieldPlayerNames().get(packet);
@@ -163,6 +192,7 @@ public class TeamUtils {
      */
     static Object createTeamNMSPacket(TeamAction action, CollisionRule collisionRule, String name,
                                       Collection<Player> players){
+        checkSetup();
         return VERSION_DATA.createTeamPacket(action, collisionRule, name, players);
     }
 
