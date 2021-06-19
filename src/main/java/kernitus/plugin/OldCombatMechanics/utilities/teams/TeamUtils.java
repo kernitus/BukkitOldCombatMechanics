@@ -1,7 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.teams;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
@@ -208,7 +208,7 @@ public class TeamUtils {
         private final Constructor<?> constructorTeamPacket;
 
         VersionData(){
-            Class<?> packetClass = Reflector.getClass(ClassType.NMS, "PacketPlayOutScoreboardTeam");
+            Class<?> packetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
             this.fieldCollisionRule = Reflector.getInaccessibleField(packetClass, "f");
             this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "h");
             this.fieldAction = Reflector.getInaccessibleField(packetClass, "i");
@@ -247,6 +247,37 @@ public class TeamUtils {
             } catch(ReflectiveOperationException e){
                 throw new RuntimeException("Error creating team packet", e);
             }
+        }
+    }
+
+    private enum FieldNames {
+        Before_V17("f", "h", "i", "a"),
+        // FIXME: This actually needs to unwrap the optional and look at "e". Additionally, if we want to set it
+        V17("k.e", "j", "h", "i");
+
+        private final String fieldCollisionRule;
+        private final String fieldPlayerNames;
+        private final String fieldAction;
+        private final String fieldName;
+
+        FieldNames(String fieldCollisionRule, String fieldPlayerNames, String fieldAction, String fieldName){
+            this.fieldCollisionRule = fieldCollisionRule;
+            this.fieldPlayerNames = fieldPlayerNames;
+            this.fieldAction = fieldAction;
+            this.fieldName = fieldName;
+        }
+
+        String getFieldCollisionRule(){
+            return fieldCollisionRule;
+        }
+        String getFieldPlayerNames(){
+            return fieldPlayerNames;
+        }
+        String getFieldAction(){
+            return fieldAction;
+        }
+        String getFieldName(){
+            return fieldName;
         }
     }
 }

@@ -25,7 +25,7 @@ class SweepPacketDetectorFrom1_13 extends AbstractSweepPacketDetector {
                 throwNewElementNotFoundException("Particle param field");
             }
 
-            Class<?> particleParamClass = Reflector.getClass(ClassType.NMS, "ParticleParam");
+            Class<?> particleParamClass = Reflector.getClass(ClassType.NMS, "core.particles.ParticleParam");
             if(particleParamClass == null){
                 throwNewElementNotFoundException("ParticleParam class");
             }

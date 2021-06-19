@@ -52,7 +52,7 @@ public class NbtFactory {
 
                 // Prepare NBT
                 COMPOUND_CLASS = getMethod(0, Modifier.STATIC, offlinePlayer, "getData").getReturnType();
-                BASE_CLASS = Reflector.getClass(ClassType.NMS, "NBTBase");
+                BASE_CLASS = Reflector.getClass(ClassType.NMS, "nbt.NBTBase");
                 NBT_GET_TYPE = getMethod(0, Modifier.STATIC, BASE_CLASS, "getTypeId");
                 NBT_CREATE_TAG = getMethod(Modifier.STATIC, 0, BASE_CLASS, "createTag", byte.class);
 

@@ -20,7 +20,7 @@ public class Packet {
      * <p>
      * Will be null if not found
      */
-    private static final Class<?> NMS_PACKET_CLASS = Reflector.getClass(ClassType.NMS, "Packet");
+    private static final Class<?> NMS_PACKET_CLASS = Reflector.getClass(ClassType.NMS, "network.protocol.Packet");
 
     private Class<?> packetClass;
     private Object rawPacket;

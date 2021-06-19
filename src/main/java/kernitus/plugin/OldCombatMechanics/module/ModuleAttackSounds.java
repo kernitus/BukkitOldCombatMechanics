@@ -65,8 +65,8 @@ public class ModuleAttackSounds extends Module {
     private class SoundListener extends PacketAdapter {
 
         private final Class<?> PACKET_CLASS = Reflector.Packets.getPacket(PacketType.PlayOut, "NamedSoundEffect");
-        private final Class<?> SOUND_EFFECT_CLASS = Reflector.getClass(ClassType.NMS, "SoundEffect");
-        private final Class<?> MINECRAFT_KEY_CLASS = Reflector.getClass(ClassType.NMS, "MinecraftKey");
+        private final Class<?> SOUND_EFFECT_CLASS = Reflector.getClass(ClassType.NMS, "sounds.SoundEffect");
+        private final Class<?> MINECRAFT_KEY_CLASS = Reflector.getClass(ClassType.NMS, "resources.MinecraftKey");
 
         private boolean disabledDueToError;
 

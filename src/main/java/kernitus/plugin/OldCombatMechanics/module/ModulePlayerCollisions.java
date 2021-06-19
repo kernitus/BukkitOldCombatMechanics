@@ -7,6 +7,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamPacket;
@@ -122,8 +123,7 @@ public class ModulePlayerCollisions extends Module {
 
     private class CollisionPacketListener extends PacketAdapter {
 
-        private final Class<?> targetClass = Reflector
-                .getClass(ClassType.NMS, "PacketPlayOutScoreboardTeam");
+        private final Class<?> targetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
 
         @Override
         public void onPacketSend(PacketEvent packetEvent){

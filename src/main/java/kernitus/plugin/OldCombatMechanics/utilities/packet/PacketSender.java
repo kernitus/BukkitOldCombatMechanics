@@ -28,12 +28,12 @@ class PacketSender {
     static{
         try{
             CRAFT_PLAYER = Objects.requireNonNull(Reflector.getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer"));
-            PLAYER_CONNECTION = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "PlayerConnection"));
-            ENTITY_PLAYER = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "EntityPlayer"));
+            PLAYER_CONNECTION = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "server.network.PlayerConnection"));
+            ENTITY_PLAYER = Objects.requireNonNull(Reflector.getClass(ClassType.NMS, "server.level.EntityPlayer"));
 
             GET_HANDLE = Reflector.getMethod(CRAFT_PLAYER, "getHandle");
             SEND_PACKET = Reflector.getMethod(PLAYER_CONNECTION, "sendPacket");
-            PLAYER_CONNECTION_FIELD = Reflector.getField(ENTITY_PLAYER, "playerConnection");
+            PLAYER_CONNECTION_FIELD = Reflector.getFieldByType(ENTITY_PLAYER, "PlayerConnection");
 
             isSetup = true;
         } catch(Exception e) {

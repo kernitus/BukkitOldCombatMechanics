@@ -78,7 +78,7 @@ public class Reflector {
 
     public static Class<?> getClass(ClassType type, String name){
         try{
-            return Class.forName(String.format("%s.%s.%s", type.getPackage(), version, name));
+            return Class.forName(type.qualifyClassName(name));
         } catch(ClassNotFoundException e){
             e.printStackTrace();
             return null;
@@ -128,40 +128,30 @@ public class Reflector {
         }
     }
 
+    public static Field getFieldByType(Class<?> clazz, String simpleClassName){
+        for(Field declaredField : clazz.getDeclaredFields()){
+            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+                return declaredField;
+            }
+        }
+        throw new RuntimeException("Field with type " + simpleClassName + " not found");
+    }
+
     public static Field getInaccessibleField(Class<?> clazz, String fieldName){
         Field field = getField(clazz, fieldName);
         field.setAccessible(true);
         return field;
     }
 
-    public static Object getFieldValue(Object object, String fieldName) throws Exception{
-        return findFieldWithinHierarchy(object, fieldName).get(object);
-    }
-
-    /**
-     * Finds a field within the class or any superclasses (but ignored interfaces).
-     *
-     * @param object    the handle and start for the search
-     * @param fieldName the name of the field
-     * @return the found field
-     * @throws NoSuchFieldException if the field couldn't be found
-     */
-    private static Field findFieldWithinHierarchy(Object object, String fieldName) throws NoSuchFieldException{
-        Class<?> clazz = object.getClass();
-
-        while(clazz != null){
-            for(Field field : clazz.getDeclaredFields()){
-                if(field.getName().equals(fieldName)){
-                    field.setAccessible(true);
-                    return field;
-                }
+    public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception{
+        for(Field declaredField : object.getClass().getDeclaredFields()){
+            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+                declaredField.setAccessible(true);
+                return declaredField.get(object);
             }
-            clazz = clazz.getSuperclass();
         }
-
-        throw new NoSuchFieldException(fieldName);
+        throw new NoSuchFieldException("Couldn't find field with type " + simpleClassName + " in " + object.getClass());
     }
-
 
     public static Object getFieldValue(Field field, Object handle){
         field.setAccessible(true);
@@ -208,7 +198,7 @@ public class Reflector {
 
     public static class Packets {
         public static Class<?> getPacket(PacketType type, String name){
-            return Reflector.getClass(ClassType.NMS, "Packet" + type.prefix + name);
+            return Reflector.getClass(ClassType.NMS, "network.protocol.game.Packet" + type.prefix + name);
         }
 
         public static void sendPacket(Player player, Object packet){
