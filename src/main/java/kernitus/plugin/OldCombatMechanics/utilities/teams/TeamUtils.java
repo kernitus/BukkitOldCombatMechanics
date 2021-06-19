@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.teams;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.entity.Player;
 
@@ -8,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -17,13 +19,13 @@ import java.util.stream.Collectors;
 public class TeamUtils {
 
     private static final AtomicInteger TEAM_NAME_COUNTER = new AtomicInteger();
-    private static VersionData VERSION_DATA;
+    private static PacketAccess PACKET_ACCESS;
 
     private static boolean setup;
 
     static{
         try{
-            VERSION_DATA = new VersionData();
+            PACKET_ACCESS = new Postv17PacketAccess();
             setup = true;
         } catch(Exception e){
             e.printStackTrace();
@@ -34,8 +36,8 @@ public class TeamUtils {
         return setup;
     }
 
-    private static void checkSetup() {
-        if(!setup) {
+    private static void checkSetup(){
+        if(!setup){
             throw new IllegalStateException("TeamUtils failed to set up!");
         }
     }
@@ -49,8 +51,8 @@ public class TeamUtils {
     public static void setCollisionRule(Object packet, CollisionRule collisionRule){
         checkSetup();
         try{
-            VERSION_DATA.getFieldCollisionRule().set(packet, collisionRule.getName());
-        } catch(IllegalAccessException e){
+            PACKET_ACCESS.setCollisionRule(packet, collisionRule);
+        } catch(ReflectiveOperationException e){
             // should not happen if the getting works
             throw new RuntimeException("Error setting collision field", e);
         }
@@ -65,8 +67,8 @@ public class TeamUtils {
     public static TeamAction getPacketAction(Object packet){
         checkSetup();
         try{
-            return TeamAction.fromId((Integer) VERSION_DATA.getFieldAction().get(packet));
-        } catch(IllegalAccessException e){
+            return PACKET_ACCESS.getAction(packet);
+        } catch(ReflectiveOperationException e){
             // should not happen if the getting works
             throw new RuntimeException("Error getting action field", e);
         }
@@ -81,8 +83,8 @@ public class TeamUtils {
     public static void setPacketAction(Object packet, TeamAction action){
         checkSetup();
         try{
-            VERSION_DATA.getFieldAction().set(packet, action.getMinecraftId());
-        } catch(IllegalAccessException e){
+            PACKET_ACCESS.setAction(packet, action);
+        } catch(ReflectiveOperationException e){
             // should not happen if the getting works
             throw new RuntimeException("Error setting action field", e);
         }
@@ -107,11 +109,10 @@ public class TeamUtils {
      */
     public static TeamPacket craftTeamCreatePacket(Player player, CollisionRule collisionRule){
         checkSetup();
-
         // Has the right size (10) and is unique
         String teamName = "OCM-" + TEAM_NAME_COUNTER.getAndIncrement() + "";
 
-        Object teamPacket = VERSION_DATA.createTeamPacket(
+        Object teamPacket = createTeamNMSPacket(
                 TeamAction.CREATE,
                 collisionRule,
                 teamName,
@@ -137,7 +138,7 @@ public class TeamUtils {
      */
     public static void disband(String teamName, Player player){
         checkSetup();
-        Object nms = VERSION_DATA.createTeamPacket(
+        Object nms = createTeamNMSPacket(
                 TeamAction.DISBAND,
                 CollisionRule.NEVER,
                 teamName,
@@ -153,9 +154,9 @@ public class TeamUtils {
     public static String getTeamName(Object packet){
         checkSetup();
         try{
-            return (String) VERSION_DATA.getFieldName().get(packet);
-        } catch(IllegalAccessException e){
-            throw new RuntimeException("Error setting members", e);
+            return PACKET_ACCESS.getName(packet);
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException("Error getting team name", e);
         }
     }
 
@@ -168,15 +169,8 @@ public class TeamUtils {
     public static Collection<String> getTeamMembers(Object packet){
         checkSetup();
         try{
-            @SuppressWarnings("unchecked")
-            Collection<String> identifiers = (Collection<String>) VERSION_DATA.getFieldPlayerNames().get(packet);
-
-            if(identifiers == null){
-                return Collections.emptyList();
-            }
-
-            return identifiers;
-        } catch(IllegalAccessException e){
+            return PACKET_ACCESS.getPlayerNames(packet);
+        } catch(ReflectiveOperationException e){
             // should not happen if the getting works
             throw new RuntimeException("Error getting players", e);
         }
@@ -193,21 +187,36 @@ public class TeamUtils {
     static Object createTeamNMSPacket(TeamAction action, CollisionRule collisionRule, String name,
                                       Collection<Player> players){
         checkSetup();
-        return VERSION_DATA.createTeamPacket(action, collisionRule, name, players);
+        try{
+            return PACKET_ACCESS.createTeamPacket(action, collisionRule, name, players);
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException("Couldn't create team packet");
+        }
     }
 
-    /**
-     * Contains version specific data. Currently it is just static because the structure of the packet hasn't
-     * changed yet.
-     */
-    private static class VersionData {
+    public interface PacketAccess {
+        void setCollisionRule(Object packet, CollisionRule rule) throws ReflectiveOperationException;
+
+        TeamAction getAction(Object packet) throws ReflectiveOperationException;
+
+        void setAction(Object packet, TeamAction action) throws ReflectiveOperationException;
+
+        String getName(Object packet) throws ReflectiveOperationException;
+
+        Collection<String> getPlayerNames(Object packet) throws ReflectiveOperationException;
+
+        Object createTeamPacket(TeamAction action, CollisionRule collisionRule, String name,
+                                Collection<Player> players) throws ReflectiveOperationException;
+    }
+
+    private static class Prev17PacketAccess implements PacketAccess {
         private final Field fieldCollisionRule;
         private final Field fieldPlayerNames;
         private final Field fieldAction;
         private final Field fieldName;
         private final Constructor<?> constructorTeamPacket;
 
-        VersionData(){
+        private Prev17PacketAccess(){
             Class<?> packetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
             this.fieldCollisionRule = Reflector.getInaccessibleField(packetClass, "f");
             this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "h");
@@ -217,67 +226,137 @@ public class TeamUtils {
             this.constructorTeamPacket = Reflector.getConstructor(packetClass, 0);
         }
 
-        Field getFieldCollisionRule(){
-            return fieldCollisionRule;
+        @Override
+        public void setCollisionRule(Object packet, CollisionRule rule) throws ReflectiveOperationException{
+            fieldCollisionRule.set(packet, rule.getName());
         }
 
-        Field getFieldPlayerNames(){
-            return fieldPlayerNames;
+        @Override
+        public TeamAction getAction(Object packet) throws ReflectiveOperationException{
+            return TeamAction.fromId((Integer) fieldAction.get(packet));
         }
 
-        Field getFieldAction(){
-            return fieldAction;
+        @Override
+        public void setAction(Object packet, TeamAction action) throws ReflectiveOperationException{
+            fieldAction.set(packet, action.getMinecraftId());
         }
 
-        Field getFieldName(){
-            return fieldName;
+        @Override
+        public String getName(Object packet) throws ReflectiveOperationException{
+            return (String) fieldName.get(packet);
         }
 
-        Object createTeamPacket(TeamAction action, CollisionRule collisionRule, String name,
-                                Collection<Player> players){
-            try{
-                Object packet = constructorTeamPacket.newInstance();
+        @Override
+        public Collection<String> getPlayerNames(Object packet) throws ReflectiveOperationException{
+            @SuppressWarnings("unchecked")
+            Collection<String> identifiers = (Collection<String>) fieldPlayerNames.get(packet);
 
-                getFieldPlayerNames().set(packet, players.stream().map(Player::getName).collect(Collectors.toList()));
-                getFieldCollisionRule().set(packet, collisionRule.getName());
-                getFieldAction().set(packet, action.getMinecraftId());
-                fieldName.set(packet, name);
-
-                return packet;
-            } catch(ReflectiveOperationException e){
-                throw new RuntimeException("Error creating team packet", e);
+            if(identifiers == null){
+                return Collections.emptyList();
             }
+
+            return identifiers;
+        }
+
+        @Override
+        public Object createTeamPacket(TeamAction action, CollisionRule collisionRule, String name,
+                                       Collection<Player> players) throws ReflectiveOperationException{
+            Object packet = constructorTeamPacket.newInstance();
+
+            setCollisionRule(packet, collisionRule);
+            setAction(packet, action);
+
+            fieldPlayerNames.set(packet, players.stream().map(Player::getName).collect(Collectors.toList()));
+            fieldName.set(packet, name);
+
+            return packet;
         }
     }
 
-    private enum FieldNames {
-        Before_V17("f", "h", "i", "a"),
-        // FIXME: This actually needs to unwrap the optional and look at "e". Additionally, if we want to set it
-        V17("k.e", "j", "h", "i");
+    private static class Postv17PacketAccess implements PacketAccess {
+        private final Field fieldPlayerNames;
+        private final Field fieldAction;
+        private final Field fieldName;
+        private final Field fieldDataOptional;
+        private final Field fieldDataCollisionRule;
+        private final Constructor<?> constructorTeamPacket;
+        private final Constructor<?> constructorDataClass;
+        private final Constructor<?> constructorScoreboard;
+        private final Constructor<?> constructorScoreboardTeam;
 
-        private final String fieldCollisionRule;
-        private final String fieldPlayerNames;
-        private final String fieldAction;
-        private final String fieldName;
+        private Postv17PacketAccess(){
+            Class<?> packetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+            Class<?> dataClass = Reflector.getClass(packetClass.getName() + ".b");
 
-        FieldNames(String fieldCollisionRule, String fieldPlayerNames, String fieldAction, String fieldName){
-            this.fieldCollisionRule = fieldCollisionRule;
-            this.fieldPlayerNames = fieldPlayerNames;
-            this.fieldAction = fieldAction;
-            this.fieldName = fieldName;
+            this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "j");
+            this.fieldAction = Reflector.getInaccessibleField(packetClass, "h");
+            this.fieldName = Reflector.getInaccessibleField(packetClass, "i");
+            this.fieldDataOptional = Reflector.getFieldByType(packetClass, "Optional");
+            this.fieldDataCollisionRule = Reflector.getInaccessibleField(dataClass, "e");
+
+            this.constructorTeamPacket = Reflector.getConstructor(packetClass, 4);
+
+            Class<?> scoreboardTeamClass = Reflector.getClass(ClassType.NMS, "world.scores.ScoreboardTeam");
+            Class<?> scoreboardClass = Reflector.getClass(ClassType.NMS, "world.scores.Scoreboard");
+
+            constructorDataClass = Reflector.getConstructor(dataClass, scoreboardTeamClass.getSimpleName());
+            constructorScoreboard = Reflector.getConstructor(scoreboardClass, 0);
+            constructorScoreboardTeam = Reflector.getConstructor(scoreboardTeamClass, 2);
         }
 
-        String getFieldCollisionRule(){
-            return fieldCollisionRule;
+        @Override
+        public TeamAction getAction(Object packet) throws ReflectiveOperationException{
+            return TeamAction.fromId((Integer) fieldAction.get(packet));
         }
-        String getFieldPlayerNames(){
-            return fieldPlayerNames;
+
+        @Override
+        public void setAction(Object packet, TeamAction action) throws ReflectiveOperationException{
+            fieldAction.set(packet, action.getMinecraftId());
         }
-        String getFieldAction(){
-            return fieldAction;
+
+        @Override
+        public String getName(Object packet) throws ReflectiveOperationException{
+            return (String) fieldName.get(packet);
         }
-        String getFieldName(){
-            return fieldName;
+
+        @Override
+        public Collection<String> getPlayerNames(Object packet) throws ReflectiveOperationException{
+            @SuppressWarnings("unchecked")
+            Collection<String> identifiers = (Collection<String>) fieldPlayerNames.get(packet);
+
+            if(identifiers == null){
+                return Collections.emptyList();
+            }
+
+            return identifiers;
+        }
+
+        @Override
+        public void setCollisionRule(Object packet, CollisionRule rule) throws ReflectiveOperationException{
+            Optional<?> structOptional = (Optional<?>) fieldDataOptional.get(packet);
+            if(structOptional != null && structOptional.isPresent()){
+                fieldDataCollisionRule.set(packet, rule.getName());
+                return;
+            }
+            Object scoreboard = constructorScoreboard.newInstance();
+            Object scoreboardTeam = constructorScoreboardTeam.newInstance(scoreboard, getTeamName(packet));
+            Object dataClass = constructorDataClass.newInstance(scoreboardTeam);
+            fieldDataCollisionRule.set(dataClass, rule.getName());
+        }
+
+        @Override
+        public Object createTeamPacket(TeamAction action, CollisionRule collisionRule, String name,
+                                       Collection<Player> players) throws ReflectiveOperationException{
+            Object packet = constructorTeamPacket.newInstance(
+                    name,
+                    action.getMinecraftId(),
+                    Optional.empty(),
+                    players.stream().map(Player::getName).collect(Collectors.toList())
+            );
+
+            setCollisionRule(packet, collisionRule);
+
+            return packet;
         }
     }
 }

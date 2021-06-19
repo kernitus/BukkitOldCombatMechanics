@@ -10,8 +10,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by Rayzr522 on 7/11/16.
@@ -77,8 +80,11 @@ public class Reflector {
     }
 
     public static Class<?> getClass(ClassType type, String name){
+        return getClass(type.qualifyClassName(name));
+    }
+    public static Class<?> getClass(String fqn){
         try{
-            return Class.forName(type.qualifyClassName(name));
+            return Class.forName(fqn);
         } catch(ClassNotFoundException e){
             e.printStackTrace();
             return null;
@@ -131,6 +137,7 @@ public class Reflector {
     public static Field getFieldByType(Class<?> clazz, String simpleClassName){
         for(Field declaredField : clazz.getDeclaredFields()){
             if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+                declaredField.setAccessible(true);
                 return declaredField;
             }
         }
@@ -169,6 +176,19 @@ public class Reflector {
     public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
         return Arrays.stream(clazz.getConstructors())
                 .filter(constructor -> constructor.getParameterCount() == numParams)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Constructor<?> getConstructor(Class<?> clazz, String... parameterTypeSimpleNames){
+        Function<Constructor<?>, List<String>> getParameterNames = constructor -> Arrays
+                .stream(constructor.getParameters())
+                .map(Parameter::getType)
+                .map(Class::getSimpleName)
+                .collect(Collectors.toList());
+        List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
+        return Arrays.stream(clazz.getConstructors())
+                .filter(constructor -> getParameterNames.equals(typeNames))
                 .findFirst()
                 .orElse(null);
     }
