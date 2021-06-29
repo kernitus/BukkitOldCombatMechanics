@@ -16,7 +16,7 @@ public enum ClassType {
             //   Group 1   Group 2
             String className = partialName.replaceAll("([a-z.]+)\\.([a-zA-Z.]+)", "$2");
 
-            return "net.minecraft." + className;
+            return "net.minecraft.server." + Reflector.getVersion() + "." + className;
         }
     },
     CRAFTBUKKIT {
