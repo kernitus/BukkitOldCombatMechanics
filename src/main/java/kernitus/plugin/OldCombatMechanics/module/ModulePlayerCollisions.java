@@ -2,12 +2,12 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketAdapter;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper.PacketType;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketManager;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.team.TeamPacket;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamUtils;

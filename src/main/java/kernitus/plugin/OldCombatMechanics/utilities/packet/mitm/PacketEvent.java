@@ -1,5 +1,6 @@
-package kernitus.plugin.OldCombatMechanics.utilities.packet;
+package kernitus.plugin.OldCombatMechanics.utilities.packet.mitm;
 
+import kernitus.plugin.OldCombatMechanics.utilities.packet.ImmutablePacket;
 import org.bukkit.entity.Player;
 
 /**

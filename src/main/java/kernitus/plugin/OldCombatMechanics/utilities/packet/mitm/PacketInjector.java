@@ -1,7 +1,9 @@
-package kernitus.plugin.OldCombatMechanics.utilities.packet;
+package kernitus.plugin.OldCombatMechanics.utilities.packet.mitm;
 
 import io.netty.channel.*;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketSender;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.entity.Player;
 

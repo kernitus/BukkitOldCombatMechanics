@@ -2,9 +2,9 @@ package kernitus.plugin.OldCombatMechanics.utilities.packet.sound;
 
 import kernitus.plugin.OldCombatMechanics.utilities.packet.ImmutablePacket;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 
 import java.lang.reflect.Field;
 import java.util.Optional;

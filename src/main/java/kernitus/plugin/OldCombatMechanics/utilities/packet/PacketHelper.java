@@ -2,7 +2,6 @@ package kernitus.plugin.OldCombatMechanics.utilities.packet;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 
 public class PacketHelper {
     private static final Class<?> NMS_PACKET_CLASS = Reflector.getClass(ClassType.NMS, "network.protocol.Packet");
@@ -32,5 +31,18 @@ public class PacketHelper {
      */
     public static ImmutablePacket wrap(Object nmsPacket){
         return () -> nmsPacket;
+    }
+
+    /**
+     * The type of a packet (in / out).
+     */
+    public enum PacketType {
+        PlayOut("PlayOut"), PlayIn("PlayIn");
+
+        public String prefix;
+
+        PacketType(String prefix){
+            this.prefix = prefix;
+        }
     }
 }

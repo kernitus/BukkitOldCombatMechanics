@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
 /**
  * A Packet sender
  */
-class PacketSender {
+public class PacketSender {
     private static final PacketSender instance = new PacketSender();
 
     private static final Method GET_HANDLE;
@@ -33,7 +33,7 @@ class PacketSender {
     /**
      * @return The Instance of the PacketSender
      */
-    static PacketSender getInstance(){
+    public static PacketSender getInstance(){
         return instance;
     }
 
@@ -43,7 +43,7 @@ class PacketSender {
      * @param packet The {@link ImmutablePacket} to send
      * @param player The Player to send it to
      */
-    void sendPacket(ImmutablePacket packet, Player player){
+    public void sendPacket(ImmutablePacket packet, Player player){
         Reflector.invokeMethod(SEND_PACKET, getConnection(player), packet.getNmsPacket());
     }
 
@@ -53,7 +53,7 @@ class PacketSender {
      * @param player The Player to get the Connection for
      * @return The Player's connection
      */
-    Object getConnection(Player player){
+    public Object getConnection(Player player){
         Object handle = Reflector.invokeMethod(GET_HANDLE, player);
 
         return Reflector.getFieldValue(PLAYER_CONNECTION_FIELD, handle);

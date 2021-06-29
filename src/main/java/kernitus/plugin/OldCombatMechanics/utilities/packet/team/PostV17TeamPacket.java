@@ -1,9 +1,9 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet.team;
 
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
 import net.minecraft.EnumChatFormat;
