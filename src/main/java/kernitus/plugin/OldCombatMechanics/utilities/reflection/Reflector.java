@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by Rayzr522 on 7/11/16.
@@ -82,6 +83,7 @@ public class Reflector {
     public static Class<?> getClass(ClassType type, String name){
         return getClass(type.qualifyClassName(name));
     }
+
     public static Class<?> getClass(String fqn){
         try{
             return Class.forName(fqn);
@@ -174,8 +176,12 @@ public class Reflector {
     }
 
     public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
-        return Arrays.stream(clazz.getConstructors())
+        return Stream.concat(
+                Arrays.stream(clazz.getDeclaredConstructors()),
+                Arrays.stream(clazz.getConstructors())
+        )
                 .filter(constructor -> constructor.getParameterCount() == numParams)
+                .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
@@ -187,8 +193,12 @@ public class Reflector {
                 .map(Class::getSimpleName)
                 .collect(Collectors.toList());
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
-        return Arrays.stream(clazz.getConstructors())
-                .filter(constructor -> getParameterNames.equals(typeNames))
+        return Stream.concat(
+                Arrays.stream(clazz.getDeclaredConstructors()),
+                Arrays.stream(clazz.getConstructors())
+        )
+                .filter(constructor -> getParameterNames.apply(constructor).equals(typeNames))
+                .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
@@ -215,6 +225,21 @@ public class Reflector {
         return false;
     }
 
+    public static <T> T getUnchecked(UncheckedReflectionSupplier<T> supplier){
+        try{
+            return supplier.get();
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void doUnchecked(UncheckedReflectionRunnable runnable){
+        try{
+            runnable.run();
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException(e);
+        }
+    }
 
     public static class Packets {
         public static Class<?> getPacket(PacketType type, String name){
@@ -228,5 +253,13 @@ public class Reflector {
                 e.printStackTrace();
             }
         }
+    }
+
+    public interface UncheckedReflectionSupplier<T> {
+        T get() throws ReflectiveOperationException;
+    }
+
+    public interface UncheckedReflectionRunnable {
+        void run() throws ReflectiveOperationException;
     }
 }

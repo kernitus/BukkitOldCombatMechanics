@@ -2,15 +2,15 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.fun.TeamPacket;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
-import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamPacket;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -40,12 +40,10 @@ public class ModulePlayerCollisions extends Module {
 
         // Disband our OCM teams in onDisable so they can be reused
         OCMMain.getInstance().addDisableListener(() -> {
-            if (!TeamUtils.isSetup()) return;
-
             synchronized(playerTeamMap){
                 for(Map.Entry<Player, TeamPacket> entry : playerTeamMap.entrySet()){
-                    if(TeamUtils.isOcmTeam(entry.getValue().getTeamName())){
-                        TeamUtils.disband(entry.getValue().getTeamName(), entry.getKey());
+                    if(TeamUtils.isOcmTeam(entry.getValue())){
+                        TeamUtils.disband(entry.getValue().getName(), entry.getKey());
                     }
                 }
             }
@@ -76,8 +74,6 @@ public class ModulePlayerCollisions extends Module {
      * @param player the player to send it to
      */
     private void createOrUpdateTeam(Player player){
-        if(!TeamUtils.isSetup()) return;
-
         CollisionRule collisionRule = isEnabled(player.getWorld())
                 ? CollisionRule.NEVER
                 : CollisionRule.ALWAYS;
@@ -85,8 +81,11 @@ public class ModulePlayerCollisions extends Module {
         synchronized(playerTeamMap){
             if(playerTeamMap.containsKey(player)){
                 TeamPacket teamPacket = playerTeamMap.get(player);
-                teamPacket.setTeamAction(TeamAction.UPDATE);
-                teamPacket.setCollisionRule(collisionRule);
+                teamPacket = teamPacket.withAction(TeamAction.UPDATE);
+                teamPacket = teamPacket.withCollisionRule(collisionRule);
+
+                playerTeamMap.put(player, teamPacket);
+
                 teamPacket.send(player);
             } else {
                 debug("Fake collision team created for you.", player);
@@ -102,8 +101,6 @@ public class ModulePlayerCollisions extends Module {
      * @param collisionRule the {@link CollisionRule} to use
      */
     private void createAndSendNewTeam(Player player, CollisionRule collisionRule){
-        if (!TeamUtils.isSetup()) return;
-
         synchronized(playerTeamMap){
             TeamPacket newTeamPacket = TeamUtils.craftTeamCreatePacket(player, collisionRule);
             playerTeamMap.put(player, newTeamPacket);
@@ -138,14 +135,15 @@ public class ModulePlayerCollisions extends Module {
 
         private void handlePacket(PacketEvent packetEvent){
             Object nmsPacket = packetEvent.getPacket().getNMSPacket();
+            TeamPacket incomingTeamPacket = TeamPacket.from(nmsPacket);
 
             CollisionRule collisionRule = isEnabled(packetEvent.getPlayer().getWorld())
                     ? CollisionRule.NEVER
                     : CollisionRule.ALWAYS;
 
 
-            if(interestingForPlayer(nmsPacket, packetEvent.getPlayer())){
-                updateToPacket(packetEvent.getPlayer(), nmsPacket);
+            if(interestingForPlayer(incomingTeamPacket, packetEvent.getPlayer())){
+                updateToPacket(packetEvent.getPlayer(), incomingTeamPacket);
             }
 
             // always update, only react when enabled
@@ -155,14 +153,15 @@ public class ModulePlayerCollisions extends Module {
 
             Messenger.debug(
                     "[%s-%s] Collision rule set to %s for action %s in world %s.",
-                    TeamUtils.getTeamName(nmsPacket),
-                    Optional.ofNullable(playerTeamMap.get(packetEvent.getPlayer())).map(TeamPacket::getTeamName),
+                    incomingTeamPacket.getName(),
+                    Optional.ofNullable(playerTeamMap.get(packetEvent.getPlayer())).map(TeamPacket::getName),
                     collisionRule,
-                    TeamUtils.getPacketAction(nmsPacket),
+                    incomingTeamPacket.getAction(),
                     packetEvent.getPlayer().getWorld().getName()
             );
 
-            TeamUtils.setCollisionRule(nmsPacket, collisionRule);
+            incomingTeamPacket = incomingTeamPacket.withCollisionRule(collisionRule);
+            packetEvent.setPacket(Packet.createFromNMSPacket(incomingTeamPacket.getNmsPacket()));
 
             // Reinstate if it was disbanded to have the correct rule
             if(!playerTeamMap.containsKey(packetEvent.getPlayer())){
@@ -170,43 +169,43 @@ public class ModulePlayerCollisions extends Module {
             }
         }
 
-        private boolean interestingForPlayer(Object packet, Player player){
+        private boolean interestingForPlayer(TeamPacket packet, Player player){
             if(TeamUtils.targetsPlayer(packet, player)){
                 return true;
             }
             TeamPacket storedTeam = playerTeamMap.get(player);
-            return storedTeam != null && storedTeam.getTeamName().equals(TeamUtils.getTeamName(packet));
+            return storedTeam != null && storedTeam.getName().equals(packet.getName());
         }
 
         /**
          * Updates the given {@link TeamPacket} to the NMS packet and removes it from the cache, if it was disbanded.
          */
-        private void updateToPacket(Player player, Object nmsPacket){
-            String nmsPacketTeamName = TeamUtils.getTeamName(nmsPacket);
-            TeamPacket current = playerTeamMap.computeIfAbsent(player, __ -> new TeamPacket());
+        private void updateToPacket(Player player, TeamPacket incomingPacket){
+            Optional<TeamPacket> current = Optional.ofNullable(playerTeamMap.get(player));
 
             // Only we disband these teams and we do not need to create a new team in response.
             // So just ignore those disband packets. The player team map was already updated when the
             // disband packet was sent
-            if(TeamUtils.getPacketAction(nmsPacket) == TeamAction.DISBAND && TeamUtils.isOcmTeam(nmsPacketTeamName)){
+            if(incomingPacket.getAction() == TeamAction.DISBAND && TeamUtils.isOcmTeam(incomingPacket)){
                 return;
             }
 
+            boolean currentIsOcmTeam = current.isPresent() && TeamUtils.isOcmTeam(current.get());
             // We already have an OCM team!
-            if(TeamUtils.getPacketAction(nmsPacket) == TeamAction.DISBAND && TeamUtils.isOcmTeam(current.getTeamName())){
+            if(incomingPacket.getAction() == TeamAction.DISBAND && currentIsOcmTeam){
                 return;
             }
 
             // We got a new team (i.e. not an update)
-            if(!nmsPacketTeamName.equals(current.getTeamName())){
+            if(!current.isPresent() || !incomingPacket.getName().equals(current.get().getName())){
                 // The old team is ours -> Disband it
-                if(TeamUtils.isOcmTeam(current.getTeamName())){
-                    TeamUtils.disband(current.getTeamName(), player);
+                if(currentIsOcmTeam){
+                    TeamUtils.disband(current.get().getName(), player);
                 }
-                current = new TeamPacket(nmsPacket);
+                current = Optional.of(incomingPacket);
             }
 
-            Optional<TeamPacket> newPacket = current.adjustToUpdate(nmsPacket, player);
+            Optional<TeamPacket> newPacket = current.get().adjustedTo(incomingPacket, player);
 
             if(newPacket.isPresent()){
                 playerTeamMap.put(player, newPacket.get());
