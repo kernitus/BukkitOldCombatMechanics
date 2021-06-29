@@ -1,4 +1,4 @@
-package kernitus.plugin.OldCombatMechanics.utilities.packet.fun;
+package kernitus.plugin.OldCombatMechanics.utilities.packet.team;
 
 import kernitus.plugin.OldCombatMechanics.utilities.packet.ImmutablePacket;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;

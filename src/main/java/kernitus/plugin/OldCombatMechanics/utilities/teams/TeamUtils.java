@@ -1,6 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.teams;
 
-import kernitus.plugin.OldCombatMechanics.utilities.packet.fun.TeamPacket;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.team.TeamPacket;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;

@@ -6,7 +6,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.fun.TeamPacket;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.team.TeamPacket;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
