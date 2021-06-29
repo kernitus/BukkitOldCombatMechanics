@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet.fun;
 
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
@@ -72,7 +73,7 @@ public class PostV17TeamPacket extends TeamPacket {
         private final Constructor<?> constructorScoreboardTeam;
 
         private PacketAccess(){
-            Class<?> packetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+            Class<?> packetClass = PacketHelper.getPacketClass(PacketType.PlayOut, "ScoreboardTeam");
             Class<?> dataClass = Reflector.getClass(packetClass.getName() + "$b");
 
             this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "j");

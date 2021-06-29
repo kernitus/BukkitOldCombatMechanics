@@ -1,8 +1,8 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.ImmutablePacket;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.Bukkit;
 
@@ -11,7 +11,7 @@ import java.util.logging.Level;
 
 abstract class AbstractSweepPacketDetector implements SweepPacketDetector {
 
-    static final Class<?> PACKET_CLASS = Reflector.Packets.getPacket(PacketType.PlayOut, "WorldParticles");
+    static final Class<?> PACKET_CLASS = PacketHelper.getPacketClass(PacketType.PlayOut, "WorldParticles");
 
     /**
      * Checks if the type of the packet is correct.
@@ -19,7 +19,7 @@ abstract class AbstractSweepPacketDetector implements SweepPacketDetector {
      * @param packet the packet
      * @return true if it is of the correct type
      */
-    boolean isWrongPacketType(Packet packet){
+    boolean isWrongPacketType(ImmutablePacket packet){
         return packet.getPacketClass() != PACKET_CLASS;
     }
 

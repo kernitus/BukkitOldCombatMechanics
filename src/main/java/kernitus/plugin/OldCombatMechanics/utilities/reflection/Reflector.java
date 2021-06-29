@@ -1,10 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
-import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -17,25 +14,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Created by Rayzr522 on 7/11/16.
- */
-
 public class Reflector {
-    private static String version = "";
+    private static String version;
 
     static{
         try{
             version = Bukkit.getServer().getClass().getName().split("\\.")[3];
-
-            Class<?> CRAFT_PLAYER = getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer");
-            assert CRAFT_PLAYER != null;
-
         } catch(Exception e){
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
         }
-
     }
 
     public static String getVersion(){
@@ -88,8 +76,7 @@ public class Reflector {
         try{
             return Class.forName(fqn);
         } catch(ClassNotFoundException e){
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Couldn't load class " + fqn, e);
         }
     }
 
@@ -171,10 +158,6 @@ public class Reflector {
         }
     }
 
-    public static void setFieldValue(Object object, String fieldName, Object value) throws Exception{
-        getInaccessibleField(object.getClass(), fieldName).set(object, value);
-    }
-
     public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
         return Stream.concat(
                 Arrays.stream(clazz.getDeclaredConstructors()),
@@ -238,20 +221,6 @@ public class Reflector {
             runnable.run();
         } catch(ReflectiveOperationException e){
             throw new RuntimeException(e);
-        }
-    }
-
-    public static class Packets {
-        public static Class<?> getPacket(PacketType type, String name){
-            return Reflector.getClass(ClassType.NMS, "network.protocol.game.Packet" + type.prefix + name);
-        }
-
-        public static void sendPacket(Player player, Object packet){
-            try{
-                Packet.createFromNMSPacket(packet).send(player);
-            } catch(Exception e){
-                e.printStackTrace();
-            }
         }
     }
 

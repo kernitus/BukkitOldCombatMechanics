@@ -1,6 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep;
 
-import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.ImmutablePacket;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 
 public interface SweepPacketDetector {
@@ -11,7 +11,7 @@ public interface SweepPacketDetector {
      * @param packet the packet to check
      * @return true if this is a sweep packet
      */
-    boolean isSweepPacket(Packet packet);
+    boolean isSweepPacket(ImmutablePacket packet);
 
     /**
      * Returns the instance of a detector that should be compatible with the current server version.

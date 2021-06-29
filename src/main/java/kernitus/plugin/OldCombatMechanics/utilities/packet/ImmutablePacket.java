@@ -9,7 +9,11 @@ public interface ImmutablePacket {
      *
      * @param players the players to send it to
      */
-    void send(Player... players);
+    default void send(Player... players) {
+        for(Player player : players){
+            PacketSender.getInstance().sendPacket(this, player);
+        }
+    }
 
     /**
      * Returns the underlying packet object. The packet object is immutable in newer versions. This method is provided
@@ -18,4 +22,12 @@ public interface ImmutablePacket {
      * @return the underlying nms packet
      */
     Object getNmsPacket();
+
+    /**
+     * @implNote this method return {@code getNmsPacket().getClass()}
+     * @return the class of the nms packet
+     */
+    default Class<?> getPacketClass() {
+        return getNmsPacket().getClass();
+    }
 }

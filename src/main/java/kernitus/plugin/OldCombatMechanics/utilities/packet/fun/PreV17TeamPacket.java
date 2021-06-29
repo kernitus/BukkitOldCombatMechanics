@@ -1,5 +1,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.packet.fun;
 
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
@@ -59,7 +60,7 @@ public class PreV17TeamPacket extends TeamPacket {
         private final Constructor<?> constructorTeamPacket;
 
         private PacketAccess(){
-            Class<?> packetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+            Class<?> packetClass = PacketHelper.getPacketClass(PacketType.PlayOut, "ScoreboardTeam");
             this.fieldCollisionRule = Reflector.getInaccessibleField(packetClass, "f");
             this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "h");
             this.fieldAction = Reflector.getInaccessibleField(packetClass, "i");

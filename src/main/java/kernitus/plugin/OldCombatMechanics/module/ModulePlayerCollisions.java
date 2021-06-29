@@ -2,12 +2,11 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.fun.TeamPacket;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.CollisionRule;
 import kernitus.plugin.OldCombatMechanics.utilities.teams.TeamAction;
@@ -120,7 +119,7 @@ public class ModulePlayerCollisions extends Module {
 
     private class CollisionPacketListener extends PacketAdapter {
 
-        private final Class<?> targetClass = Reflector.Packets.getPacket(PacketType.PlayOut, "ScoreboardTeam");
+        private final Class<?> targetClass = PacketHelper.getPacketClass(PacketType.PlayOut, "ScoreboardTeam");
 
         @Override
         public void onPacketSend(PacketEvent packetEvent){
@@ -134,7 +133,7 @@ public class ModulePlayerCollisions extends Module {
         }
 
         private void handlePacket(PacketEvent packetEvent){
-            Object nmsPacket = packetEvent.getPacket().getNMSPacket();
+            Object nmsPacket = packetEvent.getPacket().getNmsPacket();
             TeamPacket incomingTeamPacket = TeamPacket.from(nmsPacket);
 
             CollisionRule collisionRule = isEnabled(packetEvent.getPlayer().getWorld())
@@ -161,7 +160,7 @@ public class ModulePlayerCollisions extends Module {
             );
 
             incomingTeamPacket = incomingTeamPacket.withCollisionRule(collisionRule);
-            packetEvent.setPacket(Packet.createFromNMSPacket(incomingTeamPacket.getNmsPacket()));
+            packetEvent.setPacket(PacketHelper.wrap(incomingTeamPacket.getNmsPacket()));
 
             // Reinstate if it was disbanded to have the correct rule
             if(!playerTeamMap.containsKey(packetEvent.getPlayer())){

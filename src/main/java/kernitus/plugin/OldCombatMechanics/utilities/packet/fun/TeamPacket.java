@@ -18,13 +18,6 @@ public abstract class TeamPacket implements ImmutablePacket {
     }
 
     @Override
-    public void send(Player... players){
-        for(Player player : players){
-            Reflector.Packets.sendPacket(player, getNmsPacket());
-        }
-    }
-
-    @Override
     public Object getNmsPacket(){
         return nmsPacket;
     }

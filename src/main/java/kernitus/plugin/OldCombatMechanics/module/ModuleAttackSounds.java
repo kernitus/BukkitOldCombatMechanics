@@ -5,6 +5,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
@@ -64,7 +65,7 @@ public class ModuleAttackSounds extends Module {
      */
     private class SoundListener extends PacketAdapter {
 
-        private final Class<?> PACKET_CLASS = Reflector.Packets.getPacket(PacketType.PlayOut, "NamedSoundEffect");
+        private final Class<?> PACKET_CLASS = PacketHelper.getPacketClass(PacketType.PlayOut, "NamedSoundEffect");
         private final Class<?> SOUND_EFFECT_CLASS = Reflector.getClass(ClassType.NMS, "sounds.SoundEffect");
         private final Class<?> MINECRAFT_KEY_CLASS = Reflector.getClass(ClassType.NMS, "resources.MinecraftKey");
 
@@ -80,14 +81,14 @@ public class ModuleAttackSounds extends Module {
             }
 
             try{
-                Object packet = packetEvent.getPacket().getNMSPacket();
+                Object nmsPacket = packetEvent.getPacket().getNmsPacket();
 
                 Object soundEffect = null;
 
-                for(Field field : packet.getClass().getDeclaredFields()){
+                for(Field field : nmsPacket.getClass().getDeclaredFields()){
                     if(field.getType() == SOUND_EFFECT_CLASS){
                         field.setAccessible(true);
-                        soundEffect = field.get(packet);
+                        soundEffect = field.get(nmsPacket);
                     }
                 }
 
