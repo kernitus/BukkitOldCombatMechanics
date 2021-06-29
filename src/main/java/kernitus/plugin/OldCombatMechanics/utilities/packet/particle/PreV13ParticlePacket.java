@@ -25,7 +25,7 @@ public class PreV13ParticlePacket extends ParticlePacket {
         }
 
         public static String getParticleName(Object nmsPacket){
-            return Reflector.getUnchecked(() -> (String) PARTICLE_PARAM_FIELD.get(nmsPacket));
+            return Reflector.getUnchecked(() -> PARTICLE_PARAM_FIELD.get(nmsPacket)).toString();
         }
     }
 
