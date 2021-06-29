@@ -7,15 +7,13 @@ import java.lang.reflect.Field;
 
 public class PreV13ParticlePacket extends ParticlePacket {
 
-    private static final PacketAccess PACKET_ACCESS = new PacketAccess();
-
     protected PreV13ParticlePacket(ImmutablePacket packet){
         super(packet);
     }
 
     @Override
     public String getParticleName(){
-        return PACKET_ACCESS.getParticleName(getNmsPacket());
+        return PacketAccess.getParticleName(getNmsPacket());
     }
 
     private static class PacketAccess {
@@ -26,7 +24,7 @@ public class PreV13ParticlePacket extends ParticlePacket {
             PARTICLE_PARAM_FIELD = Reflector.getFieldByType(PACKET_CLASS, "EnumParticle");
         }
 
-        public String getParticleName(Object nmsPacket){
+        public static String getParticleName(Object nmsPacket){
             return Reflector.getUnchecked(() -> (String) PARTICLE_PARAM_FIELD.get(nmsPacket));
         }
     }

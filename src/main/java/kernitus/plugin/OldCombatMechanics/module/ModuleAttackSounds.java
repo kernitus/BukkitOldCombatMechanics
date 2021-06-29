@@ -5,18 +5,14 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.sound.SoundPacket;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -65,10 +61,6 @@ public class ModuleAttackSounds extends Module {
      */
     private class SoundListener extends PacketAdapter {
 
-        private final Class<?> PACKET_CLASS = PacketHelper.getPacketClass(PacketType.PlayOut, "NamedSoundEffect");
-        private final Class<?> SOUND_EFFECT_CLASS = Reflector.getClass(ClassType.NMS, "sounds.SoundEffect");
-        private final Class<?> MINECRAFT_KEY_CLASS = Reflector.getClass(ClassType.NMS, "resources.MinecraftKey");
-
         private boolean disabledDueToError;
 
         @Override
@@ -76,51 +68,17 @@ public class ModuleAttackSounds extends Module {
             if(disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())){
                 return;
             }
-            if(PACKET_CLASS != packetEvent.getPacket().getPacketClass()){
-                return;
-            }
 
             try{
-                Object nmsPacket = packetEvent.getPacket().getNmsPacket();
-
-                Object soundEffect = null;
-
-                for(Field field : nmsPacket.getClass().getDeclaredFields()){
-                    if(field.getType() == SOUND_EFFECT_CLASS){
-                        field.setAccessible(true);
-                        soundEffect = field.get(nmsPacket);
-                    }
-                }
-
-                if(soundEffect == null){
-                    Messenger.warn("Sound effect field not found!");
-                    disabledDueToError = true;
-                    return;
-                }
-
-                Object minecraftKey = null;
-
-                for(Field field : soundEffect.getClass().getDeclaredFields()){
-                    if(field.getType() == MINECRAFT_KEY_CLASS){
-                        field.setAccessible(true);
-                        minecraftKey = field.get(soundEffect);
-                    }
-                }
-
-                if(minecraftKey == null){
-                    Messenger.warn("Minecraft key field not found!");
-                    disabledDueToError = true;
-                    return;
-                }
-
-                // Bit hacky to rely on the toString method
-                if(blockedSounds.contains(minecraftKey.toString())){
-                    if(Config.debugEnabled()){
-                        debug("Blocked sound " + minecraftKey, packetEvent.getPlayer());
-                    }
-                    packetEvent.setCancelled(true);
-                }
-            } catch(Exception e){
+                SoundPacket.from(packetEvent.getPacket())
+                        .filter(it -> blockedSounds.contains(it.getSoundName()))
+                        .ifPresent(packet -> {
+                            packetEvent.setCancelled(true);
+                            if(Config.debugEnabled()){
+                                debug("Blocked sound " + packet.getSoundName(), packetEvent.getPlayer());
+                            }
+                        });
+            } catch(Exception | ExceptionInInitializerError e){
                 disabledDueToError = true;
                 Messenger.warn(
                         e,

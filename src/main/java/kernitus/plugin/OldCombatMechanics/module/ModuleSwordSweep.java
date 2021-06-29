@@ -155,7 +155,7 @@ public class ModuleSwordSweep extends Module {
                 ParticlePacket.from(packetEvent.getPacket())
                         .filter(it -> it.getParticleName().toUpperCase(Locale.ROOT).contains("SWEEP"))
                         .ifPresent(e -> packetEvent.setCancelled(true));
-            } catch(Exception e){
+            } catch(Exception | ExceptionInInitializerError e){
                 disabledDueToError = true;
                 Messenger.warn(
                         e,

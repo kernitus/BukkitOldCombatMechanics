@@ -10,15 +10,13 @@ import java.util.Objects;
 
 class V13ParticlePacket extends ParticlePacket {
 
-    private static final PacketAccess PACKET_ACCESS = new PacketAccess();
-
     protected V13ParticlePacket(ImmutablePacket packet){
         super(packet);
     }
 
     @Override
     public String getParticleName(){
-        return PACKET_ACCESS.getParticleName(getNmsPacket());
+        return PacketAccess.getParticleName(getNmsPacket());
     }
 
     private static class PacketAccess {
@@ -39,7 +37,7 @@ class V13ParticlePacket extends ParticlePacket {
             Objects.requireNonNull(PARTICLE_PARAM_NAME_METHOD);
         }
 
-        public String getParticleName(Object nmsPacket){
+        public static String getParticleName(Object nmsPacket){
             Object particleParam = Reflector.getUnchecked(() -> PARTICLE_PARAM_FIELD.get(nmsPacket));
             return Reflector.invokeMethod(PARTICLE_PARAM_NAME_METHOD, particleParam);
         }
