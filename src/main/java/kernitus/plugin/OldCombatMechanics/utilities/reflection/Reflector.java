@@ -88,6 +88,13 @@ public class Reflector {
                 .orElse(null);
     }
 
+    public static Method getMethod(Class<?> clazz, String name, int parameterCount){
+        return Arrays.stream(clazz.getMethods())
+                .filter(method -> method.getName().equals(name) && method.getParameterCount() == parameterCount)
+                .findFirst()
+                .orElse(null);
+    }
+
     public static <T> T invokeMethod(Method method, Object handle, Object... params){
         try{
             @SuppressWarnings("unchecked")
