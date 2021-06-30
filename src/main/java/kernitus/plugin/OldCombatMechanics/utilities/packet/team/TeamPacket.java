@@ -52,14 +52,14 @@ public abstract class TeamPacket implements ImmutablePacket {
 
     public static TeamPacket create(TeamAction action, CollisionRule collisionRule, String name, Collection<Player> players){
         if(Reflector.versionIsNewerOrEqualAs(1, 17, 0)){
-            return PostV17TeamPacket.create(action, collisionRule, name, players);
+            return V17TeamPacket.create(action, collisionRule, name, players);
         }
         return PreV17TeamPacket.create(action, collisionRule, name, players);
     }
 
     public static TeamPacket from(Object nmsPacket){
         if(Reflector.versionIsNewerOrEqualAs(1, 17, 0)){
-            return new PostV17TeamPacket(nmsPacket);
+            return new V17TeamPacket(nmsPacket);
         }
         return new PreV17TeamPacket(nmsPacket);
     }

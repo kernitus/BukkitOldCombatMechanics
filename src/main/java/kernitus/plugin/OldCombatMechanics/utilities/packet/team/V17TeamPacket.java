@@ -16,15 +16,15 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class PostV17TeamPacket extends TeamPacket {
+public class V17TeamPacket extends TeamPacket {
 
-    protected PostV17TeamPacket(Object nmsPacket){
+    protected V17TeamPacket(Object nmsPacket){
         super(nmsPacket);
     }
 
     @Override
     public TeamPacket withCollisionRule(CollisionRule collisionRule){
-        return new PostV17TeamPacket(PacketAccess.setCollisionRule(getNmsPacket(), collisionRule));
+        return new V17TeamPacket(PacketAccess.setCollisionRule(getNmsPacket(), collisionRule));
     }
 
     @Override
@@ -34,7 +34,7 @@ public class PostV17TeamPacket extends TeamPacket {
 
     @Override
     public TeamPacket withAction(TeamAction action){
-        return new PostV17TeamPacket(PacketAccess.setAction(getNmsPacket(), action));
+        return new V17TeamPacket(PacketAccess.setAction(getNmsPacket(), action));
     }
 
     @Override
@@ -48,7 +48,7 @@ public class PostV17TeamPacket extends TeamPacket {
     }
 
     public static TeamPacket create(TeamAction action, CollisionRule collisionRule, String name, Collection<Player> players){
-        return new PostV17TeamPacket(PacketAccess.createTeamPacket(action, collisionRule, name, players));
+        return new V17TeamPacket(PacketAccess.createTeamPacket(action, collisionRule, name, players));
     }
 
     private static class PacketAccess {
