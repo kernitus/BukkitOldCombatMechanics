@@ -1,7 +1,9 @@
-package kernitus.plugin.OldCombatMechanics.utilities.packet;
+package kernitus.plugin.OldCombatMechanics.utilities.packet.mitm;
 
 import io.netty.channel.*;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketHelper;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketSender;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.entity.Player;
 
@@ -19,8 +21,8 @@ class PacketInjector extends ChannelDuplexHandler {
     private volatile boolean isClosed;
     private Channel channel;
     // There are a lot more reads than writes, so performance should be okay
-    private List<PacketListener> packetListeners = new CopyOnWriteArrayList<>();
-    private WeakReference<Player> playerWeakReference;
+    private final List<PacketListener> packetListeners = new CopyOnWriteArrayList<>();
+    private final WeakReference<Player> playerWeakReference;
 
     /**
      * Must be detached manually!
@@ -45,7 +47,6 @@ class PacketInjector extends ChannelDuplexHandler {
      * @param player The player to attach to
      */
     private void attach(Player player) throws Exception{
-
         Object playerConnection = PacketSender.getInstance().getConnection(player);
 
         if(playerConnection == null){
@@ -53,9 +54,9 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
 
-        Object manager = Reflector.getFieldValue(playerConnection, "networkManager");
+        Object manager = Reflector.getDeclaredFieldValueByType(playerConnection, "NetworkManager");
 
-        channel = (Channel) Reflector.getFieldValue(manager, "channel");
+        channel = (Channel) Reflector.getDeclaredFieldValueByType(manager, "Channel");
 
         // remove old listener, if it wasn't properly cleared up
         if(channel.pipeline().get("ocm_handler") != null){
@@ -157,13 +158,13 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
 
-        if(!Packet.isNmsPacket(packet)){
+        if(!PacketHelper.isNmsPacket(packet)){
             debug("Received a packet THAT IS NO PACKET: " + packet.getClass() + " " + packet);
             return;
         }
 
         PacketEvent event = new PacketEvent(
-                packet,
+                PacketHelper.wrap(packet),
                 PacketEvent.ConnectionDirection.TO_CLIENT,
                 playerWeakReference.get()
         );
@@ -198,13 +199,13 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
 
-        if(!Packet.isNmsPacket(packet)){
+        if(!PacketHelper.isNmsPacket(packet)){
             debug("Received a packet THAT IS NO PACKET: " + packet.getClass() + " " + packet);
             return;
         }
 
         PacketEvent event = new PacketEvent(
-                packet,
+                PacketHelper.wrap(packet),
                 PacketEvent.ConnectionDirection.TO_SERVER,
                 playerWeakReference.get()
         );

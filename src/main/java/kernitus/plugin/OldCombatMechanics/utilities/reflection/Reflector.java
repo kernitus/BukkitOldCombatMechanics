@@ -1,37 +1,29 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
-import kernitus.plugin.OldCombatMechanics.utilities.packet.Packet;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.PacketType;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
-
-/**
- * Created by Rayzr522 on 7/11/16.
- */
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Reflector {
-    private static String version = "";
+    private static String version;
 
     static{
         try{
             version = Bukkit.getServer().getClass().getName().split("\\.")[3];
-
-            Class<?> CRAFT_PLAYER = getClass(ClassType.CRAFTBUKKIT, "entity.CraftPlayer");
-            assert CRAFT_PLAYER != null;
-
         } catch(Exception e){
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
         }
-
     }
 
     public static String getVersion(){
@@ -77,11 +69,14 @@ public class Reflector {
     }
 
     public static Class<?> getClass(ClassType type, String name){
+        return getClass(type.qualifyClassName(name));
+    }
+
+    public static Class<?> getClass(String fqn){
         try{
-            return Class.forName(String.format("%s.%s.%s", type.getPackage(), version, name));
+            return Class.forName(fqn);
         } catch(ClassNotFoundException e){
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Couldn't load class " + fqn, e);
         }
     }
 
@@ -89,6 +84,13 @@ public class Reflector {
     public static Method getMethod(Class<?> clazz, String name){
         return Arrays.stream(clazz.getMethods())
                 .filter(method -> method.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Method getMethod(Class<?> clazz, String name, int parameterCount){
+        return Arrays.stream(clazz.getMethods())
+                .filter(method -> method.getName().equals(name) && method.getParameterCount() == parameterCount)
                 .findFirst()
                 .orElse(null);
     }
@@ -128,40 +130,31 @@ public class Reflector {
         }
     }
 
+    public static Field getFieldByType(Class<?> clazz, String simpleClassName){
+        for(Field declaredField : clazz.getDeclaredFields()){
+            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+                declaredField.setAccessible(true);
+                return declaredField;
+            }
+        }
+        throw new RuntimeException("Field with type " + simpleClassName + " not found");
+    }
+
     public static Field getInaccessibleField(Class<?> clazz, String fieldName){
         Field field = getField(clazz, fieldName);
         field.setAccessible(true);
         return field;
     }
 
-    public static Object getFieldValue(Object object, String fieldName) throws Exception{
-        return findFieldWithinHierarchy(object, fieldName).get(object);
-    }
-
-    /**
-     * Finds a field within the class or any superclasses (but ignored interfaces).
-     *
-     * @param object    the handle and start for the search
-     * @param fieldName the name of the field
-     * @return the found field
-     * @throws NoSuchFieldException if the field couldn't be found
-     */
-    private static Field findFieldWithinHierarchy(Object object, String fieldName) throws NoSuchFieldException{
-        Class<?> clazz = object.getClass();
-
-        while(clazz != null){
-            for(Field field : clazz.getDeclaredFields()){
-                if(field.getName().equals(fieldName)){
-                    field.setAccessible(true);
-                    return field;
-                }
+    public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception{
+        for(Field declaredField : object.getClass().getDeclaredFields()){
+            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+                declaredField.setAccessible(true);
+                return declaredField.get(object);
             }
-            clazz = clazz.getSuperclass();
         }
-
-        throw new NoSuchFieldException(fieldName);
+        throw new NoSuchFieldException("Couldn't find field with type " + simpleClassName + " in " + object.getClass());
     }
-
 
     public static Object getFieldValue(Field field, Object handle){
         field.setAccessible(true);
@@ -172,13 +165,30 @@ public class Reflector {
         }
     }
 
-    public static void setFieldValue(Object object, String fieldName, Object value) throws Exception{
-        getInaccessibleField(object.getClass(), fieldName).set(object, value);
+    public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
+        return Stream.concat(
+                Arrays.stream(clazz.getDeclaredConstructors()),
+                Arrays.stream(clazz.getConstructors())
+        )
+                .filter(constructor -> constructor.getParameterCount() == numParams)
+                .peek(it -> it.setAccessible(true))
+                .findFirst()
+                .orElse(null);
     }
 
-    public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
-        return Arrays.stream(clazz.getConstructors())
-                .filter(constructor -> constructor.getParameterCount() == numParams)
+    public static Constructor<?> getConstructor(Class<?> clazz, String... parameterTypeSimpleNames){
+        Function<Constructor<?>, List<String>> getParameterNames = constructor -> Arrays
+                .stream(constructor.getParameters())
+                .map(Parameter::getType)
+                .map(Class::getSimpleName)
+                .collect(Collectors.toList());
+        List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
+        return Stream.concat(
+                Arrays.stream(clazz.getDeclaredConstructors()),
+                Arrays.stream(clazz.getConstructors())
+        )
+                .filter(constructor -> getParameterNames.apply(constructor).equals(typeNames))
+                .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
@@ -205,18 +215,27 @@ public class Reflector {
         return false;
     }
 
-
-    public static class Packets {
-        public static Class<?> getPacket(PacketType type, String name){
-            return Reflector.getClass(ClassType.NMS, "Packet" + type.prefix + name);
+    public static <T> T getUnchecked(UncheckedReflectionSupplier<T> supplier){
+        try{
+            return supplier.get();
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException(e);
         }
+    }
 
-        public static void sendPacket(Player player, Object packet){
-            try{
-                Packet.createFromNMSPacket(packet).send(player);
-            } catch(Exception e){
-                e.printStackTrace();
-            }
+    public static void doUnchecked(UncheckedReflectionRunnable runnable){
+        try{
+            runnable.run();
+        } catch(ReflectiveOperationException e){
+            throw new RuntimeException(e);
         }
+    }
+
+    public interface UncheckedReflectionSupplier<T> {
+        T get() throws ReflectiveOperationException;
+    }
+
+    public interface UncheckedReflectionRunnable {
+        void run() throws ReflectiveOperationException;
     }
 }

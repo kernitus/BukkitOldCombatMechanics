@@ -3,10 +3,10 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketAdapter;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketEvent;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.PacketManager;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.sweep.SweepPacketDetector;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketAdapter;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketManager;
+import kernitus.plugin.OldCombatMechanics.utilities.packet.particle.ParticlePacket;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,16 +24,17 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * A module to disable the sweep attack.
  */
 public class ModuleSwordSweep extends Module {
 
-    private BukkitRunnable task;
-    private List<Location> sweepLocations = new ArrayList<>();
+    private final List<Location> sweepLocations = new ArrayList<>();
+    private final ParticleListener particleListener;
     private EntityDamageEvent.DamageCause sweepDamageCause;
-    private ParticleListener particleListener;
+    private BukkitRunnable task;
 
     public ModuleSwordSweep(OCMMain plugin){
         super(plugin, "disable-sword-sweep");
@@ -143,11 +144,6 @@ public class ModuleSwordSweep extends Module {
     private class ParticleListener extends PacketAdapter {
 
         private boolean disabledDueToError;
-        private final SweepPacketDetector packetDetector;
-
-        public ParticleListener(){
-            this.packetDetector = SweepPacketDetector.getInstance();
-        }
 
         @Override
         public void onPacketSend(PacketEvent packetEvent){
@@ -156,10 +152,10 @@ public class ModuleSwordSweep extends Module {
             }
 
             try{
-                if(packetDetector.isSweepPacket(packetEvent.getPacket())){
-                    packetEvent.setCancelled(true);
-                }
-            } catch(Exception e){
+                ParticlePacket.from(packetEvent.getPacket())
+                        .filter(it -> it.getParticleName().toUpperCase(Locale.ROOT).contains("SWEEP"))
+                        .ifPresent(e -> packetEvent.setCancelled(true));
+            } catch(Exception | ExceptionInInitializerError e){
                 disabledDueToError = true;
                 Messenger.warn(
                         e,

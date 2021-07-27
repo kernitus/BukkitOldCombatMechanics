@@ -1,4 +1,4 @@
-package kernitus.plugin.OldCombatMechanics.utilities.packet;
+package kernitus.plugin.OldCombatMechanics.utilities.packet.mitm;
 
 /**
  * Skeleton implementation of {@link PacketListener}.
