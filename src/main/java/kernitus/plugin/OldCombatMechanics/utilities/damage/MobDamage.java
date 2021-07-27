@@ -26,6 +26,8 @@ public class MobDamage {
                 .put("PHANTOM", Enchantment.DAMAGE_UNDEAD)
                 .put("DROWNED", Enchantment.DAMAGE_UNDEAD)
                 .put("ZOGLIN", Enchantment.DAMAGE_UNDEAD)
+                .put("ZOMBIE_HORSE", Enchantment.DAMAGE_UNDEAD)
+                .put("ZOMBIE_VILLAGER", Enchantment.DAMAGE_UNDEAD)
 
                 // Arthropods (https://minecraft.gamepedia.com/Arthropod)
                 .put("SPIDER", Enchantment.DAMAGE_ARTHROPODS)
