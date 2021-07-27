@@ -35,9 +35,13 @@ public class ModuleOldArmourStrength extends Module {
             EntityDamageEvent.DamageCause.STARVATION,
             EntityDamageEvent.DamageCause.FALL,
             EntityDamageEvent.DamageCause.MAGIC,
-            EntityDamageEvent.DamageCause.LIGHTNING,
-            EntityDamageEvent.DamageCause.FREEZE
+            EntityDamageEvent.DamageCause.LIGHTNING
     );
+
+    static {
+        if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
+            NON_REDUCED_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
+    }
 
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
