@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -14,7 +15,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -41,6 +41,7 @@ public class ModulePlayerKnockback extends Module {
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");
         reload();
+        Bukkit.getScheduler().runTaskTimer(plugin, playerKnockbackHashMap::clear, 1L, 1L);
     }
 
     @Override
@@ -53,19 +54,14 @@ public class ModulePlayerKnockback extends Module {
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualAs(1, 16, 0);
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent e) {
-        playerKnockbackHashMap.remove(e.getPlayer().getUniqueId());
-    }
-
     // Vanilla does its own knockback, so we need to set it again.
     // priority = lowest because we are ignoring the existing velocity, which could break other plugins
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
         final UUID uuid = event.getPlayer().getUniqueId();
-        if (!playerKnockbackHashMap.containsKey(uuid)) return;
-        event.setVelocity(playerKnockbackHashMap.get(uuid));
-        playerKnockbackHashMap.remove(uuid);
+        Vector knockback = playerKnockbackHashMap.remove(uuid);
+        if (knockback == null) return;
+        event.setVelocity(knockback);
     }
 
     @EventHandler
