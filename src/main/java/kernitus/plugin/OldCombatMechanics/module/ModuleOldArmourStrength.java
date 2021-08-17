@@ -69,14 +69,16 @@ public class ModuleOldArmourStrength extends Module {
             e.setDamage(EntityDamageEvent.DamageModifier.ARMOR, -reducedDamage);
         }
 
+        //Reset MAGIC (Armour enchants) damage
+         e.setDamage(EntityDamageEvent.DamageModifier.MAGIC, 0);
+
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
         final double enchantmentReductionPercentage = e.getFinalDamage() <= 0 ? 0 :
                 calculateEnchantmentReductionPercentage(damagedEntity.getEquipment(), e.getCause());
-
+       
+	 
         if (enchantmentReductionPercentage > 0) {
-            //Reset MAGIC (Armour enchants) damage
-            e.setDamage(EntityDamageEvent.DamageModifier.MAGIC, 0);
-
+  
             //Set new MAGIC (Armour enchants) damage
             e.setDamage(EntityDamageEvent.DamageModifier.MAGIC,
                     -e.getFinalDamage() * enchantmentReductionPercentage);
@@ -96,7 +98,7 @@ public class ModuleOldArmourStrength extends Module {
                     if (!enchantmentType.protectsAgainst(cause)) continue;
 
                     int enchantmentLevel = armourItem.getEnchantmentLevel(enchantmentType.getEnchantment());
-
+					
                     if (enchantmentLevel > 0) {
                         totalEpf += enchantmentType.getEpf(enchantmentLevel);
                     }
