@@ -38,12 +38,13 @@ public class EntityDamageByEntityListener extends Module {
         OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
                 (damager, event.getEntity(), event.getCause(), event.getDamage());
 
+        // Call event for the other modules to make their modifications
         plugin.getServer().getPluginManager().callEvent(e);
 
         if (e.isCancelled()) return;
 
-        //Re-calculate modified damage and set it back to original event
-        // Damage order: base + potion effects + critical hit + enchantments + armour effects
+        // Now we re-calculate damage modified by the modules and set it back to original event
+        // Damage order: base -> potion effects -> critical hit -> enchantments -> armour effects
         double newDamage = e.getBaseDamage();
 
         debug("Base: " + e.getBaseDamage(), damager);
@@ -92,11 +93,11 @@ public class EntityDamageByEntityListener extends Module {
      * Set entity's last damage 1 tick after event. For some reason this is not updated to the final damage properly.
      * (Maybe a Spigot bug?) Hopefully other plugins vibe with this. Otherwise can store this just for OCM.
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void afterEntityDamage(EntityDamageByEntityEvent e) {
         final Entity damagee = e.getEntity();
         if (damagee instanceof LivingEntity) {
-            final double damage = e.getFinalDamage();
+            final double damage = e.getDamage();
 
             new BukkitRunnable() {
                 @Override
