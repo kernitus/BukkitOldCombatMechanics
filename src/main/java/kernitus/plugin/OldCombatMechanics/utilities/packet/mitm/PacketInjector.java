@@ -159,6 +159,12 @@ class PacketInjector extends ChannelDuplexHandler {
         }
 
         if(!PacketHelper.isNmsPacket(packet)){
+            // forward allowed packets
+            if(PacketHelper.isWhitelistedNonNmsPacket(packet)){
+                super.write(channelHandlerContext, packet, channelPromise);
+                return;
+            }
+
             debug("Received a packet THAT IS NO PACKET: " + packet.getClass() + " " + packet);
             return;
         }
