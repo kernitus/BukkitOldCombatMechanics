@@ -24,3 +24,8 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Archive jar file
+      uses: actions/upload-artifact@v2
+      with:
+        name: OldCombatMechanics
+        path: target/OldCombatMechanics.jar
