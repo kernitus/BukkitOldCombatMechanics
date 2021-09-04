@@ -16,7 +16,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.JavaPluginLoader;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +33,19 @@ public class OCMMain extends JavaPlugin {
     private List<Runnable> disableListeners = new ArrayList<>();
     private List<Runnable> enableListeners = new ArrayList<>();
     private List<Hook> hooks = new ArrayList<>();
+    private final boolean isTesting;
+
+    public OCMMain() {
+        super();
+        isTesting = false;
+    }
+
+    // Constructors for MockBukkit
+    protected OCMMain(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
+        super(loader, description, dataFolder, file);
+        isTesting = true;
+    }
+
 
     public static OCMMain getInstance() {
         return INSTANCE;
@@ -70,25 +85,26 @@ public class OCMMain extends JavaPlugin {
         // Initialise Config utility
         Config.initialise(this);
 
-        //BStats Metrics
-        Metrics metrics = new Metrics(this, 53);
+        if (!isTesting) {
+            //BStats Metrics
+            Metrics metrics = new Metrics(this, 53);
 
-        /*Custom bar charts currently disabled on bStats
-        metrics.addCustomChart(
-                new Metrics.SimpleBarChart(
-                        "enabled_modules",
-                        () -> ModuleLoader.getModules().stream()
-                                .filter(Module::isEnabled)
-                                .collect(Collectors.toMap(Module::toString, module -> 1))
-                )
-        );*/
+            metrics.addCustomChart(
+                    new Metrics.SimpleBarChart(
+                            "enabled_modules",
+                            () -> ModuleLoader.getModules().stream()
+                                    .filter(Module::isEnabled)
+                                    .collect(Collectors.toMap(Module::toString, module -> 1))
+                    )
+            );
 
-        // Custom Advanced Pie Chart:
-        metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
-                () -> ModuleLoader.getModules().stream()
-                        .filter(Module::isEnabled)
-                        .collect(Collectors.toMap(Module::toString, module -> 1))
-        ));
+            // Custom Advanced Pie Chart:
+            metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
+                    () -> ModuleLoader.getModules().stream()
+                            .filter(Module::isEnabled)
+                            .collect(Collectors.toMap(Module::toString, module -> 1))
+            ));
+        }
 
         enableListeners.forEach(Runnable::run);
 
@@ -117,29 +133,30 @@ public class OCMMain extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
         PluginDescriptionFile pdfFile = this.getDescription();
 
         disableListeners.forEach(Runnable::run);
 
-        // Properly handle Plugman load/unload.
-        List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
-                .filter(registeredListener -> registeredListener.getPlugin().equals(this))
-                .collect(Collectors.toList());
+        if(!isTesting) {
+            // Properly handle Plugman load/unload.
+            List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
+                    .filter(registeredListener -> registeredListener.getPlugin().equals(this))
+                    .collect(Collectors.toList());
 
-        // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
-        // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
-        Bukkit.getOnlinePlayers().forEach(player -> {
-            PlayerQuitEvent event = new PlayerQuitEvent(player, "");
+            // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
+            // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
+            Bukkit.getOnlinePlayers().forEach(player -> {
+                PlayerQuitEvent event = new PlayerQuitEvent(player, "");
 
-            quitListeners.forEach(registeredListener -> {
-                try {
-                    registeredListener.callEvent(event);
-                } catch (EventException e) {
-                    e.printStackTrace();
-                }
+                quitListeners.forEach(registeredListener -> {
+                    try {
+                        registeredListener.callEvent(event);
+                    } catch (EventException e) {
+                        e.printStackTrace();
+                    }
+                });
             });
-        });
+        }
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
@@ -151,7 +168,7 @@ public class OCMMain extends JavaPlugin {
 
         // Module listeners
         ModuleLoader.addModule(new ModuleAttackCooldown(this));
-        ModuleLoader.addModule(new ModulePlayerCollisions(this));
+        if (!isTesting) ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
         //Listeners registered after with same priority appear to be called later
 
@@ -168,7 +185,7 @@ public class OCMMain extends JavaPlugin {
         //Then ModuleSwordBlocking to calculate blocking
         ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
         //Then OldArmourStrength to recalculate armour defense accordingly
-        ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+        if (!isTesting) ModuleLoader.addModule(new ModuleOldArmourStrength(this));
 
         ModuleLoader.addModule(new ModuleSwordBlocking(this));
         ModuleLoader.addModule(new ModuleOldArmourDurability(this));
@@ -192,7 +209,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleAttackSounds(this));
         ModuleLoader.addModule(new ModuleOldBurnDelay(this));
         ModuleLoader.addModule(new ModuleAttackFrequency(this));
-        ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
+        if (!isTesting) ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
     }
 
     private void registerHooks() {
