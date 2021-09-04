@@ -2,7 +2,12 @@ package kernitus.plugin.OldCombatMechanics;
 
 import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EntityEquipment;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -56,5 +61,13 @@ public class OCMPlayerMock extends PlayerMock {
     @Override
     public void setLastDamage(double lastDamage) {
         this.lastDamage = lastDamage;
+    }
+
+    public EntityDamageByEntityEvent attackEntity(@NotNull Entity target, double damage){
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(this, target,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage);
+        Bukkit.getPluginManager().callEvent(event);
+
+        return event;
     }
 }
