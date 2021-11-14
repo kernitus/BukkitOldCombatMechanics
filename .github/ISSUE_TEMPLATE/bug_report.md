@@ -23,8 +23,10 @@ assignees: ''
 <!-- Please do NOT use hastebin, they seem to disappeared way too fast! -->
 * Server Log File: 
 
-<!-- OldCombatMechanics config.yml, please upload this to e.g. pastebin and link the file here -->
+<!-- OldCombatMechanics config.yml, please upload this to e.g. pastebin and link the file here or use code tags-->
 * OldCombatMechanics config file: 
+
+<!-- If the issue is damage related, please enable debug mode in the config and provide screenshots of the output-->
 
 ## Problem Description
 <!-- A clear and concise description of what the bug is. -->
