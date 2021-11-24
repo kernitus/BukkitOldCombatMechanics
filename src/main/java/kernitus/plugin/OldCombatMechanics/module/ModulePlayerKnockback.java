@@ -69,6 +69,12 @@ public class ModulePlayerKnockback extends Module {
     }
 
     @EventHandler
+    public void onPlayerFallDamage(EntityDamageEvent event) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL)
+            playerKnockbackHashMap.remove(event.getEntity().getUniqueId());
+    }
+
+    @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
         final Entity entity = event.getEntity();
