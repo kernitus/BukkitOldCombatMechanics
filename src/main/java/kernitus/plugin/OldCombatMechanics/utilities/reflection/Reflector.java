@@ -1,13 +1,10 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
+import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import org.bukkit.Bukkit;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -17,16 +14,19 @@ import java.util.stream.Stream;
 public class Reflector {
     private static String version;
 
-    static{
-        try{
-            version = Bukkit.getServer().getClass().getName().split("\\.")[3];
-        } catch(Exception e){
+    static {
+        try {
+            if (OCMMain.isTesting())
+                version = Bukkit.getBukkitVersion().replaceAll("\\.","_");
+            else
+                version = Bukkit.getServer().getClass().getName().split("\\.")[3];
+        } catch (Exception e) {
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
         }
     }
 
-    public static String getVersion(){
+    public static String getVersion() {
         return version;
     }
 
@@ -38,69 +38,69 @@ public class Reflector {
      * @param patch the target patch version. 0 for all
      * @return true of the server version is newer or equal to the one provided
      */
-    public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch){
-        if(getMajorVersion() < major){
+    public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch) {
+        if (getMajorVersion() < major) {
             return false;
         }
-        if(getMinorVersion() < minor){
+        if (getMinorVersion() < minor) {
             return false;
         }
         return getPatchVersion() >= patch;
     }
 
-    private static int getMajorVersion(){
+    private static int getMajorVersion() {
         return Integer.parseInt(getVersionSanitized().split("_")[0]);
     }
 
-    private static String getVersionSanitized(){
+    private static String getVersionSanitized() {
         return getVersion().replaceAll("[^\\d_]", "");
     }
 
-    private static int getMinorVersion(){
+    private static int getMinorVersion() {
         return Integer.parseInt(getVersionSanitized().split("_")[1]);
     }
 
-    private static int getPatchVersion(){
+    private static int getPatchVersion() {
         String[] split = getVersionSanitized().split("_");
-        if(split.length < 3){
+        if (split.length < 3) {
             return 0;
         }
         return Integer.parseInt(split[2]);
     }
 
-    public static Class<?> getClass(ClassType type, String name){
+    public static Class<?> getClass(ClassType type, String name) {
         return getClass(type.qualifyClassName(name));
     }
 
-    public static Class<?> getClass(String fqn){
-        try{
+    public static Class<?> getClass(String fqn) {
+        try {
             return Class.forName(fqn);
-        } catch(ClassNotFoundException e){
+        } catch (ClassNotFoundException e) {
             throw new RuntimeException("Couldn't load class " + fqn, e);
         }
     }
 
 
-    public static Method getMethod(Class<?> clazz, String name){
+    public static Method getMethod(Class<?> clazz, String name) {
         return Arrays.stream(clazz.getMethods())
                 .filter(method -> method.getName().equals(name))
                 .findFirst()
                 .orElse(null);
     }
 
-    public static Method getMethod(Class<?> clazz, String name, int parameterCount){
+    public static Method getMethod(Class<?> clazz, String name, int parameterCount) {
         return Arrays.stream(clazz.getMethods())
                 .filter(method -> method.getName().equals(name) && method.getParameterCount() == parameterCount)
                 .findFirst()
                 .orElse(null);
     }
 
-    public static <T> T invokeMethod(Method method, Object handle, Object... params){
-        try{
+    public static <T> T invokeMethod(Method method, Object handle, Object... params) {
+        try {
             @SuppressWarnings("unchecked")
             T t = (T) method.invoke(handle, params);
             return t;
-        } catch(IllegalAccessException | InvocationTargetException e){
+        } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -117,22 +117,22 @@ public class Reflector {
      * @param <R>    the type of the method result
      * @return a function that invokes the retrieved cached method for its argument
      */
-    public static <T, R> Function<T, R> memoizeMethodAndInvoke(Class<T> clazz, String name, Object... params){
+    public static <T, R> Function<T, R> memoizeMethodAndInvoke(Class<T> clazz, String name, Object... params) {
         Method method = getMethod(clazz, name);
         return t -> invokeMethod(method, t, params);
     }
 
-    public static Field getField(Class<?> clazz, String fieldName){
-        try{
+    public static Field getField(Class<?> clazz, String fieldName) {
+        try {
             return clazz.getDeclaredField(fieldName);
-        } catch(NoSuchFieldException e){
+        } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Field getFieldByType(Class<?> clazz, String simpleClassName){
-        for(Field declaredField : clazz.getDeclaredFields()){
-            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+    public static Field getFieldByType(Class<?> clazz, String simpleClassName) {
+        for (Field declaredField : clazz.getDeclaredFields()) {
+            if (declaredField.getType().getSimpleName().equals(simpleClassName)) {
                 declaredField.setAccessible(true);
                 return declaredField;
             }
@@ -140,15 +140,15 @@ public class Reflector {
         throw new RuntimeException("Field with type " + simpleClassName + " not found");
     }
 
-    public static Field getInaccessibleField(Class<?> clazz, String fieldName){
+    public static Field getInaccessibleField(Class<?> clazz, String fieldName) {
         Field field = getField(clazz, fieldName);
         field.setAccessible(true);
         return field;
     }
 
-    public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception{
-        for(Field declaredField : object.getClass().getDeclaredFields()){
-            if(declaredField.getType().getSimpleName().equals(simpleClassName)){
+    public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception {
+        for (Field declaredField : object.getClass().getDeclaredFields()) {
+            if (declaredField.getType().getSimpleName().equals(simpleClassName)) {
                 declaredField.setAccessible(true);
                 return declaredField.get(object);
             }
@@ -156,27 +156,27 @@ public class Reflector {
         throw new NoSuchFieldException("Couldn't find field with type " + simpleClassName + " in " + object.getClass());
     }
 
-    public static Object getFieldValue(Field field, Object handle){
+    public static Object getFieldValue(Field field, Object handle) {
         field.setAccessible(true);
-        try{
+        try {
             return field.get(handle);
-        } catch(IllegalAccessException e){
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Constructor<?> getConstructor(Class<?> clazz, int numParams){
+    public static Constructor<?> getConstructor(Class<?> clazz, int numParams) {
         return Stream.concat(
-                Arrays.stream(clazz.getDeclaredConstructors()),
-                Arrays.stream(clazz.getConstructors())
-        )
+                        Arrays.stream(clazz.getDeclaredConstructors()),
+                        Arrays.stream(clazz.getConstructors())
+                )
                 .filter(constructor -> constructor.getParameterCount() == numParams)
                 .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
 
-    public static Constructor<?> getConstructor(Class<?> clazz, String... parameterTypeSimpleNames){
+    public static Constructor<?> getConstructor(Class<?> clazz, String... parameterTypeSimpleNames) {
         Function<Constructor<?>, List<String>> getParameterNames = constructor -> Arrays
                 .stream(constructor.getParameters())
                 .map(Parameter::getType)
@@ -184,9 +184,9 @@ public class Reflector {
                 .collect(Collectors.toList());
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
         return Stream.concat(
-                Arrays.stream(clazz.getDeclaredConstructors()),
-                Arrays.stream(clazz.getConstructors())
-        )
+                        Arrays.stream(clazz.getDeclaredConstructors()),
+                        Arrays.stream(clazz.getConstructors())
+                )
                 .filter(constructor -> getParameterNames.apply(constructor).equals(typeNames))
                 .peek(it -> it.setAccessible(true))
                 .findFirst()
@@ -201,13 +201,13 @@ public class Reflector {
      * @return True if {@code toCheck} somehow inherits from
      * {@code inheritedClass}
      */
-    public static boolean inheritsFrom(Class<?> toCheck, Class<?> inheritedClass){
-        if(inheritedClass.isAssignableFrom(toCheck)){
+    public static boolean inheritsFrom(Class<?> toCheck, Class<?> inheritedClass) {
+        if (inheritedClass.isAssignableFrom(toCheck)) {
             return true;
         }
 
-        for(Class<?> implementedInterface : toCheck.getInterfaces()){
-            if(inheritsFrom(implementedInterface, inheritedClass)){
+        for (Class<?> implementedInterface : toCheck.getInterfaces()) {
+            if (inheritsFrom(implementedInterface, inheritedClass)) {
                 return true;
             }
         }
@@ -215,18 +215,18 @@ public class Reflector {
         return false;
     }
 
-    public static <T> T getUnchecked(UncheckedReflectionSupplier<T> supplier){
-        try{
+    public static <T> T getUnchecked(UncheckedReflectionSupplier<T> supplier) {
+        try {
             return supplier.get();
-        } catch(ReflectiveOperationException e){
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void doUnchecked(UncheckedReflectionRunnable runnable){
-        try{
+    public static void doUnchecked(UncheckedReflectionRunnable runnable) {
+        try {
             runnable.run();
-        } catch(ReflectiveOperationException e){
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
     }

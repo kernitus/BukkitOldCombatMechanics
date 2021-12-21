@@ -33,7 +33,7 @@ public class OCMMain extends JavaPlugin {
     private List<Runnable> disableListeners = new ArrayList<>();
     private List<Runnable> enableListeners = new ArrayList<>();
     private List<Hook> hooks = new ArrayList<>();
-    private final boolean isTesting;
+    private static boolean isTesting;
 
     public OCMMain() {
         super();
@@ -185,7 +185,7 @@ public class OCMMain extends JavaPlugin {
         //Then ModuleSwordBlocking to calculate blocking
         ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
         //Then OldArmourStrength to recalculate armour defense accordingly
-        if (!isTesting) ModuleLoader.addModule(new ModuleOldArmourStrength(this));
+        ModuleLoader.addModule(new ModuleOldArmourStrength(this));
 
         ModuleLoader.addModule(new ModuleSwordBlocking(this));
         ModuleLoader.addModule(new ModuleOldArmourDurability(this));
@@ -242,5 +242,9 @@ public class OCMMain extends JavaPlugin {
      */
     public void addEnableListener(Runnable action) {
         enableListeners.add(action);
+    }
+
+    public static boolean isTesting(){
+        return isTesting;
     }
 }

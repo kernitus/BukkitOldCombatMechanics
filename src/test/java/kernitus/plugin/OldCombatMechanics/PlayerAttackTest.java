@@ -55,4 +55,10 @@ public class PlayerAttackTest {
         double expectedDamage = WeaponDamages.getDamage(weaponMaterial);
         assertEquals(expectedDamage, damage);
     }
+
+    @Test
+    // Test multiple attacks in rapid succession
+    void testDamageImmunityCooldown(){
+
+    }
 }
