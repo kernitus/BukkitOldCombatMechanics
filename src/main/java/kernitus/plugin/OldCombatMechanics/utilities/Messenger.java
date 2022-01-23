@@ -62,12 +62,18 @@ public class Messenger {
         send(sender, prefix + " " + message, args);
     }
 
-    public static void sendNormalMessage(CommandSender sender, String message, Object... args){
-        sendWithPrefix(sender, message, "&6[OCM]&r", args);
+    public static void sendNormalMessage(CommandSender sender, String message, Object... args) {
+        if (Config.getConfig().getBoolean("show-prefix", true))
+            sendWithPrefix(sender, message, "&6[OCM]&r", args);
+        else
+            sendWithPrefix(sender, message, "&r", args);
     }
 
-    public static void sendDebugMessage(CommandSender sender, String message, Object... args){
-        sendWithPrefix(sender, message, "&1[Debug]&r", args);
+    public static void sendDebugMessage(CommandSender sender, String message, Object... args) {
+        if (Config.getConfig().getBoolean("show-prefix", true))
+            sendWithPrefix(sender, message, "&1[Debug]&r", args);
+        else
+            sendWithPrefix(sender, message, "&r", args);
     }
 
     public static void debug(String message, Throwable throwable) {
