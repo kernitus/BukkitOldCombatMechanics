@@ -63,14 +63,14 @@ public class Messenger {
     }
 
     public static void sendNormalMessage(CommandSender sender, String message, Object... args) {
-        if (Config.getConfig().getBoolean("show-prefix", true))
+        if (plugin.getConfig().getBoolean("show-prefix", true))
             sendWithPrefix(sender, message, "&6[OCM]&r", args);
         else
             sendWithPrefix(sender, message, "&r", args);
     }
 
     public static void sendDebugMessage(CommandSender sender, String message, Object... args) {
-        if (Config.getConfig().getBoolean("show-prefix", true))
+        if (plugin.getConfig().getBoolean("show-prefix", true))
             sendWithPrefix(sender, message, "&1[Debug]&r", args);
         else
             sendWithPrefix(sender, message, "&r", args);
