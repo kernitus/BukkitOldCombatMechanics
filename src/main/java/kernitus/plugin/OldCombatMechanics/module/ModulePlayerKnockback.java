@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -51,6 +52,9 @@ public class ModulePlayerKnockback extends Module {
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualAs(1, 16, 0);
+
+        // Fix issue where bukkit sometimes doesn't call the velocity event after damage event
+        Bukkit.getScheduler().runTaskTimer(plugin, playerKnockbackHashMap::clear, 1, 1);
     }
 
     @EventHandler
