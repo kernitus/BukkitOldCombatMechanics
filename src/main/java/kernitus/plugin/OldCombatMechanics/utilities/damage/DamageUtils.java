@@ -59,6 +59,10 @@ public class DamageUtils {
     }
 
     private static boolean isLivingEntityClimbing(LivingEntity le) {
+        // Bukkit added this API method in 1.14
+        if (Reflector.versionIsNewerOrEqualAs(1, 14, 0)) {
+            return le.isClimbing();
+        }
         final Material material = le.getLocation().getBlock().getType();
         return material == Material.LADDER || material == Material.VINE;
     }
