@@ -23,7 +23,9 @@ public class PacketSender {
         Class<?> entityPlayer = Reflector.getClass(ClassType.NMS, "server.level.EntityPlayer");
 
         GET_HANDLE = Reflector.getMethod(craftPlayer, "getHandle");
-        SEND_PACKET = Reflector.getMethod(playerConnection, "sendPacket");
+        SEND_PACKET = Reflector.versionIsNewerOrEqualAs(1, 18, 0)
+                ? Reflector.getMethod(playerConnection, "a", "Packet")
+                : Reflector.getMethod(playerConnection, "sendPacket");
         PLAYER_CONNECTION_FIELD = Reflector.getFieldByType(entityPlayer, "PlayerConnection");
     }
 

@@ -95,6 +95,24 @@ public class Reflector {
                 .orElse(null);
     }
 
+    public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames){
+        Function<Method, List<String>> getParameterNames = method -> Arrays
+                .stream(method.getParameters())
+                .map(Parameter::getType)
+                .map(Class::getSimpleName)
+                .collect(Collectors.toList());
+        List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
+        return Stream.concat(
+                        Arrays.stream(clazz.getDeclaredMethods()),
+                        Arrays.stream(clazz.getMethods())
+                )
+                .filter(it -> it.getName().equals(name))
+                .filter(it -> getParameterNames.apply(it).equals(typeNames))
+                .peek(it -> it.setAccessible(true))
+                .findFirst()
+                .orElse(null);
+    }
+
     public static <T> T invokeMethod(Method method, Object handle, Object... params){
         try{
             @SuppressWarnings("unchecked")

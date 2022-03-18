@@ -158,24 +158,67 @@ public class V17TeamPacket extends TeamPacket {
         }
     }
 
-    private static class ScoreboardTeamWither {
-        private static final Class<?> SCOREBOARD_TEAM_CLASS = Reflector.getClass(ClassType.NMS, "world.scores.ScoreboardTeam");
-        private static final Method setDisplayName = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setDisplayName");
-        private static final Method setAllowFriendlyFire = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setAllowFriendlyFire");
-        private static final Method setCanSeeFriendlyInvisibles = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setCanSeeFriendlyInvisibles");
-        private static final Method setNameTagVisibility = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setNameTagVisibility");
-        private static final Method setCollisionRule = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setCollisionRule");
-        private static final Method setColor = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setColor");
-        private static final Method setPrefix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setPrefix");
-        private static final Method setSuffix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setSuffix");
+    private static abstract class ScoreboardTeamMethods {
+        protected static final Class<?> SCOREBOARD_TEAM_CLASS = Reflector.getClass(ClassType.NMS, "world.scores.ScoreboardTeam");
+        private static final ScoreboardTeamMethods INSTANCE = selectInstance();
 
-        private Object displayName;
-        private int packOptionData;
-        private String nameTagVisibility;
+        protected Method setDisplayName;
+        protected Method setAllowFriendlyFire;
+        protected Method setCanSeeFriendlyInvisibles;
+        protected Method setNameTagVisibility;
+        protected Method setCollisionRule;
+        protected Method setColor;
+        protected Method setPrefix;
+        protected Method setSuffix;
+
+        public static ScoreboardTeamMethods getInstance(){
+            return INSTANCE;
+        }
+
+        private static ScoreboardTeamMethods selectInstance(){
+            if(Reflector.versionIsNewerOrEqualAs(1, 18, 0)){
+                return new ScoreboardTeamMethodsV18();
+            }
+            return new ScoreboardTeamMethodsV17();
+        }
+    }
+
+    private static class ScoreboardTeamMethodsV17 extends ScoreboardTeamMethods {
+
+        public ScoreboardTeamMethodsV17(){
+            setDisplayName = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setDisplayName");
+            setAllowFriendlyFire = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setAllowFriendlyFire");
+            setCanSeeFriendlyInvisibles = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setCanSeeFriendlyInvisibles");
+            setNameTagVisibility = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setNameTagVisibility");
+            setCollisionRule = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setCollisionRule");
+            setColor = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setColor");
+            setPrefix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setPrefix");
+            setSuffix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "setSuffix");
+        }
+    }
+
+    private static class ScoreboardTeamMethodsV18 extends ScoreboardTeamMethods {
+
+        public ScoreboardTeamMethodsV18(){
+            setDisplayName = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "a", "IChatBaseComponent");
+            setAllowFriendlyFire = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "a", "boolean");
+            setCanSeeFriendlyInvisibles = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "b", "boolean");
+            setNameTagVisibility = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "a", "EnumNameTagVisibility");
+            setCollisionRule = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "a", "EnumTeamPush");
+            setColor = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "a", "EnumChatFormat");
+            setPrefix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "b", "IChatBaseComponent");
+            setSuffix = Reflector.getMethod(SCOREBOARD_TEAM_CLASS, "c", "IChatBaseComponent");
+        }
+    }
+
+    private static class ScoreboardTeamWither {
+        private final Object displayName;
+        private final int packOptionData;
+        private final String nameTagVisibility;
         private String collisionRule;
-        private Object color;
-        private Object prefix;
-        private Object suffix;
+        private final Object color;
+        private final Object prefix;
+        private final Object suffix;
 
         public ScoreboardTeamWither(Object displayName, int packOptionData, String nameTagVisibility,
                                     String collisionRule, Object color, Object prefix, Object suffix){
@@ -195,14 +238,30 @@ public class V17TeamPacket extends TeamPacket {
 
         public Object build(){
             Object team = PacketAccess.createScoreboardTeam("ocm-dummy");
-            Reflector.invokeMethod(setDisplayName, team, displayName);
-            Reflector.invokeMethod(setAllowFriendlyFire, team, (packOptionData & 0b1) != 0);
-            Reflector.invokeMethod(setCanSeeFriendlyInvisibles, team, (packOptionData & 0b10) != 0);
-            Reflector.invokeMethod(setNameTagVisibility, team, OptionalDataClassHelper.parseNameTagVisibility(nameTagVisibility));
-            Reflector.invokeMethod(setCollisionRule, team, OptionalDataClassHelper.parseTeamPush(collisionRule));
-            Reflector.invokeMethod(setColor, team, color);
-            Reflector.invokeMethod(setPrefix, team, prefix);
-            Reflector.invokeMethod(setSuffix, team, suffix);
+            Reflector.invokeMethod(ScoreboardTeamMethods.getInstance().setDisplayName, team, displayName);
+            Reflector.invokeMethod(
+                    ScoreboardTeamMethods.getInstance().setAllowFriendlyFire,
+                    team,
+                    (packOptionData & 0b1) != 0
+            );
+            Reflector.invokeMethod(
+                    ScoreboardTeamMethods.getInstance().setCanSeeFriendlyInvisibles,
+                    team,
+                    (packOptionData & 0b10) != 0
+            );
+            Reflector.invokeMethod(
+                    ScoreboardTeamMethods.getInstance().setNameTagVisibility,
+                    team,
+                    OptionalDataClassHelper.parseNameTagVisibility(nameTagVisibility)
+            );
+            Reflector.invokeMethod(
+                    ScoreboardTeamMethods.getInstance().setCollisionRule,
+                    team,
+                    OptionalDataClassHelper.parseTeamPush(collisionRule)
+            );
+            Reflector.invokeMethod(ScoreboardTeamMethods.getInstance().setColor, team, color);
+            Reflector.invokeMethod(ScoreboardTeamMethods.getInstance().setPrefix, team, prefix);
+            Reflector.invokeMethod(ScoreboardTeamMethods.getInstance().setSuffix, team, suffix);
             return team;
         }
 
