@@ -1,11 +1,12 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import be.seeseemelk.mockbukkit.ServerMock;
+import be.seeseemelk.mockbukkit.UnimplementedOperationException;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
-import org.bukkit.Bukkit;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.EntityEquipment;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,11 +64,45 @@ public class OCMPlayerMock extends PlayerMock {
         this.lastDamage = lastDamage;
     }
 
-    public EntityDamageByEntityEvent attackEntity(@NotNull Entity target, double damage){
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(this, target,
-                EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage);
-        Bukkit.getPluginManager().callEvent(event);
+    @Override
+    public void attack(@NotNull Entity target){
+        if(!(target instanceof LivingEntity)) throw new UnimplementedOperationException();
+        LivingEntity livingTarget = (LivingEntity) target;
 
-        return event;
+        livingTarget.damage(getMeleeAttackDamage(), this);
+
+        /* Player attack
+    protected void d(DamageSource damagesource, float f) {
+        if (!this.isInvulnerable(damagesource)) {
+            if (!damagesource.ignoresArmor() && this.isBlocking() && f > 0.0F) {
+                f = (1.0F + f) * 0.5F;
+            }
+
+            f = this.applyArmorModifier(damagesource, f);
+            f = this.applyMagicModifier(damagesource, f);
+            float f1 = f;
+
+            f = Math.max(f - this.getAbsorptionHearts(), 0.0F);
+            this.setAbsorptionHearts(this.getAbsorptionHearts() - (f1 - f));
+            if (f != 0.0F) {
+                this.applyExhaustion(damagesource.getExhaustionCost());
+                float f2 = this.getHealth();
+
+                this.setHealth(this.getHealth() - f);
+                this.bs().a(damagesource, f2, f);
+                if (f < 3.4028235E37F) {
+                    this.a(StatisticList.x, Math.round(f * 10.0F));
+                }
+
+            }
+        }
+    }
+         */
+    }
+
+    private float getMeleeAttackDamage(){
+        Material weapon = entityEquipment.getItemInMainHand().getType();
+        if(weapon == Material.AIR) weapon = entityEquipment.getItemInOffHand().getType();
+        return ToolDamage.getDamage(weapon);
     }
 }

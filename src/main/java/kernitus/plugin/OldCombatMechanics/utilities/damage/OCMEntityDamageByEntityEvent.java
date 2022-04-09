@@ -89,7 +89,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
                 // NMS code also checks if current damage is higher that previous damage. However, here the event
-                // directly has the difference between the two as the raw damage, and the event does not fire at all
+                // already has the difference between the two as the raw damage, and the event does not fire at all
                 // if this precondition is not met.
                 wasInvulnerabilityOverdamage = true;
                 debug(le, "Overdamaged!");

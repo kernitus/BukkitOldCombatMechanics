@@ -67,14 +67,17 @@ public class OCMMain extends JavaPlugin {
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
 
-        // Register all the modules
-        registerModules();
+        if(!isTesting) {
 
-        // Register all hooks for integrating with other plugins
-        registerHooks();
+            // Register all the modules
+            registerModules();
 
-        // Initialize all the hooks
-        hooks.forEach(hook -> hook.init(this));
+            // Register all hooks for integrating with other plugins
+            registerHooks();
+
+            // Initialize all the hooks
+            hooks.forEach(hook -> hook.init(this));
+        }
 
         // Set up the command handler
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));

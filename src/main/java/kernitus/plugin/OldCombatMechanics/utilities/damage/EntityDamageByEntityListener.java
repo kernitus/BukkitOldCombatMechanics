@@ -35,8 +35,9 @@ public class EntityDamageByEntityListener extends Module {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
         Entity damager = event.getDamager();
+        Entity damagee = event.getEntity();
         OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
-                (damager, event.getEntity(), event.getCause(), event.getDamage());
+                (damager, damagee, event.getCause(), event.getDamage());
 
         // Call event for the other modules to make their modifications
         plugin.getServer().getPluginManager().callEvent(e);
@@ -44,7 +45,7 @@ public class EntityDamageByEntityListener extends Module {
         if (e.isCancelled()) return;
 
         // Now we re-calculate damage modified by the modules and set it back to original event
-        // Damage order: base -> potion effects -> critical hit -> enchantments -> armour effects
+        // Damage order: base -> potion effects -> critical hit -> overdamage -> enchantments -> armour effects
         double newDamage = e.getBaseDamage();
 
         debug("Base: " + e.getBaseDamage(), damager);
@@ -72,6 +73,14 @@ public class EntityDamageByEntityListener extends Module {
             if (e.RoundCritDamage()) newDamage = (int) newDamage;
             newDamage += e.getCriticalAddend();
             debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
+        }
+
+        // Overdamage due to immunity
+        if (e.wasInvulnerabilityOverdamage() && damagee instanceof LivingEntity) {
+            // We must subtract previous damage from new weapon damage for this attack
+            final LivingEntity livingDamagee = (LivingEntity) damagee;
+            final double lastDamage = livingDamagee.getLastDamage();
+            newDamage -= lastDamage;
         }
 
         //Enchantments
@@ -104,6 +113,8 @@ public class EntityDamageByEntityListener extends Module {
                 public void run() {
                     ((LivingEntity) damagee).setLastDamage(damage);
                     debug("Set last damage to " + damage, damagee);
+                    // TODO according to NMS, this value should actually be base tool + crit, before overdamage
+                    // also, doesn't seem to be necessary anymore? Investigate further if this was fixed
                 }
             }.runTaskLater(plugin, 1);
 
