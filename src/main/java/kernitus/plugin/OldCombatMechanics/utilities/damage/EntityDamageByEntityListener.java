@@ -9,14 +9,20 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
 public class EntityDamageByEntityListener extends Module {
 
     private static EntityDamageByEntityListener INSTANCE;
     private boolean enabled;
+    private final Map<UUID, Double> lastDamages;
 
     public EntityDamageByEntityListener(OCMMain plugin) {
         super(plugin, "entity-damage-listener");
         INSTANCE = this;
+        lastDamages = new WeakHashMap<>();
     }
 
     public static EntityDamageByEntityListener getINSTANCE() {
@@ -75,12 +81,13 @@ public class EntityDamageByEntityListener extends Module {
             debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
         }
 
+        final double lastDamage = newDamage;
+
         // Overdamage due to immunity
         if (e.wasInvulnerabilityOverdamage() && damagee instanceof LivingEntity) {
             // We must subtract previous damage from new weapon damage for this attack
             final LivingEntity livingDamagee = (LivingEntity) damagee;
-            final double lastDamage = livingDamagee.getLastDamage();
-            newDamage -= lastDamage;
+            newDamage -= livingDamagee.getLastDamage();
         }
 
         //Enchantments
@@ -96,28 +103,32 @@ public class EntityDamageByEntityListener extends Module {
         debug("New Damage: " + newDamage, damager);
 
         event.setDamage(newDamage);
+
+        // According to NMS, the last damage should actually be base tool + strength + crit, before overdamage
+        lastDamages.put(damagee.getUniqueId(), lastDamage);
     }
 
     /**
-     * Set entity's last damage 1 tick after event. For some reason this is not updated to the final damage properly.
+     * Set entity's last damage 1 tick after event.
+     * This is set automatically after the event to the original damage for some reason.
      * (Maybe a Spigot bug?) Hopefully other plugins vibe with this. Otherwise can store this just for OCM.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void afterEntityDamage(EntityDamageByEntityEvent e) {
         final Entity damagee = e.getEntity();
         if (damagee instanceof LivingEntity) {
-            final double damage = e.getDamage();
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    ((LivingEntity) damagee).setLastDamage(damage);
-                    debug("Set last damage to " + damage, damagee);
-                    // TODO according to NMS, this value should actually be base tool + crit, before overdamage
-                    // also, doesn't seem to be necessary anymore? Investigate further if this was fixed
-                }
-            }.runTaskLater(plugin, 1);
-
+            final UUID damageeId = damagee.getUniqueId();
+            if (lastDamages.containsKey(damageeId)) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        final double damage = lastDamages.get(damageeId);
+                        ((LivingEntity) damagee).setLastDamage(damage);
+                        debug("Set last damage to " + damage, damagee);
+                        lastDamages.remove(damageeId);
+                    }
+                }.runTaskLater(plugin, 1);
+            }
         }
     }
 }
