@@ -89,22 +89,25 @@ public class OCMCommandHandler implements CommandExecutor {
             Messenger.send(player, message);
 
             return true;
-        } else if (subcommand.equals("test")){
+        } else if (subcommand.equals("test")) {
+            if (!sender.hasPermission("oldcombatmechanics.reload")) {
+                Messenger.send(sender, NO_PERMISSION, "oldcombatmechanics.reload");
+                return false;
+            }
+
             Player player1, player2;
-            if(args.length > 2){
+            if (args.length > 2) {
                 player1 = Bukkit.getPlayer(args[1]);
                 player2 = Bukkit.getPlayer(args[2]);
-            }
-            else if(sender instanceof Player && args.length > 1){
+            } else if (sender instanceof Player && args.length > 1) {
                 player1 = ((Player) sender);
                 player2 = Bukkit.getPlayer(args[1]);
-            }
-            else {
+            } else {
                 Messenger.send(sender, "&1[OCM] &eCommand usage: /ocm test <player1> <player2>");
                 return false;
             }
 
-            new InGameTester(plugin).performTests(player1,player2);
+            new InGameTester(plugin).performTests(player1, player2);
         }
 
         return false;

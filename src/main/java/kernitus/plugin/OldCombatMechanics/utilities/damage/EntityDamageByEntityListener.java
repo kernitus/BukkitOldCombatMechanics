@@ -115,14 +115,17 @@ public class EntityDamageByEntityListener extends Module {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void afterEntityDamage(EntityDamageByEntityEvent e) {
+        //TODO should probably just store this info for ourselves, because it will cause some attacks to not be counted
+        // for overdamage as the raw damage of some weapons is lower than what we set it to, and event never triggers
+        // but what about the opposite, when a weapon is too strong? then by the calculations we perform it should do 0 damage
         final Entity damagee = e.getEntity();
         if (damagee instanceof LivingEntity) {
             final UUID damageeId = damagee.getUniqueId();
             if (lastDamages.containsKey(damageeId)) {
+                final double damage = lastDamages.get(damageeId);
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        final double damage = lastDamages.get(damageeId);
                         ((LivingEntity) damagee).setLastDamage(damage);
                         debug("Set last damage to " + damage, damagee);
                         lastDamages.remove(damageeId);
