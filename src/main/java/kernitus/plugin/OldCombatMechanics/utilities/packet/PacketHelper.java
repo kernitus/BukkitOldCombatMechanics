@@ -24,21 +24,6 @@ public class PacketHelper {
     }
 
     /**
-     * Some plugins send their own packets for various reasons. While this might cause incompatibilties with a variety
-     * of other plugins including OCM, we can't change what other people do. The plugins whitelisted here intentionally
-     * send such packets and we should forward them. Any issues that might arise from it are out of scope of OCM support.
-     *
-     * @param object the packet object to check
-     * @return true if the packet is allowed to proceed even if it is not an NMS packet
-     */
-    public static boolean isWhitelistedNonNmsPacket(Object object){
-        if(object == null){
-            return false;
-        }
-        return object.getClass().getName().startsWith("org.mcnative.runtime.api.protocol.packet.type");
-    }
-
-    /**
      * Wraps a nms packet in a trivial {@link ImmutablePacket}.
      *
      * @param nmsPacket the nms packet to wrap
