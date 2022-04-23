@@ -26,11 +26,15 @@ import java.util.stream.Collectors;
 public class OCMMain extends JavaPlugin {
 
     private static OCMMain INSTANCE;
-    private Logger logger = getLogger();
-    private OCMConfigHandler CH = new OCMConfigHandler(this);
-    private List<Runnable> disableListeners = new ArrayList<>();
-    private List<Runnable> enableListeners = new ArrayList<>();
-    private List<Hook> hooks = new ArrayList<>();
+    private final Logger logger = getLogger();
+    private final OCMConfigHandler CH = new OCMConfigHandler(this);
+    private final List<Runnable> disableListeners = new ArrayList<>();
+    private final List<Runnable> enableListeners = new ArrayList<>();
+    private final List<Hook> hooks = new ArrayList<>();
+
+    public OCMMain() {
+        super();
+    }
 
     public static OCMMain getInstance() {
         return INSTANCE;
@@ -70,10 +74,10 @@ public class OCMMain extends JavaPlugin {
         // Initialise Config utility
         Config.initialise(this);
 
-        //BStats Metrics
+        // BStats Metrics
         Metrics metrics = new Metrics(this, 53);
 
-        /*Custom bar charts currently disabled on bStats
+        // Simple bar chart
         metrics.addCustomChart(
                 new Metrics.SimpleBarChart(
                         "enabled_modules",
@@ -81,13 +85,14 @@ public class OCMMain extends JavaPlugin {
                                 .filter(Module::isEnabled)
                                 .collect(Collectors.toMap(Module::toString, module -> 1))
                 )
-        );*/
+        );
 
-        // Custom Advanced Pie Chart:
-        metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
+        // Advanced Pie Chart
+        metrics.addCustomChart(new Metrics.AdvancedPie("enabled_modules_advanced_pie",
                 () -> ModuleLoader.getModules().stream()
-                        .filter(Module::isEnabled)
-                        .collect(Collectors.toMap(Module::toString, module -> 1))
+                        .collect(Collectors.toMap(
+                                module -> module.toString() + (module.isEnabled() ? " enabled" : " disabled"),
+                                module -> 1))
         ));
 
         enableListeners.forEach(Runnable::run);
@@ -117,7 +122,6 @@ public class OCMMain extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
         PluginDescriptionFile pdfFile = this.getDescription();
 
         disableListeners.forEach(Runnable::run);
