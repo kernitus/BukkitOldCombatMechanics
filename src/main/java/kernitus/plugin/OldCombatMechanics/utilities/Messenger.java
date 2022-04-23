@@ -58,7 +58,7 @@ public class Messenger {
      * @param prefix  The prefix to the message
      * @param args    The args to format the message with.
      */
-    public static void sendWithPrefix(CommandSender sender, String message, String prefix, Object... args) {
+    private static void sendWithPrefix(CommandSender sender, String message, String prefix, Object... args) {
         send(sender, prefix + " " + message, args);
     }
 
@@ -66,7 +66,7 @@ public class Messenger {
         sendWithPrefix(sender, message, "&6[OCM]&r", args);
     }
 
-    public static void sendDebugMessage(CommandSender sender, String message, Object... args){
+    private static void sendDebugMessage(CommandSender sender, String message, Object... args){
         sendWithPrefix(sender, message, "&1[Debug]&r", args);
     }
 

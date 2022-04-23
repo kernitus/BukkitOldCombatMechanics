@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.tester;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -22,41 +23,61 @@ public class InGameTester {
 
     private final OCMMain ocm;
     private final Map<UUID, PlayerInfo> playerInfo;
-    //todo also save inventory before the start of tests
+    private final Map<UUID, ItemStack[]> inventories;
+    private Tally tally;
+
+    // todo test with armour
+    // todo test with enchanted weapons
+    // todo test with enchanted armour
+    // todo test armour durability
+    // todo test with critical hits
+    // todo test with potion effects
+    // todo test with shield blocking
 
     public InGameTester(OCMMain ocm) {
         this.ocm = ocm;
         playerInfo = new WeakHashMap<>();
+        inventories = new WeakHashMap<>();
     }
 
+    /**
+     * Perform all tests using the two specified players
+     */
     public void performTests(Player attacker, Player attackee) {
+        beforeAll(attacker, attackee);
+        tally = new Tally();
 
         long delay = 0;
 
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
-                preparePlayer(attacker, attackee);
-                testMeleeAttack(attacker, attackee, weaponType,0);
+                beforeEach(attacker, attackee);
+                testMeleeAttack(attacker, attackee, weaponType, 0);
             }, delay);
 
             delay += 2;
         }
 
-        testOverdamage(attacker, attackee, delay);
+        delay = testOverdamage(attacker, attackee, delay);
+
+        Bukkit.getScheduler().runTaskLater(ocm, () -> {
+            afterAll(attacker, attackee);
+        }, delay);
+
     }
 
-    private void testOverdamage(Player attacker, Player attackee, long delay) {
+    private long testOverdamage(Player attacker, Player attackee, long delay) {
         Material[] weapons = {Material.WOODEN_HOE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_AXE};
         for (Material weaponType : weapons) {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
-                preparePlayer(attacker, attackee);
+                beforeEach(attacker, attackee);
                 attackee.setMaximumNoDamageTicks(100);
-                testMeleeAttack(attacker, attackee, weaponType,10);
+                testMeleeAttack(attacker, attackee, weaponType, 10);
             }, delay);
 
             delay += 40;
         }
-
+        return delay;
     }
 
     private void testMeleeAttack(Player attacker, Player attackee, Material weaponType, long attackDelay) {
@@ -76,7 +97,7 @@ public class InGameTester {
             public void onEvent(EntityDamageByEntityEvent e) {
                 if (e.getDamager() != attacker || e.getEntity() != attackee) return;
 
-                TesterUtils.assertEquals(finalExpectedDamage, e.getFinalDamage(), "Melee Attack " + weaponType, attacker, attackee);
+                TesterUtils.assertEquals(finalExpectedDamage, e.getFinalDamage(), tally, "Melee Attack " + weaponType, attacker, attackee);
             }
         };
 
@@ -85,13 +106,31 @@ public class InGameTester {
         // Have to run this later because setting the item in the main hand apparently is affected by the cooldown
         Bukkit.getScheduler().runTaskLater(ocm, () -> {
             attacker.attack(attackee);
-            cleanupPlayer(attacker, attackee);
+            afterEach(attacker, attackee);
             EntityDamageByEntityEvent.getHandlerList().unregister(listener);
         }, attackDelay);
 
     }
 
-    private void preparePlayer(Player... players) {
+    private void beforeAll(Player... players) {
+        for (Player player : players) {
+            inventories.put(player.getUniqueId(), player.getInventory().getContents());
+        }
+    }
+
+    private void afterAll(Player... players) {
+        for (Player player : players) {
+            final UUID uuid = player.getUniqueId();
+            ItemStack[] inventory = inventories.get(uuid);
+            if (inventory != null) {
+                player.getInventory().setContents(inventory);
+                inventories.remove(uuid);
+            }
+            Messenger.send(player, "Passed: &a%d &rFailed: &c%d &rTotal: &7%d", tally.getPassed(), tally.getFailed(), tally.getTotal());
+        }
+    }
+
+    private void beforeEach(Player... players) {
         for (Player player : players) {
             final PlayerInfo info = new PlayerInfo(player.getLocation(), player.getMaximumNoDamageTicks());
             playerInfo.put(player.getUniqueId(), info);
@@ -103,11 +142,10 @@ public class InGameTester {
         }
     }
 
-    private void cleanupPlayer(Player... players) {
+    private void afterEach(Player... players) {
         for (Player player : players) {
             final PlayerInfo info = playerInfo.get(player.getUniqueId());
             playerInfo.remove(player.getUniqueId());
-
             player.getInventory().clear();
             player.setExhaustion(0);
             player.setHealth(20);

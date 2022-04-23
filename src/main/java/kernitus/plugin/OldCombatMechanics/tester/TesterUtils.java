@@ -16,11 +16,13 @@ public class TesterUtils {
         }
     }
 
-    public static void assertEquals(double a, double b, String testName, CommandSender... senders){
+    public static void assertEquals(double a, double b, Tally tally, String testName, CommandSender... senders) {
         for (CommandSender sender : senders) {
-            if(a == b){
+            if (a == b) {
+                tally.passed();
                 Messenger.sendNormalMessage(sender, "&aPASSED &f" + testName + " [" + a + "/" + b + "]");
-            } else{
+            } else {
+                tally.failed();
                 Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + " [" + a + "/" + b + "]");
             }
         }
