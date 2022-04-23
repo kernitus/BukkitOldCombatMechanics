@@ -24,6 +24,7 @@ import java.util.*;
 public class ModuleSwordBlocking extends Module {
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
+    // Not using WeakHashMaps here for reliability
     private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
     private final Map<UUID, RunnableSeries> correspondingTasks = new HashMap<>();
     private int restoreDelay;

@@ -39,7 +39,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
     public void reload() {
         cooldown = module().getInt("cooldown");
         if (cooldown > 0) {
-            if (lastLaunched == null) lastLaunched = new HashMap<>();
+            if (lastLaunched == null) lastLaunched = new WeakHashMap<>();
         } else lastLaunched = null;
 
         message = module().getBoolean("showMessage") ? module().getString("message") : null;

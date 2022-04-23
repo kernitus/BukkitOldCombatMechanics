@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class ModuleOldArmourDurability extends Module {
 
-    private final Map<UUID, List<ItemStack>> explosionDamaged = new HashMap<>();
+    private final Map<UUID, List<ItemStack>> explosionDamaged = new WeakHashMap<>();
 
     public ModuleOldArmourDurability(OCMMain plugin) {
         super(plugin, "old-armour-durability");

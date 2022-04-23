@@ -21,8 +21,9 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * Reverts knockback formula to 1.8.
@@ -37,7 +38,7 @@ public class ModulePlayerKnockback extends Module {
     private double knockbackExtraVertical;
     private boolean netheriteKnockbackResistance;
 
-    private final HashMap<UUID, Vector> playerKnockbackHashMap = new HashMap<>();
+    private final Map<UUID, Vector> playerKnockbackHashMap = new WeakHashMap<>();
 
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");

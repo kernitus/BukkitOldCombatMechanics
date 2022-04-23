@@ -25,7 +25,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -44,7 +44,7 @@ public class ModuleOldPotionEffects extends Module {
             PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.UNCRAFTABLE, PotionType.WATER
     );
 
-    private HashMap<PotionType, PotionDurations> durations;
+    private Map<PotionType, PotionDurations> durations;
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");

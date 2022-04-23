@@ -53,7 +53,7 @@ public class ModuleGoldenApple extends Module {
                 module().getLong("cooldown.enchanted"),
                 module().getBoolean("cooldown.is-shared")
         );
-        lastEaten = new HashMap<>();
+        lastEaten = new WeakHashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");

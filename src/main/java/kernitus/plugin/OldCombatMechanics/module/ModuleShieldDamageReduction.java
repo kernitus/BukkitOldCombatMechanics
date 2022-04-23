@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ModuleShieldDamageReduction extends Module {
 
     private int genericDamageReductionAmount, genericDamageReductionPercentage, projectileDamageReductionAmount, projectileDamageReductionPercentage;
-    private final Map<UUID, List<ItemStack>> fullyBlocked = new HashMap<>();
+    private final Map<UUID, List<ItemStack>> fullyBlocked = new WeakHashMap<>();
 
     public ModuleShieldDamageReduction(OCMMain plugin) {
         super(plugin, "shield-damage-reduction");
