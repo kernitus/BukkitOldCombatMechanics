@@ -3,12 +3,10 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
-import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 
@@ -47,19 +45,10 @@ public class ModuleOldToolDamage extends Module {
         }
 
         final double oldBaseDamage = event.getBaseDamage();
-        double expectedDamage = ToolDamage.getDamage(weaponMaterial);
-
-
-        if (event.wasInvulnerabilityOverdamage() && damagee instanceof LivingEntity) {
-            // We must subtract previous damage from new weapon damage for this attack
-            final LivingEntity livingDamagee = (LivingEntity) damagee;
-            final double lastDamage = livingDamagee.getLastDamage();
-            expectedDamage -= lastDamage;
-            weaponDamage -= lastDamage;
-        }
 
         // If the raw is not what we expect for 1.9 we should ignore it, for compatibility with other plugins
-        if (oldBaseDamage == expectedDamage) event.setBaseDamage(weaponDamage);
+        //if (oldBaseDamage == expectedDamage) event.setBaseDamage(weaponDamage);
+        event.setBaseDamage(weaponDamage);
 
         debug("Old " + weaponMaterial + " damage: " + oldBaseDamage + " New tool damage: " + weaponDamage +
                 (event.wasInvulnerabilityOverdamage() ? " (overdamage)" : ""), damager);

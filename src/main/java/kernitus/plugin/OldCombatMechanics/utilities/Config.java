@@ -2,7 +2,6 @@ package kernitus.plugin.OldCombatMechanics.utilities;
 
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
@@ -70,7 +69,8 @@ public class Config {
         reloadInteractiveBlocks();
 
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
-        EntityDamageByEntityListener.getINSTANCE().setEnabled(
+        if(EntityDamageByEntityListener.getINSTANCE() != null)
+            EntityDamageByEntityListener.getINSTANCE().setEnabled(
                 moduleEnabled("old-tool-damage") || moduleEnabled("old-potion-effects"));
 
         // Dynamically registers / unregisters all event listeners for optimal performance!
