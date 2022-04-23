@@ -26,8 +26,11 @@ public class ModuleProjectileKnockback extends Module {
 
         switch(type){
             case SNOWBALL: case EGG: case ENDER_PEARL:
-                e.setDamage(module().getDouble("damage." + type.toString().toLowerCase(Locale.ROOT)));
-                if(e.isApplicable(EntityDamageEvent.DamageModifier.ABSORPTION)) e.setDamage(EntityDamageEvent.DamageModifier.ABSORPTION, 0);
+                if(e.getDamage() == 0.0) { // So we don't override enderpearl fall damage
+                    e.setDamage(module().getDouble("damage." + type.toString().toLowerCase(Locale.ROOT)));
+                    if (e.isApplicable(EntityDamageEvent.DamageModifier.ABSORPTION))
+                        e.setDamage(EntityDamageEvent.DamageModifier.ABSORPTION, 0);
+                }
         }
 
     }
