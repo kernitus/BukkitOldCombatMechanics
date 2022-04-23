@@ -16,9 +16,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.java.JavaPluginLoader;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,24 +26,15 @@ import java.util.stream.Collectors;
 public class OCMMain extends JavaPlugin {
 
     private static OCMMain INSTANCE;
-    private Logger logger = getLogger();
-    private OCMConfigHandler CH = new OCMConfigHandler(this);
-    private List<Runnable> disableListeners = new ArrayList<>();
-    private List<Runnable> enableListeners = new ArrayList<>();
-    private List<Hook> hooks = new ArrayList<>();
-    private static boolean isTesting;
+    private final Logger logger = getLogger();
+    private final OCMConfigHandler CH = new OCMConfigHandler(this);
+    private final List<Runnable> disableListeners = new ArrayList<>();
+    private final List<Runnable> enableListeners = new ArrayList<>();
+    private final List<Hook> hooks = new ArrayList<>();
 
     public OCMMain() {
         super();
-        isTesting = false;
     }
-
-    // Constructors for MockBukkit
-    protected OCMMain(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
-        super(loader, description, dataFolder, file);
-        isTesting = true;
-    }
-
 
     public static OCMMain getInstance() {
         return INSTANCE;
@@ -67,17 +56,14 @@ public class OCMMain extends JavaPlugin {
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
 
-        if(!isTesting) {
+        // Register all the modules
+        registerModules();
 
-            // Register all the modules
-            registerModules();
+        // Register all hooks for integrating with other plugins
+        registerHooks();
 
-            // Register all hooks for integrating with other plugins
-            registerHooks();
-
-            // Initialize all the hooks
-            hooks.forEach(hook -> hook.init(this));
-        }
+        // Initialize all the hooks
+        hooks.forEach(hook -> hook.init(this));
 
         // Set up the command handler
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));
@@ -88,26 +74,26 @@ public class OCMMain extends JavaPlugin {
         // Initialise Config utility
         Config.initialise(this);
 
-        if (!isTesting) {
-            //BStats Metrics
-            Metrics metrics = new Metrics(this, 53);
+        // BStats Metrics
+        Metrics metrics = new Metrics(this, 53);
 
-            metrics.addCustomChart(
-                    new Metrics.SimpleBarChart(
-                            "enabled_modules",
-                            () -> ModuleLoader.getModules().stream()
-                                    .filter(Module::isEnabled)
-                                    .collect(Collectors.toMap(Module::toString, module -> 1))
-                    )
-            );
+        // Simple bar chart
+        metrics.addCustomChart(
+                new Metrics.SimpleBarChart(
+                        "enabled_modules",
+                        () -> ModuleLoader.getModules().stream()
+                                .filter(Module::isEnabled)
+                                .collect(Collectors.toMap(Module::toString, module -> 1))
+                )
+        );
 
-            // Custom Advanced Pie Chart:
-            metrics.addCustomChart(new Metrics.AdvancedPie("most_used_modules",
-                    () -> ModuleLoader.getModules().stream()
-                            .filter(Module::isEnabled)
-                            .collect(Collectors.toMap(Module::toString, module -> 1))
-            ));
-        }
+        // Advanced Pie Chart
+        metrics.addCustomChart(new Metrics.AdvancedPie("enabled_modules_advanced_pie",
+                () -> ModuleLoader.getModules().stream()
+                        .collect(Collectors.toMap(
+                                module -> module.toString() + (module.isEnabled() ? " enabled" : " disabled"),
+                                module -> 1))
+        ));
 
         enableListeners.forEach(Runnable::run);
 
@@ -140,26 +126,24 @@ public class OCMMain extends JavaPlugin {
 
         disableListeners.forEach(Runnable::run);
 
-        if(!isTesting) {
-            // Properly handle Plugman load/unload.
-            List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
-                    .filter(registeredListener -> registeredListener.getPlugin().equals(this))
-                    .collect(Collectors.toList());
+        // Properly handle Plugman load/unload.
+        List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
+                .filter(registeredListener -> registeredListener.getPlugin().equals(this))
+                .collect(Collectors.toList());
 
-            // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
-            // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
-            Bukkit.getOnlinePlayers().forEach(player -> {
-                PlayerQuitEvent event = new PlayerQuitEvent(player, "");
+        // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
+        // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            PlayerQuitEvent event = new PlayerQuitEvent(player, "");
 
-                quitListeners.forEach(registeredListener -> {
-                    try {
-                        registeredListener.callEvent(event);
-                    } catch (EventException e) {
-                        e.printStackTrace();
-                    }
-                });
+            quitListeners.forEach(registeredListener -> {
+                try {
+                    registeredListener.callEvent(event);
+                } catch (EventException e) {
+                    e.printStackTrace();
+                }
             });
-        }
+        });
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
@@ -171,7 +155,7 @@ public class OCMMain extends JavaPlugin {
 
         // Module listeners
         ModuleLoader.addModule(new ModuleAttackCooldown(this));
-        if (!isTesting) ModuleLoader.addModule(new ModulePlayerCollisions(this));
+        ModuleLoader.addModule(new ModulePlayerCollisions(this));
 
         //Listeners registered after with same priority appear to be called later
 
@@ -212,7 +196,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleAttackSounds(this));
         ModuleLoader.addModule(new ModuleOldBurnDelay(this));
         ModuleLoader.addModule(new ModuleAttackFrequency(this));
-        if (!isTesting) ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
+        ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
     }
 
     private void registerHooks() {
@@ -245,9 +229,5 @@ public class OCMMain extends JavaPlugin {
      */
     public void addEnableListener(Runnable action) {
         enableListeners.add(action);
-    }
-
-    public static boolean isTesting(){
-        return isTesting;
     }
 }

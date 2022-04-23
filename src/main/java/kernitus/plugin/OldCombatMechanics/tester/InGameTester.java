@@ -70,23 +70,23 @@ public class InGameTester {
         attacker.updateInventory();
 
         double finalExpectedDamage = expectedDamage;
-        class EntityDamageByEntityMonitor implements Listener {
+
+        Listener listener = new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
-            public void onEntityDamageByEntityEvent(EntityDamageByEntityEvent e) {
+            public void onEvent(EntityDamageByEntityEvent e) {
                 if (e.getDamager() != attacker || e.getEntity() != attackee) return;
 
                 TesterUtils.assertEquals(finalExpectedDamage, e.getFinalDamage(), "Melee Attack " + weaponType, attacker, attackee);
             }
-        }
+        };
 
-        EntityDamageByEntityMonitor mon = new EntityDamageByEntityMonitor();
-        Bukkit.getServer().getPluginManager().registerEvents(mon, ocm);
+        Bukkit.getServer().getPluginManager().registerEvents(listener, ocm);
 
         // Have to run this later because setting the item in the main hand apparently is affected by the cooldown
         Bukkit.getScheduler().runTaskLater(ocm, () -> {
             attacker.attack(attackee);
             cleanupPlayer(attacker, attackee);
-            EntityDamageByEntityEvent.getHandlerList().unregister(mon);
+            EntityDamageByEntityEvent.getHandlerList().unregister(listener);
         }, attackDelay);
 
     }
