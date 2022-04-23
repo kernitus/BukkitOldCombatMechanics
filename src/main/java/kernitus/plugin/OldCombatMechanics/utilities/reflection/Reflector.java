@@ -1,6 +1,5 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import org.bukkit.Bukkit;
 
@@ -16,10 +15,7 @@ public class Reflector {
 
     static {
         try {
-            if (OCMMain.isTesting())
-                version = Bukkit.getBukkitVersion().replaceAll("\\.","_");
-            else
-                version = Bukkit.getServer().getClass().getName().split("\\.")[3];
+            version = Bukkit.getServer().getClass().getName().split("\\.")[3];
         } catch (Exception e) {
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
