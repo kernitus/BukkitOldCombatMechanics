@@ -1,5 +1,7 @@
 package kernitus.plugin.OldCombatMechanics;
 
+import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
+import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
 import kernitus.plugin.OldCombatMechanics.module.Module;
@@ -67,6 +69,8 @@ public class OCMMain extends JavaPlugin {
 
         // Set up the command handler
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));
+        // Set up command tab completer
+        getCommand("OldCombatMechanics").setTabCompleter(new OCMCommandCompleter());
 
         // Initialise the Messenger utility
         Messenger.initialise(this);
