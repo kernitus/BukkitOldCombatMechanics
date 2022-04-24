@@ -8,6 +8,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -17,7 +18,8 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class OCMCommandHandler implements CommandExecutor {
     private static final String NO_PERMISSION = "&cYou need the permission '%s' to do that!";
@@ -25,7 +27,7 @@ public class OCMCommandHandler implements CommandExecutor {
     private final OCMMain plugin;
     private final File pluginFile;
 
-    enum Subcommand {reload, toggle, test}
+    enum Subcommand {reload, toggle, test, enable, disable}
 
     public OCMCommandHandler(OCMMain instance, File pluginFile) {
         this.plugin = instance;
@@ -110,6 +112,19 @@ public class OCMCommandHandler implements CommandExecutor {
             new InGameTester(plugin).performTests(player1, player2);
     }
 
+    private void wideToggle(CommandSender sender, String[] args, ModuleAttackCooldown.PVPMode mode) {
+        final Set<World> worlds = args.length > 1 ?
+                Arrays.asList(args).subList(1, args.length).stream().map(Bukkit::getWorld).filter(Objects::nonNull).collect(Collectors.toSet())
+                : new HashSet<>(Bukkit.getWorlds());
+
+        worlds.stream().map(World::getPlayers).forEach(players -> players.forEach(
+                player -> ModuleAttackCooldown.setAttackSpeed(player, mode)));
+
+        final String message = (mode == ModuleAttackCooldown.PVPMode.NEW_PVP ? "Enabled" : "Disabled") + " cooldown for worlds: " +
+                worlds.stream().map(World::getName).reduce((a, b) -> a + ", " + b).orElse("none!");
+        Messenger.sendNormalMessage(sender, message);
+    }
+
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if (args.length < 1) {
             help(plugin, sender);
@@ -123,6 +138,10 @@ public class OCMCommandHandler implements CommandExecutor {
                         case toggle: toggle(plugin, sender, args);
                             break;
                         case test: test(plugin, sender, args);
+                            break;
+                        case enable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.NEW_PVP);
+                            break;
+                        case disable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.OLD_PVP);
                             break;
                         default: throw new IllegalArgumentException();
                     }

@@ -98,8 +98,8 @@ public class ModuleAttackCooldown extends Module {
         OLD_PVP("1.8", 16),
         NEW_PVP("1.9+", 4);
 
-        private String name;
-        private double baseAttackSpeed;
+        private final String name;
+        private final double baseAttackSpeed;
 
         PVPMode(String name, double baseAttackSpeed){
             this.name = name;
