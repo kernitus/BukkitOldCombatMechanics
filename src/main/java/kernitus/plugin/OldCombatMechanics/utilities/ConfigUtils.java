@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 /**
  * Various utilities for making it easier to work with {@link org.bukkit.configuration.Configuration Configurations}.
  *
- * @author Rayzr522
  * @see org.bukkit.configuration.file.YamlConfiguration
  * @see org.bukkit.configuration.ConfigurationSection
  */

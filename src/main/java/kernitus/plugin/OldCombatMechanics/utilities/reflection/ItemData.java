@@ -9,9 +9,6 @@ import com.comphenix.example.NbtFactory;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-/**
- * Created by Rayzr522 on 7/11/16.
- */
 public class ItemData {
 
     public static void mark(ItemStack is, String marker){

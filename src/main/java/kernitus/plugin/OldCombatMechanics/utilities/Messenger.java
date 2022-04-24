@@ -12,9 +12,6 @@ import org.bukkit.command.CommandSender;
 import java.util.Objects;
 import java.util.logging.Level;
 
-/**
- * Created by Rayzr522 on 6/21/16.
- */
 public class Messenger {
 
     public static final String HORIZONTAL_BAR = ChatColor.STRIKETHROUGH + "----------------------------------------------------";

@@ -7,8 +7,6 @@ package kernitus.plugin.OldCombatMechanics.utilities;
 
 /**
  * For all the math utilities that I needed which (for some reason) aren't in the Math class.
- *
- * @author Rayzr
  */
 public class MathHelper {
 

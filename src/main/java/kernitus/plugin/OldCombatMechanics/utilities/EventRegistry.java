@@ -14,8 +14,6 @@ import java.util.List;
 
 /**
  * A simple utility class to ensure that a Listener is not registered more than once.
- *
- * @author Rayzr522
  */
 public class EventRegistry {
     private final Plugin plugin;

@@ -12,9 +12,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Rayzr522 on 6/27/16.
- */
 public class ModuleLoader {
 
     private static EventRegistry eventRegistry;

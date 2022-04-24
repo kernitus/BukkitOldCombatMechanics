@@ -20,10 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-/**
- * Created by Rayzr522 on 6/14/16.
- */
-
 public class Config {
 
     private static OCMMain plugin;
