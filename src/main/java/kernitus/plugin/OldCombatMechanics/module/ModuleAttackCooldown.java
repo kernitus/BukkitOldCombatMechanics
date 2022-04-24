@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -69,7 +70,7 @@ public class ModuleAttackCooldown extends Module {
      * @param player      the player to set it for
      * @param attackSpeed the attack speed to set it to
      */
-    private void setAttackSpeed(Player player, double attackSpeed){
+    public static void setAttackSpeed(Player player, double attackSpeed){
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         if(attribute == null){
             return;
@@ -78,11 +79,15 @@ public class ModuleAttackCooldown extends Module {
         double baseValue = attribute.getBaseValue();
 
         if(baseValue != attackSpeed){
-            debug(String.format("Setting attack speed for player %s to %.2f (was: %.2f)", player.getName(), attackSpeed, baseValue));
+            Messenger.debug(String.format("Setting attack speed for player %s to %.2f (was: %.2f)", player.getName(), attackSpeed, baseValue));
 
             attribute.setBaseValue(attackSpeed);
             player.saveData();
         }
+    }
+
+    public static void setAttackSpeed(Player player, PVPMode mode){
+        setAttackSpeed(player,mode.getBaseAttackSpeed());
     }
 
     /**
