@@ -90,7 +90,7 @@ public class ModuleShieldDamageReduction extends Module {
                     fullyBlocked.remove(uuid);
                     debug("Removed from fully blocked set!", player);
                 }
-            }.runTaskLaterAsynchronously(plugin, 1);
+            }.runTaskLater(plugin, 1);
         }
     }
 

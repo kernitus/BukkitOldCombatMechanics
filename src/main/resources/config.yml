@@ -209,7 +209,7 @@ old-golden-apples:
   old-potion-effects: true
   # Potion effects golden apples should apply
   # Duration is in ticks (20 ticks = 1 second)
-  # Amplifier is potion level -1, so Regeneration IV would be amplifier 3
+  # Amplifier is the potion level - 1, so Regeneration IV would be amplifier 3
   gapple-effects:
     regeneration:
       duration: 100

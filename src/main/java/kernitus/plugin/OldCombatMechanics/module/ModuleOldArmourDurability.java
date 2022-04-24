@@ -53,7 +53,7 @@ public class ModuleOldArmourDurability extends Module {
 
         // 60 + (40 / (level + 1) ) % chance that durability is reduced (for each point of durability)
         final int damageChance = 60 + (40 / (item.getEnchantmentLevel(Enchantment.DURABILITY) + 1));
-        Random random = new Random();
+        final Random random = new Random();
         final int randomInt = random.nextInt(100); // between 0 (inclusive) and 100 (exclusive)
         if(randomInt >= damageChance)
             reduction = 0;
@@ -84,7 +84,7 @@ public class ModuleOldArmourDurability extends Module {
         };
 
         // This delay seems enough for the durability events to fire
-        runnable.runTaskLaterAsynchronously(plugin, 1);
+        runnable.runTaskLater(plugin, 1);
         debug("Detected explosion!", player);
     }
 }
