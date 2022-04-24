@@ -23,7 +23,6 @@ public class InGameTester {
 
     private final OCMMain ocm;
     private final Map<UUID, PlayerInfo> playerInfo;
-    private final Map<UUID, ItemStack[]> inventories;
     private Tally tally;
 
     // todo test with armour
@@ -37,7 +36,6 @@ public class InGameTester {
     public InGameTester(OCMMain ocm) {
         this.ocm = ocm;
         playerInfo = new WeakHashMap<>();
-        inventories = new WeakHashMap<>();
     }
 
     /**
@@ -114,43 +112,39 @@ public class InGameTester {
 
     private void beforeAll(Player... players) {
         for (Player player : players) {
-            inventories.put(player.getUniqueId(), player.getInventory().getContents());
+            final PlayerInfo info = new PlayerInfo(player.getLocation(), player.getMaximumNoDamageTicks(), player.getInventory().getContents());
+            playerInfo.put(player.getUniqueId(), info);
+            player.setMaximumNoDamageTicks(0);
         }
     }
 
     private void afterAll(Player... players) {
         for (Player player : players) {
             final UUID uuid = player.getUniqueId();
-            ItemStack[] inventory = inventories.get(uuid);
-            if (inventory != null) {
-                player.getInventory().setContents(inventory);
-                inventories.remove(uuid);
-            }
+            final PlayerInfo info = playerInfo.get(uuid);
+            playerInfo.remove(uuid);
+            player.getInventory().setContents(info.inventoryContents);
+            player.setMaximumNoDamageTicks(info.maximumNoDamageTicks);
             Messenger.send(player, "Passed: &a%d &rFailed: &c%d &rTotal: &7%d", tally.getPassed(), tally.getFailed(), tally.getTotal());
         }
     }
 
     private void beforeEach(Player... players) {
         for (Player player : players) {
-            final PlayerInfo info = new PlayerInfo(player.getLocation(), player.getMaximumNoDamageTicks());
-            playerInfo.put(player.getUniqueId(), info);
             player.setGameMode(GameMode.SURVIVAL);
             player.getInventory().clear();
             player.setExhaustion(0);
             player.setHealth(20);
-            //player.setMaximumNoDamageTicks(0);
         }
     }
 
     private void afterEach(Player... players) {
         for (Player player : players) {
             final PlayerInfo info = playerInfo.get(player.getUniqueId());
-            playerInfo.remove(player.getUniqueId());
             player.getInventory().clear();
             player.setExhaustion(0);
             player.setHealth(20);
             player.teleport(info.location);
-            //player.setMaximumNoDamageTicks(info.maximumNoDamageTicks);
         }
     }
 }
