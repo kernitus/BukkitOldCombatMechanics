@@ -1,3 +1,9 @@
+<!--
+     This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at https://mozilla.org/MPL/2.0/.
+-->
+
 # Contributing
 All contributions should be in the form of [pull requests](https://github.com/kernitus/BukkitOldCombatMechanics/pulls), and should use the formatting profiles provided at the bottom of this page. All pull requests must be fully functional and able to compile, and should be fully tested. Please submit **monofocal** pull requests, i.e.if you're making unrelated changes to two different modules, or decide to also update the version of a dependency, *those should be separate pull requests*.
 
