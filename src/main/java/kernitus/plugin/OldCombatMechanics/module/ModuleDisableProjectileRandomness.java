@@ -65,7 +65,7 @@ public class ModuleDisableProjectileRandomness extends Module {
     }
 
     private Vector rotateAroundY(Vector vector, double angle) {
-        if (Reflector.versionIsNewerOrEqualAs(14, 0, 0))
+        if (Reflector.versionIsNewerOrEqualAs(1, 14, 0))
             return vector.rotateAroundY(angle);
         else {
             double angleCos = Math.cos(angle);

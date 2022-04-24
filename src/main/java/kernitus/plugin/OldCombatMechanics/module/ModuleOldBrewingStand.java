@@ -1,6 +1,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -9,58 +10,51 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Makes brewing stands not require fuel.
  */
 public class ModuleOldBrewingStand extends Module {
 
-    public ModuleOldBrewingStand(OCMMain plugin){
+    public ModuleOldBrewingStand(OCMMain plugin) {
         super(plugin, "old-brewing-stand");
     }
 
     @EventHandler
-    public void onBrew(BrewEvent e){
-        Block block = e.getBlock();
+    public void onBrew(BrewEvent e) {
+        final Block block = e.getBlock();
 
-        if(!isEnabled(block.getWorld()))
-            return;
+        if (!isEnabled(block.getWorld())) return;
 
-        BlockState blockState = block.getState();
-
-        refuel(blockState);
+        if (Reflector.versionIsNewerOrEqualAs(1, 17, 0)) {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    refuel(block.getState());
+                }
+            }.runTaskLater(plugin, 1L);
+        } else refuel(block.getState());
     }
 
-    private void refuel(BlockState blockState){
-        if(!(blockState instanceof BrewingStand))
-            return;
+    private void refuel(BlockState blockState) {
+        if (!(blockState instanceof BrewingStand)) return;
 
-        BrewingStand brewingStand = (BrewingStand) blockState;
+        final BrewingStand brewingStand = (BrewingStand) blockState;
 
         brewingStand.setFuelLevel(20);
         brewingStand.update();
     }
 
     @EventHandler
-    public void onInventoryOpen(InventoryOpenEvent e){
-        if(!isEnabled(e.getPlayer().getWorld()))
-            return;
+    public void onInventoryOpen(InventoryOpenEvent e) {
+        if (!isEnabled(e.getPlayer().getWorld())) return;
 
-        Inventory inv = e.getInventory();
+        final Inventory inventory = e.getInventory();
+        Location location = inventory.getLocation();
+        if (location == null) return;
 
-        if(inv == null) return;
-
-        Location loc = null;
-
-        // TODO: Why is this needed? It should just return null
-        try{
-            loc = inv.getLocation();
-        } catch(Exception ignored){
-        }
-
-        if(loc == null) return;
-
-        Block block = loc.getBlock();
+        final Block block = location.getBlock();
 
         refuel(block.getState());
     }
