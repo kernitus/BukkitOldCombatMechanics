@@ -31,48 +31,49 @@ public class ModuleSwordBlocking extends Module {
     private boolean blacklist;
     private List<Material> noBlockingItems = new ArrayList<>();
 
-    public ModuleSwordBlocking(OCMMain plugin){
+    public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
     }
 
     @Override
-    public void reload(){
+    public void reload() {
         restoreDelay = module().getInt("restoreDelay", 40);
         blacklist = module().getBoolean("blacklist");
         noBlockingItems = ConfigUtils.loadMaterialList(module(), "noBlockingItems");
     }
 
-
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onRightClick(PlayerInteractEvent e){
-        if(e.getItem() == null) return;
+    public void onRightClick(PlayerInteractEvent e) {
+        if (e.getItem() == null) return;
 
-        Action action = e.getAction();
-
-        if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        final Action action = e.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         final Block block = e.getClickedBlock();
-        if(action == Action.RIGHT_CLICK_BLOCK && block != null &&
+        if (action == Action.RIGHT_CLICK_BLOCK && block != null &&
                 Config.getInteractiveBlocks().contains(block.getType()))
             return;
 
-        Player p = e.getPlayer();
-        World world = p.getWorld();
+        final Player p = e.getPlayer();
+        final World world = p.getWorld();
 
-        if(!isEnabled(world)) return;
+        if (!isEnabled(world)) return;
 
-        UUID id = p.getUniqueId();
+        if (module().getBoolean("use-permission") &&
+                !p.hasPermission("oldcombatmechanics.swordblock")) return;
 
-        if(!p.isBlocking()){
-            ItemStack item = e.getItem();
+        final UUID id = p.getUniqueId();
 
-            if(!isHoldingSword(item.getType()) || hasShield(p)) return;
+        if (!p.isBlocking()) {
+            final ItemStack item = e.getItem();
 
-            PlayerInventory inv = p.getInventory();
+            if (!isHoldingSword(item.getType()) || hasShield(p)) return;
 
-            boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+            final PlayerInventory inv = p.getInventory();
 
-            if(blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
+            final boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+
+            if (blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
 
             storedOffhandItems.put(id, inv.getItemInOffHand());
 
@@ -83,30 +84,29 @@ public class ModuleSwordBlocking extends Module {
     }
 
     @EventHandler
-    public void onHotBarChange(PlayerItemHeldEvent e){
+    public void onHotBarChange(PlayerItemHeldEvent e) {
         restore(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e){
+    public void onWorldChange(PlayerChangedWorldEvent e) {
         restore(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogout(PlayerQuitEvent e){
+    public void onPlayerLogout(PlayerQuitEvent e) {
         restore(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerDeath(PlayerDeathEvent e){
-        if(!isBlocking(e.getEntity().getUniqueId())) return;
+    public void onPlayerDeath(PlayerDeathEvent e) {
+        if (!isBlocking(e.getEntity().getUniqueId())) return;
 
-        Player p = e.getEntity();
-        UUID id = p.getUniqueId();
+        final Player p = e.getEntity();
+        final UUID id = p.getUniqueId();
 
         e.getDrops().replaceAll(item -> {
-
-            if(item.getType().equals(Material.SHIELD))
+            if (item.getType().equals(Material.SHIELD))
                 item = storedOffhandItems.remove(id);
 
             return item;
@@ -117,24 +117,23 @@ public class ModuleSwordBlocking extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e){
-        Player p = e.getPlayer();
-        if(isBlocking(p.getUniqueId()))
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e) {
+        final Player p = e.getPlayer();
+        if (isBlocking(p.getUniqueId()))
             e.setCancelled(true);
 
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryClick(InventoryClickEvent e){
+    public void onInventoryClick(InventoryClickEvent e) {
+        if (e.getWhoClicked() instanceof Player) {
+            final Player p = (Player) e.getWhoClicked();
 
-        if(e.getWhoClicked() instanceof Player){
-            Player p = (Player) e.getWhoClicked();
-
-            if(isBlocking(p.getUniqueId())){
-                ItemStack cursor = e.getCursor();
-                ItemStack current = e.getCurrentItem();
-                if(cursor != null && cursor.getType() == Material.SHIELD ||
-                        current != null && current.getType() == Material.SHIELD){
+            if (isBlocking(p.getUniqueId())) {
+                final ItemStack cursor = e.getCursor();
+                final ItemStack current = e.getCurrentItem();
+                if (cursor != null && cursor.getType() == Material.SHIELD ||
+                        current != null && current.getType() == Material.SHIELD) {
                     e.setCancelled(true);
                     restore(p);
                 }
@@ -143,25 +142,24 @@ public class ModuleSwordBlocking extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onItemDrop(PlayerDropItemEvent e){
-        Item is = e.getItemDrop();
+    public void onItemDrop(PlayerDropItemEvent e) {
+        final Item is = e.getItemDrop();
+        final Player p = e.getPlayer();
 
-        Player p = e.getPlayer();
-
-        if(isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD){
+        if (isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD) {
             e.setCancelled(true);
             restore(p);
         }
     }
 
-    private void restore(Player p){
-        UUID id = p.getUniqueId();
+    private void restore(Player p) {
+        final UUID id = p.getUniqueId();
 
         tryCancelTask(id);
 
-        if(!isBlocking(id)) return;
+        if (!isBlocking(id)) return;
 
-        if(p.isBlocking()) //They are still blocking with the shield so postpone restoring
+        if (p.isBlocking()) //They are still blocking with the shield so postpone restoring
             scheduleRestore(p);
         else {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
@@ -169,18 +167,18 @@ public class ModuleSwordBlocking extends Module {
         }
     }
 
-    private void tryCancelTask(UUID id){
+    private void tryCancelTask(UUID id) {
         Optional.ofNullable(correspondingTasks.remove(id))
                 .ifPresent(RunnableSeries::cancelAll);
     }
 
-    private void scheduleRestore(Player p){
-        UUID id = p.getUniqueId();
+    private void scheduleRestore(Player p) {
+        final UUID id = p.getUniqueId();
         tryCancelTask(id);
 
         BukkitRunnable removeItem = new BukkitRunnable() {
             @Override
-            public void run(){
+            public void run() {
                 restore(p);
             }
         };
@@ -188,8 +186,8 @@ public class ModuleSwordBlocking extends Module {
 
         BukkitRunnable checkBlocking = new BukkitRunnable() {
             @Override
-            public void run(){
-                if(!p.isBlocking()) {
+            public void run() {
+                if (!p.isBlocking()) {
                     restore(p);
                 }
             }
@@ -199,15 +197,15 @@ public class ModuleSwordBlocking extends Module {
         correspondingTasks.put(p.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
 
-    private boolean isBlocking(UUID uuid){
+    private boolean isBlocking(UUID uuid) {
         return storedOffhandItems.containsKey(uuid);
     }
 
-    private boolean hasShield(Player p){
+    private boolean hasShield(Player p) {
         return p.getInventory().getItemInOffHand().getType() == Material.SHIELD;
     }
 
-    private boolean isHoldingSword(Material mat){
+    private boolean isHoldingSword(Material mat) {
         return mat.toString().endsWith("_SWORD");
     }
 }

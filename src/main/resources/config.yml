@@ -157,6 +157,8 @@ sword-blocking:
   noBlockingItems: []
   # Whether the above list should act as a blacklist (i.e. only items listed stop the blocking mechanic)
   blacklist: true
+  # Whether to require players to have oldcombatmechanics.swordblock permission to block with a sword
+  use-permission: false
 
 shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
