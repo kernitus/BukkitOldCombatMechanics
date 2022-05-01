@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>1.10.0</version>
+    <version>1.11.0BETA</version>
     <name>OldCombatMechanics</name>
     <description>Implements pre-1.9 combat-related mechanics</description>
     <url>https://github.com/kernitus/BukkitOldCombatMechanics</url>
@@ -29,8 +29,8 @@
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
         <repository>
-            <id>local-file-repo</id>
-            <url>file://${basedir}/internal-file-repo</url>
+            <id>Sparky</id>
+            <url>https://nexus.sparky.ac/repository/Sparky/</url>
         </repository>
         <repository>
             <id>CodeMC</id>
@@ -67,8 +67,8 @@
         <!--SPARTAN API-->
         <dependency>
             <groupId>me.vagdedes</groupId>
-            <artifactId>spartan-api</artifactId>
-            <version>190</version>
+            <artifactId>SpartanAPI</artifactId>
+            <version>6.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
