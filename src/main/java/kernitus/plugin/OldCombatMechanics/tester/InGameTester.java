@@ -21,7 +21,6 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
-import java.util.function.BiConsumer;
 
 import static kernitus.plugin.OldCombatMechanics.tester.TesterUtils.PlayerInfo;
 
@@ -31,6 +30,8 @@ public class InGameTester {
     private final Map<UUID, PlayerInfo> playerInfo;
     private Tally tally;
     private long delay;
+    private Player attacker, defender;
+    private Runnable extras; // for giving defender armour etc.
 
     // todo test with armour
     // todo test with enchanted weapons
@@ -50,50 +51,64 @@ public class InGameTester {
      * Perform all tests using the two specified players
      */
     public void performTests(Player attacker, Player defender) {
-        beforeAll(attacker, defender);
+        this.attacker = attacker;
+        this.defender = defender;
+        beforeAll();
         tally = new Tally();
 
-        //testMelee(attacker, defender, (a, d) -> {});
-        //testOverdamage(attacker, defender);
-        testArmour(attacker, defender);
+        runAttacks(); // with no armour
+        testArmour();
 
-        Bukkit.getScheduler().runTaskLater(ocm, () -> afterAll(attacker, defender), delay);
+        Bukkit.getScheduler().runTaskLater(ocm, this::afterAll, delay);
     }
 
-    private void testArmour(Player attacker, Player defender) {
-        testMelee(attacker, defender, (a, d) -> {
+    private void runAttacks() {
+        testMelee();
+        testOverdamage();
+    }
+
+    private void appendExtras(Runnable runnable) {
+        final Runnable oldExtras = extras;
+        extras = () -> {
+            oldExtras.run();
+            runnable.run();
+        };
+    }
+
+    private void testArmour() {
+        extras = () -> {
             // give defender some armour
-            d.getInventory().setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
-            d.updateInventory();
-        });
-        // run testmelee and testoverdamage
+            defender.getInventory().setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
+            defender.updateInventory();
+        };
+        runAttacks();
     }
 
-    private void testMelee(Player attacker, Player defender, BiConsumer<Player, Player> extras) {
+    private void testMelee() {
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
-                beforeEach(attacker, defender, extras);
-                testMeleeAttack(attacker, defender, weaponType, 0);
+                beforeEach();
+                testMeleeAttack(weaponType, 0);
             }, delay);
 
-            //delay += 2;
-            delay += 20;
+            delay += 2;
         }
     }
 
-    private void testOverdamage(Player attacker, Player defender) {
+    private void testOverdamage() {
         Material[] weapons = {Material.WOODEN_HOE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_AXE};
+        appendExtras(() -> defender.setMaximumNoDamageTicks(100));
         for (Material weaponType : weapons) {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
-                beforeEach(attacker, defender, (a, d) -> d.setMaximumNoDamageTicks(100));
-                testMeleeAttack(attacker, defender, weaponType, 10);
+                beforeEach();
+                testMeleeAttack(weaponType, 10);
             }, delay);
 
             delay += 40;
         }
     }
 
-    private void testMeleeAttack(Player attacker, Player defender, Material weaponType, long attackDelay) {
+    private void testMeleeAttack(Material weaponType, long attackDelay) {
         ItemStack weapon = new ItemStack(weaponType);
 
         //todo include weapon enchants, armour etc. in expected calculations
@@ -105,10 +120,10 @@ public class InGameTester {
         attacker.updateInventory();
 
         double finalExpectedDamage = expectedDamage;
-        monitor(attacker, defender, finalExpectedDamage, attackDelay, "Melee Attack " + weaponType);
+        monitor(finalExpectedDamage, attackDelay, "Melee Attack " + weaponType);
     }
 
-    private void monitor(Player attacker, Player defender, double expectedDamage, long attackDelay, String message) {
+    private void monitor(double expectedDamage, long attackDelay, String message) {
         final boolean[] eventHappened = {false};
 
         Listener listener = new Listener() {
@@ -123,17 +138,17 @@ public class InGameTester {
 
         Bukkit.getServer().getPluginManager().registerEvents(listener, ocm);
 
-        // Have to run this with a delay because setting the item in the main hand apparently is affected by the cooldown
+        // Delay the attack when testing overdamage
         Bukkit.getScheduler().runTaskLater(ocm, () -> {
             attacker.attack(defender);
-            afterEach(attacker, defender);
+            afterEach();
             EntityDamageByEntityEvent.getHandlerList().unregister(listener);
             if (!eventHappened[0]) tally.failed();
         }, attackDelay);
     }
 
-    private void beforeAll(Player... players) {
-        for (Player player : players) {
+    private void beforeAll() {
+        for (Player player : new Player[]{attacker, defender}) {
             player.setGameMode(GameMode.SURVIVAL);
             final PlayerInfo info = new PlayerInfo(player.getLocation(), player.getMaximumNoDamageTicks(), player.getInventory().getContents());
             playerInfo.put(player.getUniqueId(), info);
@@ -141,8 +156,8 @@ public class InGameTester {
         }
     }
 
-    private void afterAll(Player... players) {
-        for (Player player : players) {
+    private void afterAll() {
+        for (Player player : new Player[]{attacker, defender}) {
             final UUID uuid = player.getUniqueId();
             final PlayerInfo info = playerInfo.get(uuid);
             playerInfo.remove(uuid);
@@ -152,17 +167,17 @@ public class InGameTester {
         }
     }
 
-    private void beforeEach(Player attacker, Player defender, BiConsumer<Player, Player> extras) {
+    private void beforeEach() {
         for (Player player : new Player[]{attacker, defender}) {
             player.getInventory().clear();
             player.setExhaustion(0);
             player.setHealth(20);
         }
-        extras.accept(attacker, defender);
+        extras.run();
     }
 
-    private void afterEach(Player... players) {
-        for (Player player : players) {
+    private void afterEach() {
+        for (Player player : new Player[]{attacker, defender}) {
             final PlayerInfo info = playerInfo.get(player.getUniqueId());
             player.setExhaustion(0);
             player.setHealth(20);
