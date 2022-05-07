@@ -25,14 +25,14 @@ public class TesterUtils {
     }
 
     public static void assertEquals(double a, double b, Tally tally, String testName, CommandSender... senders) {
-        for (CommandSender sender : senders) {
-            if (a == b) {
-                tally.passed();
+        if (a == b) {
+            tally.passed();
+            for (CommandSender sender : senders)
                 Messenger.sendNormalMessage(sender, "&aPASSED &f" + testName + " [" + a + "/" + b + "]");
-            } else {
-                tally.failed();
+        } else {
+            tally.failed();
+            for (CommandSender sender : senders)
                 Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + " [" + a + "/" + b + "]");
-            }
         }
     }
 }
