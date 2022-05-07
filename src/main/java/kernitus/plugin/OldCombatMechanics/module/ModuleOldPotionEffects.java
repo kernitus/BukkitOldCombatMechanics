@@ -172,15 +172,15 @@ public class ModuleOldPotionEffects extends Module {
 
     private void setNewPotionEffect(LivingEntity livingEntity, PotionEffect potionEffect) {
         if (!livingEntity.hasPotionEffect(potionEffect.getType())) {
-            livingEntity.addPotionEffect(potionEffect, false);
+            livingEntity.addPotionEffect(potionEffect);
             return;
         }
 
         final PotionEffect activeEffect = PotionEffects.getOrNull(livingEntity, potionEffect.getType());
         final int remainingDuration = activeEffect.getDuration();
 
-        // If new effect it type II while old wasn't, or
-        // new would last longer than remaining time but isn't a level downgrade (eg II -> I), set it
+        // If new effect is type II while old wasn't, or new would last longer than
+        // remaining time but isn't a level downgrade (eg II -> I), set it
         final int newAmplifier = potionEffect.getAmplifier();
         final int activeAmplifier = activeEffect.getAmplifier();
 
