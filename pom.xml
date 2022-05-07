@@ -66,9 +66,9 @@
 
         <!--SPARTAN API-->
         <dependency>
-            <groupId>me.vagdedes</groupId>
+            <groupId>me.vagdedes.spartan</groupId>
             <artifactId>SpartanAPI</artifactId>
-            <version>6.0</version>
+            <version>1.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
