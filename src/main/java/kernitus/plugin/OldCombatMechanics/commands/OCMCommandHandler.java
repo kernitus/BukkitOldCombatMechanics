@@ -52,6 +52,8 @@ public class OCMCommandHandler implements CommandExecutor {
             Messenger.send(sender, "&eYou can use &c/ocm toggle [player] [on/off] &e to turn attack cooldown on/off");
         if (checkPermissions(sender, Subcommand.test))
             Messenger.send(sender, "&eYou can use &c/ocm test <player> [player] &e to run some automated tests");
+        if (checkPermissions(sender, Subcommand.enable) || checkPermissions(sender, Subcommand.disable))
+            Messenger.send(sender, "&eYou can use &c/ocm <enable/disable> [world] &e to toggle cooldown for the server or world");
 
         Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
 
