@@ -19,12 +19,17 @@ assignees: ''
 <!-- Please don't say 'latest', that is meaningless when a new version is released -->
 * OldCombatMechanics version: 
 
-<!-- Console log from the server, please upload this to e.g. pastebin and link the file here -->
-<!-- Please do NOT use hastebin, they seem to disappeared way too fast! -->
+<!-- Console log from the server, please paste it within the backticks (i.e. ```) -->
 * Server Log File: 
+```
 
-<!-- OldCombatMechanics config.yml, please upload this to e.g. pastebin and link the file here or use code tags-->
+```
+
+<!-- OldCombatMechanics config.yml, please paste it within the backticks (i.e. ```) -->
 * OldCombatMechanics config file: 
+```
+
+```
 
 <!-- If the issue is damage related, please enable debug mode in the config and provide screenshots of the output-->
 
