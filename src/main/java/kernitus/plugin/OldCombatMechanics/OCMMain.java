@@ -16,6 +16,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.AdvancedPie;
+import org.bstats.charts.SimpleBarChart;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventException;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -88,7 +90,7 @@ public class OCMMain extends JavaPlugin {
 
         // Simple bar chart
         metrics.addCustomChart(
-                new Metrics.SimpleBarChart(
+                new SimpleBarChart(
                         "enabled_modules",
                         () -> ModuleLoader.getModules().stream()
                                 .filter(Module::isEnabled)
@@ -97,7 +99,7 @@ public class OCMMain extends JavaPlugin {
         );
 
         // Advanced Pie Chart
-        metrics.addCustomChart(new Metrics.AdvancedPie("enabled_modules_advanced_pie",
+        metrics.addCustomChart(new AdvancedPie("enabled_modules_advanced_pie",
                 () -> ModuleLoader.getModules().stream()
                         .collect(Collectors.toMap(
                                 module -> module.toString() + (module.isEnabled() ? " enabled" : " disabled"),
