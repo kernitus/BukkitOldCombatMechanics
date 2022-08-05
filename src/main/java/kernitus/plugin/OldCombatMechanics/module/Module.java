@@ -8,11 +8,13 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.apache.commons.lang.WordUtils;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.Listener;
+
+import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * A module providing some specific functionality, e.g. restoring fishing rod knockback.
@@ -105,6 +107,9 @@ public abstract class Module implements Listener {
 
     @Override
     public String toString(){
-        return WordUtils.capitalizeFully(configName.replaceAll("-", " "));
+        return Arrays.stream(configName.split("-"))
+                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase(Locale.ROOT))
+                .reduce((a, b) -> a + " " + b)
+                .orElse(configName);
     }
 }
