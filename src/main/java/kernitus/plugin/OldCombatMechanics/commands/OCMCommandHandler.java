@@ -127,8 +127,9 @@ public class OCMCommandHandler implements CommandExecutor {
         worlds.stream().map(World::getPlayers).forEach(players -> players.forEach(
                 player -> ModuleAttackCooldown.setAttackSpeed(player, mode)));
 
+        // Do not use method reference to get world name because with 1.18 method was moved from World to WorldInfo
         final String message = (mode == ModuleAttackCooldown.PVPMode.NEW_PVP ? "Enabled" : "Disabled") + " cooldown for worlds: " +
-                worlds.stream().map(World::getName).reduce((a, b) -> a + ", " + b).orElse("none!");
+                worlds.stream().map(w -> w.getName()).reduce((a, b) -> a + ", " + b).orElse("none!");
         Messenger.sendNormalMessage(sender, message);
     }
 

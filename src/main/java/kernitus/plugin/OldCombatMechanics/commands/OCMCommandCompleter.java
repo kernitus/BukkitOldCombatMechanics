@@ -6,7 +6,6 @@
 package kernitus.plugin.OldCombatMechanics.commands;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -61,8 +60,9 @@ public class OCMCommandCompleter implements TabCompleter {
                     completions.addAll(Stream.of("on", "off").filter(arg -> arg.startsWith(args[2])).collect(Collectors.toList()));
                 }
             } else if (args[0].equalsIgnoreCase(Subcommand.enable.toString()) || args[0].equalsIgnoreCase(Subcommand.disable.toString())) {
+                // Do not use method reference to get world name because with 1.18 method was moved from World to WorldInfo
                 completions.addAll(Bukkit.getWorlds().stream()
-                        .map(World::getName)
+                        .map(w -> w.getName())
                         .filter(name -> !Arrays.asList(args).subList(1,args.length).contains(name))
                         .filter(arg -> arg.startsWith(args[args.length - 1]))
                         .collect(Collectors.toList()));
