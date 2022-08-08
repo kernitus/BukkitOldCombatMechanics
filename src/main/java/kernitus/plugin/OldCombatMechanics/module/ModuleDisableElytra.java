@@ -15,7 +15,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -26,99 +29,93 @@ import org.bukkit.inventory.PlayerInventory;
  */
 public class ModuleDisableElytra extends Module {
 
-    private static final int CHEST_PIECE = 38;
+    private static final int CHEST_SLOT = 38;
+    private static final int OFFHAND_SLOT = 40;
 
-    public ModuleDisableElytra(OCMMain plugin){
+    public ModuleDisableElytra(OCMMain plugin) {
         super(plugin, "disable-elytra");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryClick(InventoryClickEvent e){
-        if(!(e.getWhoClicked() instanceof Player))
-            return;
+    public void onInventoryClick(InventoryClickEvent e) {
+        if (!(e.getWhoClicked() instanceof Player)) return;
+        final Player player = (Player) e.getWhoClicked();
 
-        Player player = (Player) e.getWhoClicked();
-        if(!isEnabled(player.getWorld()))
-            return;
-        if(player.getGameMode() == GameMode.CREATIVE)
-            return;
+        if (!isEnabled(player.getWorld()) || player.getGameMode() == GameMode.CREATIVE) return;
 
-        InventoryType type = e.getInventory().getType(); // Only if they're in their inventory, not chests etc.
-        if(type != InventoryType.CRAFTING && type != InventoryType.PLAYER)
-            return;
+        // If they're in their own inventory, and not chests etc.
+        final InventoryType inventoryType = e.getInventory().getType();
+        if (inventoryType != InventoryType.CRAFTING && inventoryType != InventoryType.PLAYER) return;
 
-        ItemStack cursor = e.getCursor();
-        ItemStack currentItem = e.getCurrentItem();
+        final ItemStack cursor = e.getCursor();
+        final ItemStack currentItem = e.getCurrentItem();
+        final ClickType clickType = e.getClick();
+        final PlayerInventory inv = player.getInventory();
+        final int slot = e.getSlot();
 
-        // We allow the action if the user swapped with the hotbar...
-        if(e.getAction() == InventoryAction.HOTBAR_SWAP){
-            // ...and the item we swapped with is no elytra
-            if(!isElytra(player.getInventory().getItem(e.getHotbarButton()))) return;
-            // ...and they are not swapping into the chest slot
-            if(e.getSlot() != CHEST_PIECE) return;
-        }
+        try {
+            // If they used a number key to swap an elytra from the hotbar into the chest slot
+            if ((clickType == ClickType.NUMBER_KEY && slot == CHEST_SLOT && isElytra(inv.getItem(e.getHotbarButton())))
 
-        // Allow shift clicking it out of the slot, but not in
-        if(isElytra(currentItem) && e.getSlot() != CHEST_PIECE)
-            if((e.getClick() == ClickType.SHIFT_LEFT || e.getClick() == ClickType.SHIFT_RIGHT))
+                    // If they are placing it into the chest slot directly
+                    || (slot == CHEST_SLOT && isElytra(cursor))
+
+                    // If they shift-clicked an elytra into the chest slot
+                    || (isElytra(currentItem) && slot != CHEST_SLOT &&
+                    (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT))
+
+                    // If they used F to swap an elytra from the offhand slot into the chest slot
+                    || (clickType == ClickType.SWAP_OFFHAND && slot == CHEST_SLOT && isElytra(inv.getItem(OFFHAND_SLOT)))
+            )
                 e.setCancelled(true);
-
-        // Prevent swapping it with an elytra in your hotbar
-        if(e.getAction() == InventoryAction.HOTBAR_SWAP && isElytra(player.getInventory().getItem(e.getHotbarButton()))){
-            e.setCancelled(true);
-        }
-
-        // Prevent placing it down in the armor slot
-        if(e.getSlot() == CHEST_PIECE && isElytra(cursor))
-            e.setCancelled(true);
+        } catch (NoSuchFieldError ignored) {
+        } // For versions below 1.16 where you couldn't use F to swap offhand in inventory
     }
 
-    private boolean isElytra(ItemStack item){
+    private boolean isElytra(ItemStack item) {
         return item != null && item.getType() == Material.ELYTRA;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onRightClick(PlayerInteractEvent e){
-        if(!isEnabled(e.getPlayer().getWorld())) return;
+    public void onRightClick(PlayerInteractEvent e) {
+        if (!isEnabled(e.getPlayer().getWorld())) return;
 
-        // Must not be able to right click while holding it to wear it
-        Action a = e.getAction();
-        if(a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
+        // Must not be able to right click while holding an elytra to wear it
+        final Action action = e.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        if(!isElytra(e.getItem())) return;
+        if (!isElytra(e.getItem())) return;
 
-        Block block = e.getClickedBlock();
-        if(block != null && Config.getInteractiveBlocks().contains(block.getType())) return;
-
-        e.setCancelled(true);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDrag(InventoryDragEvent e){
-        if(!isEnabled(e.getWhoClicked().getWorld())) return;
-
-        if(e.getOldCursor() == null || !isElytra(e.getCursor())) return;
-
-        if(!e.getInventorySlots().contains(CHEST_PIECE)) return;
+        final Block block = e.getClickedBlock();
+        if (block != null && Config.getInteractiveBlocks().contains(block.getType())) return;
 
         e.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onWorldChange(PlayerChangedWorldEvent e){
-        Player player = e.getPlayer();
-        World world = player.getWorld();
-        if(!isEnabled(world)) return;
+    public void onDrag(InventoryDragEvent e) {
+        if (!isEnabled(e.getWhoClicked().getWorld())) return;
 
-        PlayerInventory inventory = player.getInventory();
+        final ItemStack oldCursor = e.getOldCursor();
 
-        ItemStack chestplate = inventory.getChestplate();
+        if (e.getInventorySlots().contains(CHEST_SLOT) && isElytra(oldCursor))
+            e.setCancelled(true);
+    }
 
-        if(!isElytra(chestplate)) return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onWorldChange(PlayerChangedWorldEvent e) {
+        final Player player = e.getPlayer();
+        final World world = player.getWorld();
+        if (!isEnabled(world)) return;
+
+        final PlayerInventory inventory = player.getInventory();
+        final ItemStack chestplate = inventory.getChestplate();
+
+        if (!isElytra(chestplate)) return;
 
         inventory.setChestplate(new ItemStack(Material.AIR));
 
-        if(inventory.firstEmpty() != -1)
+        if (inventory.firstEmpty() != -1)
             inventory.addItem(chestplate);
         else
             world.dropItem(player.getLocation(), chestplate);
