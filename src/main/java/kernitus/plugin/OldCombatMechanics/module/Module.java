@@ -112,4 +112,12 @@ public abstract class Module implements Listener {
                 .reduce((a, b) -> a + " " + b)
                 .orElse(configName);
     }
+
+    /**
+     * Get the module's name, as taken from the class name
+     * @return The module name, e.g. ModuleDisableAttackCooldown
+     */
+    public String getModuleName(){
+        return moduleName;
+    }
 }

@@ -16,8 +16,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import org.bstats.bukkit.Metrics;
-import org.bstats.charts.AdvancedPie;
 import org.bstats.charts.SimpleBarChart;
+import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventException;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -98,13 +98,11 @@ public class OCMMain extends JavaPlugin {
                 )
         );
 
-        // Advanced Pie Chart
-        metrics.addCustomChart(new AdvancedPie("enabled_modules_advanced_pie",
-                () -> ModuleLoader.getModules().stream()
-                        .collect(Collectors.toMap(
-                                module -> module.toString() + (module.isEnabled() ? " enabled" : " disabled"),
-                                module -> 1))
-        ));
+        // Pie chart of enabled/disabled for each module
+        ModuleLoader.getModules().forEach(module -> metrics.addCustomChart(
+                new SimplePie(module.getModuleName() + "_pie",
+                        () -> module.isEnabled() ? "enabled" : "disabled"
+                )));
 
         enableListeners.forEach(Runnable::run);
 
