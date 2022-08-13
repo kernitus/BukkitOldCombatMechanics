@@ -13,6 +13,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -104,19 +105,12 @@ public class OCMCommandHandler implements CommandExecutor {
         Messenger.sendNormalMessage(sender, message);
     }
 
-    private void test(OCMMain plugin, CommandSender sender, String[] args) {
-        Player player1 = null, player2 = null;
-        if (args.length > 2) {
-            player1 = Bukkit.getPlayer(args[1]);
-            player2 = Bukkit.getPlayer(args[2]);
-        } else if (sender instanceof Player && args.length > 1) {
-            player1 = ((Player) sender);
-            player2 = Bukkit.getPlayer(args[1]);
-        } else {
-            Messenger.sendNormalMessage(sender, "&eCommand usage: &7/ocm test <player1> [player2]");
-        }
-        if (player1 != null && player2 != null)
-            new InGameTester(plugin).performTests(player1, player2);
+    private void test(OCMMain plugin, CommandSender sender) {
+        final Location location = sender instanceof Player ?
+                ((Player) sender).getLocation() :
+                sender.getServer().getWorlds().get(0).getSpawnLocation();
+
+        new InGameTester(plugin).performTests(sender, location);
     }
 
     private void wideToggle(CommandSender sender, String[] args, ModuleAttackCooldown.PVPMode mode) {
@@ -145,7 +139,7 @@ public class OCMCommandHandler implements CommandExecutor {
                             break;
                         case toggle: toggle(plugin, sender, args);
                             break;
-                        case test: test(plugin, sender, args);
+                        case test: test(plugin, sender);
                             break;
                         case enable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.NEW_PVP);
                             break;

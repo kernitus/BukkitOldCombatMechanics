@@ -81,7 +81,6 @@ public class Reflector {
         }
     }
 
-
     public static Method getMethod(Class<?> clazz, String name) {
         return Arrays.stream(clazz.getMethods())
                 .filter(method -> method.getName().equals(name))
@@ -96,7 +95,7 @@ public class Reflector {
                 .orElse(null);
     }
 
-    public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames){
+    public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames) {
         Function<Method, List<String>> getParameterNames = method -> Arrays
                 .stream(method.getParameters())
                 .map(Parameter::getType)
@@ -115,7 +114,7 @@ public class Reflector {
     }
 
     public static <T> T invokeMethod(Method method, Object handle, Object... params) {
-        try{
+        try {
             @SuppressWarnings("unchecked")
             T t = (T) method.invoke(handle, params);
             return t;

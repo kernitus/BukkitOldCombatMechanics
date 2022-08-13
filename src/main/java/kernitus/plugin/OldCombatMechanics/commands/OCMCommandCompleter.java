@@ -37,20 +37,7 @@ public class OCMCommandCompleter implements TabCompleter {
                     .filter(arg -> OCMCommandHandler.checkPermissions(sender, arg))
                     .map(Enum::toString).collect(Collectors.toList()));
         } else {
-            if (args[0].equalsIgnoreCase(Subcommand.test.toString())) {
-                if (args.length < 4) {
-                    completions.addAll(Bukkit.getOnlinePlayers().stream()
-                            .filter(p -> {
-                                if (args.length < 3) return true;
-                                Player argPlayer = Bukkit.getPlayer(args[1]);
-                                return argPlayer != null && argPlayer.getWorld().equals(p.getWorld());
-                            })
-                            .map(Player::getName)
-                            .filter(arg -> arg.startsWith(args[args.length - 1])
-                                    && (args.length < 3 || !arg.equalsIgnoreCase(args[1])))
-                            .collect(Collectors.toList()));
-                }
-            } else if (args[0].equalsIgnoreCase(Subcommand.toggle.toString())) {
+             if (args[0].equalsIgnoreCase(Subcommand.toggle.toString())) {
                 if (args.length < 3) {
                     completions.addAll(Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
