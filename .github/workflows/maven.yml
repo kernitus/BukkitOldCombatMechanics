@@ -3,7 +3,11 @@
 
 name: Java CI with Maven
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+    branches-ignore:
+      - 'ingametesting'
 
 jobs:
   build:
