@@ -7,12 +7,12 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.Module;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -43,11 +43,41 @@ public class EntityDamageByEntityListener extends Module {
         this.enabled = enabled;
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void overdamage(EntityDamageByEntityEvent e) {
+        final Entity damagee = e.getEntity();
+        if (damagee instanceof LivingEntity) {
+            final UUID uuid = damagee.getUniqueId();
+            final LivingEntity livingEntity = ((LivingEntity) damagee);
+            final double damage = e.getDamage();
+
+            if (lastDamages.containsKey(uuid)) {
+                final double lastDamage = lastDamages.get(uuid);
+                if ((float) livingEntity.getNoDamageTicks() > (float) livingEntity.getMaximumNoDamageTicks() / 2.0F) {
+                    if (damage > lastDamage) {
+                        // was an overdamage, so the actual damage should be damage - lastDamage
+                        e.setDamage(damage - lastDamage);
+                        // Set last damage to actual value so other plugins are able to use it
+                        // This will be set back to 0 in the MONITOR listener so we can detect other overdamages
+                        livingEntity.setLastDamage(lastDamage);
+                    } else {
+                        // was not a real overdamage, cancel the event
+                        e.setCancelled(true);
+                    }
+                } else {
+                    // Set last damage to actual value so other plugins are able to use it
+                    // This will be set back to 0 in the MONITOR listener so we can detect other overdamages
+                    livingEntity.setLastDamage(lastDamage);
+                }
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        Entity damager = event.getDamager();
-        Entity damagee = event.getEntity();
-        OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
+        final Entity damager = event.getDamager();
+        final Entity damagee = event.getEntity();
+        final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
                 (damager, damagee, event.getCause(), event.getDamage());
 
         // Call event for the other modules to make their modifications
@@ -110,33 +140,36 @@ public class EntityDamageByEntityListener extends Module {
         event.setDamage(newDamage);
 
         // According to NMS, the last damage should actually be base tool + strength + crit, before overdamage
-        lastDamages.put(damagee.getUniqueId(), lastDamage);
+        /*
+        if ((float) noDamageTicks > maxNoDamageTicks / 2.0F && f > lastDamage) {
+                   this.actuallyHurt(damagesource, f - lastDamage);
+                   this.lastDamage = f;
+               } else {
+                   this.lastDamage = f;
+                   this.noDamageTicks = maxNoDamageTicks;
+                   this.actuallyHurt(damagesource, f);
+               }
+         */
+        if (!e.wasInvulnerabilityOverdamage())
+            lastDamages.put(damagee.getUniqueId(), lastDamage);
     }
 
     /**
-     * Set entity's last damage 1 tick after event.
+     * Set entity's last damage to 0 a tick after the event so all overdamage attacks get through.
      * This is set automatically after the event to the original damage for some reason.
-     * (Maybe a Spigot bug?) Hopefully other plugins vibe with this. Otherwise can store this just for OCM.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void afterEntityDamage(EntityDamageByEntityEvent e) {
-        //TODO should probably just store this info for ourselves, because it will cause some attacks to not be counted
-        // for overdamage as the raw damage of some weapons is lower than what we set it to, and event never triggers
-        // but what about the opposite, when a weapon is too strong? then by the calculations we perform it should do 0 damage
         final Entity damagee = e.getEntity();
         if (damagee instanceof LivingEntity) {
             final UUID damageeId = damagee.getUniqueId();
             if (lastDamages.containsKey(damageeId)) {
-                final double damage = lastDamages.get(damageeId);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        ((LivingEntity) damagee).setLastDamage(damage);
-                        debug("Set last damage to " + damage, damagee);
-                        lastDamages.remove(damageeId);
-                    }
-                }.runTaskLater(plugin, 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    ((LivingEntity) damagee).setLastDamage(0);
+                    debug("Set last damage to 0", damagee);
+                }, 1L);
             }
         }
     }
+
 }

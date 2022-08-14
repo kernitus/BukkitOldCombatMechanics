@@ -15,6 +15,7 @@ import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -56,9 +57,9 @@ public class InGameTester {
     public void performTests(CommandSender sender, Location location) {
         this.sender = sender;
         fakeAttacker = new FakePlayer();
-        fakeAttacker.spawn(location.add(2,0,0));
+        fakeAttacker.spawn(location.add(2, 0, 0));
         fakeDefender = new FakePlayer();
-        fakeDefender.spawn(location.add(0,0,2));
+        fakeDefender.spawn(location.add(0, 0, 2));
 
         this.attacker = Bukkit.getPlayer(fakeAttacker.getUuid());
         this.defender = Bukkit.getPlayer(fakeDefender.getUuid());
@@ -67,7 +68,8 @@ public class InGameTester {
         tally = new Tally();
 
         // Queue all tests
-        runAttacks(() -> {}); // with no armour
+        runAttacks(() -> {
+        }); // with no armour
         //testArmour();
 
         // Run all tests in the queue
@@ -90,24 +92,20 @@ public class InGameTester {
 
     private void testMelee(Runnable preparations) {
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
-            queueAttack(weaponType, 2, preparations);
+            queueAttack(weaponType, 1, () -> {
+                preparations.run();
+                defender.setMaximumNoDamageTicks(0);
+            });
         }
     }
 
     private void testOverdamage(Runnable preparations) {
-        Material[] weapons = {Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_AXE};
-        queueAttack(Material.WOODEN_HOE, 2, () -> {
-            defender.setMaximumNoDamageTicks(10);
-        });
+        // 1, 5, 6, 7, 3, 8 according to OCM
+        // 1, 4, 5, 6, 2, 7 according to 1.9+
+        Material[] weapons = {Material.WOODEN_HOE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.WOODEN_PICKAXE, Material.DIAMOND_SWORD};
 
         for (Material weaponType : weapons) {
-            queueAttack(weaponType, 2, () -> {
-                        preparations.run();
-                        //defender.setLastDamage(1);
-                        //defender.setMaximumNoDamageTicks(20);
-                        //defender.setNoDamageTicks(15);
-                    }
-            );
+            queueAttack(weaponType, 5, () -> {});
         }
     }
 
@@ -116,14 +114,27 @@ public class InGameTester {
         testQueue.add(test);
     }
 
-    private double calculateExpectedDamage(Material weaponType) {
+    private boolean wasOverdamaged(double rawWeaponDamage) {
+        double lastDamage = defender.getLastDamage();
+        return (float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
+                rawWeaponDamage > lastDamage;
+    }
+
+    private float calculateExpectedDamage(Material weaponType) {
         //todo include weapon enchants, armour etc. in expected calculations
         double expectedDamage = WeaponDamages.getDamage(weaponType);
-        double lastDamage = defender.getLastDamage();
-        if ((float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
-                expectedDamage > lastDamage) // If not greater, event will not be called at all
+
+        // Take into account damage reduction because of cooldown
+        //final double attackCooldown = defender.getAttackCooldown();
+        //expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
+
+        if (wasOverdamaged(expectedDamage)) {
+            double lastDamage = defender.getLastDamage();
+            System.out.println("calculated overdamaged " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
             expectedDamage -= lastDamage;
-        return expectedDamage;
+        }
+
+        return (float) expectedDamage;
     }
 
     private void runQueuedTests() {
@@ -132,13 +143,17 @@ public class InGameTester {
         Listener listener = new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
             public void onEvent(EntityDamageByEntityEvent e) {
-                if (e.getDamager().getUniqueId() != attacker.getUniqueId() ||
+                final Entity damager = e.getDamager();
+                if (damager.getUniqueId() != attacker.getUniqueId() ||
                         e.getEntity().getUniqueId() != defender.getUniqueId()) return;
 
+                final Material weaponType = ((Player) damager).getInventory().getItemInMainHand().getType();
                 final OCMTest test = testQueue.remove();
 
-                TesterUtils.assertEquals(calculateExpectedDamage(test.weaponType), e.getFinalDamage(),
-                        tally, test.message, sender);
+                final String weaponMessage = "E: " + test.weaponType.name() + " A: " + weaponType.name();
+
+                TesterUtils.assertEquals(calculateExpectedDamage(test.weaponType), (float) e.getFinalDamage(),
+                        tally, weaponMessage, sender);
             }
         };
 
@@ -160,21 +175,23 @@ public class InGameTester {
                 if(weapon.hasItemMeta()) {
                     final ItemMeta meta = weapon.getItemMeta();
                     meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
-                            new AttributeModifier(UUID.randomUUID(), "speed", 100,
+                            new AttributeModifier(UUID.randomUUID(), "speed", 1000,
                                     AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
                     weapon.setItemMeta(meta);
                 }
                 attacker.getInventory().setItemInMainHand(weapon);
                 attacker.updateInventory();
 
-                double expectedDamage = calculateExpectedDamage(attacker.getInventory().getItemInMainHand().getType());
-                Messenger.sendNormalMessage(sender, "Max: " + defender.getMaximumNoDamageTicks() +
-                        " Ticks: " + defender.getNoDamageTicks() + " Last: " + defender.getLastDamage() +
-                        " Overdamage: " + ((float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
-                        expectedDamage > defender.getLastDamage())
-                        + " expected: " + expectedDamage);
+                double expectedDamage = calculateExpectedDamage(test.weaponType);
+                Messenger.sendNormalMessage(sender, defender.getNoDamageTicks() +
+                        "/" + defender.getMaximumNoDamageTicks() + " ticks Last: " + defender.getLastDamage() +
+                        " cooldown: " + attacker.getAttackCooldown() +
+                        " Overdamaged: " + wasOverdamaged(WeaponDamages.getDamage(test.weaponType))
+                        + " expected: " + expectedDamage
+                );
 
-                fakeAttacker.attack(fakeDefender.getEntityPlayer());
+                //attacker.attack(defender);
+                fakeAttacker.attack(fakeDefender.getEntityPlayer().getBukkitEntity());
 
                 afterEach();
             }, attackDelay);
@@ -190,8 +207,9 @@ public class InGameTester {
     private void beforeAll() {
         for (Player player : new Player[]{attacker, defender}) {
             player.setGameMode(GameMode.SURVIVAL);
-            player.setMaximumNoDamageTicks(0);
-            player.setNoDamageTicks(0);
+            //player.setMaximumNoDamageTicks(20);
+            player.setNoDamageTicks(0); // remove spawn invulnerability
+            player.setInvulnerable(false);
         }
     }
 

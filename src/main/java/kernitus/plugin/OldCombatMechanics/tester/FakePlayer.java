@@ -14,12 +14,10 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.network.protocol.EnumProtocolDirection;
-import net.minecraft.network.protocol.game.PacketPlayOutAnimation;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy;
 import net.minecraft.network.protocol.game.PacketPlayOutNamedEntitySpawn;
 import net.minecraft.network.protocol.game.PacketPlayOutPlayerInfo;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ChunkProviderServer;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
@@ -31,7 +29,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_19_R1.util.CraftChatMessage;
 import org.bukkit.entity.Player;
@@ -64,6 +61,7 @@ public class FakePlayer {
     private final UUID uuid;
     private final String name;
     private EntityPlayer entityPlayer;
+    private Player bukkitPlayer;
 
     public FakePlayer() {
         uuid = UUID.randomUUID();
@@ -87,9 +85,8 @@ public class FakePlayer {
 
         MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
 
-        EntityPlayer entityPlayer = createEntityPlayer(uuid, name, worldServer);
-
-        this.entityPlayer = entityPlayer;
+        final GameProfile gameProfile = new GameProfile(uuid, name);
+        this.entityPlayer = new EntityPlayer(mcServer, worldServer, gameProfile, null);
 
         // entityPlayer.playerConnection
         entityPlayer.b = new PlayerConnection(mcServer, new NetworkManager(EnumProtocolDirection.a), entityPlayer); // should be EnumProtocolDirection.CLIENTBOUND
@@ -108,15 +105,14 @@ public class FakePlayer {
         mcServer.ac().a(entityPlayer); // mcServer.getPlayerList().a(entityPlayer);
 
         entityPlayer.e(location.getX(), location.getY(), location.getZ()); // Entity.setLocation
-
-        /*DataWatcher data = entityPlayer.getDataWatcher();
-        data.set(DataWatcherRegistry.a.a(16), (byte) 127);*/
+        entityPlayer.p(0); // Entity.setXRot()
+        entityPlayer.o(0); // Entity.setYRot()
 
         entityPlayer.spawnIn(worldServer);
         // entityPlayer.playerInteractManager.changeGameModeForPlayer(GameType.SURVIVAL);
         entityPlayer.d.a(EnumGamemode.a);
 
-        worldServer.a(entityPlayer); // worldServer.addPlayerJoin(entityPlayer);
+        worldServer.c(entityPlayer); // worldServer.addNewPlayer(entityPlayer);
         final PlayerList playerList = mcServer.ac(); // mcServer.getPlayerList()
         playerList.k.add(entityPlayer); // playerList().players.add(entityPlayer);
 
@@ -125,9 +121,9 @@ public class FakePlayer {
         final Map<UUID, EntityPlayer> playerByUUID = (Map<UUID, EntityPlayer>) Reflector.getFieldValue(playerByUUIDField, playerList);
         playerByUUID.put(uuid, entityPlayer);
 
-        final Player foundPlayer = Bukkit.getPlayer(uuid);
+        bukkitPlayer = Bukkit.getPlayer(uuid);
         final String joinMessage = "§e" + entityPlayer.displayName + " joined the game";
-        final PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(foundPlayer, CraftChatMessage.fromComponent(IChatBaseComponent.a(joinMessage)));
+        final PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(bukkitPlayer, CraftChatMessage.fromComponent(IChatBaseComponent.a(joinMessage)));
 
         Bukkit.getPluginManager().callEvent(playerJoinEvent);
 
@@ -142,17 +138,9 @@ public class FakePlayer {
             connection.a(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e));
         }
 
-        // ServerPlayer.doTick() a.k.a. EntityPlayer.playerTick()
         // todo should probably cancel this task when we remove the player
+        // ServerPlayer.doTick() a.k.a. EntityPlayer.playerTick()
         Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::k, 1, 1);
-    }
-
-    private static EntityPlayer createEntityPlayer(UUID uuid, String name, WorldServer worldServer) {
-        final MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
-        final GameProfile gameProfile = new GameProfile(uuid, name);
-
-        //return new EntityPlayer(mcServer, worldServer, gameProfile, new PlayerInteractManager(worldServer));
-        return new EntityPlayer(mcServer, worldServer, gameProfile, null);
     }
 
     public void removePlayer() {
@@ -161,8 +149,7 @@ public class FakePlayer {
 
         entityPlayer.a(StatisticList.j); // entityPlayer.a(StatisticList.LEAVE_GAME);
 
-        final Player foundPlayer = Bukkit.getPlayer(uuid);
-        final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(foundPlayer, "§e" + entityPlayer.displayName + " left the game");
+        final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(bukkitPlayer, "§e" + entityPlayer.displayName + " left the game");
 
         Bukkit.getPluginManager().callEvent(playerQuitEvent);
 
@@ -198,6 +185,10 @@ public class FakePlayer {
         Reflector.invokeMethod(saveMethod, playerList, entityPlayer);
     }
 
+    public void attack(org.bukkit.entity.Entity bukkitEntity){
+        bukkitPlayer.attack(bukkitEntity);
+    }
+    /*
     public void attack(org.bukkit.entity.Entity bukkitEntity) {
         final CraftEntity craftEntity = ((CraftEntity) bukkitEntity);
         final Entity nmsEntity = craftEntity.getHandle();
@@ -217,4 +208,5 @@ public class FakePlayer {
         // chunkProviderServer.broadcastAndSend(Entity, Packet)
         chunkProviderServer.a(entityPlayer, packetPlayOutAnimation);
     }
+     */
 }

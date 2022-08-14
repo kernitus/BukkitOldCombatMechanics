@@ -91,16 +91,17 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         We must detect this and account for it, instead of setting the usual base weapon damage.
         */
         if (damagee instanceof LivingEntity) {
-            LivingEntity livingDamagee = (LivingEntity) damagee;
+            final LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
                 // NMS code also checks if current damage is higher that previous damage. However, here the event
                 // already has the difference between the two as the raw damage, and the event does not fire at all
                 // if this precondition is not met.
                 wasInvulnerabilityOverdamage = true;
-                debug(le, "Overdamaged!");
+                debug(le, "Overdamaged!: " + livingDamagee.getNoDamageTicks() + "/" +
+                        livingDamagee.getMaximumNoDamageTicks() + " last: " + livingDamagee.getLastDamage());
             } else {
                 debug(le, "Invulnerability: " + livingDamagee.getNoDamageTicks() + "/" +
-                        livingDamagee.getMaximumNoDamageTicks() / 2.0F + " last: " + livingDamagee.getLastDamage());
+                        livingDamagee.getMaximumNoDamageTicks() + " last: " + livingDamagee.getLastDamage());
             }
         }
 
