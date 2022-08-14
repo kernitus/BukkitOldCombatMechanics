@@ -25,8 +25,8 @@ disable-attack-cooldown:
   # This is to disable the attack cooldown
   enabled: true
   worlds: []
-  # What to set the attack speed to. Default for 1.9 is 4, at least 16 is needed for no cooldown.
-  generic-attack-speed: 24
+  # What to set the attack speed to. Default for 1.9 is 4, at least 40 is needed for no cooldown.
+  generic-attack-speed: 40
   message-enabled: "&aAttack cooldown enabled for %player%"
   message-disabled: "&cAttack cooldown disabled for %player%"
   message-usage: "Usage: &7/ocm toggle [player] [on/off]"
