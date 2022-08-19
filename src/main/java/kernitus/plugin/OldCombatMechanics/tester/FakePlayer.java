@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics.tester;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.datafixers.util.Pair;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
@@ -15,6 +16,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.network.protocol.EnumProtocolDirection;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy;
+import net.minecraft.network.protocol.game.PacketPlayOutEntityEquipment;
 import net.minecraft.network.protocol.game.PacketPlayOutNamedEntitySpawn;
 import net.minecraft.network.protocol.game.PacketPlayOutPlayerInfo;
 import net.minecraft.server.MinecraftServer;
@@ -24,12 +26,15 @@ import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.stats.StatisticList;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EnumItemSlot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.EnumGamemode;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_19_R1.util.CraftChatMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
@@ -40,6 +45,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -185,9 +192,44 @@ public class FakePlayer {
         Reflector.invokeMethod(saveMethod, playerList, entityPlayer);
     }
 
-    public void attack(org.bukkit.entity.Entity bukkitEntity){
+    public void attack(org.bukkit.entity.Entity bukkitEntity) {
         bukkitPlayer.attack(bukkitEntity);
     }
+
+    //a(EnumItemSlot.Function.a, 0, 0, "mainhand"),
+    //b(EnumItemSlot.Function.a, 1, 5, "offhand"),
+    //c(EnumItemSlot.Function.b, 0, 1, "feet"),
+    //d(EnumItemSlot.Function.b, 1, 2, "legs"),
+    //e(EnumItemSlot.Function.b, 2, 3, "chest"),
+    //f(EnumItemSlot.Function.b, 3, 4, "head");
+
+    public void updateEquipment(EnumItemSlot slot, org.bukkit.inventory.ItemStack item) {
+        //todo try directly accessing the player inventory
+        // otherwise just set the attack value attribute instead
+        // could check Citizen's code to see how they give weapons
+        // might also just need to wait a tick
+
+        //final WorldServer worldServer = entityPlayer.x(); // entityPlayer.getWorld().getWorld().getHandle();
+        // worldServer.broadcastEntityEvent(Entity, byte)
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            final PlayerConnection connection = ((CraftPlayer) onlinePlayer).getHandle().b; //.playerConnection;
+            //        ((WorldServer)this.world).getTracker().a(this, new PacketPlayOutEntityEquipment(this.getId(), slot, CraftItemStack.asNMSCopy(stack)));
+
+            //Defining the list of Pairs with EnumItemSlot and (NMS) ItemStack
+            final List<Pair<EnumItemSlot, ItemStack>> equipmentList = new ArrayList<>();
+
+            equipmentList.add(new Pair<>(slot, CraftItemStack.asNMSCopy(item)));
+
+            //Creating the packet
+            final PacketPlayOutEntityEquipment entityEquipment = new PacketPlayOutEntityEquipment(bukkitPlayer.getEntityId(), equipmentList);
+
+            connection.a(entityEquipment);
+        }
+        //         ((WorldServer) this.level).getChunkSource().broadcast(this, new PacketPlayOutEntityEquipment(this.getId(), list));
+    }
+
+    // todo PackerPlayOutEntityEquipment
     /*
     public void attack(org.bukkit.entity.Entity bukkitEntity) {
         final CraftEntity craftEntity = ((CraftEntity) bukkitEntity);

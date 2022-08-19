@@ -60,10 +60,12 @@ public class DamageUtils {
     private static boolean isInWater(LivingEntity le) {
         if (Reflector.versionIsNewerOrEqualAs(1, 16, 0))
             return le.isInWater();
-        else return le.getLocation().getBlock().getType() == Material.WATER;
+        return le.getLocation().getBlock().getType() == Material.WATER;
     }
 
     private static boolean isLivingEntityClimbing(LivingEntity le) {
+        if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
+            return le.isClimbing();
         final Material material = le.getLocation().getBlock().getType();
         return material == Material.LADDER || material == Material.VINE;
     }

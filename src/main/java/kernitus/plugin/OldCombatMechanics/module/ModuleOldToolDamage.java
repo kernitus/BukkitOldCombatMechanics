@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
@@ -40,6 +41,7 @@ public class ModuleOldToolDamage extends Module {
         if (!isEnabled(world)) return;
 
         final Material weaponMaterial = event.getWeapon().getType();
+        debug("Weapon material: " + weaponMaterial);
 
         if (!isTool(weaponMaterial)) return;
 
@@ -49,14 +51,12 @@ public class ModuleOldToolDamage extends Module {
             return;
         }
 
+        // todo if damage was not what we expected for 1.9, we should probably ignore it, cause it's a custom weapon
+
         final double oldBaseDamage = event.getBaseDamage();
 
-        // If the raw is not what we expect for 1.9 we should ignore it, for compatibility with other plugins
-        //if (oldBaseDamage == expectedDamage) event.setBaseDamage(weaponDamage);
         event.setBaseDamage(weaponDamage);
-
-        debug("Old " + weaponMaterial + " damage: " + oldBaseDamage + " New tool damage: " + weaponDamage +
-                (event.wasInvulnerabilityOverdamage() ? " (overdamage)" : ""), damager);
+        Messenger.debug("OLD TOOL DAMAGE: " + oldBaseDamage + " NEW: " + weaponDamage);
 
         // Set sharpness to 1.8 damage value
         final double newSharpnessDamage = DamageUtils.getOldSharpnessDamage(event.getSharpnessLevel());

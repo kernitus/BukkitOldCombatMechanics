@@ -57,9 +57,6 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private boolean wasSprinting = false;
     private boolean roundCritDamage = false;
 
-    // Whether this damage is reduced damage from a higher-damage attack occurring during a noDamageTicks invulnerability period
-    private boolean wasInvulnerabilityOverdamage = false;
-
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
@@ -80,30 +77,18 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         // Yay paper. Why do you need to return null here?
         if (weapon == null) weapon = new ItemStack(Material.AIR);
         // Technically the weapon could be in the offhand, i.e. a bow.
-        // However we are only concerned with melee weapons here which will always be in the main hand.
+        // However, we are only concerned with melee weapons here, which will always be in the main hand.
 
         final EntityType damageeType = damagee.getType();
 
         debug(le, "Raw damage: " + rawDamage);
 
         /*
-        Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable.
-        We must detect this and account for it, instead of setting the usual base weapon damage.
-        */
-        if (damagee instanceof LivingEntity) {
-            final LivingEntity livingDamagee = (LivingEntity) damagee;
-            if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
-                // NMS code also checks if current damage is higher that previous damage. However, here the event
-                // already has the difference between the two as the raw damage, and the event does not fire at all
-                // if this precondition is not met.
-                wasInvulnerabilityOverdamage = true;
-                debug(le, "Overdamaged!: " + livingDamagee.getNoDamageTicks() + "/" +
-                        livingDamagee.getMaximumNoDamageTicks() + " last: " + livingDamagee.getLastDamage());
-            } else {
-                debug(le, "Invulnerability: " + livingDamagee.getNoDamageTicks() + "/" +
-                        livingDamagee.getMaximumNoDamageTicks() + " last: " + livingDamagee.getLastDamage());
-            }
-        }
+        Normally invulnerability overdamage would have to be taken into account here, but instead in the EDBEListener
+        we artificially set the last damage to 0 between events so that all hits will register.
+        Once all modules have acted upon the damage, we then work out if it will be an overdamage or not,
+        and whether we need to cancel the event accordingly.
+         */
 
         mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(damageeType, weapon, rawDamage) - rawDamage;
 
@@ -291,13 +276,5 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public void setRoundCritDamage(boolean roundCritDamage) {
         this.roundCritDamage = roundCritDamage;
-    }
-
-    public boolean wasInvulnerabilityOverdamage() {
-        return wasInvulnerabilityOverdamage;
-    }
-
-    public void setWasInvulnerabilityOverdamage(boolean wasInvulnerabilityOverdamage) {
-        this.wasInvulnerabilityOverdamage = wasInvulnerabilityOverdamage;
     }
 }

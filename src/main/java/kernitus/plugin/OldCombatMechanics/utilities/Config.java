@@ -70,9 +70,10 @@ public class Config {
         reloadInteractiveBlocks();
 
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
-        if(EntityDamageByEntityListener.getINSTANCE() != null)
-            EntityDamageByEntityListener.getINSTANCE().setEnabled(
-                moduleEnabled("old-tool-damage") || moduleEnabled("old-potion-effects"));
+        final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
+        if(EDBEL != null) {
+            EDBEL.setEnabled(moduleEnabled("old-tool-damage") || moduleEnabled("old-potion-effects"));
+        }
 
         // Dynamically registers / unregisters all event listeners for optimal performance!
         ModuleLoader.toggleModules();

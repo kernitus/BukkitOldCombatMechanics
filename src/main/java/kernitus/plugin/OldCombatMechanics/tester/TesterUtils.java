@@ -6,7 +6,10 @@
 package kernitus.plugin.OldCombatMechanics.tester;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandSender;
+
+import java.util.Collection;
 
 public class TesterUtils {
 
@@ -28,7 +31,20 @@ public class TesterUtils {
         } else {
             tally.failed();
             for (CommandSender sender : senders)
-                Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + "[E: " + a + " / A: " + b + "]");
+                Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + " [E: " + a + " / A: " + b + "]");
         }
+    }
+
+    public static double getAttributeModifierSum(Collection<AttributeModifier> modifiers){
+        double sum = 0;
+        for (AttributeModifier modifier : modifiers) {
+            final double value = modifier.getAmount();
+            switch (modifier.getOperation()) {
+                case ADD_SCALAR -> sum += Math.abs(value);
+                case ADD_NUMBER -> sum += value;
+                case MULTIPLY_SCALAR_1 -> sum *= value;
+            }
+        }
+        return sum;
     }
 }
