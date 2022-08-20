@@ -13,12 +13,10 @@ public class OCMTest {
     final long attackDelay;
     final String message;
     final Runnable preparations;
-    final double armourPoints;
     final ItemStack[] armour;
 
-    public OCMTest(Material weaponType, double armourPoints, ItemStack[] armour, long attackDelay, String message, Runnable preparations) {
+    public OCMTest(Material weaponType, ItemStack[] armour, long attackDelay, String message, Runnable preparations) {
         this.weaponType = weaponType;
-        this.armourPoints = armourPoints;
         this.armour = armour;
         this.attackDelay = attackDelay;
         this.message = message;

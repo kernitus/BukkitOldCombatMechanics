@@ -58,12 +58,6 @@ public class EntityDamageByEntityListener extends Module {
         if(lastStoredDamage != null && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
             livingDamagee.setLastDamage(lastStoredDamage);
-
-            debug("Last damage " + lastStoredDamage + " attack: " +
-                    ((Attributable) damager).getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).getValue()
-                    + " armour: " + ((Attributable) damagee).getAttribute(Attribute.GENERIC_ARMOR).getValue()
-                    + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
-            );
         }
 
         final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent

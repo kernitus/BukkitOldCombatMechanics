@@ -6,6 +6,7 @@
 
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.tester.TesterUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.EnumSet;
@@ -89,12 +91,19 @@ public class ArmourUtils {
     /**
      * Return the damage after applying armour and armour enchants protections, following 1.8 algorithm.
      * @param baseDamage The base damage done by the event, including weapon enchants, potions, crits
-     * @param armourPoints The armor.generic attribute on the player, i.e. the sum of protection provided by each armour piece
      * @param armourContents The 4 pieces of armour contained in the armour slots
      * @param damageCause The source of damage
      * @return The damage done to the entity after armour is taken into account
      */
-    public static double getDamageAfterArmour1_8(double baseDamage, double armourPoints, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause){
+    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause){
+        double armourPoints = 0;
+        for (int i = 0; i < armourContents.length; i++) {
+            final ItemStack itemStack = armourContents[i];
+            if(itemStack == null) continue;
+            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET,EquipmentSlot.LEGS,EquipmentSlot.CHEST,EquipmentSlot.HEAD}[i];
+            armourPoints += TesterUtils.getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
+        }
+
         final double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
         // Apply armour damage reduction after blocking reduction

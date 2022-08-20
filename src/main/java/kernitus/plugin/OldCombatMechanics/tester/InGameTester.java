@@ -29,9 +29,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 public class InGameTester {
 
@@ -72,58 +70,60 @@ public class InGameTester {
         tally = new Tally();
 
         // Queue all tests
-        runAttacks(0, new ItemStack[]{}, () -> {}); // with no armour
+        //runAttacks(new ItemStack[]{}, () -> {}); // with no armour
         testArmour();
 
         // Run all tests in the queue
         runQueuedTests();
     }
 
-    private void runAttacks(double armourPoints, ItemStack[] armour, Runnable preparations) {
-        testMelee(armourPoints, armour, preparations);
-        testOverdamage(armourPoints, armour, preparations);
+    private void runAttacks(ItemStack[] armour, Runnable preparations) {
+        testMelee(armour, preparations);
+        testOverdamage(armour, preparations);
     }
 
     private void testArmour() {
-        //todo test with all armour combinations
-        final Material material = Material.DIAMOND_CHESTPLATE;
-        final EquipmentSlot slot = EquipmentSlot.CHEST;
-        final ItemStack item = new ItemStack(material);
-        final double armourPoints = TesterUtils.getAttributeModifierSum(material.getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
+        final String[] materials = {"LEATHER", "CHAINMAIL", "GOLDEN", "IRON", "DIAMOND", "NETHERITE"};
+        final String[] slots = {"BOOTS", "LEGGINGS", "CHESTPLATE", "HELMET" };
+        final Random random = new Random(System.currentTimeMillis());
 
-        runAttacks(armourPoints, new ItemStack[]{item},
-                () -> {
-                    // give defender some armour
-                    defender.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(armourPoints);
-                    defender.getInventory().setChestplate(item);
-                }
-        );
+        final ItemStack[] armourContents = new ItemStack[4];
+        for (int i = 0; i < slots.length; i++) {
+            final String slot = slots[i];
+            // Pick a random material for each slot
+            final String material = materials[random.nextInt(6)];
+
+            final ItemStack itemStack = new ItemStack(Material.valueOf(material + "_" + slot));
+            armourContents[i] = itemStack;
+        }
+
+        runAttacks(armourContents, () -> defender.getInventory().setArmorContents(armourContents));
     }
 
-    private void testMelee(double armourPoints, ItemStack[] armour, Runnable preparations) {
+    private void testMelee(ItemStack[] armour, Runnable preparations) {
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
-            queueAttack(weaponType, armourPoints, armour, 1, () -> {
+            queueAttack(weaponType, armour, 1, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
             });
         }
     }
 
-    private void testOverdamage(double armourPoints, ItemStack[] armour, Runnable preparations) {
+    private void testOverdamage(ItemStack[] armour, Runnable preparations) {
         // 1, 5, 6, 7, 3, 8 according to OCM
         // 1, 4, 5, 6, 2, 7 according to 1.9+
         Material[] weapons = {Material.WOODEN_HOE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.WOODEN_PICKAXE, Material.DIAMOND_SWORD};
 
         for (Material weaponType : weapons) {
-            queueAttack(weaponType, armourPoints, armour, 3, () -> {
+            queueAttack(weaponType, armour, 3, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(30);
             });
         }
     }
 
-    private void queueAttack(Material weaponType, double armourPoints, ItemStack[] armour, long attackDelay, Runnable preparations) {
-        final OCMTest test = new OCMTest(weaponType, armourPoints, armour, attackDelay, "Melee Attack " + weaponType, preparations);
+    private void queueAttack(Material weaponType, ItemStack[] armour, long attackDelay, Runnable preparations) {
+        final OCMTest test = new OCMTest(weaponType, armour, attackDelay, "Melee Attack " + weaponType, preparations);
         testQueue.add(test);
     }
 
@@ -140,7 +140,7 @@ public class InGameTester {
                 rawWeaponDamage > lastDamage;
     }
 
-    private float calculateExpectedDamage(Material weaponType, double armourPoints, ItemStack[] armourContents) {
+    private float calculateExpectedDamage(Material weaponType, ItemStack[] armourContents) {
         //todo include weapon enchants, armour etc. in expected calculations
         // Damage order: base -> potion effects -> critical hit -> overdamage -> enchantments -> armour effects
         double expectedDamage = WeaponDamages.getDamage(weaponType);
@@ -157,8 +157,7 @@ public class InGameTester {
         }
 
         // Armour effects (1.8, with OldArmourStrength module)
-        expectedDamage = ArmourUtils.getDamageAfterArmour1_8(expectedDamage, armourPoints,
-                armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
+        expectedDamage = ArmourUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
 
         return (float) expectedDamage;
     }
@@ -175,10 +174,11 @@ public class InGameTester {
 
                 final Material weaponType = ((Player) damager).getInventory().getItemInMainHand().getType();
                 final OCMTest test = testQueue.remove();
-                final float expectedDamage = calculateExpectedDamage(test.weaponType, test.armourPoints, test.armour);
+                final float expectedDamage = calculateExpectedDamage(test.weaponType, test.armour);
 
                 if (wasFakeOverdamage(weaponType) && e.isCancelled()) {
                     Messenger.sendNormalMessage(sender, "&aPASSED &fFake overdamage " + expectedDamage + " < " + ((LivingEntity) e.getEntity()).getLastDamage());
+                    tally.passed();
                 } else {
                     final String weaponMessage = "E: " + test.weaponType.name() + " A: " + weaponType.name();
                     TesterUtils.assertEquals(expectedDamage, (float) e.getFinalDamage(), tally, weaponMessage, sender);
@@ -199,28 +199,8 @@ public class InGameTester {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
                 beforeEach();
                 test.preparations.run();
-
-                final ItemStack weapon = new ItemStack(test.weaponType);
-                if (weapon.hasItemMeta()) {
-                    final ItemMeta meta = weapon.getItemMeta();
-                    meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
-                            new AttributeModifier(UUID.randomUUID(), "speed", 1000,
-                                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
-                    weapon.setItemMeta(meta);
-                }
-                attacker.getInventory().setItemInMainHand(weapon);
-                attacker.updateInventory();
-
-                // Update attack attribute cause it won't get done with fake players
-                final AttributeInstance ai = attacker.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-
-                test.weaponType.getDefaultAttributeModifiers(EquipmentSlot.HAND).get(Attribute.GENERIC_ATTACK_DAMAGE).forEach(am -> {
-                    ai.removeModifier(am);
-                    ai.addModifier(am);
-                });
-
+                preparePlayer(test.weaponType);
                 attacker.attack(defender);
-
                 afterEach();
             }, attackDelay);
 
@@ -255,6 +235,43 @@ public class InGameTester {
             player.setExhaustion(0);
             player.setHealth(20);
         }
+    }
+
+    private void preparePlayer(Material weaponType){
+        final ItemStack weapon = new ItemStack(weaponType);
+        if (weapon.hasItemMeta()) {
+            final ItemMeta meta = weapon.getItemMeta();
+            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
+                    new AttributeModifier(UUID.randomUUID(), "speed", 1000,
+                            AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
+            weapon.setItemMeta(meta);
+        }
+        attacker.getInventory().setItemInMainHand(weapon);
+        attacker.updateInventory();
+
+        // Update attack attribute cause it won't get done with fake players
+        final AttributeInstance ai = attacker.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+        final AttributeInstance defenderArmour = defender.getAttribute(Attribute.GENERIC_ARMOR);
+
+        weaponType.getDefaultAttributeModifiers(EquipmentSlot.HAND).get(Attribute.GENERIC_ATTACK_DAMAGE).forEach(am -> {
+            ai.removeModifier(am);
+            ai.addModifier(am);
+        });
+
+        // Update armour attribute
+        final ItemStack[] armourContents = defender.getInventory().getArmorContents();
+        Messenger.debug("Armour: " + Arrays.stream(armourContents).map(is -> is.getType().name()).reduce((a, b) -> a + ", " + b).orElse("none"));
+        for (int i = 0; i < armourContents.length; i++) {
+            final ItemStack itemStack = armourContents[i];
+            if (itemStack == null) continue;
+            final Material type = itemStack.getType();
+            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET,EquipmentSlot.LEGS,EquipmentSlot.CHEST,EquipmentSlot.HEAD}[i];
+            for (AttributeModifier attributeModifier : type.getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR)) {
+                defenderArmour.removeModifier(attributeModifier);
+                defenderArmour.addModifier(attributeModifier);
+            }
+        }
+
     }
 
     private void afterEach() {
