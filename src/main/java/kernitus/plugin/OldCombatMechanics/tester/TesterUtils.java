@@ -35,6 +35,10 @@ public class TesterUtils {
         }
     }
 
+    /**
+     * Applies all the operations for the attribute modifiers of a specific attribute.
+     * Does not take into account the base value.
+     */
     public static double getAttributeModifierSum(Collection<AttributeModifier> modifiers){
         double sum = 0;
         for (AttributeModifier modifier : modifiers) {

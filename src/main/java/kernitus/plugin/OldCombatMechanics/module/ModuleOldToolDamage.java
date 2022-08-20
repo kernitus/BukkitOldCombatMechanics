@@ -25,9 +25,16 @@ import java.util.Locale;
 public class ModuleOldToolDamage extends Module {
 
     private static final String[] WEAPONS = {"sword", "axe", "pickaxe", "spade", "shovel", "hoe"};
+    private boolean oldSharpness;
 
     public ModuleOldToolDamage(OCMMain plugin) {
         super(plugin, "old-tool-damage");
+        reload();
+    }
+
+    @Override
+    public void reload() {
+        oldSharpness = module().getBoolean("old-sharpness", true);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -59,7 +66,11 @@ public class ModuleOldToolDamage extends Module {
         Messenger.debug("OLD TOOL DAMAGE: " + oldBaseDamage + " NEW: " + weaponDamage);
 
         // Set sharpness to 1.8 damage value
-        final double newSharpnessDamage = DamageUtils.getOldSharpnessDamage(event.getSharpnessLevel());
+        final int sharpnessLevel = event.getSharpnessLevel();
+        double newSharpnessDamage = oldSharpness ?
+                DamageUtils.getOldSharpnessDamage(sharpnessLevel) :
+                DamageUtils.getNewSharpnessDamage(sharpnessLevel);
+
         debug("Old sharpness damage: " + event.getSharpnessDamage() + " New: " + newSharpnessDamage, damager);
         event.setSharpnessDamage(newSharpnessDamage);
     }

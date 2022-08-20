@@ -5,18 +5,17 @@
  */
 package kernitus.plugin.OldCombatMechanics.tester;
 
-import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 public class OCMTest {
-    final Material weaponType;
+    final ItemStack weapon;
     final long attackDelay;
     final String message;
     final Runnable preparations;
     final ItemStack[] armour;
 
-    public OCMTest(Material weaponType, ItemStack[] armour, long attackDelay, String message, Runnable preparations) {
-        this.weaponType = weaponType;
+    public OCMTest(ItemStack weapon, ItemStack[] armour, long attackDelay, String message, Runnable preparations) {
+        this.weapon = weapon;
         this.armour = armour;
         this.attackDelay = attackDelay;
         this.message = message;

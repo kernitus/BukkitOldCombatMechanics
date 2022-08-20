@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.tester;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.ArmourUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -17,6 +18,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandSender;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -41,12 +43,15 @@ public class InGameTester {
     private final Queue<OCMTest> testQueue;
 
     // todo test with enchanted weapons
+    // todo test with attack delay
     // todo test with enchanted armour
-    // todo test armour durability
     // todo test with critical hits
-    // todo test with potion effects
+    // todo test with potion effects on attack
+    // todo test with potion effects on defence
     // todo test with shield blocking
     // todo test with bow attacks
+
+    // todo test armour durability
 
     public InGameTester(OCMMain ocm) {
         this.ocm = ocm;
@@ -71,14 +76,16 @@ public class InGameTester {
 
         // Queue all tests
         //runAttacks(new ItemStack[]{}, () -> {}); // with no armour
-        testArmour();
+        //testArmour();
+        testEnchantedMelee(new ItemStack[]{}, () -> {});
 
         // Run all tests in the queue
         runQueuedTests();
     }
 
     private void runAttacks(ItemStack[] armour, Runnable preparations) {
-        testMelee(armour, preparations);
+        //testMelee(armour, preparations);
+        testEnchantedMelee(armour, preparations);
         testOverdamage(armour, preparations);
     }
 
@@ -100,12 +107,35 @@ public class InGameTester {
         runAttacks(armourContents, () -> defender.getInventory().setArmorContents(armourContents));
     }
 
-    private void testMelee(ItemStack[] armour, Runnable preparations) {
+    private void testEnchantedMelee(ItemStack[] armour, Runnable preparations) {
+        // todo Gotta test all types of enchantments on all the weapons
+        // bane of arthropods
+        // sharpness
+        // smite
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
-            queueAttack(weaponType, armour, 1, () -> {
+            final ItemStack weapon = new ItemStack(weaponType);
+
+            // only axe and sword can have sharpness
+            try {
+                weapon.addEnchantment(Enchantment.DAMAGE_ALL,1);}
+            catch (IllegalArgumentException ignored){
+            }
+
+            final String message = weaponType.name() + " Sharpness 1";
+            queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
-            });
+            }));
+        }
+    }
+
+    private void testMelee(ItemStack[] armour, Runnable preparations) {
+        for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
+            final ItemStack weapon = new ItemStack(weaponType);
+            queueAttack(new OCMTest(weapon, armour, 1, weaponType.name(), () -> {
+                preparations.run();
+                defender.setMaximumNoDamageTicks(0);
+            }));
         }
     }
 
@@ -115,15 +145,15 @@ public class InGameTester {
         Material[] weapons = {Material.WOODEN_HOE, Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.WOODEN_PICKAXE, Material.DIAMOND_SWORD};
 
         for (Material weaponType : weapons) {
-            queueAttack(weaponType, armour, 3, () -> {
+            final ItemStack weapon = new ItemStack(weaponType);
+            queueAttack(new OCMTest(weapon, armour, 3, weaponType.name(), () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(30);
-            });
+            }));
         }
     }
 
-    private void queueAttack(Material weaponType, ItemStack[] armour, long attackDelay, Runnable preparations) {
-        final OCMTest test = new OCMTest(weaponType, armour, attackDelay, "Melee Attack " + weaponType, preparations);
+    private void queueAttack(OCMTest test){
         testQueue.add(test);
     }
 
@@ -140,14 +170,18 @@ public class InGameTester {
                 rawWeaponDamage > lastDamage;
     }
 
-    private float calculateExpectedDamage(Material weaponType, ItemStack[] armourContents) {
-        //todo include weapon enchants, armour etc. in expected calculations
-        // Damage order: base -> potion effects -> critical hit -> overdamage -> enchantments -> armour effects
+    private float calculateExpectedDamage(ItemStack weapon, ItemStack[] armourContents) {
+        final Material weaponType = weapon.getType();
+        // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
+        // Hurt components order: Overdamage - Armour Effects
         double expectedDamage = WeaponDamages.getDamage(weaponType);
 
         // Take into account damage reduction because of cooldown
         //final double attackCooldown = defender.getAttackCooldown();
         //expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
+
+        // Weapon Enchantments
+        expectedDamage += DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));
 
         // Overdamage
         if (wasOverdamaged(expectedDamage)) {
@@ -174,13 +208,14 @@ public class InGameTester {
 
                 final Material weaponType = ((Player) damager).getInventory().getItemInMainHand().getType();
                 final OCMTest test = testQueue.remove();
-                final float expectedDamage = calculateExpectedDamage(test.weaponType, test.armour);
+                final ItemStack expectedWeapon = test.weapon;
+                final float expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
 
                 if (wasFakeOverdamage(weaponType) && e.isCancelled()) {
                     Messenger.sendNormalMessage(sender, "&aPASSED &fFake overdamage " + expectedDamage + " < " + ((LivingEntity) e.getEntity()).getLastDamage());
                     tally.passed();
                 } else {
-                    final String weaponMessage = "E: " + test.weaponType.name() + " A: " + weaponType.name();
+                    final String weaponMessage = "E: " + expectedWeapon.getType().name() + " A: " + weaponType.name();
                     TesterUtils.assertEquals(expectedDamage, (float) e.getFinalDamage(), tally, weaponMessage, sender);
                 }
             }
@@ -199,7 +234,7 @@ public class InGameTester {
             Bukkit.getScheduler().runTaskLater(ocm, () -> {
                 beforeEach();
                 test.preparations.run();
-                preparePlayer(test.weaponType);
+                preparePlayer(test.weapon);
                 attacker.attack(defender);
                 afterEach();
             }, attackDelay);
@@ -237,8 +272,7 @@ public class InGameTester {
         }
     }
 
-    private void preparePlayer(Material weaponType){
-        final ItemStack weapon = new ItemStack(weaponType);
+    private void preparePlayer(ItemStack weapon){
         if (weapon.hasItemMeta()) {
             final ItemMeta meta = weapon.getItemMeta();
             meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
@@ -253,14 +287,14 @@ public class InGameTester {
         final AttributeInstance ai = attacker.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
         final AttributeInstance defenderArmour = defender.getAttribute(Attribute.GENERIC_ARMOR);
 
-        weaponType.getDefaultAttributeModifiers(EquipmentSlot.HAND).get(Attribute.GENERIC_ATTACK_DAMAGE).forEach(am -> {
+        weapon.getType().getDefaultAttributeModifiers(EquipmentSlot.HAND).get(Attribute.GENERIC_ATTACK_DAMAGE).forEach(am -> {
             ai.removeModifier(am);
             ai.addModifier(am);
         });
 
         // Update armour attribute
         final ItemStack[] armourContents = defender.getInventory().getArmorContents();
-        Messenger.debug("Armour: " + Arrays.stream(armourContents).map(is -> is.getType().name()).reduce((a, b) -> a + ", " + b).orElse("none"));
+        Messenger.debug("Armour: " + Arrays.stream(armourContents).filter(Objects::nonNull).map(is -> is.getType().name()).reduce((a, b) -> a + ", " + b).orElse("none"));
         for (int i = 0; i < armourContents.length; i++) {
             final ItemStack itemStack = armourContents[i];
             if (itemStack == null) continue;

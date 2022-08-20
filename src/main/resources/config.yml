@@ -109,6 +109,9 @@ old-tool-damage:
   # NOTE: this will modify the damage, however on the item tooltip it will still show the 1.9+ damage
   enabled: true
   worlds: []
+  # Use old sharpness calculations, i.e. each level adds 1.25 damage
+  # In 1.9+, sharpness adds 1 + 0.5 * level damage
+  old-sharpness: true
   # Damage values shown in 1.9 representation (actual damage)
   # In 1.8 the damage tooltip value would be added to 1 'base damage', yielding the values below
   damages:
@@ -567,4 +570,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 54
+config-version: 55
