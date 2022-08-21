@@ -45,7 +45,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private int sharpnessLevel;
     private int strengthLevel;
 
-    private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1, criticalAddend = 0;
+    private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
     private double strengthModifier = 0, weaknessModifier = 0;
 
     // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier and addend (+130%)
@@ -55,7 +55,6 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private boolean was1_8Crit = false;
     private boolean wasSprinting = false;
-    private boolean roundCritDamage = false;
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
@@ -92,6 +91,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         mobEnchantmentsDamage = MobDamage.applyEntityEnchantmentDamage(damageeType, weapon, rawDamage) - rawDamage;
 
+        // todo scale by attack strength
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
@@ -134,6 +134,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         baseDamage = tempDamage + weaknessModifier - strengthModifier;
         debug(le, "Base tool damage: " + baseDamage);
+
+        // todo scale by attack strength
     }
 
     public Entity getDamager() {
@@ -246,14 +248,6 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         this.cancelled = cancelled;
     }
 
-    public double getCriticalAddend() {
-        return criticalAddend;
-    }
-
-    public void setCriticalAddend(double criticalAddend) {
-        this.criticalAddend = criticalAddend;
-    }
-
     public boolean wasSprinting() {
         return wasSprinting;
     }
@@ -268,13 +262,5 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public void setWas1_8Crit(boolean was1_8Crit) {
         this.was1_8Crit = was1_8Crit;
-    }
-
-    public boolean RoundCritDamage() {
-        return roundCritDamage;
-    }
-
-    public void setRoundCritDamage(boolean roundCritDamage) {
-        this.roundCritDamage = roundCritDamage;
     }
 }

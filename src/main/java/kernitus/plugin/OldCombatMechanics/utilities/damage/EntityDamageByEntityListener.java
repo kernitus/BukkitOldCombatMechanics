@@ -56,7 +56,7 @@ public class EntityDamageByEntityListener extends Module {
         // Set last damage to actual value for other modules and plugins to use
         // This will be set back to 0 in MONITOR listener on the next tick to detect all potential overdamages
         final Double lastStoredDamage = lastDamages.get(damagee.getUniqueId());
-        if(lastStoredDamage != null && damagee instanceof LivingEntity) {
+        if (lastStoredDamage != null && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
             livingDamagee.setLastDamage(lastStoredDamage);
         }
@@ -90,7 +90,6 @@ public class EntityDamageByEntityListener extends Module {
         else if (e.isStrengthModifierAddend()) newDamage *= ++strengthModifier;
         else newDamage *= strengthModifier;
 
-
         debug("Strength: " + strengthModifier, damager);
 
         // Scale by attack delay
@@ -101,24 +100,26 @@ public class EntityDamageByEntityListener extends Module {
         // the multiplier is equivalent to y = 0.8x^2 + 0.2
         // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
         // this implies 40 speed is the minimum to always have full attack strength
-        if(damager instanceof HumanEntity){
+        if (damager instanceof HumanEntity) {
             final HumanEntity humanEntity = ((HumanEntity) damager);
             final float cooldown = humanEntity.getAttackCooldown(); // i.e. f2
             newDamage *= 0.2F + cooldown * cooldown * 0.8F;
         }
 
-        // Critical hit: 1.9 is *1.5, 1.8 is *rand(0%,50%) + 1
-        // Bukkit 1.8_r3 code:     i += this.random.nextInt(i / 2 + 2);
-        if (e.was1_8Crit() && !e.wasSprinting()) {
-            newDamage *= e.getCriticalMultiplier();
-            if (e.RoundCritDamage()) newDamage = (int) newDamage;
-            newDamage += e.getCriticalAddend();
-            debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
-        }
+        // Critical hit
+        final double criticalMultiplier = e.getCriticalMultiplier();
+        debug("Crit " + newDamage + " *= " + criticalMultiplier);
+        newDamage *= criticalMultiplier;
 
-        // Enchantments
-        newDamage += e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
-        debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage(), damager);
+        // Enchantment damage, scaled by attack strength
+        double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
+        if (damager instanceof HumanEntity) {
+            final HumanEntity humanEntity = ((HumanEntity) damager);
+            final float cooldown = humanEntity.getAttackCooldown();
+            enchantmentDamage *= 0.2F + cooldown * cooldown * 0.8F;
+        }
+        newDamage += enchantmentDamage;
+        debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);
 
         // Overdamage due to immunity
         // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable.
@@ -127,11 +128,11 @@ public class EntityDamageByEntityListener extends Module {
 
         if (damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = (LivingEntity) damagee;
-            if((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
+            if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
 
                 // This was either set to correct value above in this listener, or we're using the server's value
                 final double lastDamage = livingDamagee.getLastDamage();
-                if(newDamage <= lastDamage){
+                if (newDamage <= lastDamage) {
                     event.setCancelled(true);
                     debug("Was fake overdamage, cancelling event");
                     return;

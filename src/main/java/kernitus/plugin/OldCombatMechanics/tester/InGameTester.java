@@ -120,6 +120,7 @@ public class InGameTester {
             queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
+                attacker.setFallDistance(2);
             }));
         }
     }
@@ -175,8 +176,15 @@ public class InGameTester {
         final float attackCooldown = defender.getAttackCooldown();
         expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
 
+        // Critical hit
+        if(attacker.getFallDistance() > 0){
+            expectedDamage *= 1.5;
+        }
+
         // Weapon Enchantments
-        expectedDamage += DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));
+        double sharpnessDamage = DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));
+        sharpnessDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
+        expectedDamage += sharpnessDamage;
 
         // Overdamage
         if (wasOverdamaged(expectedDamage)) {

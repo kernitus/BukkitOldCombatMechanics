@@ -532,18 +532,12 @@ attack-frequency:
 
 old-critical-hits:
   # Makes critical hits work like in 1.8
-  # In 1.8 damage would be increased by 0% to 50%, rounded down, plus one heart
-  # In 1.9 critical hits are always +50%
+  # With a critical hit, the damage will be multiplied by 1.5
+  # In 1.9, the user must also not be sprinting for it to be a crit
   enabled: true
   world: []
   # What the damage, after applying potions effects, is multiplied by
   multiplier: 1.5
-  # Whether the multiplier is a random decimal between 1 and multiplier
-  is-multiplier-random: true
-  # What is added to the damage, after applying potion effects and multiplying
-  addend: 1
-  # Whether to round damage down to nearest integer (1.8 default: true)
-  round-down: true
   # Whether to allow crits while sprinting. 1.8: true, 1.9: false
   allow-sprinting: true
 
