@@ -90,7 +90,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         and whether we need to cancel the event accordingly.
          */
 
-        mobEnchantmentsDamage = MobDamage.applyEntityBasedDamage(damageeType, weapon, rawDamage) - rawDamage;
+        mobEnchantmentsDamage = MobDamage.applyEntityEnchantmentDamage(damageeType, weapon, rawDamage) - rawDamage;
 
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);

@@ -42,15 +42,14 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with enchanted weapons
-    // todo test with attack delay
-    // todo test with enchanted armour
     // todo test with critical hits
     // todo test with potion effects on attack
+
+    // todo test with enchanted armour
     // todo test with potion effects on defence
     // todo test with shield blocking
-    // todo test with bow attacks
 
+    // todo test with bow attacks
     // todo test armour durability
 
     public InGameTester(OCMMain ocm) {
@@ -108,10 +107,6 @@ public class InGameTester {
     }
 
     private void testEnchantedMelee(ItemStack[] armour, Runnable preparations) {
-        // todo Gotta test all types of enchantments on all the weapons
-        // bane of arthropods
-        // sharpness
-        // smite
         for (Material weaponType : WeaponDamages.getMaterialDamages().keySet()) {
             final ItemStack weapon = new ItemStack(weaponType);
 
@@ -177,8 +172,8 @@ public class InGameTester {
         double expectedDamage = WeaponDamages.getDamage(weaponType);
 
         // Take into account damage reduction because of cooldown
-        //final double attackCooldown = defender.getAttackCooldown();
-        //expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
+        final float attackCooldown = defender.getAttackCooldown();
+        expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
 
         // Weapon Enchantments
         expectedDamage += DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));

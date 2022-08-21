@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attributable;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -75,26 +76,36 @@ public class EntityDamageByEntityListener extends Module {
 
         debug("Base: " + e.getBaseDamage(), damager);
 
-        //Weakness potion
+        // Weakness potion
         double weaknessModifier = e.getWeaknessModifier();
         if (e.isWeaknessModifierMultiplier()) newDamage *= weaknessModifier;
         else newDamage += weaknessModifier;
 
         debug("Weak: " + e.getWeaknessModifier(), damager);
 
-        //Strength potion
+        // Strength potion
         debug("Strength level: " + e.getStrengthLevel(), damager);
         double strengthModifier = e.getStrengthModifier() * e.getStrengthLevel();
         if (!e.isStrengthModifierMultiplier()) newDamage += strengthModifier;
         else if (e.isStrengthModifierAddend()) newDamage *= ++strengthModifier;
         else newDamage *= strengthModifier;
 
-        // todo scale by attack delay
-        // todo take into account weapon cooldown
-        //  float f2 = this.getAttackStrengthScale(0.5F);
-        //  f *= 0.2F + f2 * f2 * 0.8F;
 
         debug("Strength: " + strengthModifier, damager);
+
+        // Scale by attack delay
+        // float currentItemAttackStrengthDelay = 1.0D / GenericAttributes.ATTACK_SPEED * 20.0D
+        // attack strength ticker goes up by 1 every tick, is reset to 0 after an attack
+        // float f2 = MathHelper.clamp((attackStrengthTicker + 0.5) / currentItemAttackStrengthDelay, 0.0F, 1.0F);
+        // f *= 0.2F + f2 * f2 * 0.8F;
+        // the multiplier is equivalent to y = 0.8x^2 + 0.2
+        // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
+        // this implies 40 speed is the minimum to always have full attack strength
+        if(damager instanceof HumanEntity){
+            final HumanEntity humanEntity = ((HumanEntity) damager);
+            final float cooldown = humanEntity.getAttackCooldown(); // i.e. f2
+            newDamage *= 0.2F + cooldown * cooldown * 0.8F;
+        }
 
         // Critical hit: 1.9 is *1.5, 1.8 is *rand(0%,50%) + 1
         // Bukkit 1.8_r3 code:     i += this.random.nextInt(i / 2 + 2);
@@ -105,7 +116,7 @@ public class EntityDamageByEntityListener extends Module {
             debug("Crit * " + e.getCriticalMultiplier() + " + " + e.getCriticalAddend(), damager);
         }
 
-        //Enchantments
+        // Enchantments
         newDamage += e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
         debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage(), damager);
 

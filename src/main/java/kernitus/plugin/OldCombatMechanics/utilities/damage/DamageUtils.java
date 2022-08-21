@@ -12,16 +12,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 public class DamageUtils {
-
-    // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
-    // Hurt components order: Overdamage - Armour Effects
-    // getDamage() returns without armour effects, getFinalDamage() includes armour, armour enchants, blocking
-
-    // 1.9 weapon enchantment calculation
-    // SHARPNESS: 1.0 + (float) Math.max(0, i - 1) * 0.5
-    // SMITE (undead): (float) i * 2.5F
-    // BANE OF ARTHROPODS: (float) i * 2.5F
-
     /**
      * Get sharpness damage multiplier for 1.9
      *

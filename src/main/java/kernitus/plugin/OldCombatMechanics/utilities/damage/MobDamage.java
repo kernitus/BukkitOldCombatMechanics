@@ -51,20 +51,27 @@ public class MobDamage {
                 final EntityType entityType = EntityType.valueOf(entityName);
                 final Enchantment enchantment = allMobs.get(entityName);
                 enchantsBuilder.put(entityType, enchantment);
-            } catch(IllegalArgumentException ignored) {} // Mob not supported in this MC version
+            } catch (IllegalArgumentException ignored) {
+            } // Mob not supported in this MC version
         });
         enchants = enchantsBuilder.build();
     }
 
-    public static double applyEntityBasedDamage(EntityType entity, ItemStack item, double startDamage){
-        Enchantment enchantment = enchants.get(entity);
+    /**
+     * Add damage due to Smite and Bane of Arthropods enchantments, when applicable
+     *
+     * @param entity      The type of entity that was attacked
+     * @param item        The enchanted weapon used in the attack
+     * @param startDamage The damage before applying the enchantment damage
+     * @return The start damage + the damage due to the enchantments
+     */
+    public static double applyEntityEnchantmentDamage(EntityType entity, ItemStack item, double startDamage) {
+        final Enchantment enchantment = enchants.get(entity);
 
-        if(enchantment == null) return startDamage;
+        if (enchantment == null || enchantment != Enchantment.DAMAGE_UNDEAD || enchantment != Enchantment.DAMAGE_ARTHROPODS)
+            return startDamage;
 
-        if(enchantment == Enchantment.DAMAGE_UNDEAD || enchantment == Enchantment.DAMAGE_ARTHROPODS)
-            return startDamage + 2.5 * item.getEnchantmentLevel(enchantment);
-
-        return startDamage;
+        return startDamage + 2.5 * item.getEnchantmentLevel(enchantment);
     }
 
 }

@@ -540,7 +540,7 @@ old-critical-hits:
   multiplier: 1.5
   # Whether the multiplier is a random decimal between 1 and multiplier
   is-multiplier-random: true
-  # What is added to the damage, after applying potions effects and multiplying
+  # What is added to the damage, after applying potion effects and multiplying
   addend: 1
   # Whether to round damage down to nearest integer (1.8 default: true)
   round-down: true
