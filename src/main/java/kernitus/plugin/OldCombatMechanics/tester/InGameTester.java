@@ -30,6 +30,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
@@ -74,8 +76,8 @@ public class InGameTester {
 
         // Queue all tests
         //runAttacks(new ItemStack[]{}, () -> {}); // with no armour
-        //testArmour();
-        testEnchantedMelee(new ItemStack[]{}, () -> {});
+        testArmour();
+        //testEnchantedMelee(new ItemStack[]{}, () -> {});
 
         // Run all tests in the queue
         runQueuedTests();
@@ -110,16 +112,21 @@ public class InGameTester {
             final ItemStack weapon = new ItemStack(weaponType);
 
             // only axe and sword can have sharpness
+            /*
             try {
-                weapon.addEnchantment(Enchantment.DAMAGE_ALL,1);}
+                weapon.addEnchantment(Enchantment.DAMAGE_ALL,3);}
             catch (IllegalArgumentException ignored){
             }
+             */
 
-            final String message = weaponType.name() + " Sharpness 1";
+            final String message = weaponType.name() + " Sharpness 3";
             queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
-                attacker.setFallDistance(2);
+                //attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,1,false));
+                Messenger.debug("TESTING WEAPON " + weaponType);
+                //attacker.setFallDistance(2);
             }));
         }
     }
@@ -152,24 +159,23 @@ public class InGameTester {
         testQueue.add(test);
     }
 
-    private boolean wasFakeOverdamage(Material weaponType) {
-        double rawWeaponDamage = WeaponDamages.getDamage(weaponType);
-        final double lastDamage = defender.getLastDamage();
-        return (float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
-                rawWeaponDamage <= lastDamage;
-    }
-
-    private boolean wasOverdamaged(double rawWeaponDamage) {
-        final double lastDamage = defender.getLastDamage();
-        return (float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
-                rawWeaponDamage > lastDamage;
-    }
-
-    private float calculateExpectedDamage(ItemStack weapon, ItemStack[] armourContents) {
+    private double calculateAttackDamage(ItemStack weapon){
         final Material weaponType = weapon.getType();
         // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
         // Hurt components order: Overdamage - Armour Effects
         double expectedDamage = WeaponDamages.getDamage(weaponType);
+
+        // Weakness effect, 1.8: -0.5 * level
+        final PotionEffect weakness = attacker.getPotionEffect(PotionEffectType.WEAKNESS);
+        final double weaknessAddend = weakness != null ? (weakness.getAmplifier() + 1) * -0.5 : 0;
+
+        // Strength effect
+        // 1.8: +130% for each strength level
+        final PotionEffect strength = attacker.getPotionEffect(PotionEffectType.INCREASE_DAMAGE);
+        if(strength != null)
+            expectedDamage += (strength.getAmplifier() + 1) * 1.3 * expectedDamage;
+
+        //expectedDamage += weaknessAddend;
 
         // Take into account damage reduction because of cooldown
         final float attackCooldown = defender.getAttackCooldown();
@@ -184,6 +190,25 @@ public class InGameTester {
         double sharpnessDamage = DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));
         sharpnessDamage *= attackCooldown; // Scale by attack cooldown strength
         expectedDamage += sharpnessDamage;
+
+        return expectedDamage;
+    }
+
+    private boolean wasFakeOverdamage(ItemStack weapon) {
+        double weaponDamage = calculateAttackDamage(weapon);
+        final double lastDamage = defender.getLastDamage();
+        return (float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
+                weaponDamage <= lastDamage;
+    }
+
+    private boolean wasOverdamaged(double rawWeaponDamage) {
+        final double lastDamage = defender.getLastDamage();
+        return (float) defender.getNoDamageTicks() > (float) defender.getMaximumNoDamageTicks() / 2.0F &&
+                rawWeaponDamage > lastDamage;
+    }
+
+    private float calculateExpectedDamage(ItemStack weapon, ItemStack[] armourContents) {
+        double expectedDamage = calculateAttackDamage(weapon);
 
         // Overdamage
         if (wasOverdamaged(expectedDamage)) {
@@ -208,12 +233,13 @@ public class InGameTester {
                 if (damager.getUniqueId() != attacker.getUniqueId() ||
                         e.getEntity().getUniqueId() != defender.getUniqueId()) return;
 
-                final Material weaponType = ((Player) damager).getInventory().getItemInMainHand().getType();
+                final ItemStack weapon = ((Player) damager).getInventory().getItemInMainHand();
+                final Material weaponType = weapon.getType();
                 final OCMTest test = testQueue.remove();
                 final ItemStack expectedWeapon = test.weapon;
                 final float expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
 
-                if (wasFakeOverdamage(weaponType) && e.isCancelled()) {
+                if (wasFakeOverdamage(weapon) && e.isCancelled()) {
                     Messenger.sendNormalMessage(sender, "&aPASSED &fFake overdamage " + expectedDamage + " < " + ((LivingEntity) e.getEntity()).getLastDamage());
                     tally.passed();
                 } else {

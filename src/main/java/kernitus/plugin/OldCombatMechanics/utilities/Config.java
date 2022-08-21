@@ -72,7 +72,10 @@ public class Config {
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
         final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
         if(EDBEL != null) {
-            EDBEL.setEnabled(moduleEnabled("old-tool-damage") || moduleEnabled("old-potion-effects"));
+            EDBEL.setEnabled(moduleEnabled("old-tool-damage") ||
+                    moduleEnabled("old-potion-effects")
+                    || moduleEnabled("old-critical-hits")
+            );
         }
 
         // Dynamically registers / unregisters all event listeners for optimal performance!

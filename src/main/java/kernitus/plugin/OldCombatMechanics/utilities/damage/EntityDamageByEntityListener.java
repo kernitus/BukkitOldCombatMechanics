@@ -75,22 +75,27 @@ public class EntityDamageByEntityListener extends Module {
         double newDamage = e.getBaseDamage();
 
         debug("Base: " + e.getBaseDamage(), damager);
+        debug("Base: " + e.getBaseDamage());
 
         // Weakness potion
-        double weaknessModifier = e.getWeaknessModifier();
-        if (e.isWeaknessModifierMultiplier()) newDamage *= weaknessModifier;
-        else newDamage += weaknessModifier;
-
-        debug("Weak: " + e.getWeaknessModifier(), damager);
+        final double weaknessModifier = e.getWeaknessModifier() * e.getWeaknessLevel();
+        final double weaknessAddend = e.isWeaknessModifierMultiplier() ? newDamage * weaknessModifier : weaknessModifier;
+        // Don't modify newDamage yet so both potion effects are calculated off of the base damage
+        debug("Weak: " + weaknessAddend);
+        debug("Weak: " + weaknessAddend, damager);
 
         // Strength potion
+        debug("Strength level: " + e.getStrengthLevel());
         debug("Strength level: " + e.getStrengthLevel(), damager);
         double strengthModifier = e.getStrengthModifier() * e.getStrengthLevel();
         if (!e.isStrengthModifierMultiplier()) newDamage += strengthModifier;
         else if (e.isStrengthModifierAddend()) newDamage *= ++strengthModifier;
         else newDamage *= strengthModifier;
 
+        debug("Strength: " + strengthModifier);
         debug("Strength: " + strengthModifier, damager);
+
+        newDamage += weaknessAddend;
 
         // Scale by attack delay
         // float currentItemAttackStrengthDelay = 1.0D / GenericAttributes.ATTACK_SPEED * 20.0D
@@ -102,6 +107,7 @@ public class EntityDamageByEntityListener extends Module {
         // this implies 40 speed is the minimum to always have full attack strength
         if (damager instanceof HumanEntity) {
             final float cooldown = ((HumanEntity) damager).getAttackCooldown(); // i.e. f2
+            debug("Scale by attack delay: " + newDamage + " *= 0.2 + " + cooldown + "^2 * 0.8");
             newDamage *= 0.2F + cooldown * cooldown * 0.8F;
         }
 
@@ -114,6 +120,7 @@ public class EntityDamageByEntityListener extends Module {
         double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
         if (damager instanceof HumanEntity) {
             final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            debug("Scale enchantments by attack delay: " + enchantmentDamage + " *= " + cooldown);
             enchantmentDamage *= cooldown;
         }
         newDamage += enchantmentDamage;
@@ -132,7 +139,7 @@ public class EntityDamageByEntityListener extends Module {
                 final double lastDamage = livingDamagee.getLastDamage();
                 if (newDamage <= lastDamage) {
                     event.setCancelled(true);
-                    debug("Was fake overdamage, cancelling event");
+                    debug("Was fake overdamage, cancelling " + newDamage + " <= " + lastDamage);
                     return;
                 }
 

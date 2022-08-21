@@ -480,8 +480,8 @@ old-potion-effects:
         extended: 240
 
   # EFFECTS
-  # If 'multiplier' is true value is multiplied by base tool damage. If false it is added.
-  # If both true it is first increased by 1 then multiplied (same as +xx%)
+  # If 'multiplier' is true value is multiplied by base tool damage. If 'addend' it is added.
+  # If both true, it is first increased by 1 then multiplied (same as +xx%)
   # Strength potion
   # 1.9: I = +3; II = +6;    1.8: I = +130%; II = +260%
   strength:

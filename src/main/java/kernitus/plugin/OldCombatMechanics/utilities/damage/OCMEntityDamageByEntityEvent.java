@@ -39,7 +39,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private ItemStack weapon;
     private int sharpnessLevel;
-    private int strengthLevel;
+    private int strengthLevel, weaknessLevel;
 
     private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
     private double strengthModifier = 0, weaknessModifier = 0;
@@ -127,16 +127,19 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         }
 
         // amplifier 0 = Strength I    amplifier 1 = Strength II
-        int amplifier = PotionEffects.get(livingDamager, PotionEffectType.INCREASE_DAMAGE)
+        strengthLevel = PotionEffects.get(livingDamager, PotionEffectType.INCREASE_DAMAGE)
                 .map(PotionEffect::getAmplifier)
-                .orElse(-1);
+                .orElse(-1) + 1;
 
-        strengthLevel = ++amplifier;
         strengthModifier = strengthLevel * 3;
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
-        if (livingDamager.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
+        weaknessLevel = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS)
+                .map(PotionEffect::getAmplifier)
+                .orElse(-1) + 1;
+
+        weaknessModifier = weaknessLevel * -4;
 
         debug(livingDamager, "Weakness Modifier: " + weaknessModifier);
 
@@ -178,6 +181,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public int getStrengthLevel() {
         return strengthLevel;
+    }
+
+    public int getWeaknessLevel() {
+        return weaknessLevel;
     }
 
     public double getWeaknessModifier() {
