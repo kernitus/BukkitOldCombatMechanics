@@ -101,8 +101,7 @@ public class EntityDamageByEntityListener extends Module {
         // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
         // this implies 40 speed is the minimum to always have full attack strength
         if (damager instanceof HumanEntity) {
-            final HumanEntity humanEntity = ((HumanEntity) damager);
-            final float cooldown = humanEntity.getAttackCooldown(); // i.e. f2
+            final float cooldown = ((HumanEntity) damager).getAttackCooldown(); // i.e. f2
             newDamage *= 0.2F + cooldown * cooldown * 0.8F;
         }
 
@@ -111,12 +110,11 @@ public class EntityDamageByEntityListener extends Module {
         debug("Crit " + newDamage + " *= " + criticalMultiplier);
         newDamage *= criticalMultiplier;
 
-        // Enchantment damage, scaled by attack strength
+        // Enchantment damage, scaled by attack cooldown
         double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
         if (damager instanceof HumanEntity) {
-            final HumanEntity humanEntity = ((HumanEntity) damager);
-            final float cooldown = humanEntity.getAttackCooldown();
-            enchantmentDamage *= 0.2F + cooldown * cooldown * 0.8F;
+            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            enchantmentDamage *= cooldown;
         }
         newDamage += enchantmentDamage;
         debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);

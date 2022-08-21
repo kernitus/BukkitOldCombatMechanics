@@ -8,15 +8,11 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -58,10 +54,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
+    // Perform the opposite of the following:
+    // (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay), Overdamage, Armour
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
+        // The raw damage passed to this event is EDBE's BASE damage, which does not include armour effects
         this.rawDamage = rawDamage;
 
         if (!(damager instanceof LivingEntity)) {
@@ -69,18 +68,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             return;
         }
 
-        final LivingEntity le = (LivingEntity) damager;
-
-        final EntityEquipment equipment = le.getEquipment();
-        weapon = equipment.getItemInMainHand();
-        // Yay paper. Why do you need to return null here?
-        if (weapon == null) weapon = new ItemStack(Material.AIR);
-        // Technically the weapon could be in the offhand, i.e. a bow.
-        // However, we are only concerned with melee weapons here, which will always be in the main hand.
-
-        final EntityType damageeType = damagee.getType();
-
-        debug(le, "Raw damage: " + rawDamage);
+        final LivingEntity livingDamager = (LivingEntity) damager;
 
         /*
         Normally invulnerability overdamage would have to be taken into account here, but instead in the EDBEListener
@@ -89,53 +77,71 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         and whether we need to cancel the event accordingly.
          */
 
-        mobEnchantmentsDamage = MobDamage.applyEntityEnchantmentDamage(damageeType, weapon, rawDamage) - rawDamage;
+        weapon = livingDamager.getEquipment().getItemInMainHand();
+        // Yay paper. Why do you need to return null here?
+        if (weapon == null) weapon = new ItemStack(Material.AIR);
+        // Technically the weapon could be in the offhand, i.e. a bow.
+        // However, we are only concerned with melee weapons here, which will always be in the main hand.
 
-        // todo scale by attack strength
+        final EntityType damageeType = damagee.getType();
+
+        debug(livingDamager, "Raw attack damage: " + rawDamage);
+
+        mobEnchantmentsDamage = MobDamage.getEntityEnchantmentsDamage(damageeType, weapon);
         sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
-        debug(le, "Mob: " + mobEnchantmentsDamage + " Sharpness: " + sharpnessDamage);
+        // Scale enchantment damage by attack cooldown
+        if (damager instanceof HumanEntity) {
+            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            mobEnchantmentsDamage *= cooldown;
+            sharpnessDamage *= cooldown;
+        }
 
-        //Amount of damage including potion effects and critical hits
+        debug(livingDamager, "Mob: " + mobEnchantmentsDamage + " Sharpness: " + sharpnessDamage);
+
+        // Amount of damage including potion effects and critical hits
         double tempDamage = rawDamage - mobEnchantmentsDamage - sharpnessDamage;
 
-        debug(le, "No ench damage: " + tempDamage);
+        debug(livingDamager, "No ench damage: " + tempDamage);
 
-        //Check if it's a critical hit
-        if (DamageUtils.isCriticalHit1_8(le)) {
+        // Check if it's a critical hit
+        if (DamageUtils.isCriticalHit1_8(livingDamager)) {
             was1_8Crit = true;
-            debug(le, "1.8 Critical hit detected");
+            debug(livingDamager, "1.8 Critical hit detected");
             // In 1.9 a crit also requires the player not to be sprinting
-            if (le instanceof Player) {
-                wasSprinting = ((Player) le).isSprinting();
+            if (livingDamager instanceof Player) {
+                wasSprinting = ((Player) livingDamager).isSprinting();
                 if (!wasSprinting) {
-                    debug(le, "1.9 Critical hit detected");
+                    debug(livingDamager, "1.9 Critical hit detected");
                     criticalMultiplier = 1.5;
                     tempDamage /= 1.5;
                 }
             }
         }
 
-        //amplifier 0 = Strength I    amplifier 1 = Strength II
-        int amplifier = PotionEffects.get(le, PotionEffectType.INCREASE_DAMAGE)
+        // Un-scale the damage by the attack strength
+        if (damager instanceof HumanEntity) {
+            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            tempDamage /= 0.2F + cooldown * cooldown * 0.8F;
+        }
+
+        // amplifier 0 = Strength I    amplifier 1 = Strength II
+        int amplifier = PotionEffects.get(livingDamager, PotionEffectType.INCREASE_DAMAGE)
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1);
 
         strengthLevel = ++amplifier;
-
         strengthModifier = strengthLevel * 3;
 
-        debug(le, "Strength Modifier: " + strengthModifier);
+        debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
-        if (le.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
+        if (livingDamager.hasPotionEffect(PotionEffectType.WEAKNESS)) weaknessModifier = -4;
 
-        debug(le, "Weakness Modifier: " + weaknessModifier);
+        debug(livingDamager, "Weakness Modifier: " + weaknessModifier);
 
         baseDamage = tempDamage + weaknessModifier - strengthModifier;
-        debug(le, "Base tool damage: " + baseDamage);
-
-        // todo scale by attack strength
+        debug(livingDamager, "Base tool damage: " + baseDamage);
     }
 
     public Entity getDamager() {

@@ -42,7 +42,6 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with critical hits
     // todo test with potion effects on attack
 
     // todo test with enchanted armour
@@ -183,7 +182,7 @@ public class InGameTester {
 
         // Weapon Enchantments
         double sharpnessDamage = DamageUtils.getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL));
-        sharpnessDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
+        sharpnessDamage *= attackCooldown; // Scale by attack cooldown strength
         expectedDamage += sharpnessDamage;
 
         // Overdamage
