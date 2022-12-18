@@ -25,7 +25,10 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
@@ -43,7 +46,6 @@ public class ModuleOldPotionEffects extends Module {
     );
 
     private Map<PotionType, PotionDurations> durations;
-    private Map<UUID, Long> weaknessMap; // store expiry time (current + duration secs)
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -61,7 +63,6 @@ public class ModuleOldPotionEffects extends Module {
     @Override
     public void reload() {
         durations = ConfigUtils.loadPotionDurationsList(module());
-        weaknessMap = new WeakHashMap();
     }
 
     /**
@@ -82,25 +83,26 @@ public class ModuleOldPotionEffects extends Module {
 
     // todo what about potions thrown out of dispensers? BlockDispenseEvent
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPotionThrow(PlayerInteractEvent event){
+    public void onPotionThrow(PlayerInteractEvent event) {
         final Player player = event.getPlayer();
         if (!isEnabled(player.getWorld())) return;
 
         final Action action = event.getAction();
-        if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         final ItemStack item = event.getItem();
-        if(item == null) return;
+        if (item == null) return;
         // todo what about lingering potions?
-        if(item.getType() != Material.SPLASH_POTION) return;
+        if (item.getType() != Material.SPLASH_POTION) return;
         adjustPotion(player.getUniqueId(), item, true);
     }
 
     /**
      * Sets custom potion duration and effects
+     *
      * @param potionItem The potion item with adjusted duration and effects
      */
-    private void adjustPotion(UUID playerId, ItemStack potionItem, boolean splash){
+    private void adjustPotion(UUID playerId, ItemStack potionItem, boolean splash) {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
@@ -114,8 +116,6 @@ public class ModuleOldPotionEffects extends Module {
         if (potionType == PotionType.WEAKNESS) {
             // Set level to 0 so that it doesn't prevent the EntityDamageByEntityEvent from being called
             amplifier = -1;
-            // Store so that we can restore the correct damage value afterwards
-            weaknessMap.put(playerId, System.currentTimeMillis() / 1000 + (duration / 20));
         }
 
         final PotionEffectType effectType = requireNonNull(potionType.getEffectType());
@@ -130,16 +130,12 @@ public class ModuleOldPotionEffects extends Module {
         final Entity damager = event.getDamager();
         if (!isEnabled(damager.getWorld())) return;
 
-        final Long expiryTime = weaknessMap.get(damager.getUniqueId());
-        if(expiryTime != null && System.currentTimeMillis() / 1000 < expiryTime) {
-            final double weaknessModifier = event.getWeaknessModifier();
-
-            if (weaknessModifier == 0) { // If it's not 0, there's some effect we didn't set ourselves
-                event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
-                final double newWeaknessModifier = module().getDouble("weakness.modifier");
-                event.setWeaknessModifier(newWeaknessModifier);
-                debug("Old weakness modifier: " + weaknessModifier + " New: " + newWeaknessModifier, damager);
-            }
+        final double weaknessLevel = event.getWeaknessLevel();
+        if (event.hasWeakness()) {
+            event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
+            final double newWeaknessModifier = module().getDouble("weakness.modifier");
+            event.setWeaknessModifier(newWeaknessModifier);
+            debug("Old weakness modifier: " + weaknessLevel + " New: " + newWeaknessModifier, damager);
         }
 
         final double strengthModifier = event.getStrengthModifier();

@@ -17,6 +17,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.Optional;
+
 import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
 
 public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
@@ -39,6 +41,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private ItemStack weapon;
     private int sharpnessLevel;
+    private boolean hasWeakness;
+    // The levels as shown in-game, i.e. 1 or 2 corresponding to I and II
     private int strengthLevel, weaknessLevel;
 
     private double baseDamage = 0, mobEnchantmentsDamage = 0, sharpnessDamage = 0, criticalMultiplier = 1;
@@ -135,9 +139,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
-        weaknessLevel = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS)
-                .map(PotionEffect::getAmplifier)
-                .orElse(-1) + 1;
+        // Don't set has weakness if amplifier is != 0, which is outside normal range and probably set by plugin
+        final Optional<Integer> weaknessAmplifier = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS).map(PotionEffect::getAmplifier);
+        hasWeakness = weaknessAmplifier.isPresent() && weaknessAmplifier.get() == 0;
+        weaknessLevel = weaknessAmplifier.orElse(-1) + 1;
 
         weaknessModifier = weaknessLevel * -4;
 
@@ -181,6 +186,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public int getStrengthLevel() {
         return strengthLevel;
+    }
+
+    public boolean hasWeakness() {
+        return hasWeakness;
     }
 
     public int getWeaknessLevel() {

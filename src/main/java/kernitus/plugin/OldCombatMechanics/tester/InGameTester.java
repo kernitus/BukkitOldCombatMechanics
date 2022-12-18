@@ -124,7 +124,7 @@ public class InGameTester {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
                 //attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,1,false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,0,false));
                 Messenger.debug("TESTING WEAPON " + weaponType);
                 //attacker.setFallDistance(2);
             }));
@@ -175,7 +175,7 @@ public class InGameTester {
         if(strength != null)
             expectedDamage += (strength.getAmplifier() + 1) * 1.3 * expectedDamage;
 
-        //expectedDamage += weaknessAddend;
+        expectedDamage += weaknessAddend;
 
         // Take into account damage reduction because of cooldown
         final float attackCooldown = defender.getAttackCooldown();
@@ -226,6 +226,7 @@ public class InGameTester {
     private void runQueuedTests() {
         Messenger.sendNormalMessage(sender, "Running " + testQueue.size() + " tests");
 
+        // Listener gets called every time defender is damaged
         Listener listener = new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
             public void onEvent(EntityDamageByEntityEvent e) {
@@ -235,8 +236,18 @@ public class InGameTester {
 
                 final ItemStack weapon = ((Player) damager).getInventory().getItemInMainHand();
                 final Material weaponType = weapon.getType();
-                final OCMTest test = testQueue.remove();
-                final ItemStack expectedWeapon = test.weapon;
+                OCMTest test = testQueue.remove();
+                ItemStack expectedWeapon = test.weapon;
+
+                // Comparison is overriden for itemstacks, checks all properties
+                while(weaponType != expectedWeapon.getType()){ // One of the attacks dealt no damage
+                    Messenger.sendNormalMessage(sender, "&bSKIPPED &f" + expectedWeapon.getType() + " &fNo damage");
+                    //TODO only if is expected damage 0, it's passed
+                    tally.passed();
+                    test = testQueue.remove();
+                    expectedWeapon = test.weapon;
+                }
+
                 final float expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
 
                 if (wasFakeOverdamage(weapon) && e.isCancelled()) {
