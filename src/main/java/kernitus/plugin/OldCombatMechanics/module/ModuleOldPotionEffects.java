@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -28,7 +29,6 @@ import org.bukkit.potion.PotionType;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
@@ -76,12 +76,22 @@ public class ModuleOldPotionEffects extends Module {
         final ItemStack potionItem = event.getItem();
         if (potionItem.getType() != Material.POTION) return;
 
-        adjustPotion(player.getUniqueId(), potionItem, false);
+        adjustPotion(potionItem, false);
         event.setItem(potionItem);
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPotionDispense(BlockDispenseEvent event){
+        if (!isEnabled(event.getBlock().getWorld())) return;
 
-    // todo what about potions thrown out of dispensers? BlockDispenseEvent
+        final ItemStack item = event.getItem();
+        final Material material = item.getType();
+
+        if (material == Material.SPLASH_POTION || material == Material.LINGERING_POTION)
+            adjustPotion(item, true);
+    }
+
+    // We change the potion on-the-fly just as it's thrown to be able to change the effect
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPotionThrow(PlayerInteractEvent event) {
         final Player player = event.getPlayer();
@@ -92,9 +102,10 @@ public class ModuleOldPotionEffects extends Module {
 
         final ItemStack item = event.getItem();
         if (item == null) return;
-        // todo what about lingering potions?
-        if (item.getType() != Material.SPLASH_POTION) return;
-        adjustPotion(player.getUniqueId(), item, true);
+
+        final Material material = item.getType();
+        if (material == Material.SPLASH_POTION || material == Material.LINGERING_POTION)
+            adjustPotion(item, true);
     }
 
     /**
@@ -102,7 +113,7 @@ public class ModuleOldPotionEffects extends Module {
      *
      * @param potionItem The potion item with adjusted duration and effects
      */
-    private void adjustPotion(UUID playerId, ItemStack potionItem, boolean splash) {
+    private void adjustPotion(ItemStack potionItem, boolean splash) {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
@@ -115,6 +126,7 @@ public class ModuleOldPotionEffects extends Module {
         int amplifier = potionData.isUpgraded() ? 1 : 0;
         if (potionType == PotionType.WEAKNESS) {
             // Set level to 0 so that it doesn't prevent the EntityDamageByEntityEvent from being called
+            // due to damage being lower than 0 as some 1.9 weapons deal less damage
             amplifier = -1;
         }
 
