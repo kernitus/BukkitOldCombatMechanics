@@ -52,19 +52,20 @@ public class ArmourUtils {
      * @param damageModifiers A map of the damagemodifiers and their values from the event
      * @param damageCause The cause of the damage
      */
+    @SuppressWarnings("deprecation")
     public static void calculateArmourDamageReduction(LivingEntity damagedEntity,
                                                       Map<EntityDamageEvent.DamageModifier, Double> damageModifiers,
                                                       EntityDamageEvent.DamageCause damageCause) {
 
         final double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
-        final double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
+        final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
         // Apply armour damage reduction after blocking reduction
         final double blockedDamage = damageModifiers.containsKey(EntityDamageEvent.DamageModifier.BLOCKING) ? damageModifiers.get(EntityDamageEvent.DamageModifier.BLOCKING) : 0;
         final double armourReduction =
                 (!NON_REDUCED_CAUSES.contains(damageCause) && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ARMOR)) ?
-                        -((damageModifiers.get(EntityDamageEvent.DamageModifier.BASE) + blockedDamage)
-                                * reductionPercentage) : 0;
+                        -((damageModifiers.get(EntityDamageEvent.DamageModifier.BASE) + blockedDamage) * reductionFactor)
+                        : 0;
         damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
 
         final double provisionFinalDamage = damageModifiers.keySet().stream()
@@ -74,10 +75,9 @@ public class ArmourUtils {
 
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
         if (provisionFinalDamage > 0 && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
-            //Set new MAGIC (Armour enchants) damage
-            damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC,
-                    provisionFinalDamage *
-                            -calculateArmourEnchantmentReductionPercentage(damagedEntity.getEquipment().getArmorContents(), damageCause));
+            // Set new MAGIC (Armour enchants) damage
+            final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(damagedEntity.getEquipment().getArmorContents(), damageCause);
+            damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, -provisionFinalDamage * enchantsReductionFactor);
         }
 
         /*
@@ -104,25 +104,25 @@ public class ArmourUtils {
             armourPoints += TesterUtils.getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
         }
 
-        final double reductionPercentage = armourPoints * REDUCTION_PER_ARMOUR_POINT;
+        final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
-        // Apply armour damage reduction after blocking reduction
-        double finalDamage = baseDamage - (!NON_REDUCED_CAUSES.contains(damageCause) ? (baseDamage * reductionPercentage) : 0);
+        // Apply armour damage reduction
+        double finalDamage = baseDamage - (NON_REDUCED_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
 
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
-        final double enchantmentReductionPercentage = calculateArmourEnchantmentReductionPercentage(armourContents, damageCause);
+        final double enchantmentReductionFactor = calculateArmourEnchantmentReductionFactor(armourContents, damageCause);
         if (finalDamage > 0) {
-            finalDamage -= finalDamage * enchantmentReductionPercentage;
+            finalDamage -= finalDamage * enchantmentReductionFactor;
         }
 
-        Messenger.debug("Reductions: Armour %.0f%%, Ench %.0f%%, Total %.2f%%, Start dmg: %.2f Final: %.2f", reductionPercentage * 100,
-                enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
+        Messenger.debug("Reductions: Armour %.0f%%, Ench %.0f%%, Total %.2f%%, Start dmg: %.2f Final: %.2f", reductionFactor * 100,
+                enchantmentReductionFactor * 100, (reductionFactor + (1 - reductionFactor) * enchantmentReductionFactor) * 100,
                 baseDamage, finalDamage);
 
         return finalDamage;
     }
 
-    private static double calculateArmourEnchantmentReductionPercentage(ItemStack[] armourContents, EntityDamageEvent.DamageCause cause) {
+    private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents, EntityDamageEvent.DamageCause cause) {
         int totalEpf = 0;
         for (ItemStack armourItem : armourContents) {
             if (armourItem != null && armourItem.getType() != Material.AIR) {
@@ -138,12 +138,13 @@ public class ArmourUtils {
             }
         }
 
-        // capped at 25
+        // Cap at 25
         totalEpf = Math.min(25, totalEpf);
 
+        // Multiply by random value between 50% and 100%, then round up
         totalEpf = (int) Math.ceil(totalEpf * ThreadLocalRandom.current().nextDouble(0.5, 1));
 
-        // capped at 20
+        // Cap at 20
         totalEpf = Math.min(20, totalEpf);
 
         return REDUCTION_PER_ARMOUR_POINT * totalEpf;

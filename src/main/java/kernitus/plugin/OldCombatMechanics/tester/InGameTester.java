@@ -44,7 +44,6 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with enchanted armour
     // todo test with potion effects on defence
     // todo test with shield blocking
 
@@ -99,6 +98,10 @@ public class InGameTester {
             final String material = materials[random.nextInt(6)];
 
             final ItemStack itemStack = new ItemStack(Material.valueOf(material + "_" + slot));
+
+            // Apply enchantment to armour piece
+            //itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
+
             armourContents[i] = itemStack;
         }
 
@@ -121,8 +124,9 @@ public class InGameTester {
             queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
+                // TODO test with potion effects again
                 //attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,-1,false));
+                //attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,-1,false));
                 Messenger.debug("TESTING WEAPON " + weaponType);
                 //attacker.setFallDistance(2);
             }));
@@ -162,7 +166,6 @@ public class InGameTester {
         // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
         // Hurt components order: Overdamage - Armour Effects
         double expectedDamage = WeaponDamages.getDamage(weaponType);
-        Messenger.sendNormalMessage(sender, "Basic: " + expectedDamage);
 
         // Weakness effect, 1.8: -0.5
         // We ignore the level as there is only one level of weakness potion
@@ -174,11 +177,7 @@ public class InGameTester {
         if(strength != null)
             expectedDamage += (strength.getAmplifier() + 1) * 1.3 * expectedDamage;
 
-        Messenger.sendNormalMessage(sender, "After strength: " + expectedDamage);
-
         expectedDamage += weaknessAddend;
-
-        Messenger.sendNormalMessage(sender, "After weakness: " + expectedDamage);
 
         // Take into account damage reduction because of cooldown
         final float attackCooldown = defender.getAttackCooldown();
@@ -212,7 +211,6 @@ public class InGameTester {
 
     private float calculateExpectedDamage(ItemStack weapon, ItemStack[] armourContents) {
         double expectedDamage = calculateAttackDamage(weapon);
-        Messenger.sendNormalMessage(sender, "ATTACK DAMAGE: " + expectedDamage);
 
         // Overdamage
         if (wasOverdamaged(expectedDamage)) {

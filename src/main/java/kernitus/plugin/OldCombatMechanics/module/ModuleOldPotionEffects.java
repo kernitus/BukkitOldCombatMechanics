@@ -143,7 +143,6 @@ public class ModuleOldPotionEffects extends Module {
         if (!isEnabled(damager.getWorld())) return;
 
         if (event.hasWeakness()) {
-            debug("HAS WEAKNESS");
             event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
             final double newWeaknessModifier = module().getDouble("weakness.modifier");
             event.setWeaknessModifier(newWeaknessModifier);
