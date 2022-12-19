@@ -142,17 +142,17 @@ public class ModuleOldPotionEffects extends Module {
         final Entity damager = event.getDamager();
         if (!isEnabled(damager.getWorld())) return;
 
-        final double weaknessLevel = event.getWeaknessLevel();
         if (event.hasWeakness()) {
             event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
             final double newWeaknessModifier = module().getDouble("weakness.modifier");
             event.setWeaknessModifier(newWeaknessModifier);
-            debug("Old weakness modifier: " + weaknessLevel + " New: " + newWeaknessModifier, damager);
+            debug("Old weakness modifier: " + event.getWeaknessLevel() +
+                    " New: " + newWeaknessModifier, damager);
         }
 
         final double strengthModifier = event.getStrengthModifier();
 
-        if (strengthModifier != 0) {
+        if (strengthModifier > 0) {
             event.setIsStrengthModifierMultiplier(module().getBoolean("strength.multiplier"));
             event.setIsStrengthModifierAddend(module().getBoolean("strength.addend"));
             final double newStrengthModifier = module().getDouble("strength.modifier");
@@ -164,7 +164,8 @@ public class ModuleOldPotionEffects extends Module {
     private int getPotionDuration(PotionData potionData, boolean splash) {
         final PotionType potionType = potionData.getType();
 
-        final GenericPotionDurations potionDurations = splash ? durations.get(potionType).getSplash() : durations.get(potionType).getDrinkable();
+        final GenericPotionDurations potionDurations = splash ? durations.get(potionType).getSplash()
+                : durations.get(potionType).getDrinkable();
 
         int duration;
         if (potionData.isExtended()) duration = potionDurations.getExtendedTime();
