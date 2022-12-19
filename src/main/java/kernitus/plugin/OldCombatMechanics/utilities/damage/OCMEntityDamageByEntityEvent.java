@@ -139,9 +139,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
-        // Don't set has weakness if amplifier is != 0, which is outside normal range and probably set by plugin
+        // Don't set has weakness if amplifier is > 0 or < -1, which is outside normal range and probably set by plugin
+        // We use an amplifier of -1 (Level 0) to have no effect so weaker attacks will register
         final Optional<Integer> weaknessAmplifier = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS).map(PotionEffect::getAmplifier);
-        hasWeakness = weaknessAmplifier.isPresent() && weaknessAmplifier.get() == 0;
+        hasWeakness = weaknessAmplifier.isPresent() && (weaknessAmplifier.get() == -1 || weaknessAmplifier.get() == 0);
         weaknessLevel = weaknessAmplifier.orElse(-1) + 1;
 
         weaknessModifier = weaknessLevel * -4;
@@ -188,6 +189,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         return strengthLevel;
     }
 
+    /**
+     * Whether the attacker had the weakness potion effect,
+     * and the level of the effect was either 0 (used by OCM) or 1 (normal value).
+     * Values outside this range are to be ignored, as they are probably from other plugins.
+     */
     public boolean hasWeakness() {
         return hasWeakness;
     }
@@ -202,6 +208,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public void setWeaknessModifier(double weaknessModifier) {
         this.weaknessModifier = weaknessModifier;
+    }
+
+    public void setWeaknessLevel(int weaknessLevel){
+        this.weaknessLevel = weaknessLevel;
     }
 
     public boolean isStrengthModifierMultiplier() {
