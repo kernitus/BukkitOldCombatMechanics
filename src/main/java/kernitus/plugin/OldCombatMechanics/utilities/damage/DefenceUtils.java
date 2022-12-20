@@ -41,11 +41,17 @@ public class DefenceUtils {
             EntityDamageEvent.DamageCause.VOID,
             EntityDamageEvent.DamageCause.CUSTOM,
             EntityDamageEvent.DamageCause.MAGIC,
-            EntityDamageEvent.DamageCause.WITHER
+            EntityDamageEvent.DamageCause.WITHER,
+            // From 1.9
+            EntityDamageEvent.DamageCause.FLY_INTO_WALL,
+            EntityDamageEvent.DamageCause.DRAGON_BREATH
+            // In 1.19 FIRE bypasses armour, but it doesn't in 1.8 so we don't add it here
     );
 
+    // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly checked below
     static {
-        // TODO check 1.19 NMS to see if there's newer ones in DamageSource
+        if (Reflector.versionIsNewerOrEqualAs(1, 11, 0))
+            ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.CRAMMING);
         if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
             ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
     }
@@ -73,8 +79,15 @@ public class DefenceUtils {
                 damageModifiers.getOrDefault(EntityDamageEvent.DamageModifier.HARD_HAT, 0.0) +
                 damageModifiers.getOrDefault(EntityDamageEvent.DamageModifier.BLOCKING, 0.0);
         if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ARMOR)) {
-            final double armourReduction = ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 :
-                    currentDamage * -armourReductionFactor;
+            double armourReduction = 0;
+            // If the damage cause does not ignore armour
+            // If the block they are in is a stalagmite, also ignore armour
+            if(!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
+                    !(Reflector.versionIsNewerOrEqualAs(1,19,0) &&
+                    damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)
+            ){
+                armourReduction = currentDamage * -armourReductionFactor;
+            }
             damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
             currentDamage += armourReduction;
         }
