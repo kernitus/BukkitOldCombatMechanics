@@ -17,7 +17,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -71,7 +70,7 @@ public class EntityDamageByEntityListener extends Module {
 
         // Now we re-calculate damage modified by the modules and set it back to original event
         // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
-        // Hurt components order: Overdamage - Armour Effects
+        // Hurt components order: Overdamage - Armour - Resistance - Armour enchants - Absorption
         double newDamage = e.getBaseDamage();
 
         debug("Base: " + e.getBaseDamage(), damager);
@@ -164,9 +163,8 @@ public class EntityDamageByEntityListener extends Module {
 
         debug("New Damage: " + newDamage, damager);
 
-        //event.setDamage(newDamage);
-        // todo might have to nuke all values and just set BASE
-        event.setDamage(EntityDamageEvent.DamageModifier.BASE, newDamage);
+        // Set damage, this should scale effects in the 1.9 way in case some of our modules are disabled
+        event.setDamage(newDamage);
         Messenger.debug("SET NEW DAMAGE TO: " + newDamage);
     }
 

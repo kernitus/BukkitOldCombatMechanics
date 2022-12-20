@@ -16,6 +16,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -24,60 +25,87 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 /**
- * Utilities for calculating damage reduction from armour and armour enchantments
+ * Utilities for calculating damage reduction from armour and status effects.
+ * Defence order is armour defence -> resistance -> armour enchants -> absorption
  */
-public class ArmourUtils {
+public class DefenceUtils {
     private static final double REDUCTION_PER_ARMOUR_POINT = 0.04;
+    private static final double REDUCTION_PER_RESISTANCE_LEVEL = 0.2;
 
-    private static final Set<EntityDamageEvent.DamageCause> NON_REDUCED_CAUSES = EnumSet.of(
+    private static final Set<EntityDamageEvent.DamageCause> ARMOUR_IGNORING_CAUSES = EnumSet.of(
             EntityDamageEvent.DamageCause.FIRE_TICK,
-            EntityDamageEvent.DamageCause.VOID,
             EntityDamageEvent.DamageCause.SUFFOCATION,
             EntityDamageEvent.DamageCause.DROWNING,
             EntityDamageEvent.DamageCause.STARVATION,
             EntityDamageEvent.DamageCause.FALL,
+            EntityDamageEvent.DamageCause.VOID,
+            EntityDamageEvent.DamageCause.CUSTOM,
             EntityDamageEvent.DamageCause.MAGIC,
-            EntityDamageEvent.DamageCause.LIGHTNING
+            EntityDamageEvent.DamageCause.WITHER
     );
 
     static {
+        // TODO check 1.19 NMS to see if there's newer ones in DamageSource
         if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
-            NON_REDUCED_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
+            ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
     }
 
     /**
-     * Calculates the reduction by armour and armour enchantments for each DamageModifier
-     * The values are updated directly in the map
-     * @param damagedEntity The entity that was damaged
-     * @param damageModifiers A map of the damagemodifiers and their values from the event
-     * @param damageCause The cause of the damage
+     * Calculates the reduction by armour, resistance, armour enchantments and absorption.
+     * The values are updated directly in the map for each damage modifier.
+     *
+     * @param damagedEntity   The entity that was damaged
+     * @param damageModifiers A map of the damage modifiers and their values from the event
+     * @param damageCause     The cause of the damage
      */
     @SuppressWarnings("deprecation")
-    public static void calculateArmourDamageReduction(LivingEntity damagedEntity,
-                                                      Map<EntityDamageEvent.DamageModifier, Double> damageModifiers,
-                                                      EntityDamageEvent.DamageCause damageCause) {
+    public static void calculateDefenceDamageReduction(LivingEntity damagedEntity,
+                                                       Map<EntityDamageEvent.DamageModifier, Double> damageModifiers,
+                                                       EntityDamageEvent.DamageCause damageCause) {
 
         final double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
-        final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
+        // Make sure we don't go over 100% protection
+        final double armourReductionFactor = Math.min(1.0, armourPoints * REDUCTION_PER_ARMOUR_POINT);
 
-        // Apply armour damage reduction after blocking reduction
-        final double blockedDamage = damageModifiers.containsKey(EntityDamageEvent.DamageModifier.BLOCKING) ? damageModifiers.get(EntityDamageEvent.DamageModifier.BLOCKING) : 0;
-        final double armourReduction =
-                (!NON_REDUCED_CAUSES.contains(damageCause) && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ARMOR)) ?
-                        -((damageModifiers.get(EntityDamageEvent.DamageModifier.BASE) + blockedDamage) * reductionFactor)
-                        : 0;
-        damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
+        // applyArmorModifier() calculations from NMS
+        // Apply armour damage reduction after hard hat (wearing helmet & hit by block) and blocking reduction
+        double currentDamage = damageModifiers.get(EntityDamageEvent.DamageModifier.BASE) +
+                damageModifiers.getOrDefault(EntityDamageEvent.DamageModifier.HARD_HAT, 0.0) +
+                damageModifiers.getOrDefault(EntityDamageEvent.DamageModifier.BLOCKING, 0.0);
+        if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ARMOR)) {
+            final double armourReduction = ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 :
+                    currentDamage * -armourReductionFactor;
+            damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
+            currentDamage += armourReduction;
+        }
 
-        final double provisionFinalDamage = damageModifiers.keySet().stream()
-                .filter(key -> key != EntityDamageEvent.DamageModifier.MAGIC) // Ignore armour enchantment reduction
-                .map(damageModifiers::get)
-                .reduce(0.0, Double::sum);
+        // This is the applyMagicModifier() calculations from NMS
+        if (damageCause != EntityDamageEvent.DamageCause.STARVATION) {
+            // Apply resistance effect
+            if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE) &&
+                    damageCause != EntityDamageEvent.DamageCause.VOID &&
+                    damagedEntity.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)) {
+                final int level = damagedEntity.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
+                // Make sure we don't go over 100% protection
+                final double resistanceReductionFactor = Math.min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL);
+                final double resistanceReduction = -resistanceReductionFactor * currentDamage;
+                damageModifiers.put(EntityDamageEvent.DamageModifier.RESISTANCE, resistanceReduction);
+                currentDamage += resistanceReduction;
+            }
 
-        // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
-        if (provisionFinalDamage > 0 && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
-            // Set new MAGIC (Armour enchants) damage
-            final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(damagedEntity.getEquipment().getArmorContents(), damageCause);
-            damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, -provisionFinalDamage * enchantsReductionFactor);
+            // Apply armour enchants
+            // Don't calculate enchants if damage already 0 (like 1.8 NMS). Enchants cap at 80% reduction
+            if (currentDamage > 0 && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
+                final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(damagedEntity.getEquipment().getArmorContents(), damageCause);
+                final double enchantsReduction = currentDamage * -enchantsReductionFactor;
+                damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, enchantsReduction);
+                currentDamage += enchantsReduction;
+            }
+
+            // Absorption
+            final double absorptionAmount = damagedEntity.getAbsorptionAmount();
+            double absorptionReduction = -Math.min(absorptionAmount, currentDamage);
+            damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
         }
 
         /*
@@ -90,24 +118,25 @@ public class ArmourUtils {
 
     /**
      * Return the damage after applying armour and armour enchants protections, following 1.8 algorithm.
-     * @param baseDamage The base damage done by the event, including weapon enchants, potions, crits
+     *
+     * @param baseDamage     The base damage done by the event, including weapon enchants, potions, crits
      * @param armourContents The 4 pieces of armour contained in the armour slots
-     * @param damageCause The source of damage
+     * @param damageCause    The source of damage
      * @return The damage done to the entity after armour is taken into account
      */
-    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause){
+    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause) {
         double armourPoints = 0;
         for (int i = 0; i < armourContents.length; i++) {
             final ItemStack itemStack = armourContents[i];
-            if(itemStack == null) continue;
-            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET,EquipmentSlot.LEGS,EquipmentSlot.CHEST,EquipmentSlot.HEAD}[i];
+            if (itemStack == null) continue;
+            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}[i];
             armourPoints += TesterUtils.getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
         }
 
         final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
         // Apply armour damage reduction
-        double finalDamage = baseDamage - (NON_REDUCED_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
+        double finalDamage = baseDamage - (ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
 
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
         final double enchantmentReductionFactor = calculateArmourEnchantmentReductionFactor(armourContents, damageCause);
@@ -143,6 +172,7 @@ public class ArmourUtils {
 
         // Multiply by random value between 50% and 100%, then round up
         totalEpf = (int) Math.ceil(totalEpf * ThreadLocalRandom.current().nextDouble(0.5, 1));
+        //totalEpf = (int) Math.ceil(totalEpf);
 
         // Cap at 20
         totalEpf = Math.min(20, totalEpf);

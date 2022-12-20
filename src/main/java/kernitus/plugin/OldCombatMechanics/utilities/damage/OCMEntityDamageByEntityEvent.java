@@ -64,7 +64,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
-        // The raw damage passed to this event is EDBE's BASE damage, which does not include armour effects
+        // The raw damage passed to this event is EDBE's BASE damage, which does not include armour effects or resistance
         this.rawDamage = rawDamage;
 
         if (!(damager instanceof LivingEntity)) {

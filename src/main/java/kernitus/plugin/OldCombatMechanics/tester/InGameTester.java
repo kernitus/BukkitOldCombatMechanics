@@ -7,8 +7,8 @@ package kernitus.plugin.OldCombatMechanics.tester;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.damage.ArmourUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -44,7 +44,6 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with potion effects on defence
     // todo test with shield blocking
 
     // todo test with bow attacks
@@ -100,12 +99,16 @@ public class InGameTester {
             final ItemStack itemStack = new ItemStack(Material.valueOf(material + "_" + slot));
 
             // Apply enchantment to armour piece
-            //itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
+            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
 
             armourContents[i] = itemStack;
         }
 
-        runAttacks(armourContents, () -> defender.getInventory().setArmorContents(armourContents));
+        runAttacks(armourContents, () -> {
+            defender.getInventory().setArmorContents(armourContents);
+            // Test status effects on defence: resistance, fire resistance, absorption
+            defender.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 10, 1));
+        });
     }
 
     private void testEnchantedMelee(ItemStack[] armour, Runnable preparations) {
@@ -124,11 +127,10 @@ public class InGameTester {
             queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
-                // TODO test with potion effects again
-                //attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
-                //attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,-1,false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,-1,false));
                 Messenger.debug("TESTING WEAPON " + weaponType);
-                //attacker.setFallDistance(2);
+                attacker.setFallDistance(2); // Crit
             }));
         }
     }
@@ -220,7 +222,13 @@ public class InGameTester {
         }
 
         // Armour effects (1.8, with OldArmourStrength module)
-        expectedDamage = ArmourUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
+        expectedDamage = DefenceUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
+
+        // Status effects (Resistance)
+        if(defender.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)){
+            int resistanceLevel = defender.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
+            expectedDamage *= 1.0 - (resistanceLevel * 0.2);
+        }
 
         return (float) expectedDamage;
     }
