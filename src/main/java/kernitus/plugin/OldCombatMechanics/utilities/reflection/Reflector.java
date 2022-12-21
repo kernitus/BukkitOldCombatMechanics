@@ -183,6 +183,15 @@ public class Reflector {
         }
     }
 
+    public static void setFieldValue(Field field, Object handle, Object value) {
+        field.setAccessible(true);
+        try {
+            field.set(handle, value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Constructor<?> getConstructor(Class<?> clazz, int numParams) {
         return Stream.concat(
                         Arrays.stream(clazz.getDeclaredConstructors()),

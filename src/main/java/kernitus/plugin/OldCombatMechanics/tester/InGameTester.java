@@ -44,10 +44,7 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with shield blocking
-
     // todo test with bow attacks
-    // todo test armour durability
 
     public InGameTester(OCMMain ocm) {
         this.ocm = ocm;
@@ -64,8 +61,11 @@ public class InGameTester {
         fakeDefender = new FakePlayer();
         fakeDefender.spawn(location.add(0, 0, 2));
 
-        this.attacker = Bukkit.getPlayer(fakeAttacker.getUuid());
-        this.defender = Bukkit.getPlayer(fakeDefender.getUuid());
+        attacker = Bukkit.getPlayer(fakeAttacker.getUuid());
+        defender = Bukkit.getPlayer(fakeDefender.getUuid());
+
+        // Turn defender to face attacker
+        defender.setRotation(180,0);
 
         beforeAll();
         tally = new Tally();
@@ -99,7 +99,7 @@ public class InGameTester {
             final ItemStack itemStack = new ItemStack(Material.valueOf(material + "_" + slot));
 
             // Apply enchantment to armour piece
-            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
+            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 50);
 
             armourContents[i] = itemStack;
         }
@@ -108,6 +108,7 @@ public class InGameTester {
             defender.getInventory().setArmorContents(armourContents);
             // Test status effects on defence: resistance, fire resistance, absorption
             defender.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 10, 1));
+            fakeDefender.doBlocking();
         });
     }
 
@@ -116,15 +117,13 @@ public class InGameTester {
             final ItemStack weapon = new ItemStack(weaponType);
 
             // only axe and sword can have sharpness
-            /*
             try {
                 weapon.addEnchantment(Enchantment.DAMAGE_ALL,3);}
             catch (IllegalArgumentException ignored){
             }
-             */
 
             final String message = weaponType.name() + " Sharpness 3";
-            queueAttack(new OCMTest(weapon, armour, 1, message, () -> {
+            queueAttack(new OCMTest(weapon, armour, 2, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
                 attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
@@ -221,6 +220,14 @@ public class InGameTester {
             expectedDamage -= lastDamage;
         }
 
+        // BASE -> HARD_HAT -> BLOCKING -> ARMOUR -> RESISTANCE -> MAGIC -> ABSORPTION
+
+        // Blocking
+        //1.8 default: (damage - 1) * 50%  1.9 default: 33%   1.11 default: 100%
+        if(defender.isBlocking()){
+           expectedDamage -= Math.max(0, (expectedDamage - 1)) * 0.5;
+        }
+
         // Armour effects (1.8, with OldArmourStrength module)
         expectedDamage = DefenceUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
 
@@ -250,7 +257,6 @@ public class InGameTester {
                 ItemStack expectedWeapon = test.weapon;
                 float expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
 
-                // Comparison is overriden for itemstacks, checks all properties
                 while(weaponType != expectedWeapon.getType()){ // One of the attacks dealt no damage
                     expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
                     Messenger.sendNormalMessage(sender, "&bSKIPPED &f" + expectedWeapon.getType() + " &fExpected Damage: &b" + expectedDamage);

@@ -63,7 +63,7 @@ public class ModuleShieldDamageReduction extends Module {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onHit(EntityDamageByEntityEvent e) {
-        Entity entity = e.getEntity();
+        final Entity entity = e.getEntity();
 
         if (!(entity instanceof Player)) return;
 
@@ -71,22 +71,19 @@ public class ModuleShieldDamageReduction extends Module {
 
         if (!isEnabled(player.getWorld())) return;
 
-        if (!shieldBlockedDamage(e)) return;
+        // Blocking is calculated after base and hard hat, and before armour etc.
+        double currentDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
+        if (!shieldBlockedDamage(currentDamage, e.getDamage(DamageModifier.BLOCKING))) return;
 
-        // Instead of reducing damage to 33% apply config reduction
-        final double damageReduction = getDamageReduction(e.getDamage(), e.getCause());
+        final double damageReduction = getDamageReduction(currentDamage, e.getCause());
+        e.setDamage(DamageModifier.BLOCKING, -damageReduction);
+        currentDamage -= damageReduction;
 
-        // Also make sure reducing the damage doesn't result in negative damage
-        e.setDamage(DamageModifier.BLOCKING, 0);
-
-        if (e.getFinalDamage() >= damageReduction)
-            e.setDamage(DamageModifier.BLOCKING, -damageReduction);
-
-        debug("Damage reduced by: " + e.getDamage(DamageModifier.BLOCKING) + " to " + e.getFinalDamage(), player);
+        debug("Damage reduced by: " + damageReduction + " to " + currentDamage + " before armour, resistance, absorption", player);
 
         final UUID uuid = player.getUniqueId();
 
-        if (e.getFinalDamage() <= 0) { // Make sure armour is not damaged if fully blocked
+        if (currentDamage <= 0) { // Make sure armour is not damaged if fully blocked
             final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
             fullyBlocked.put(uuid, armour);
             new BukkitRunnable() {
@@ -99,23 +96,24 @@ public class ModuleShieldDamageReduction extends Module {
         }
     }
 
-    private double getDamageReduction(double fullDamage, DamageCause damageCause) {
+    private double getDamageReduction(double damage, DamageCause damageCause) {
         // 1.8 NMS code, where f is damage done: f = (1.0F + f) * 0.5F;
 
         // Reduce by amount
-        fullDamage -= damageCause == DamageCause.PROJECTILE ? projectileDamageReductionAmount : genericDamageReductionAmount;
+        damage -= damageCause == DamageCause.PROJECTILE ? projectileDamageReductionAmount : genericDamageReductionAmount;
 
-        // Reduce by percentage
-        fullDamage *= (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100F;
+        // Reduce to percentage
+        damage *= (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100.0;
 
         // Don't reduce by more than the actual damage done
-        if (fullDamage < 0) fullDamage = 0;
+        if (damage < 0) damage = 0;
 
-        return fullDamage;
+        return damage;
     }
 
-    private boolean shieldBlockedDamage(EntityDamageByEntityEvent e) {
+    private boolean shieldBlockedDamage(double attackDamage, double blockingReduction) {
         // Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
-        return e.getDamage() > 0 && e.getDamage(DamageModifier.BLOCKING) < 0;
+        // This also takes into account damages that are not blocked by shields
+        return attackDamage > 0 && blockingReduction < 0;
     }
 }

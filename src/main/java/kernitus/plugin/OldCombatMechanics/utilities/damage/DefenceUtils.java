@@ -27,6 +27,8 @@ import java.util.function.Supplier;
 /**
  * Utilities for calculating damage reduction from armour and status effects.
  * Defence order is armour defence -> resistance -> armour enchants -> absorption
+ * BASE -> HARD_HAT -> BLOCKING -> ARMOUR -> RESISTANCE -> MAGIC -> ABSORPTION
+ * This class just deals with everything from armour onwards
  */
 public class DefenceUtils {
     private static final double REDUCTION_PER_ARMOUR_POINT = 0.04;
@@ -84,6 +86,7 @@ public class DefenceUtils {
             // If the block they are in is a stalagmite, also ignore armour
             if(!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
                     !(Reflector.versionIsNewerOrEqualAs(1,19,0) &&
+                            damageCause == EntityDamageEvent.DamageCause.CONTACT &&
                     damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)
             ){
                 armourReduction = currentDamage * -armourReductionFactor;
@@ -185,7 +188,7 @@ public class DefenceUtils {
 
         // Multiply by random value between 50% and 100%, then round up
         totalEpf = (int) Math.ceil(totalEpf * ThreadLocalRandom.current().nextDouble(0.5, 1));
-        //totalEpf = (int) Math.ceil(totalEpf);
+        // totalEpf = (int) Math.ceil(totalEpf); // remove randomness for testing
 
         // Cap at 20
         totalEpf = Math.min(20, totalEpf);

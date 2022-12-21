@@ -9,6 +9,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -27,6 +28,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 
 public class ModuleSwordBlocking extends Module {
+
+    // HumanEntity.isBlocking() method return whether player is blocking
+    // isHandRaised() method return whether player has started trying to block
+    // because it takes 5 ticks before shield is actually up
+    // but this method was only added in 1.11
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here for reliability
@@ -69,16 +75,16 @@ public class ModuleSwordBlocking extends Module {
 
         final UUID id = p.getUniqueId();
 
-        if (!p.isBlocking()) {
+        if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised())) {
             final ItemStack item = e.getItem();
 
             if (!isHoldingSword(item.getType()) || hasShield(p)) return;
 
             final PlayerInventory inv = p.getInventory();
 
-            final boolean isANoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+            final boolean isNoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
 
-            if (blacklist && isANoBlockingItem || !blacklist && !isANoBlockingItem) return;
+            if (blacklist && isNoBlockingItem || !blacklist && !isNoBlockingItem) return;
 
             storedOffhandItems.put(id, inv.getItemInOffHand());
 
@@ -105,10 +111,9 @@ public class ModuleSwordBlocking extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent e) {
-        if (!isBlocking(e.getEntity().getUniqueId())) return;
-
         final Player p = e.getEntity();
         final UUID id = p.getUniqueId();
+        if (!isBlocking(id)) return;
 
         e.getDrops().replaceAll(item -> {
             if (item.getType().equals(Material.SHIELD))
@@ -164,7 +169,8 @@ public class ModuleSwordBlocking extends Module {
 
         if (!isBlocking(id)) return;
 
-        if (p.isBlocking()) //They are still blocking with the shield so postpone restoring
+        //They are still blocking with the shield so postpone restoring
+        if (p.isBlocking() || (Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised()))
             scheduleRestore(p);
         else {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
@@ -192,7 +198,7 @@ public class ModuleSwordBlocking extends Module {
         BukkitRunnable checkBlocking = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!p.isBlocking()) {
+                if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised())) {
                     restore(p);
                 }
             }

@@ -171,12 +171,13 @@ shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
   enabled: true
   # How much damage blocking should reduce
-  # This can either be a number in half-hearts (e.g 2) or a percentage (e.g. 20%)
-  # 1.8 default: (damage - 1) * 50%             1.9 default: 33%
-  # Damage reduction = (damage - damageReductionAmount) * damageReductionPercentage
+  # Firstly, amount is subtracted, them value is reduced to percentage
+  # 1.8 default: (damage - 1) * 50%    1.9 default: 33%   1.11 default: 0%
+  # Damage reduction = (damage - damageReductionAmount) * damageReductionPercentage / 100
   generalDamageReductionAmount: 1
   generalDamageReductionPercentage: 50
   # This value works the same but is exclusively for projectile damage
+  # Set amount to 0 and percentage to 100 for 1.8 behaviour, i.e. arrows go through shields
   projectileDamageReductionAmount: 1
   projectileDamageReductionPercentage: 50
 

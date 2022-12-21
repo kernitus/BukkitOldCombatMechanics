@@ -15,6 +15,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.network.protocol.EnumProtocolDirection;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityEquipment;
 import net.minecraft.network.protocol.game.PacketPlayOutNamedEntitySpawn;
@@ -25,14 +26,18 @@ import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.stats.StatisticList;
+import net.minecraft.world.EnumHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityLiving;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.EnumGamemode;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_19_R1.util.CraftChatMessage;
@@ -134,16 +139,12 @@ public class FakePlayer {
 
         Bukkit.getPluginManager().callEvent(playerJoinEvent);
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            //PlayerConnection connection = ((CraftPlayer) player).getHandle().playerConnection;
-            PlayerConnection connection = ((CraftPlayer) player).getHandle().b;
-            // connection.sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.ADD_PLAYER, entityPlayer));
-            connection.a(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.a, entityPlayer));
-            // Spawn the player for the client
-            connection.a(new PacketPlayOutNamedEntitySpawn(entityPlayer));
-            // Remove player name from tablist
-            connection.a(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e));
-        }
+        // connection.sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.ADD_PLAYER, entityPlayer));
+        sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.a, entityPlayer));
+        // Spawn the player for the client
+        sendPacket(new PacketPlayOutNamedEntitySpawn(entityPlayer));
+        // Remove player name from tablist
+        sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e));
 
         // todo should probably cancel this task when we remove the player
         // ServerPlayer.doTick() a.k.a. EntityPlayer.playerTick()
@@ -178,13 +179,10 @@ public class FakePlayer {
         final Map<UUID, EntityPlayer> playerByUUID = (Map<UUID, EntityPlayer>) Reflector.getFieldValue(playerByUUIDField, playerList);
         playerByUUID.remove(uuid);
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            final PlayerConnection connection = ((CraftPlayer) p).getHandle().b; //.playerConnection;
-            // connection.sendPacket(new PacketPlayOutEntityDestroy(entityPlayer.getId()));
-            connection.a(new PacketPlayOutEntityDestroy(uuid.hashCode()));
-            //connection.sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER, entityPlayer));
-            connection.a(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e, entityPlayer));
-        }
+        // connection.sendPacket(new PacketPlayOutEntityDestroy(entityPlayer.getId()));
+        sendPacket(new PacketPlayOutEntityDestroy(uuid.hashCode()));
+        //connection.sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER, entityPlayer));
+        sendPacket(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e, entityPlayer));
 
         // PlayerList.save(EntityPlayer)
         Method saveMethod = Reflector.getMethod(PlayerList.class, "b", "EntityPlayer");
@@ -212,24 +210,58 @@ public class FakePlayer {
         //final WorldServer worldServer = entityPlayer.x(); // entityPlayer.getWorld().getWorld().getHandle();
         // worldServer.broadcastEntityEvent(Entity, byte)
 
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            final PlayerConnection connection = ((CraftPlayer) onlinePlayer).getHandle().b; //.playerConnection;
-            //        ((WorldServer)this.world).getTracker().a(this, new PacketPlayOutEntityEquipment(this.getId(), slot, CraftItemStack.asNMSCopy(stack)));
+        //Defining the list of Pairs with EnumItemSlot and (NMS) ItemStack
+        final List<Pair<EnumItemSlot, ItemStack>> equipmentList = new ArrayList<>();
+        equipmentList.add(new Pair<>(slot, CraftItemStack.asNMSCopy(item)));
 
-            //Defining the list of Pairs with EnumItemSlot and (NMS) ItemStack
-            final List<Pair<EnumItemSlot, ItemStack>> equipmentList = new ArrayList<>();
-
-            equipmentList.add(new Pair<>(slot, CraftItemStack.asNMSCopy(item)));
-
-            //Creating the packet
-            final PacketPlayOutEntityEquipment entityEquipment = new PacketPlayOutEntityEquipment(bukkitPlayer.getEntityId(), equipmentList);
-
-            connection.a(entityEquipment);
-        }
+        //Creating the packet
+        final PacketPlayOutEntityEquipment entityEquipment = new PacketPlayOutEntityEquipment(bukkitPlayer.getEntityId(), equipmentList);
+        sendPacket(entityEquipment);
         //         ((WorldServer) this.level).getChunkSource().broadcast(this, new PacketPlayOutEntityEquipment(this.getId(), list));
     }
 
-    // todo PackerPlayOutEntityEquipment
+    private void sendPacket(Packet packet) {
+        Bukkit.getOnlinePlayers().stream()
+                .map(p -> ((CraftPlayer) p).getHandle().b)
+                .forEach(connection -> connection.a(packet));
+    }
+
+    /**
+     * Make this player block with a shield
+     */
+    public void doBlocking() {
+        bukkitPlayer.getInventory().setItemInMainHand(new org.bukkit.inventory.ItemStack(Material.SHIELD));
+
+        final EntityLiving entityLiving = ((CraftLivingEntity) bukkitPlayer).getHandle();
+        // We can call EntityLiving.startUsingItem(InteractionHand arg0) which is c()
+        entityLiving.c(EnumHand.a); // a in main hand, b is off hand
+        // For isBlocking to be true, useDuration - getUseItemRemainingTicks() must be >= 5
+        // Which means we have to wait at least 5 ticks before user is actually blocking
+        // Here we just set it manually
+        Field useItemRemainingField = Reflector.getField(EntityLiving.class, "bA"); // int useItemRemaining
+        Reflector.setFieldValue(useItemRemainingField, entityLiving, 10);
+    }
+
+    /*
+        Example of using DataWatcher
+        final DataWatcher dw = entityLiving.ai(); // getEntityData() is ai()
+        // Field aB in EntityHuman is EntityLiving's DataWatcherObject<Byte> DATA_LIVING_ENTITY_FLAGS
+        //final DataWatcherObject<Byte> dwo = (DataWatcherObject) Reflector.getFieldValue(Reflector.getField(EntityLiving.class, "aB"), entityLiving);
+        final DataWatcherObject<Byte> dwo = new DataWatcherObject<>(8, DataWatcherRegistry.a); // a is for BYTE
+        //final DataWatcher holdingShieldData = new DataWatcher(((CraftPlayer) bukkitPlayer).getHandle());
+        //final DataWatcherObject dataWatcherObject = new DataWatcherObject<>(6, DataWatcherRegistry.a);
+        //holdingShieldData.a(dataWatcherObject, 0); // a is define()
+
+        //byte handStateBitmask = 0x01; // Main hand is active
+
+        //dw.b(dwo, handStateBitmask); // b is set()
+
+        //final PacketPlayOutEntityMetadata metadataPacket = new PacketPlayOutEntityMetadata(bukkitPlayer.getEntityId(), dw, true);
+        //final PacketPlayOutAnimation packetPlayOutAnimation = new PacketPlayOutAnimation(entityPlayer, 0);
+        //sendPacket(metadataPacket);
+        //sendPacket(packetPlayOutAnimation);
+     */
+
     /*
     public void attack(org.bukkit.entity.Entity bukkitEntity) {
         final CraftEntity craftEntity = ((CraftEntity) bukkitEntity);

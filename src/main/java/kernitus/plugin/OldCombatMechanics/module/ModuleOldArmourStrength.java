@@ -48,6 +48,6 @@ public class ModuleOldArmourStrength extends Module {
         // Set the modifiers back to the event
         damageModifiers.forEach(e::setDamage);
 
-        damageModifiers.forEach((dm, value) -> debug("DM: " + dm.name() + ": " + value));
+        //damageModifiers.forEach((dm, value) -> debug(dm.name() + ": " + value));
     }
 }
