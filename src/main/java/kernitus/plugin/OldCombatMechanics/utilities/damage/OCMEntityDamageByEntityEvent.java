@@ -67,6 +67,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         // The raw damage passed to this event is EDBE's BASE damage, which does not include armour effects or resistance
         this.rawDamage = rawDamage;
 
+        // We ignore attacks like arrows etc. because we do not need to change the attack side of those
+        // Other modules such as old armour strength work independently of this event
         if (!(damager instanceof LivingEntity)) {
             setCancelled(true);
             return;
@@ -114,13 +116,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             was1_8Crit = true;
             debug(livingDamager, "1.8 Critical hit detected");
             // In 1.9 a crit also requires the player not to be sprinting
-            if (livingDamager instanceof Player) {
-                wasSprinting = ((Player) livingDamager).isSprinting();
-                if (!wasSprinting) {
-                    debug(livingDamager, "1.9 Critical hit detected");
-                    criticalMultiplier = 1.5;
-                    tempDamage /= 1.5;
-                }
+            if (livingDamager instanceof Player && DamageUtils.isCriticalHit1_9(((Player) livingDamager))) {
+                debug(livingDamager, "1.9 Critical hit detected");
+                debug("1.9 Critical hit detected");
+                criticalMultiplier = 1.5;
+                tempDamage /= 1.5;
             }
         }
 
@@ -210,7 +210,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         this.weaknessModifier = weaknessModifier;
     }
 
-    public void setWeaknessLevel(int weaknessLevel){
+    public void setWeaknessLevel(int weaknessLevel) {
         this.weaknessLevel = weaknessLevel;
     }
 

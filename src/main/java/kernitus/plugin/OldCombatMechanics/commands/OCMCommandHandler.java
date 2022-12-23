@@ -145,15 +145,17 @@ public class OCMCommandHandler implements CommandExecutor {
                             break;
                         case disable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.OLD_PVP);
                             break;
-                        default: throw new IllegalArgumentException();
+                        default: throw new CommandNotRecognisedException();
                     }
                 }
-            } catch (IllegalArgumentException e) {
+            } catch (CommandNotRecognisedException e) {
                 Messenger.sendNormalMessage(sender, "Subcommand not recognised!");
             }
         }
         return true;
     }
+
+    private class CommandNotRecognisedException extends IllegalArgumentException{}
 
     static boolean checkPermissions(CommandSender sender, Subcommand subcommand) {
         return checkPermissions(sender, subcommand, false);

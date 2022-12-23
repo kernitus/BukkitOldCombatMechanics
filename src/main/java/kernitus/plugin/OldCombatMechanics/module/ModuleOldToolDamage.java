@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
@@ -15,6 +16,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -42,28 +44,34 @@ public class ModuleOldToolDamage extends Module {
         final Entity damager = event.getDamager();
         if (event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
 
-        final Entity damagee = event.getDamagee();
         final World world = damager.getWorld();
 
         if (!isEnabled(world)) return;
 
-        final Material weaponMaterial = event.getWeapon().getType();
+        final ItemStack weapon = event.getWeapon();
+        final Material weaponMaterial = weapon.getType();
         debug("Weapon material: " + weaponMaterial);
 
-        if (!isTool(weaponMaterial)) return;
+        if (!isWeapon(weaponMaterial)) return;
 
-        double weaponDamage = WeaponDamages.getDamage(weaponMaterial);
-        if (weaponDamage <= 0) {
+        // If damage was not what we expected, ignore it because it's probably a custom weapon or from another plugin
+        final double oldBaseDamage = event.getBaseDamage();
+        final double expectedBaseDamage = NewWeaponDamage.getDamage(weaponMaterial);
+        // We check difference as calculation inaccuracies can make it not match
+        if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001){
+            debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
+            return;
+        }
+
+        final double newWeaponBaseDamage = WeaponDamages.getDamage(weaponMaterial);
+        if (newWeaponBaseDamage <= 0) {
             debug("Unknown tool type: " + weaponMaterial, damager);
             return;
         }
 
-        // todo if damage was not what we expected for 1.9, we should probably ignore it, cause it's a custom weapon
+        event.setBaseDamage(newWeaponBaseDamage);
+        Messenger.debug("Old tool damage: " + oldBaseDamage + " New: " + newWeaponBaseDamage);
 
-        final double oldBaseDamage = event.getBaseDamage();
-
-        event.setBaseDamage(weaponDamage);
-        Messenger.debug("Old tool damage: " + oldBaseDamage + " New: " + weaponDamage);
 
         // Set sharpness to 1.8 damage value
         final int sharpnessLevel = event.getSharpnessLevel();
@@ -73,9 +81,11 @@ public class ModuleOldToolDamage extends Module {
 
         debug("Old sharpness damage: " + event.getSharpnessDamage() + " New: " + newSharpnessDamage, damager);
         event.setSharpnessDamage(newSharpnessDamage);
+
+        // The mob enchantments damage remains the same and is linear, no need to recalculate it
     }
 
-    private boolean isTool(Material material) {
+    private boolean isWeapon(Material material) {
         return Arrays.stream(WEAPONS).anyMatch(type -> isOfType(material, type));
     }
 

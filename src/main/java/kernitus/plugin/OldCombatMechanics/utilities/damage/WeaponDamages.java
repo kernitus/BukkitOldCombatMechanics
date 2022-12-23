@@ -25,21 +25,19 @@ public class WeaponDamages {
     }
 
     private static void reload() {
-        ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
-
+        final ConfigurationSection section = plugin.getConfig().getConfigurationSection("old-tool-damage.damages");
         damages = ConfigUtils.loadDoubleMap(section);
     }
 
     public static double getDamage(Material mat) {
-        //Replace 1.14 material names to ones used in config.yml
-        String name = mat.name().replace("GOLDEN", "GOLD").replace("WOODEN", "WOOD").replace("SHOVEL", "SPADE");
+        final String name = mat.name().replace("GOLDEN", "GOLD").replace("WOODEN", "WOOD").replace("SHOVEL", "SPADE");
         return damages.getOrDefault(name, -1.0);
     }
 
     public static Map<Material, Double> getMaterialDamages() {
-        Map<Material, Double> materialMap = new HashMap<>();
+        final Map<Material, Double> materialMap = new HashMap<>();
         damages.forEach((name, damage) -> {
-            String newName = name.replace("GOLD", "GOLDEN").replace("WOOD", "WOODEN").replace("SPADE", "SHOVEL");
+            final String newName = name.replace("GOLD", "GOLDEN").replace("WOOD", "WOODEN").replace("SPADE", "SHOVEL");
             materialMap.put(Material.valueOf(newName), damage);
         });
         return materialMap;

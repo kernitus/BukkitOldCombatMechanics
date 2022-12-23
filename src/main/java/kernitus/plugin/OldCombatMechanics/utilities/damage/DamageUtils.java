@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -40,11 +41,8 @@ public class DamageUtils {
      */
     public static boolean isCriticalHit1_8(LivingEntity le) {
         /* Code from Bukkit 1.8_R3:
-        boolean flag = this.fallDistance > 0.0F && !this.onGround && !this.k_() && !this.V()
+        boolean flag = this.fallDistance > 0.0F && !this.onGround && !this.onClimbable() && !this.isInWater()
         && !this.hasEffect(MobEffectList.BLINDNESS) && this.vehicle == null && entity instanceof EntityLiving;
-        Where k_() is being on ladders or vine, and V() is in water.
-
-        In 1.9 the player must also not be sprinting
         */
         return le.getFallDistance() > 0.0F &&
                 !le.isOnGround() &&
@@ -52,6 +50,10 @@ public class DamageUtils {
                 !isInWater(le) &&
                 le.getActivePotionEffects().stream().map(PotionEffect::getType).noneMatch(e -> e == PotionEffectType.BLINDNESS) &&
                 !le.isInsideVehicle();
+    }
+
+    public static boolean isCriticalHit1_9(Player player) {
+        return isCriticalHit1_8(player) && player.getAttackCooldown() > 0.9F && !player.isSprinting();
     }
 
     private static boolean isInWater(LivingEntity le) {

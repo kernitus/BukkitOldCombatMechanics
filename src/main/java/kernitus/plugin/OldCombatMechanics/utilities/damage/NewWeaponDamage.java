@@ -10,7 +10,7 @@ import org.bukkit.Material;
 /**
  * Default 1.9 Minecraft tool damage values
  */
-public enum ToolDamage {
+public enum NewWeaponDamage {
 
     // common values
     STONE_SWORD(5), STONE_SHOVEL(3.5F), STONE_PICKAXE(3), STONE_AXE(9), STONE_HOE(1),
@@ -29,7 +29,7 @@ public enum ToolDamage {
 
     private final float damage;
 
-    ToolDamage(float damage) {
+    NewWeaponDamage(float damage) {
         this.damage = damage;
     }
 

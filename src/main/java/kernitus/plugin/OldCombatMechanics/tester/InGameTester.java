@@ -185,7 +185,7 @@ public class InGameTester {
         expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
 
         // Critical hit
-        if(attacker.getFallDistance() > 0){
+        if(DamageUtils.isCriticalHit1_8(attacker)){
             expectedDamage *= 1.5;
         }
 

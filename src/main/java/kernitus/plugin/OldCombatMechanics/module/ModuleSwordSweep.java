@@ -7,7 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.damage.ToolDamage;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketAdapter;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketManager;
@@ -126,7 +126,7 @@ public class ModuleSwordSweep extends Module {
         } catch(NoSuchFieldError ignored){
         }
 
-        float damage = ToolDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
+        float damage = NewWeaponDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
         if(e.getDamage() == damage){
             // Possibly a sword-sweep attack
