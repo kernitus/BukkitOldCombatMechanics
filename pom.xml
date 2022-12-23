@@ -77,6 +77,7 @@
         </dependency>
 
         <!-- NMS -->
+<!--
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>craftbukkit</artifactId>
@@ -88,6 +89,7 @@
             <artifactId>authlib</artifactId>
             <version>1.5.21</version>
         </dependency>
+-->
     </dependencies>
     <build>
         <defaultGoal>clean package</defaultGoal>
