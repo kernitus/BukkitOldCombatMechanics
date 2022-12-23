@@ -6,20 +6,18 @@
 package kernitus.plugin.OldCombatMechanics.tester;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandSender;
-
-import java.util.Collection;
 
 public class TesterUtils {
 
     /**
      * Checks whether the two values are equal, prints the result and updates the tally
-     * @param a The expected value
-     * @param b The actual value
-     * @param tally The tally to update the result of the test with
+     *
+     * @param a        The expected value
+     * @param b        The actual value
+     * @param tally    The tally to update the result of the test with
      * @param testName The name of the test being run
-     * @param senders The command senders to message with the result of the test
+     * @param senders  The command senders to message with the result of the test
      */
     public static void assertEquals(float a, float b, Tally tally, String testName, CommandSender... senders) {
         // Due to cooldown effects, numbers can be very close (e.g. 1.0000000149011612 == 1.0)
@@ -33,22 +31,5 @@ public class TesterUtils {
             for (CommandSender sender : senders)
                 Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + " [E: " + a + " / A: " + b + "]");
         }
-    }
-
-    /**
-     * Applies all the operations for the attribute modifiers of a specific attribute.
-     * Does not take into account the base value.
-     */
-    public static double getAttributeModifierSum(Collection<AttributeModifier> modifiers){
-        double sum = 0;
-        for (AttributeModifier modifier : modifiers) {
-            final double value = modifier.getAmount();
-            switch (modifier.getOperation()) {
-                case ADD_SCALAR -> sum += Math.abs(value);
-                case ADD_NUMBER -> sum += value;
-                case MULTIPLY_SCALAR_1 -> sum *= value;
-            }
-        }
-        return sum;
     }
 }

@@ -6,11 +6,11 @@
 
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
-import kernitus.plugin.OldCombatMechanics.tester.TesterUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -18,6 +18,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -146,7 +147,7 @@ public class DefenceUtils {
             final ItemStack itemStack = armourContents[i];
             if (itemStack == null) continue;
             final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}[i];
-            armourPoints += TesterUtils.getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
+            armourPoints += getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR));
         }
 
         final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
@@ -165,6 +166,29 @@ public class DefenceUtils {
                 baseDamage, finalDamage);
 
         return finalDamage;
+    }
+
+    /**
+     * Applies all the operations for the attribute modifiers of a specific attribute.
+     * Does not take into account the base value.
+     */
+    private static double getAttributeModifierSum(Collection<AttributeModifier> modifiers) {
+        double sum = 0;
+        for (AttributeModifier modifier : modifiers) {
+            final double value = modifier.getAmount();
+            switch (modifier.getOperation()) {
+                case ADD_SCALAR:
+                    sum += Math.abs(value);
+                    break;
+                case ADD_NUMBER:
+                    sum += value;
+                    break;
+                case MULTIPLY_SCALAR_1:
+                    sum *= value;
+                    break;
+            }
+        }
+        return sum;
     }
 
     private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents, EntityDamageEvent.DamageCause cause) {
