@@ -43,7 +43,7 @@ public class ModuleChorusFruit extends Module {
         final float previousSaturation = player.getSaturation();
 
         // Run it on the next tick to reset things while not cancelling the chorus fruit eat event
-        // This ensures the teleport event is fired and it counts towards statistics
+        // This ensures the teleport event is fired and counts towards statistics
         new BukkitRunnable() {
             @Override
             public void run() {

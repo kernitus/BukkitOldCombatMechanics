@@ -18,19 +18,19 @@ import java.util.function.Consumer;
 public class UpdateChecker {
     private UpdateSource updateSource;
 
-    public UpdateChecker(OCMMain plugin, File pluginFile){
+    public UpdateChecker(OCMMain plugin, File pluginFile) {
         this.updateSource = new SpigotUpdateSource();
     }
 
-    public void sendUpdateMessages(CommandSender sender){
-        if(sender instanceof Player){
+    public void sendUpdateMessages(CommandSender sender) {
+        if (sender instanceof Player) {
             sendUpdateMessages(((Player) sender)::sendMessage);
         } else {
             sendUpdateMessages(Messenger::info);
         }
     }
 
-    private void sendUpdateMessages(Consumer<String> target){//Sends messages to a player
+    private void sendUpdateMessages(Consumer<String> target) {//Sends messages to a player
         updateSource.getUpdateMessages().stream()
                 .filter(Objects::nonNull)
                 .filter(message -> !message.isEmpty())

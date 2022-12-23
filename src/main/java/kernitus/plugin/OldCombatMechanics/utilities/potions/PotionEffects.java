@@ -15,12 +15,12 @@ public class PotionEffects {
 
     private static boolean canUseGetPotionEffectsMethod;
 
-    static{
-        try{
+    static {
+        try {
             LivingEntity.class.getDeclaredMethod("getPotionEffect", PotionEffectType.class);
 
             canUseGetPotionEffectsMethod = true;
-        } catch(NoSuchMethodException e){
+        } catch (NoSuchMethodException e) {
             canUseGetPotionEffectsMethod = false;
         }
     }
@@ -32,7 +32,7 @@ public class PotionEffects {
      * @param type   the type to search
      * @return the {@link PotionEffect} if present
      */
-    public static Optional<PotionEffect> get(LivingEntity entity, PotionEffectType type){
+    public static Optional<PotionEffect> get(LivingEntity entity, PotionEffectType type) {
         return Optional.ofNullable(getOrNull(entity, type));
     }
 
@@ -43,8 +43,8 @@ public class PotionEffects {
      * @param type   the type to search
      * @return the {@link PotionEffect} or null if not present
      */
-    public static PotionEffect getOrNull(LivingEntity entity, PotionEffectType type){
-        if(canUseGetPotionEffectsMethod){
+    public static PotionEffect getOrNull(LivingEntity entity, PotionEffectType type) {
+        if (canUseGetPotionEffectsMethod) {
             return entity.getPotionEffect(type);
         }
 

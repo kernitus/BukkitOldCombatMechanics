@@ -44,8 +44,6 @@ public class InGameTester {
     private FakePlayer fakeAttacker, fakeDefender;
     private final Queue<OCMTest> testQueue;
 
-    // todo test with bow attacks
-
     public InGameTester(OCMMain ocm) {
         this.ocm = ocm;
         testQueue = new ArrayDeque<>();

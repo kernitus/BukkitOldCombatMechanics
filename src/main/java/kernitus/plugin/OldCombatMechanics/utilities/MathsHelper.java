@@ -6,9 +6,9 @@
 package kernitus.plugin.OldCombatMechanics.utilities;
 
 /**
- * For all the math utilities that I needed which (for some reason) aren't in the Math class.
+ * For all the maths utilities that I needed which (for some reason) aren't in the Math class.
  */
-public class MathHelper {
+public class MathsHelper {
 
     /**
      * Clamps a value between a minimum and a maximum.
@@ -18,17 +18,13 @@ public class MathHelper {
      * @param max   The maximum value to clamp to.
      * @return The clamped value.
      */
-    public static double clamp(double value, double min, double max){
+    public static double clamp(double value, double min, double max) {
         double realMin = Math.min(min, max);
         double realMax = Math.max(min, max);
 
-        if(value < realMin){
-            value = realMin;
-        }
+        if (value < realMin) value = realMin;
 
-        if(value > realMax){
-            value = realMax;
-        }
+        if (value > realMax) value = realMax;
 
         return value;
     }

@@ -19,19 +19,19 @@ import java.util.Locale;
  */
 public class ModuleProjectileKnockback extends Module {
 
-    public ModuleProjectileKnockback(OCMMain plugin){
+    public ModuleProjectileKnockback(OCMMain plugin) {
         super(plugin, "projectile-knockback");
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
-    public void onEntityHit(EntityDamageByEntityEvent e){
-        if(!isEnabled(e.getEntity().getWorld())) return;
+    public void onEntityHit(EntityDamageByEntityEvent e) {
+        if (!isEnabled(e.getEntity().getWorld())) return;
 
         EntityType type = e.getDamager().getType();
 
-        switch(type){
+        switch (type) {
             case SNOWBALL: case EGG: case ENDER_PEARL:
-                if(e.getDamage() == 0.0) { // So we don't override enderpearl fall damage
+                if (e.getDamage() == 0.0) { // So we don't override enderpearl fall damage
                     e.setDamage(module().getDouble("damage." + type.toString().toLowerCase(Locale.ROOT)));
                     if (e.isApplicable(EntityDamageEvent.DamageModifier.ABSORPTION))
                         e.setDamage(EntityDamageEvent.DamageModifier.ABSORPTION, 0);

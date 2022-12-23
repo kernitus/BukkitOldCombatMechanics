@@ -60,8 +60,8 @@ public class MobDamage {
     /**
      * Gets damage due to Smite and Bane of Arthropods enchantments, when applicable
      *
-     * @param entity      The type of entity that was attacked
-     * @param item        The enchanted weapon used in the attack
+     * @param entity The type of entity that was attacked
+     * @param item   The enchanted weapon used in the attack
      * @return The damage due to the enchantments
      */
     public static double getEntityEnchantmentsDamage(EntityType entity, ItemStack item) {

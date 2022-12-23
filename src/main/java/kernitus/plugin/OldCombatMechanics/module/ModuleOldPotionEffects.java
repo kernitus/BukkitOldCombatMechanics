@@ -81,7 +81,7 @@ public class ModuleOldPotionEffects extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPotionDispense(BlockDispenseEvent event){
+    public void onPotionDispense(BlockDispenseEvent event) {
         if (!isEnabled(event.getBlock().getWorld())) return;
 
         final ItemStack item = event.getItem();

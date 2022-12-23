@@ -13,15 +13,15 @@ import java.util.List;
 public class RunnableSeries {
     private final List<BukkitRunnable> runnables;
 
-    public RunnableSeries(BukkitRunnable... runnables){
+    public RunnableSeries(BukkitRunnable... runnables) {
         this.runnables = Arrays.asList(runnables);
     }
 
-    public List<BukkitRunnable> getRunnables(){
+    public List<BukkitRunnable> getRunnables() {
         return runnables;
     }
 
-    public void cancelAll(){
+    public void cancelAll() {
         runnables.forEach(BukkitRunnable::cancel);
     }
 }

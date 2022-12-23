@@ -51,8 +51,6 @@ public class OCMCommandHandler implements CommandExecutor {
             Messenger.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
         if (checkPermissions(sender, Subcommand.toggle))
             Messenger.send(sender, "&eYou can use &c/ocm toggle [player] [on/off] &e to turn attack cooldown on/off");
-        if (checkPermissions(sender, Subcommand.test))
-            Messenger.send(sender, "&eYou can use &c/ocm test <player> [player] &e to run some automated tests");
         if (checkPermissions(sender, Subcommand.enable) || checkPermissions(sender, Subcommand.disable))
             Messenger.send(sender, "&eYou can use &c/ocm <enable/disable> [world] &e to toggle cooldown for the server or world");
 
@@ -155,7 +153,7 @@ public class OCMCommandHandler implements CommandExecutor {
         return true;
     }
 
-    private class CommandNotRecognisedException extends IllegalArgumentException{}
+    private static class CommandNotRecognisedException extends IllegalArgumentException{}
 
     static boolean checkPermissions(CommandSender sender, Subcommand subcommand) {
         return checkPermissions(sender, subcommand, false);

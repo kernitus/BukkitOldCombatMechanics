@@ -23,15 +23,15 @@ public class Messenger {
     }
 
     public static void info(String message, Object... args) {
-        plugin.getLogger().info(TextUtils.stripColor(String.format(message, args)));
+        plugin.getLogger().info(TextUtils.stripColour(String.format(message, args)));
     }
 
     public static void warn(Throwable e, String message, Object... args) {
-        plugin.getLogger().log(Level.WARNING, TextUtils.stripColor(String.format(message, args)), e);
+        plugin.getLogger().log(Level.WARNING, TextUtils.stripColour(String.format(message, args)), e);
     }
 
     public static void warn(String message, Object... args) {
-        plugin.getLogger().log(Level.WARNING, TextUtils.stripColor(String.format(message, args)));
+        plugin.getLogger().log(Level.WARNING, TextUtils.stripColour(String.format(message, args)));
     }
 
     /**
@@ -47,7 +47,7 @@ public class Messenger {
         Objects.requireNonNull(sender, "sender cannot be null!");
         Objects.requireNonNull(message, "message cannot be null!");
 
-        sender.sendMessage(TextUtils.colorize(String.format(message, args)));
+        sender.sendMessage(TextUtils.colourise(String.format(message, args)));
     }
 
     /**
@@ -64,23 +64,23 @@ public class Messenger {
         send(sender, prefix + " " + message, args);
     }
 
-    public static void sendNormalMessage(CommandSender sender, String message, Object... args){
+    public static void sendNormalMessage(CommandSender sender, String message, Object... args) {
         sendWithPrefix(sender, message, "&6[OCM]&r", args);
     }
 
-    private static void sendDebugMessage(CommandSender sender, String message, Object... args){
+    private static void sendDebugMessage(CommandSender sender, String message, Object... args) {
         sendWithPrefix(sender, message, "&1[Debug]&r", args);
     }
 
     public static void debug(String message, Throwable throwable) {
-        if(DEBUG_ENABLED) plugin.getLogger().log(Level.INFO, message, throwable);
+        if (DEBUG_ENABLED) plugin.getLogger().log(Level.INFO, message, throwable);
     }
 
     public static void debug(String message, Object... args) {
-        if(DEBUG_ENABLED) info("[DEBUG] " + message, args);
+        if (DEBUG_ENABLED) info("[DEBUG] " + message, args);
     }
 
     public static void debug(CommandSender sender, String message, Object... args) {
-        if(DEBUG_ENABLED) sendDebugMessage(sender, message, args);
+        if (DEBUG_ENABLED) sendDebugMessage(sender, message, args);
     }
 }

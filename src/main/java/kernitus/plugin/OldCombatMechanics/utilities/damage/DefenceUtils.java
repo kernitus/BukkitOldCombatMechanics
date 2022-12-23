@@ -84,11 +84,11 @@ public class DefenceUtils {
             double armourReduction = 0;
             // If the damage cause does not ignore armour
             // If the block they are in is a stalagmite, also ignore armour
-            if(!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
-                    !(Reflector.versionIsNewerOrEqualAs(1,19,0) &&
+            if (!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
+                    !(Reflector.versionIsNewerOrEqualAs(1, 19, 0) &&
                             damageCause == EntityDamageEvent.DamageCause.CONTACT &&
-                    damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)
-            ){
+                            damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)
+            ) {
                 armourReduction = currentDamage * -armourReductionFactor;
             }
             damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);

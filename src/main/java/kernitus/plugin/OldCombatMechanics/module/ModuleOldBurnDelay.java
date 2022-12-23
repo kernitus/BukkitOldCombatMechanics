@@ -24,7 +24,7 @@ public class ModuleOldBurnDelay extends Module {
 
     @Override
     public void reload() {
-       fireTicks = module().getInt("fire-ticks");
+        fireTicks = module().getInt("fire-ticks");
     }
 
     @EventHandler
@@ -33,7 +33,7 @@ public class ModuleOldBurnDelay extends Module {
 
         if (!isEnabled(entity.getWorld())) return;
 
-        if (e.getCause() == EntityDamageEvent.DamageCause.FIRE){
+        if (e.getCause() == EntityDamageEvent.DamageCause.FIRE) {
             entity.setFireTicks(fireTicks);
             debug("Setting fire ticks to " + fireTicks, entity);
         }

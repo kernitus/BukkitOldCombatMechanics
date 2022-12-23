@@ -31,7 +31,7 @@ public class ModuleAttackSounds extends Module {
 
     private final Set<String> blockedSounds;
 
-    public ModuleAttackSounds(OCMMain plugin){
+    public ModuleAttackSounds(OCMMain plugin) {
         super(plugin, "disable-attack-sounds");
 
         this.soundListener = new SoundListener();
@@ -39,25 +39,24 @@ public class ModuleAttackSounds extends Module {
 
         // inject all players at startup, so the plugin still works properly after a reload
         OCMMain.getInstance().addEnableListener(() -> {
-            for(Player player : Bukkit.getOnlinePlayers()){
+            for (Player player : Bukkit.getOnlinePlayers())
                 PacketManager.getInstance().addListener(soundListener, player);
-            }
         });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerLogin(PlayerJoinEvent e){
+    public void onPlayerLogin(PlayerJoinEvent e) {
         // always attach the listener, it checks internally
         PacketManager.getInstance().addListener(soundListener, e.getPlayer());
     }
 
     @Override
-    public void reload(){
+    public void reload() {
         blockedSounds.clear();
         blockedSounds.addAll(getBlockedSounds());
     }
 
-    private Collection<String> getBlockedSounds(){
+    private Collection<String> getBlockedSounds() {
         return module().getStringList("blocked-sounds");
     }
 
@@ -69,21 +68,18 @@ public class ModuleAttackSounds extends Module {
         private boolean disabledDueToError;
 
         @Override
-        public void onPacketSend(PacketEvent packetEvent){
-            if(disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())){
-                return;
-            }
+        public void onPacketSend(PacketEvent packetEvent) {
+            if (disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())) return;
 
-            try{
+            try {
                 SoundPacket.from(packetEvent.getPacket())
                         .filter(it -> blockedSounds.contains(it.getSoundName()))
                         .ifPresent(packet -> {
                             packetEvent.setCancelled(true);
-                            if(Config.debugEnabled()){
+                            if (Config.debugEnabled())
                                 debug("Blocked sound " + packet.getSoundName(), packetEvent.getPlayer());
-                            }
                         });
-            } catch(Exception | ExceptionInInitializerError e){
+            } catch (Exception | ExceptionInInitializerError e) {
                 disabledDueToError = true;
                 Messenger.warn(
                         e,

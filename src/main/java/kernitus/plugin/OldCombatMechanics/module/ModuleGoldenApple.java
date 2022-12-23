@@ -89,13 +89,13 @@ public class ModuleGoldenApple extends Module {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareItemCraft(PrepareItemCraftEvent e) {
-        ItemStack item = e.getInventory().getResult();
+        final ItemStack item = e.getInventory().getResult();
         if (item == null)
             return; // This should never ever ever ever run. If it does then you probably screwed something up.
 
         if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
 
-            World world = e.getView().getPlayer().getWorld();
+            final World world = e.getView().getPlayer().getWorld();
 
             if (isSettingEnabled("no-conflict-mode")) return;
 
@@ -163,7 +163,7 @@ public class ModuleGoldenApple extends Module {
         final PlayerInventory inv = p.getInventory();
 
         // Hunger level
-        int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
+        final int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
         p.setFoodLevel(foodLevel);
 
         if (p.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
@@ -181,8 +181,8 @@ public class ModuleGoldenApple extends Module {
 
         if (item.getAmount() <= 0) item = null;
 
-        ItemStack mainHand = inv.getItemInMainHand();
-        ItemStack offHand = inv.getItemInOffHand();
+        final ItemStack mainHand = inv.getItemInMainHand();
+        final ItemStack offHand = inv.getItemInOffHand();
 
         if (mainHand.equals(originalItem)) inv.setItemInMainHand(item);
         else if (offHand.equals(originalItem)) inv.setItemInOffHand(item);
@@ -193,13 +193,13 @@ public class ModuleGoldenApple extends Module {
         // On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
 
         // Below here are fixes for statistics & advancements, given we are cancelling the event
-        int initialValue = p.getStatistic(Statistic.USE_ITEM, consumedMaterial);
+        final int initialValue = p.getStatistic(Statistic.USE_ITEM, consumedMaterial);
 
         // We need to increment player statistics for having eaten a gapple
         p.incrementStatistic(Statistic.USE_ITEM, consumedMaterial);
 
         // Call the event as .incrementStatistic doesn't seem to, and other plugins may rely on it
-        PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p, Statistic.USE_ITEM, initialValue, initialValue + 1, consumedMaterial);
+        final PlayerStatisticIncrementEvent psie = new PlayerStatisticIncrementEvent(p, Statistic.USE_ITEM, initialValue, initialValue + 1, consumedMaterial);
         Bukkit.getServer().getPluginManager().callEvent(psie);
 
         try {
@@ -214,17 +214,17 @@ public class ModuleGoldenApple extends Module {
     }
 
     private List<PotionEffect> getPotionEffects(String apple) {
-        List<PotionEffect> appleEffects = new ArrayList<>();
+        final List<PotionEffect> appleEffects = new ArrayList<>();
 
-        ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
+        final ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
         for (String key : sect.getKeys(false)) {
-            int duration = sect.getInt(key + ".duration");
-            int amplifier = sect.getInt(key + ".amplifier");
+            final int duration = sect.getInt(key + ".duration");
+            final int amplifier = sect.getInt(key + ".amplifier");
 
-            PotionEffectType type = PotionEffectType.getByName(key);
+            final PotionEffectType type = PotionEffectType.getByName(key);
             Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
 
-            PotionEffect fx = new PotionEffect(type, duration, amplifier);
+            final PotionEffect fx = new PotionEffect(type, duration, amplifier);
             appleEffects.add(fx);
         }
         return appleEffects;

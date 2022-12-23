@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.MathHelper;
+import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import me.vagdedes.spartan.system.Enums;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
@@ -23,7 +23,7 @@ import java.util.WeakHashMap;
 
 /**
  * Establishes custom health regeneration rules.
- * Default values based on 1.8 from https://minecraft.gamepedia.com/Hunger?oldid=948685
+ * Default values based on 1.8 from <a href="https://minecraft.gamepedia.com/Hunger?oldid=948685">wiki</a>
  */
 public class ModulePlayerRegen extends Module {
 
@@ -38,7 +38,7 @@ public class ModulePlayerRegen extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRegen(EntityRegainHealthEvent e) {
-        if(e.isCancelled()) return; // In case some other plugin cancelled the event
+        if (e.isCancelled()) return; // In case some other plugin cancelled the event
 
         if (e.getEntityType() != EntityType.PLAYER
                 || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
@@ -74,9 +74,9 @@ public class ModulePlayerRegen extends Module {
         final double playerHealth = p.getHealth();
 
         if (playerHealth < maxHealth) {
-            p.setHealth(MathHelper.clamp(playerHealth + module().getInt("amount"), 0.0, maxHealth));
+            p.setHealth(MathsHelper.clamp(playerHealth + module().getInt("amount"), 0.0, maxHealth));
             healTimes.put(playerId, currentTime);
-            if(spartanInstalled) disableSpartanRegenCheck(p);
+            if (spartanInstalled) disableSpartanRegenCheck(p);
         }
 
         // Calculate new exhaustion value, must be between 0 and 4. If above, it will reduce the saturation in the following tick.

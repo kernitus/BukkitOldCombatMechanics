@@ -15,17 +15,17 @@ public class NameListVersionedMaterial implements VersionedMaterial {
 
     private Material finalMaterial;
 
-    private NameListVersionedMaterial(Material finalMaterial){
+    private NameListVersionedMaterial(Material finalMaterial) {
         this.finalMaterial = finalMaterial;
     }
 
     @Override
-    public ItemStack newInstance(){
+    public ItemStack newInstance() {
         return new ItemStack(finalMaterial);
     }
 
     @Override
-    public boolean isSame(ItemStack other){
+    public boolean isSame(ItemStack other) {
         return other.getType() == finalMaterial;
     }
 
@@ -36,15 +36,15 @@ public class NameListVersionedMaterial implements VersionedMaterial {
      * @return the versioned material
      * @throws IllegalArgumentException if no material was valid
      */
-    public static VersionedMaterial ofNames(String... names){
-        for(String name : names){
+    public static VersionedMaterial ofNames(String... names) {
+        for (String name : names) {
             Material material = Material.matchMaterial(name);
-            if(material != null){
+            if (material != null) {
                 return new NameListVersionedMaterial(material);
             }
 
             material = Material.matchMaterial(name, true);
-            if(material != null){
+            if (material != null) {
                 return new NameListVersionedMaterial(material);
             }
         }

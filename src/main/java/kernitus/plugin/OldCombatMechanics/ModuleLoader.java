@@ -17,31 +17,31 @@ public class ModuleLoader {
     private static EventRegistry eventRegistry;
     private static List<Module> modules = new ArrayList<>();
 
-    public static void initialise(OCMMain plugin){
+    public static void initialise(OCMMain plugin) {
         ModuleLoader.eventRegistry = new EventRegistry(plugin);
     }
 
-    public static void toggleModules(){
+    public static void toggleModules() {
         modules.forEach(module -> setState(module, module.isEnabled()));
     }
 
-    private static void setState(Module module, boolean state){
-        if(state){
-            if(eventRegistry.registerListener(module)){
+    private static void setState(Module module, boolean state) {
+        if (state) {
+            if (eventRegistry.registerListener(module)) {
                 Messenger.debug("Enabled " + module.getClass().getSimpleName());
             }
         } else {
-            if(eventRegistry.unregisterListener(module)){
+            if (eventRegistry.unregisterListener(module)) {
                 Messenger.debug("Disabled " + module.getClass().getSimpleName());
             }
         }
     }
 
-    public static void addModule(Module module){
+    public static void addModule(Module module) {
         modules.add(module);
     }
 
-    public static List<Module> getModules(){
+    public static List<Module> getModules() {
         return modules;
     }
 }

@@ -58,7 +58,7 @@ public class ModuleOldToolDamage extends Module {
         final double oldBaseDamage = event.getBaseDamage();
         final double expectedBaseDamage = NewWeaponDamage.getDamage(weaponMaterial);
         // We check difference as calculation inaccuracies can make it not match
-        if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001){
+        if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
             debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
             return;
         }

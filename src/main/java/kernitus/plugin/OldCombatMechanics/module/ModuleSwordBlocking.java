@@ -75,7 +75,7 @@ public class ModuleSwordBlocking extends Module {
 
         final UUID id = p.getUniqueId();
 
-        if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised())) {
+        if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised())) {
             final ItemStack item = e.getItem();
 
             if (!isHoldingSword(item.getType()) || hasShield(p)) return;
@@ -170,7 +170,7 @@ public class ModuleSwordBlocking extends Module {
         if (!isBlocking(id)) return;
 
         //They are still blocking with the shield so postpone restoring
-        if (p.isBlocking() || (Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised()))
+        if (p.isBlocking() || (Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised()))
             scheduleRestore(p);
         else {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
@@ -198,7 +198,7 @@ public class ModuleSwordBlocking extends Module {
         BukkitRunnable checkBlocking = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1,11,0) && p.isHandRaised())) {
+                if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised())) {
                     restore(p);
                 }
             }

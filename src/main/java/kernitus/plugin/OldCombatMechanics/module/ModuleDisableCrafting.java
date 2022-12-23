@@ -27,31 +27,31 @@ public class ModuleDisableCrafting extends Module {
     private List<Material> denied;
     private String message;
 
-    public ModuleDisableCrafting(OCMMain plugin){
+    public ModuleDisableCrafting(OCMMain plugin) {
         super(plugin, "disable-crafting");
         reload();
     }
 
     @Override
-    public void reload(){
+    public void reload() {
         denied = ConfigUtils.loadMaterialList(module(), "denied");
         message = module().getBoolean("showMessage") ? module().getString("message") : null;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPrepareItemCraft(PrepareItemCraftEvent e){
+    public void onPrepareItemCraft(PrepareItemCraftEvent e) {
         final List<HumanEntity> viewers = e.getViewers();
-        if(viewers.size() < 1) return;
+        if (viewers.size() < 1) return;
 
         final World world = viewers.get(0).getWorld();
-        if(!isEnabled(world)) return;
+        if (!isEnabled(world)) return;
 
         final CraftingInventory inv = e.getInventory();
         final ItemStack result = inv.getResult();
 
-        if(result != null && denied.contains(result.getType())) {
+        if (result != null && denied.contains(result.getType())) {
             inv.setResult(null);
-            if (message != null) viewers.forEach(viewer -> Messenger.sendNormalMessage(viewer,message));
+            if (message != null) viewers.forEach(viewer -> Messenger.sendNormalMessage(viewer, message));
         }
     }
 }

@@ -33,19 +33,19 @@ public class ModuleDisableProjectileRandomness extends Module {
 
     @EventHandler
     public void onProjectileLaunch(ProjectileLaunchEvent e) {
-        Projectile projectile = e.getEntity();
-        ProjectileSource shooter = projectile.getShooter();
+        final Projectile projectile = e.getEntity();
+        final ProjectileSource shooter = projectile.getShooter();
 
         if (shooter instanceof Player) {
-            Player player = (Player) shooter;
+            final Player player = (Player) shooter;
             if (!isEnabled(player.getWorld())) return;
             debug("Making projectile go straight", player);
 
-            Vector playerDirection = player.getLocation().getDirection().normalize();
-            Vector projectileDirection = projectile.getVelocity();
+            final Vector playerDirection = player.getLocation().getDirection().normalize();
+            final Vector projectileDirection = projectile.getVelocity();
 
             // Keep original speed
-            double originalMagnitude = projectileDirection.length();
+            final double originalMagnitude = projectileDirection.length();
             projectileDirection.normalize();
 
             // The following works because using rotate modifies the vector, so we must double it to undo the rotation
@@ -55,7 +55,7 @@ public class ModuleDisableProjectileRandomness extends Module {
                 if (fuzzyVectorEquals(projectileDirection, rotateAroundY(playerDirection, 0.17))) {
                     debug("10° Offset", player);
                 } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY(playerDirection, -0.35)))
-                    //arrowVelocity.rotateAroundY(-10);
+                    // arrowVelocity.rotateAroundY(-10);
                     debug("-10° Offset", player);
             }
 

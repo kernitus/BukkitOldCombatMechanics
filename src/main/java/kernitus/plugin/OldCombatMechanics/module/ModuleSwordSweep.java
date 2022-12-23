@@ -41,41 +41,37 @@ public class ModuleSwordSweep extends Module {
     private EntityDamageEvent.DamageCause sweepDamageCause;
     private BukkitRunnable task;
 
-    public ModuleSwordSweep(OCMMain plugin){
+    public ModuleSwordSweep(OCMMain plugin) {
         super(plugin, "disable-sword-sweep");
 
         this.particleListener = new ParticleListener();
 
-        try{
+        try {
             // Will be available from some 1.11 version onwards
             sweepDamageCause = EntityDamageEvent.DamageCause.valueOf("ENTITY_SWEEP_ATTACK");
-        } catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             sweepDamageCause = null;
         }
 
 
         // inject all players at startup, so the plugin still works properly after a reload
         OCMMain.getInstance().addEnableListener(() -> {
-            for(Player player : Bukkit.getOnlinePlayers()){
+            for (Player player : Bukkit.getOnlinePlayers()) {
                 PacketManager.getInstance().addListener(particleListener, player);
             }
         });
     }
 
     @Override
-    public void reload(){
+    public void reload() {
         // we didn't set anything up in the first place
-        if(sweepDamageCause != null){
-            return;
-        }
+        if (sweepDamageCause != null) return;
 
-        if(task != null){
-            task.cancel();
-        }
+        if (task != null) task.cancel();
 
         task = new BukkitRunnable() {
             @Override
-            public void run(){
+            public void run() {
                 sweepLocations.clear();
             }
         };
@@ -84,23 +80,23 @@ public class ModuleSwordSweep extends Module {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerLogin(PlayerJoinEvent e){
+    public void onPlayerLogin(PlayerJoinEvent e) {
         // always attach the listener, it checks internally
         PacketManager.getInstance().addListener(particleListener, e.getPlayer());
     }
 
     //Changed from HIGHEST to LOWEST to support DamageIndicator plugin
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityDamaged(EntityDamageByEntityEvent e){
-        Entity damager = e.getDamager();
-        World world = damager.getWorld();
+    public void onEntityDamaged(EntityDamageByEntityEvent e) {
+        final Entity damager = e.getDamager();
+        final World world = damager.getWorld();
 
-        if(!isEnabled(world)) return;
+        if (!isEnabled(world)) return;
 
-        if(!(damager instanceof Player)) return;
+        if (!(damager instanceof Player)) return;
 
-        if(sweepDamageCause != null){
-            if(e.getCause() == sweepDamageCause){
+        if (sweepDamageCause != null) {
+            if (e.getCause() == sweepDamageCause) {
                 e.setCancelled(true);
                 debug("Sweep cancelled", damager);
             }
@@ -108,29 +104,29 @@ public class ModuleSwordSweep extends Module {
             return;
         }
 
-        Player attacker = (Player) e.getDamager();
-        ItemStack weapon = attacker.getInventory().getItemInMainHand();
+        final Player attacker = (Player) e.getDamager();
+        final ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
-        if(isHoldingSword(weapon.getType()))
+        if (isHoldingSword(weapon.getType()))
             onSwordAttack(e, attacker, weapon);
     }
 
-    private void onSwordAttack(EntityDamageByEntityEvent e, Player attacker, ItemStack weapon){
+    private void onSwordAttack(EntityDamageByEntityEvent e, Player attacker, ItemStack weapon) {
         //Disable sword sweep
-        Location attackerLocation = attacker.getLocation();
+        final Location attackerLocation = attacker.getLocation();
 
         int level = 0;
 
-        try{ //In a try catch for servers that haven't updated
+        try { //In a try catch for servers that haven't updated
             level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
-        } catch(NoSuchFieldError ignored){
+        } catch (NoSuchFieldError ignored) {
         }
 
-        float damage = NewWeaponDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
+        final float damage = NewWeaponDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
 
-        if(e.getDamage() == damage){
+        if (e.getDamage() == damage) {
             // Possibly a sword-sweep attack
-            if(sweepLocations.contains(attackerLocation)){
+            if (sweepLocations.contains(attackerLocation)) {
                 debug("Cancelling sweep...", attacker);
                 e.setCancelled(true);
             }
@@ -139,7 +135,7 @@ public class ModuleSwordSweep extends Module {
         }
     }
 
-    private boolean isHoldingSword(Material mat){
+    private boolean isHoldingSword(Material mat) {
         return mat.toString().endsWith("_SWORD");
     }
 
@@ -151,16 +147,16 @@ public class ModuleSwordSweep extends Module {
         private boolean disabledDueToError;
 
         @Override
-        public void onPacketSend(PacketEvent packetEvent){
-            if(disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())){
+        public void onPacketSend(PacketEvent packetEvent) {
+            if (disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())) {
                 return;
             }
 
-            try{
+            try {
                 ParticlePacket.from(packetEvent.getPacket())
                         .filter(it -> it.getParticleName().toUpperCase(Locale.ROOT).contains("SWEEP"))
                         .ifPresent(e -> packetEvent.setCancelled(true));
-            } catch(Exception | ExceptionInInitializerError e){
+            } catch (Exception | ExceptionInInitializerError e) {
                 disabledDueToError = true;
                 Messenger.warn(
                         e,

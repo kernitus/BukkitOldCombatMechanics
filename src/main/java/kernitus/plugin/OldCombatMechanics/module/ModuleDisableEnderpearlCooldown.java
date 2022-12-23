@@ -28,8 +28,8 @@ import java.util.*;
 public class ModuleDisableEnderpearlCooldown extends Module {
 
     /**
-     * Contains players that threw an ender pearl. As the handler calls launchProjectile, which also calls ProjectileLaunchEvent,
-     * we need to ignore that event call.
+     * Contains players that threw an ender pearl. As the handler calls launchProjectile,
+     * which also calls ProjectileLaunchEvent, we need to ignore that event call.
      */
     private final Set<UUID> ignoredPlayers = new HashSet<>();
     private Map<UUID, Long> lastLaunched;
@@ -52,7 +52,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerShoot(ProjectileLaunchEvent e) {
-        if(e.isCancelled()) return; // For compatibility with other plugins
+        if (e.isCancelled()) return; // For compatibility with other plugins
 
         final Projectile projectile = e.getEntity();
         if (!(projectile instanceof EnderPearl)) return;
@@ -61,7 +61,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
         if (!(shooter instanceof Player)) return;
         final Player player = (Player) shooter;
 
-        if(!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player.getWorld())) return;
 
         final UUID uuid = player.getUniqueId();
 
@@ -75,7 +75,7 @@ public class ModuleDisableEnderpearlCooldown extends Module {
             if (lastLaunched.containsKey(uuid)) {
                 final long elapsedSeconds = currentTime - lastLaunched.get(uuid);
                 if (elapsedSeconds < cooldown) {
-                    if (message != null) Messenger.sendNormalMessage(player,message,cooldown - elapsedSeconds);
+                    if (message != null) Messenger.sendNormalMessage(player, message, cooldown - elapsedSeconds);
                     return;
                 }
             }

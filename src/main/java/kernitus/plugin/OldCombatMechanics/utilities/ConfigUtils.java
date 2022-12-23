@@ -29,7 +29,7 @@ public class ConfigUtils {
      * @param section The section from which to load the doubles.
      * @return The map of doubles.
      */
-    public static Map<String, Double> loadDoubleMap(ConfigurationSection section){
+    public static Map<String, Double> loadDoubleMap(ConfigurationSection section) {
         Objects.requireNonNull(section, "section cannot be null!");
 
         return section.getKeys(false).stream()
@@ -45,13 +45,11 @@ public class ConfigUtils {
      * @param key     The key of the material list.
      * @return The loaded material list, or an empty list if there is no list at the given key.
      */
-    public static List<Material> loadMaterialList(ConfigurationSection section, String key){
+    public static List<Material> loadMaterialList(ConfigurationSection section, String key) {
         Objects.requireNonNull(section, "section cannot be null!");
         Objects.requireNonNull(key, "key cannot be null!");
 
-        if(!section.isList(key)){
-            return new ArrayList<>();
-        }
+        if (!section.isList(key)) return new ArrayList<>();
 
         return section.getStringList(key).stream()
                 .map(Material::matchMaterial)
@@ -61,34 +59,36 @@ public class ConfigUtils {
 
     /**
      * Gets potion duration values from config
+     *
      * @param section The section from which to load the duration values
      * @return HashMap of PotionType and PotionDurations
      */
-    public static HashMap<PotionType, PotionDurations> loadPotionDurationsList(ConfigurationSection section){
+    public static HashMap<PotionType, PotionDurations> loadPotionDurationsList(ConfigurationSection section) {
         Objects.requireNonNull(section, "section cannot be null!");
-        HashMap<PotionType, PotionDurations> durationsHashMap = new HashMap<>();
-        ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
+        final HashMap<PotionType, PotionDurations> durationsHashMap = new HashMap<>();
+        final ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
 
-            for (String potionName : durationsSection.getKeys(false)) {
-                ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
-                ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
-                ConfigurationSection splash = potionSection.getConfigurationSection("splash");
+        for (String potionName : durationsSection.getKeys(false)) {
+            final ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
+            final ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
+            final ConfigurationSection splash = potionSection.getConfigurationSection("splash");
 
-                potionName = potionName.toUpperCase(Locale.ROOT);
+            potionName = potionName.toUpperCase(Locale.ROOT);
 
-                try {
-                    PotionType potionType = PotionType.valueOf(potionName);
-                    durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
+            try {
+                final PotionType potionType = PotionType.valueOf(potionName);
+                durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
 
-                } catch (IllegalArgumentException e){ //In case the potion doesn't exist in the version running on the server
-                    Messenger.debug("Skipping loading " + potionName + " potion");
-                }
+            } catch (
+                    IllegalArgumentException e) { //In case the potion doesn't exist in the version running on the server
+                Messenger.debug("Skipping loading " + potionName + " potion");
             }
+        }
 
         return durationsHashMap;
     }
 
-    private static GenericPotionDurations getGenericDurations(ConfigurationSection section){
+    private static GenericPotionDurations getGenericDurations(ConfigurationSection section) {
         return new GenericPotionDurations(section.getInt("base"), section.getInt("II"), section.getInt("extended"));
     }
 }

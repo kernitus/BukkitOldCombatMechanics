@@ -25,31 +25,31 @@ public class DualVersionedMaterial implements VersionedMaterial {
      * @param oldItem the item supplier for the old version
      * @param newItem the item supplier for the new version
      */
-    public DualVersionedMaterial(Supplier<ItemStack> oldItem, Supplier<ItemStack> newItem){
+    public DualVersionedMaterial(Supplier<ItemStack> oldItem, Supplier<ItemStack> newItem) {
         this.oldItem = oldItem;
         this.newItem = newItem;
     }
 
     @Override
-    public ItemStack newInstance(){
+    public ItemStack newInstance() {
         return getItemSupplier().get();
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public boolean isSame(ItemStack other){
+    public boolean isSame(ItemStack other) {
         ItemStack baseInstance = newInstance();
 
         // items do not differ in more than those two things
         return baseInstance.getType() == other.getType() && baseInstance.getDurability() == other.getDurability();
     }
 
-    private Supplier<ItemStack> getItemSupplier(){
+    private Supplier<ItemStack> getItemSupplier() {
         return Reflector.versionIsNewerOrEqualAs(1, 13, 0) ? newItem : oldItem;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "DualVersionedMaterial{" +
                 "picked=" + (getItemSupplier() == newItem ? "new" : "old")
                 + ", item=" + newInstance()
@@ -63,11 +63,11 @@ public class DualVersionedMaterial implements VersionedMaterial {
      * @param nameNew the new name
      * @return a dual versioned material using the supplied names
      */
-    public static VersionedMaterial ofMaterialNames(String nameOld, String nameNew){
+    public static VersionedMaterial ofMaterialNames(String nameOld, String nameNew) {
         return new DualVersionedMaterial(fromMaterial(nameOld), fromMaterial(nameNew));
     }
 
-    private static Supplier<ItemStack> fromMaterial(String name){
+    private static Supplier<ItemStack> fromMaterial(String name) {
         return () -> new ItemStack(Material.matchMaterial(name));
     }
 }

@@ -19,7 +19,7 @@ public class EventRegistry {
     private final Plugin plugin;
     private final List<Listener> listeners = new ArrayList<>();
 
-    public EventRegistry(Plugin plugin){
+    public EventRegistry(Plugin plugin) {
         this.plugin = plugin;
     }
 
@@ -29,10 +29,8 @@ public class EventRegistry {
      * @param listener The {@link Listener} to register.
      * @return Whether or not the listener was successfully registered.
      */
-    public boolean registerListener(Listener listener){
-        if(listeners.contains(listener)){
-            return false;
-        }
+    public boolean registerListener(Listener listener) {
+        if (listeners.contains(listener)) return false;
 
         listeners.add(listener);
         plugin.getServer().getPluginManager().registerEvents(listener, plugin);
@@ -45,10 +43,8 @@ public class EventRegistry {
      * @param listener The {@link Listener} to register.
      * @return Whether or not the listener was successfully unregistered.
      */
-    public boolean unregisterListener(Listener listener){
-        if(!listeners.contains(listener)){
-            return false;
-        }
+    public boolean unregisterListener(Listener listener) {
+        if (!listeners.contains(listener)) return false;
 
         listeners.remove(listener);
         HandlerList.unregisterAll(listener);

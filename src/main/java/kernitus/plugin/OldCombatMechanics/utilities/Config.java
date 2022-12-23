@@ -37,7 +37,8 @@ public class Config {
      * @return Whether config was changed or not
      */
     private static boolean checkConfigVersion() {
-        YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
+        final YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(plugin.getResource("config.yml")));
 
         if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
             plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
@@ -71,7 +72,7 @@ public class Config {
 
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
         final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
-        if(EDBEL != null) {
+        if (EDBEL != null) {
             EDBEL.setEnabled(moduleEnabled("old-tool-damage") ||
                     moduleEnabled("old-potion-effects")
                     || moduleEnabled("old-critical-hits")
@@ -92,8 +93,8 @@ public class Config {
     }
 
     public static boolean moduleEnabled(String name, World world) {
-        boolean isBlacklist = config.getBoolean("worlds-is-blacklist");
-        ConfigurationSection section = config.getConfigurationSection(name);
+        final boolean isBlacklist = config.getBoolean("worlds-is-blacklist");
+        final ConfigurationSection section = config.getConfigurationSection(name);
 
         if (section == null) {
             plugin.getLogger().warning("Tried to check module '" + name + "', but it didn't exist!");
@@ -107,7 +108,7 @@ public class Config {
         final List<String> list = section.getStringList("worlds");
 
         // If the list is empty, the module should be enabled in all worlds
-        if (list.size() <= 0) return true;
+        if (list.size() == 0) return true;
 
         boolean isInList = list.stream().anyMatch(entry -> entry.equalsIgnoreCase(worldName));
         return isBlacklist != isInList;
