@@ -16,12 +16,10 @@ import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerFishEvent;
-import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.util.Vector;
 
 import java.util.EnumMap;
@@ -31,13 +29,30 @@ import java.util.EnumMap;
  */
 public class ModuleFishingKnockback extends Module {
 
-    private final FunctionChooser<PlayerFishEvent, Entity> hookEntityFeature;
+    private final FunctionChooser<PlayerFishEvent, Entity> getHookFunction;
+    private final FunctionChooser<ProjectileHitEvent, Entity> getHitEntityFunction;
+    private boolean knockbackNonPlayerEntities;
 
     public ModuleFishingKnockback(OCMMain plugin) {
         super(plugin, "old-fishing-knockback");
 
-        hookEntityFeature = FunctionChooser.apiCompatCall(PlayerFishEvent::getHook,
+        reload();
+
+        getHookFunction = FunctionChooser.apiCompatReflectionCall(PlayerFishEvent::getHook,
                 PlayerFishEvent.class, "getHook");
+        getHitEntityFunction = FunctionChooser.apiCompatCall(ProjectileHitEvent::getHitEntity, (e) -> {
+            final Entity hookEntity = e.getEntity();
+            final World world = hookEntity.getWorld();
+            return world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
+                    .filter(entity -> !knockbackNonPlayerEntities && entity instanceof Player)
+                    .findFirst()
+                    .orElse(null);
+        });
+    }
+
+    @Override
+    public void reload() {
+        knockbackNonPlayerEntities = isSettingEnabled("knockbackNonPlayerEntities");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -49,19 +64,9 @@ public class ModuleFishingKnockback extends Module {
 
         if (e.getEntityType() != EntityType.FISHING_HOOK) return;
 
-        final boolean knockbackNonPlayerEntities = isSettingEnabled("knockbackNonPlayerEntities");
-        Entity hitEntity;
+        final Entity hitEntity = getHitEntityFunction.apply(e);
 
-        try {
-            hitEntity = e.getHitEntity();
-        } catch (NoSuchMethodError e1) { //For older version that don't have such method
-            hitEntity = world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
-                    .filter(entity -> !knockbackNonPlayerEntities && entity instanceof Player)
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (hitEntity == null) return;
+        if (hitEntity == null) return;  // If no entity was hit
         if (!(hitEntity instanceof LivingEntity)) return;
         if (!knockbackNonPlayerEntities && !(hitEntity instanceof Player)) return;
 
@@ -84,7 +89,7 @@ public class ModuleFishingKnockback extends Module {
 
         final LivingEntity livingEntity = (LivingEntity) hitEntity;
 
-        //Check if cooldown time has elapsed
+        // Check if cooldown time has elapsed
         if (livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f) return;
 
         double damage = module().getDouble("damage");
@@ -94,14 +99,7 @@ public class ModuleFishingKnockback extends Module {
         Bukkit.getPluginManager().callEvent(event);
 
         if (module().getBoolean("checkCancelled") && event.isCancelled()) {
-            if (plugin.getConfig().getBoolean("debug.enabled")) {
-                debug("You can't do that here!", rodder);
-                final HandlerList hl = event.getHandlers();
-
-                // This is to check what plugins are listening to the event
-                for (RegisteredListener rl : hl.getRegisteredListeners())
-                    debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
-            }
+            debug("You can't do that here!", rodder);
             return;
         }
 
@@ -153,7 +151,7 @@ public class ModuleFishingKnockback extends Module {
         if ((cancelDraggingIn.equals("players") && isPlayer) ||
                 cancelDraggingIn.equals("mobs") && !isPlayer ||
                 cancelDraggingIn.equals("all")) {
-            hookEntityFeature.apply(e).remove(); // Remove the bobber and don't do anything else
+            getHookFunction.apply(e).remove(); // Remove the bobber and don't do anything else
             e.setCancelled(true);
         }
     }

@@ -94,8 +94,23 @@ public class FunctionChooser<T, R> {
      * @param params  The parameters to be passed to the function accessed via reflection, if any
      * @return A new instance of {@link FunctionChooser}
      */
-    public static <T, R> FunctionChooser<T, R> apiCompatCall(ExceptionalFunction<T, R> apiCall, Class<T> clazz, String name, Object... params) {
+    public static <T, R> FunctionChooser<T, R> apiCompatReflectionCall(ExceptionalFunction<T, R> apiCall,
+                                                                       Class<T> clazz, String name, Object... params) {
         return onException(apiCall, apiCall, Reflector.memoiseMethodAndInvoke(clazz, name, params));
+    }
+
+    /**
+     * Calls the Spigot API method if possible, otherwise uses the provided function as a workaround.
+     * <p>
+     *     This should be used to avoid reflection wherever possible, making the plugin more compatible.
+     *     Chosen method is cached for performance.
+     * </p>
+     * @param apiCall A reference to the function that should be called
+     * @param altFunc A function that should instead be called if API method not available.
+     * @return A new instance of {@link FunctionChooser}
+     */
+    public static <T, R> FunctionChooser<T, R> apiCompatCall(ExceptionalFunction<T, R> apiCall, Function<T, R> altFunc){
+       return onException(apiCall, apiCall, altFunc);
     }
 
     @FunctionalInterface
