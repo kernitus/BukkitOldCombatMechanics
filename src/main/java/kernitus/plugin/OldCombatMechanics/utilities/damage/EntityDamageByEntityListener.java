@@ -105,7 +105,7 @@ public class EntityDamageByEntityListener extends Module {
         // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
         // this implies 40 speed is the minimum to always have full attack strength
         if (damager instanceof HumanEntity) {
-            final float cooldown = ((HumanEntity) damager).getAttackCooldown(); // i.e. f2
+            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);; // i.e. f2
             debug("Scale by attack delay: " + newDamage + " *= 0.2 + " + cooldown + "^2 * 0.8");
             newDamage *= 0.2F + cooldown * cooldown * 0.8F;
         }
@@ -118,7 +118,7 @@ public class EntityDamageByEntityListener extends Module {
         // Enchantment damage, scaled by attack cooldown
         double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
         if (damager instanceof HumanEntity) {
-            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
             debug("Scale enchantments by attack delay: " + enchantmentDamage + " *= " + cooldown);
             enchantmentDamage *= cooldown;
         }

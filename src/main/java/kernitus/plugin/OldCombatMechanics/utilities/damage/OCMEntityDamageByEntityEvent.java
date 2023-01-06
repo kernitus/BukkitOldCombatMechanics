@@ -99,7 +99,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         // Scale enchantment damage by attack cooldown
         if (damager instanceof HumanEntity) {
-            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
             mobEnchantmentsDamage *= cooldown;
             sharpnessDamage *= cooldown;
         }
@@ -112,11 +112,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         debug(livingDamager, "No ench damage: " + tempDamage);
 
         // Check if it's a critical hit
-        if (DamageUtils.isCriticalHit1_8(livingDamager)) {
+        if (livingDamager instanceof Player && DamageUtils.isCriticalHit1_8((HumanEntity) livingDamager)){
             was1_8Crit = true;
             debug(livingDamager, "1.8 Critical hit detected");
             // In 1.9 a crit also requires the player not to be sprinting
-            if (livingDamager instanceof Player && DamageUtils.isCriticalHit1_9(((Player) livingDamager))) {
+            if (DamageUtils.isCriticalHit1_9((Player) livingDamager)) {
                 debug(livingDamager, "1.9 Critical hit detected");
                 debug("1.9 Critical hit detected");
                 criticalMultiplier = 1.5;
@@ -126,7 +126,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         // Un-scale the damage by the attack strength
         if (damager instanceof HumanEntity) {
-            final float cooldown = ((HumanEntity) damager).getAttackCooldown();
+            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
             tempDamage /= 0.2F + cooldown * cooldown * 0.8F;
         }
 

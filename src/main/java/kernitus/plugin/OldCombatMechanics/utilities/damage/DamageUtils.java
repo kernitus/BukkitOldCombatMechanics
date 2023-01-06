@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Material;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -28,6 +29,13 @@ public class DamageUtils {
                 return material == Material.LADDER || material == Material.VINE;
             }
     );
+
+    // Method added in 1.16. Default parameter for reflected method is 0.5F
+    public static final SpigotFunctionChooser<HumanEntity, Float, Float> getAttackCooldown =
+            SpigotFunctionChooser.apiCompatReflectionCall(
+                    (he, params) -> he.getAttackCooldown(),
+                    HumanEntity.class, "getAttackStrengthScale"
+            );
 
     /**
      * Get sharpness damage multiplier for 1.9
@@ -52,23 +60,24 @@ public class DamageUtils {
     /**
      * Check preconditions for critical hit
      *
-     * @param le Living entity to perform checks on
+     * @param humanEntity Living entity to perform checks on
      * @return Whether hit is critical
      */
-    public static boolean isCriticalHit1_8(LivingEntity le) {
+    public static boolean isCriticalHit1_8(HumanEntity humanEntity) {
         /* Code from Bukkit 1.8_R3:
         boolean flag = this.fallDistance > 0.0F && !this.onGround && !this.onClimbable() && !this.isInWater()
         && !this.hasEffect(MobEffectList.BLINDNESS) && this.vehicle == null && entity instanceof EntityLiving;
         */
-        return le.getFallDistance() > 0.0F &&
-                !le.isOnGround() &&
-                !isClimbing.apply(le) &&
-                !isInWater.apply(le) &&
-                le.getActivePotionEffects().stream().map(PotionEffect::getType).noneMatch(e -> e == PotionEffectType.BLINDNESS) &&
-                !le.isInsideVehicle();
+        return humanEntity.getFallDistance() > 0.0F &&
+                !humanEntity.isOnGround() &&
+                !isClimbing.apply(humanEntity) &&
+                !isInWater.apply(humanEntity) &&
+                humanEntity.getActivePotionEffects().stream().map(PotionEffect::getType)
+                        .noneMatch(e -> e == PotionEffectType.BLINDNESS) &&
+                !humanEntity.isInsideVehicle();
     }
 
     public static boolean isCriticalHit1_9(Player player) {
-        return isCriticalHit1_8(player) && player.getAttackCooldown() > 0.9F && !player.isSprinting();
+        return isCriticalHit1_8(player) && getAttackCooldown.apply(player) > 0.9F && !player.isSprinting();
     }
 }
