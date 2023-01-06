@@ -9,10 +9,11 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,11 +30,6 @@ import java.util.*;
 
 public class ModuleSwordBlocking extends Module {
 
-    // HumanEntity.isBlocking() method return whether player is blocking
-    // isHandRaised() method return whether player has started trying to block
-    // because it takes 5 ticks before shield is actually up
-    // but this method was only added in 1.11
-
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here for reliability
     private final Map<UUID, ItemStack> storedOffhandItems = new HashMap<>();
@@ -41,6 +37,22 @@ public class ModuleSwordBlocking extends Module {
     private int restoreDelay;
     private boolean blacklist;
     private List<Material> noBlockingItems = new ArrayList<>();
+
+    // Method added in 1.11
+    // Returns whether player has started trying to use an item
+    // We also have to check if said item is a shield
+    private final SpigotFunctionChooser<HumanEntity, Void, Boolean> isHandRaised =
+            SpigotFunctionChooser.apiCompatReflectionCall(
+                    (he, params) -> he.isHandRaised(),
+                    HumanEntity.class, "isUsingItem"
+            );
+
+    // Method added in 1.17
+    private final SpigotFunctionChooser<HumanEntity, Void, ItemStack> getItemInUse =
+            SpigotFunctionChooser.apiCompatReflectionCall(
+                    (he, params) -> he.getItemInUse(),
+                    HumanEntity.class, "getUseItem"
+            );
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
@@ -75,7 +87,7 @@ public class ModuleSwordBlocking extends Module {
 
         final UUID id = p.getUniqueId();
 
-        if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised())) {
+        if (!isPlayerBlocking(p)) {
             final ItemStack item = e.getItem();
 
             if (!isHoldingSword(item.getType()) || hasShield(p)) return;
@@ -113,7 +125,7 @@ public class ModuleSwordBlocking extends Module {
     public void onPlayerDeath(PlayerDeathEvent e) {
         final Player p = e.getEntity();
         final UUID id = p.getUniqueId();
-        if (!isBlocking(id)) return;
+        if (!areItemsStored(id)) return;
 
         e.getDrops().replaceAll(item -> {
             if (item.getType().equals(Material.SHIELD))
@@ -129,9 +141,8 @@ public class ModuleSwordBlocking extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e) {
         final Player p = e.getPlayer();
-        if (isBlocking(p.getUniqueId()))
+        if (areItemsStored(p.getUniqueId()))
             e.setCancelled(true);
-
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -139,7 +150,7 @@ public class ModuleSwordBlocking extends Module {
         if (e.getWhoClicked() instanceof Player) {
             final Player p = (Player) e.getWhoClicked();
 
-            if (isBlocking(p.getUniqueId())) {
+            if (areItemsStored(p.getUniqueId())) {
                 final ItemStack cursor = e.getCursor();
                 final ItemStack current = e.getCurrentItem();
                 if (cursor != null && cursor.getType() == Material.SHIELD ||
@@ -156,7 +167,7 @@ public class ModuleSwordBlocking extends Module {
         final Item is = e.getItemDrop();
         final Player p = e.getPlayer();
 
-        if (isBlocking(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD) {
+        if (areItemsStored(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD) {
             e.setCancelled(true);
             restore(p);
         }
@@ -167,10 +178,10 @@ public class ModuleSwordBlocking extends Module {
 
         tryCancelTask(id);
 
-        if (!isBlocking(id)) return;
+        // They are still blocking with the shield so postpone restoring
+        if (!areItemsStored(id)) return;
 
-        //They are still blocking with the shield so postpone restoring
-        if (p.isBlocking() || (Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised()))
+        if (isPlayerBlocking(p))
             scheduleRestore(p);
         else {
             p.getInventory().setItemInOffHand(storedOffhandItems.get(id));
@@ -198,9 +209,8 @@ public class ModuleSwordBlocking extends Module {
         BukkitRunnable checkBlocking = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!p.isBlocking() || !(Reflector.versionIsNewerOrEqualAs(1, 11, 0) && p.isHandRaised())) {
+                if (!isPlayerBlocking(p))
                     restore(p);
-                }
             }
         };
         checkBlocking.runTaskTimer(plugin, 10L, 2L);
@@ -208,8 +218,17 @@ public class ModuleSwordBlocking extends Module {
         correspondingTasks.put(p.getUniqueId(), new RunnableSeries(removeItem, checkBlocking));
     }
 
-    private boolean isBlocking(UUID uuid) {
+    private boolean areItemsStored(UUID uuid) {
         return storedOffhandItems.containsKey(uuid);
+    }
+
+    /**
+     * Checks whether player is blocking or they have just begun to and shield is not fully up yet.
+     */
+    private boolean isPlayerBlocking(Player player) {
+        ItemStack usedItem = getItemInUse.apply(player);
+        return player.isBlocking() ||
+                (isHandRaised.apply(player) && usedItem != null && usedItem.getType() == Material.SHIELD);
     }
 
     private boolean hasShield(Player p) {

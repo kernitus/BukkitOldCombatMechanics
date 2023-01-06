@@ -11,16 +11,22 @@ import org.bukkit.Bukkit;
 import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Reflector {
     private static String version;
+    private static int majorVersion, minorVersion, patchVersion;
 
     static {
         try {
             version = Bukkit.getServer().getClass().getName().split("\\.")[3];
+            final String[] splitVersion = getVersion().replaceAll("[^\\d_]", "").split("_");
+            majorVersion = Integer.parseInt(splitVersion[0]);
+            minorVersion = Integer.parseInt(splitVersion[1]);
+            patchVersion = splitVersion.length < 3 ? 0 : Integer.parseInt(splitVersion[2]);
         } catch (Exception e) {
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
@@ -37,36 +43,24 @@ public class Reflector {
      * @param major the target major version
      * @param minor the target minor version. 0 for all
      * @param patch the target patch version. 0 for all
-     * @return true of the server version is newer or equal to the one provided
+     * @return true if the server version is newer or equal to the one provided
      */
     public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch) {
-        if (getMajorVersion() < major) {
-            return false;
-        }
-        if (getMinorVersion() < minor) {
-            return false;
-        }
+        if(getMajorVersion() < major) return false;
+        if(getMinorVersion() < minor) return false;
         return getPatchVersion() >= patch;
     }
 
     private static int getMajorVersion() {
-        return Integer.parseInt(getVersionSanitized().split("_")[0]);
-    }
-
-    private static String getVersionSanitized() {
-        return getVersion().replaceAll("[^\\d_]", "");
+        return majorVersion;
     }
 
     private static int getMinorVersion() {
-        return Integer.parseInt(getVersionSanitized().split("_")[1]);
+        return minorVersion;
     }
 
     private static int getPatchVersion() {
-        String[] split = getVersionSanitized().split("_");
-        if (split.length < 3) {
-            return 0;
-        }
-        return Integer.parseInt(split[2]);
+        return patchVersion;
     }
 
     public static Class<?> getClass(ClassType type, String name) {
@@ -128,16 +122,16 @@ public class Reflector {
      * <p>
      * The returned function just invokes the cached method for a given target.
      *
-     * @param clazz  the clazz the method is in
-     * @param name   the name of the method
-     * @param params the parameters for the method call
-     * @param <T>    the type of the handle
-     * @param <R>    the type of the method result
+     * @param clazz the clazz the method is in
+     * @param name  the name of the method
+     * @param <T>   the type of the handle
+     * @param <U>   the type of the parameter(s)
+     * @param <R>   the type of the method result
      * @return a function that invokes the retrieved cached method for its argument
      */
-    public static <T, R> Function<T, R> memoiseMethodAndInvoke(Class<T> clazz, String name, Object... params) {
+    public static <T, U, R> BiFunction<T, U, R> memoiseMethodInvocation(Class<T> clazz, String name) {
         Method method = getMethod(clazz, name);
-        return t -> invokeMethod(method, t, params);
+        return (t, u) -> invokeMethod(method, t, u);
     }
 
     public static Field getField(Class<?> clazz, String fieldName) {

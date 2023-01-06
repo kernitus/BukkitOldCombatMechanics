@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.FishHook;
@@ -15,7 +16,6 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.lang.reflect.Method;
 import java.util.Random;
 
 /**
@@ -28,7 +28,11 @@ public class ModuleFishingRodVelocity extends Module {
 
     private Random random;
     private boolean hasDifferentGravity;
-    private Method getHook;
+    // In 1.12- getHook() returns a Fish which extends FishHook
+    private final SpigotFunctionChooser<PlayerFishEvent, Void, FishHook> getHook = SpigotFunctionChooser.apiCompatReflectionCall(
+            (e, params) -> e.getHook(),
+            PlayerFishEvent.class, "getHook"
+    );
 
     public ModuleFishingRodVelocity(OCMMain plugin) {
         super(plugin, "fishing-rod-velocity");
@@ -41,14 +45,11 @@ public class ModuleFishingRodVelocity extends Module {
 
         // Versions 1.14+ have different gravity than previous versions
         hasDifferentGravity = Reflector.versionIsNewerOrEqualAs(1, 14, 0);
-
-        // Reflection because in 1.12- this method returns the Fish class, which was renamed to FishHook in 1.13+
-        getHook = Reflector.getMethod(PlayerFishEvent.class, "getHook");
     }
 
     @EventHandler
     public void onFishEvent(PlayerFishEvent event) {
-        final FishHook fishHook = Reflector.invokeMethod(getHook, event);
+        final FishHook fishHook = getHook.apply(event);
 
         if (!isEnabled(fishHook.getWorld()) || event.getState() != PlayerFishEvent.State.FISHING) return;
 

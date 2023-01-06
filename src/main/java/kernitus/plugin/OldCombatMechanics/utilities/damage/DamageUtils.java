@@ -5,7 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -13,6 +13,22 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 public class DamageUtils {
+
+    // Method added in 1.16.4
+    private static final SpigotFunctionChooser<LivingEntity, Void, Boolean> isInWater = SpigotFunctionChooser.apiCompatCall(
+            (le, params) -> le.isInWater(),
+            (le, params) -> le.getLocation().getBlock().getType() == Material.WATER
+    );
+
+    // Method added in 1.17.0
+    private static final SpigotFunctionChooser<LivingEntity, Void, Boolean> isClimbing = SpigotFunctionChooser.apiCompatCall(
+            (le, params) -> le.isClimbing(),
+            (le, params) -> {
+                final Material material = le.getLocation().getBlock().getType();
+                return material == Material.LADDER || material == Material.VINE;
+            }
+    );
+
     /**
      * Get sharpness damage multiplier for 1.9
      *
@@ -46,26 +62,13 @@ public class DamageUtils {
         */
         return le.getFallDistance() > 0.0F &&
                 !le.isOnGround() &&
-                !isLivingEntityClimbing(le) &&
-                !isInWater(le) &&
+                !isClimbing.apply(le) &&
+                !isInWater.apply(le) &&
                 le.getActivePotionEffects().stream().map(PotionEffect::getType).noneMatch(e -> e == PotionEffectType.BLINDNESS) &&
                 !le.isInsideVehicle();
     }
 
     public static boolean isCriticalHit1_9(Player player) {
         return isCriticalHit1_8(player) && player.getAttackCooldown() > 0.9F && !player.isSprinting();
-    }
-
-    private static boolean isInWater(LivingEntity le) {
-        if (Reflector.versionIsNewerOrEqualAs(1, 16, 4))
-            return le.isInWater();
-        return le.getLocation().getBlock().getType() == Material.WATER;
-    }
-
-    private static boolean isLivingEntityClimbing(LivingEntity le) {
-        if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
-            return le.isClimbing();
-        final Material material = le.getLocation().getBlock().getType();
-        return material == Material.LADDER || material == Material.VINE;
     }
 }

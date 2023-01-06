@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -20,6 +20,18 @@ import org.bukkit.util.Vector;
 public class ModuleDisableProjectileRandomness extends Module {
 
     private static double EPSILON;
+    // Method was added in 1.14.0
+    private static final SpigotFunctionChooser<Vector, Double, Vector> rotateAroundY = SpigotFunctionChooser.apiCompatCall(
+            (vector, angle) -> vector.rotateAroundY(angle),
+            (vector, angle) -> {
+                double angleCos = Math.cos(angle);
+                double angleSin = Math.sin(angle);
+
+                double x = angleCos * vector.getX() + angleSin * vector.getZ();
+                double z = -angleSin * vector.getX() + angleCos * vector.getZ();
+                return vector.setX(x).setZ(z);
+            }
+    );
 
     public ModuleDisableProjectileRandomness(OCMMain plugin) {
         super(plugin, "disable-projectile-randomness");
@@ -52,9 +64,9 @@ public class ModuleDisableProjectileRandomness extends Module {
             // The vector is rotated around the Y axis and matched by checking only the X and Z values
             // Angles is specified in radians, where 10° = 0.17 radians
             if (!fuzzyVectorEquals(projectileDirection, playerDirection)) { // If the projectile is not going straight
-                if (fuzzyVectorEquals(projectileDirection, rotateAroundY(playerDirection, 0.17))) {
+                if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection, 0.17))) {
                     debug("10° Offset", player);
-                } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY(playerDirection, -0.35)))
+                } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection, -0.35)))
                     // arrowVelocity.rotateAroundY(-10);
                     debug("-10° Offset", player);
             }
@@ -67,18 +79,5 @@ public class ModuleDisableProjectileRandomness extends Module {
     private boolean fuzzyVectorEquals(Vector a, Vector b) {
         return Math.abs(a.getX() - b.getX()) < EPSILON &&
                 Math.abs(a.getZ() - b.getZ()) < EPSILON;
-    }
-
-    private Vector rotateAroundY(Vector vector, double angle) {
-        if (Reflector.versionIsNewerOrEqualAs(1, 14, 0))
-            return vector.rotateAroundY(angle);
-        else {
-            double angleCos = Math.cos(angle);
-            double angleSin = Math.sin(angle);
-
-            double x = angleCos * vector.getX() + angleSin * vector.getZ();
-            double z = -angleSin * vector.getX() + angleCos * vector.getZ();
-            return vector.setX(x).setZ(z);
-        }
     }
 }

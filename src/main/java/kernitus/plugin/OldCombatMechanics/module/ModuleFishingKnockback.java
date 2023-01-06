@@ -8,7 +8,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.FunctionChooser;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -25,12 +25,12 @@ import org.bukkit.util.Vector;
 import java.util.EnumMap;
 
 /**
- * Brings back the old fishing knockback.
+ * Brings back the old fishing-rod knockback.
  */
 public class ModuleFishingKnockback extends Module {
 
-    private final FunctionChooser<PlayerFishEvent, Entity> getHookFunction;
-    private final FunctionChooser<ProjectileHitEvent, Entity> getHitEntityFunction;
+    private final SpigotFunctionChooser<PlayerFishEvent, Void, Entity> getHookFunction;
+    private final SpigotFunctionChooser<ProjectileHitEvent, Void, Entity> getHitEntityFunction;
     private boolean knockbackNonPlayerEntities;
 
     public ModuleFishingKnockback(OCMMain plugin) {
@@ -38,9 +38,9 @@ public class ModuleFishingKnockback extends Module {
 
         reload();
 
-        getHookFunction = FunctionChooser.apiCompatReflectionCall(PlayerFishEvent::getHook,
+        getHookFunction = SpigotFunctionChooser.apiCompatReflectionCall((e, params) -> e.getHook(),
                 PlayerFishEvent.class, "getHook");
-        getHitEntityFunction = FunctionChooser.apiCompatCall(ProjectileHitEvent::getHitEntity, (e) -> {
+        getHitEntityFunction = SpigotFunctionChooser.apiCompatCall((e, params) -> e.getHitEntity(), (e, params) -> {
             final Entity hookEntity = e.getEntity();
             final World world = hookEntity.getWorld();
             return world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()

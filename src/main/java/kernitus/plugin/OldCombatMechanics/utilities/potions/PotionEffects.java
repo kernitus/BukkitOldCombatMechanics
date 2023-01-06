@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.potions;
 
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -13,17 +14,14 @@ import java.util.Optional;
 
 public class PotionEffects {
 
-    private static boolean canUseGetPotionEffectsMethod;
-
-    static {
-        try {
-            LivingEntity.class.getDeclaredMethod("getPotionEffect", PotionEffectType.class);
-
-            canUseGetPotionEffectsMethod = true;
-        } catch (NoSuchMethodException e) {
-            canUseGetPotionEffectsMethod = false;
-        }
-    }
+    private static final SpigotFunctionChooser<LivingEntity, PotionEffectType, PotionEffect> getPotionEffectsFunction =
+            SpigotFunctionChooser.apiCompatCall((le, type) -> le.getPotionEffect(type),
+                    (le, type) ->
+                            le.getActivePotionEffects().stream()
+                                    .filter(potionEffect -> potionEffect.getType().equals(type))
+                                    .findAny()
+                                    .orElse(null)
+            );
 
     /**
      * Returns the {@link PotionEffect} of a given {@link PotionEffectType} for a given {@link LivingEntity}, if present.
@@ -44,14 +42,6 @@ public class PotionEffects {
      * @return the {@link PotionEffect} or null if not present
      */
     public static PotionEffect getOrNull(LivingEntity entity, PotionEffectType type) {
-        if (canUseGetPotionEffectsMethod) {
-            return entity.getPotionEffect(type);
-        }
-
-
-        return entity.getActivePotionEffects().stream()
-                .filter(potionEffect -> potionEffect.getType().equals(type))
-                .findAny()
-                .orElse(null);
+        return getPotionEffectsFunction.apply(entity, type);
     }
 }
