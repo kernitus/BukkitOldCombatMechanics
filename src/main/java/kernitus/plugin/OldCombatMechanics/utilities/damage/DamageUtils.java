@@ -57,7 +57,7 @@ public class DamageUtils {
     }
 
     private static boolean isInWater(LivingEntity le) {
-        if (Reflector.versionIsNewerOrEqualAs(1, 16, 0))
+        if (Reflector.versionIsNewerOrEqualAs(1, 16, 4))
             return le.isInWater();
         return le.getLocation().getBlock().getType() == Material.WATER;
     }
