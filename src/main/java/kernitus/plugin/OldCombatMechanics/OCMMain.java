@@ -71,7 +71,7 @@ public class OCMMain extends JavaPlugin {
         // Register all hooks for integrating with other plugins
         registerHooks();
 
-        // Initialize all the hooks
+        // Initialise all the hooks
         hooks.forEach(hook -> hook.init(this));
 
         // Set up the command handler

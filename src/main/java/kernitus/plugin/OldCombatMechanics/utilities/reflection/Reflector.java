@@ -135,7 +135,7 @@ public class Reflector {
      * @param <R>    the type of the method result
      * @return a function that invokes the retrieved cached method for its argument
      */
-    public static <T, R> Function<T, R> memoizeMethodAndInvoke(Class<T> clazz, String name, Object... params) {
+    public static <T, R> Function<T, R> memoiseMethodAndInvoke(Class<T> clazz, String name, Object... params) {
         Method method = getMethod(clazz, name);
         return t -> invokeMethod(method, t, params);
     }
