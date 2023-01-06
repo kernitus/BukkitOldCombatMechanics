@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 <!-- Please make sure there isn't already a request for this feature, by searching for open issues with the enhancement tag -->
-<!-- Remember that this plugin is about changes in combat mechanics from after 1.8 -->
+<!-- Remember that this plugin is about changes in combat mechanics following 1.8 -->
 <!-- If your enhancement is about a combat feature that changed between 1.8 and now, please provide some evidence of such change -->
 
 <!-- Please describe the problem you are facing, as a consequence of a lack of features rather than a bug -->
