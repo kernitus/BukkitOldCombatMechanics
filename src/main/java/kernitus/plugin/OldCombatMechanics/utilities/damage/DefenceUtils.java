@@ -8,10 +8,12 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Damageable;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -58,6 +60,13 @@ public class DefenceUtils {
         if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
             ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
     }
+
+    // Method added in 1.15
+    private static final SpigotFunctionChooser<Damageable, Void, Double> getAbsorptionAmount =
+            SpigotFunctionChooser.apiCompatReflectionCall(
+                    (damageable, params) -> damageable.getAbsorptionAmount(),
+                    Damageable.class, "getAbsorptionHearts" // getAbsorptionAmount in Mojang mappings
+            );
 
     /**
      * Calculates the reduction by armour, resistance, armour enchantments and absorption.
@@ -120,7 +129,7 @@ public class DefenceUtils {
             }
 
             // Absorption
-            final double absorptionAmount = damagedEntity.getAbsorptionAmount();
+            final double absorptionAmount = getAbsorptionAmount.apply(damagedEntity);
             double absorptionReduction = -Math.min(absorptionAmount, currentDamage);
             damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
         }

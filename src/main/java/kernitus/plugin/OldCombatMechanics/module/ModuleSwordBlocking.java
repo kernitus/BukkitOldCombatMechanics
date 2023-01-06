@@ -44,14 +44,14 @@ public class ModuleSwordBlocking extends Module {
     private final SpigotFunctionChooser<HumanEntity, Void, Boolean> isHandRaised =
             SpigotFunctionChooser.apiCompatReflectionCall(
                     (he, params) -> he.isHandRaised(),
-                    HumanEntity.class, "isUsingItem"
+                    HumanEntity.class, "isHandRaised" // isUsingItem in Mojang mappings
             );
 
     // Method added in 1.17
     private final SpigotFunctionChooser<HumanEntity, Void, ItemStack> getItemInUse =
             SpigotFunctionChooser.apiCompatReflectionCall(
                     (he, params) -> he.getItemInUse(),
-                    HumanEntity.class, "getUseItem"
+                    HumanEntity.class, "getActiveItem" // getUseItem in Mojang mappings
             );
 
     public ModuleSwordBlocking(OCMMain plugin) {

@@ -34,7 +34,7 @@ public class DamageUtils {
     public static final SpigotFunctionChooser<HumanEntity, Float, Float> getAttackCooldown =
             SpigotFunctionChooser.apiCompatReflectionCall(
                     (he, params) -> he.getAttackCooldown(),
-                    HumanEntity.class, "getAttackStrengthScale"
+                    HumanEntity.class, "getAttackCooldown" // getAttackStrengthScale in Mojang mappings
             );
 
     /**
