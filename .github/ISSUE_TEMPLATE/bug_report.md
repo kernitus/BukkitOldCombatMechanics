@@ -8,11 +8,10 @@ assignees: ''
 ---
 
 <!-- Before reporting, please try the latest test version from https://ci.rayzr.dev/job/OldCombatMechanics/ as often bugs have already been fixed there. ->
-
 <!-- Please fill out all fields as applicable, providing as many details as possible -->
 
 ## Information
-<!-- Version of the Server, e.g. Spigot 1.14.1 -->
+<!-- Version of the Server, e.g. Spigot 1.14.1 or Paper 1.19.3-->
 * Server Version: 
 
 <!-- Version of OldCombatMechanics, e.g. 1.7.2 or dev build #46 -->
@@ -21,31 +20,32 @@ assignees: ''
 
 <!-- Console log from the server, please paste it within the backticks (i.e. ```) -->
 * Server Log File: 
-```
+``` console
 
 ```
 
 <!-- OldCombatMechanics config.yml, please paste it within the backticks (i.e. ```) -->
 * OldCombatMechanics config file: 
-```
+``` yaml
 
 ```
 
-<!-- If the issue is damage related, please enable debug mode in the config and provide screenshots of the output-->
+<!-- If the issue is damage related, please enable debug mode in the config and provide screenshots or log of the output-->
 
 ## Problem Description
 <!-- A clear and concise description of what the bug is. -->
 
-<!-- Please enter what you would do in order for the problem to occur --> 
 ### To Reproduce
+<!-- Please enter what you would do in order for the problem to occur --> 
 Steps to reproduce the behavior:
 1.
 2.
 3.
 
 ### Expected Behaviour
+<!-- What do you think should happen when you perform the above steps? -->
 
 ### Actual Behaviour
-<!-- What instead happens when you perform the above steps? -->
+<!-- What does happen when you perform the above steps? -->
 
-<!-- You can add in more details here, e.g. screenshots or videos -->
+<!-- You may add more details here, e.g. screenshots or videos -->
