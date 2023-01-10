@@ -29,8 +29,8 @@ import java.util.EnumMap;
  */
 public class ModuleFishingKnockback extends Module {
 
-    private final SpigotFunctionChooser<PlayerFishEvent, Void, Entity> getHookFunction;
-    private final SpigotFunctionChooser<ProjectileHitEvent, Void, Entity> getHitEntityFunction;
+    private final SpigotFunctionChooser<PlayerFishEvent, Object, Entity> getHookFunction;
+    private final SpigotFunctionChooser<ProjectileHitEvent, Object, Entity> getHitEntityFunction;
     private boolean knockbackNonPlayerEntities;
 
     public ModuleFishingKnockback(OCMMain plugin) {

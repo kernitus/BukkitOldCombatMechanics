@@ -9,11 +9,11 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Damageable;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -62,11 +62,10 @@ public class DefenceUtils {
     }
 
     // Method added in 1.15
-    private static final SpigotFunctionChooser<Damageable, Void, Double> getAbsorptionAmount =
-            SpigotFunctionChooser.apiCompatReflectionCall(
-                    (damageable, params) -> damageable.getAbsorptionAmount(),
-                    Damageable.class, "getAbsorptionHearts" // getAbsorptionAmount in Mojang mappings
-            );
+    private static final SpigotFunctionChooser<LivingEntity, Object, Double> getAbsorptionAmount =
+            SpigotFunctionChooser.apiCompatCall(
+                    (le, params) -> le.getAbsorptionAmount(),
+                    (le, params) -> Double.valueOf(VersionCompatUtils.getAbsorptionAmount(le)));
 
     /**
      * Calculates the reduction by armour, resistance, armour enchantments and absorption.
@@ -235,7 +234,6 @@ public class DefenceUtils {
             EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
                     EntityDamageEvent.DamageCause.CONTACT,
                     EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                    EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK,
                     EntityDamageEvent.DamageCause.PROJECTILE,
                     EntityDamageEvent.DamageCause.FALL,
                     EntityDamageEvent.DamageCause.FIRE,
@@ -252,6 +250,8 @@ public class DefenceUtils {
             );
             if (Reflector.versionIsNewerOrEqualAs(1, 10, 0))
                 damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
+            if (Reflector.versionIsNewerOrEqualAs(1, 12, 0))
+                damageCauses.add(EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK);
 
             return damageCauses;
         },

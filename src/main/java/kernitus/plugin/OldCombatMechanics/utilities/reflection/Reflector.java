@@ -46,8 +46,8 @@ public class Reflector {
      * @return true if the server version is newer or equal to the one provided
      */
     public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch) {
-        if(getMajorVersion() < major) return false;
-        if(getMinorVersion() < minor) return false;
+        if (getMajorVersion() < major) return false;
+        if (getMinorVersion() < minor) return false;
         return getPatchVersion() >= patch;
     }
 
@@ -89,14 +89,25 @@ public class Reflector {
                 .orElse(null);
     }
 
-    public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames) {
-        Function<Method, List<String>> getParameterNames = method -> Arrays
-                .stream(method.getParameters())
-                .map(Parameter::getType)
-                .map(Class::getSimpleName)
-                .collect(Collectors.toList());
+    public static Method getMethod(Class<?> clazz, Class<?> returnType, String... parameterTypeSimpleNames){
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
-        return Stream.concat(
+        Method found = Arrays.stream(clazz.getMethods())
+                .filter(method -> method.getReturnType() == returnType)
+                .filter(it -> getParameterNames.apply(it).equals(typeNames))
+                .findFirst()
+                .orElse(null);
+        return found;
+    }
+
+    private static final Function<Method, List<String>> getParameterNames = method -> Arrays
+            .stream(method.getParameters())
+            .map(Parameter::getType)
+            .map(Class::getSimpleName)
+            .collect(Collectors.toList());
+
+    public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames) {
+        List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
+        Method found = Stream.concat(
                         Arrays.stream(clazz.getDeclaredMethods()),
                         Arrays.stream(clazz.getMethods())
                 )
@@ -105,6 +116,7 @@ public class Reflector {
                 .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
+        return found;
     }
 
     public static <T> T invokeMethod(Method method, Object handle, Object... params) {
@@ -129,9 +141,16 @@ public class Reflector {
      * @param <R>   the type of the method result
      * @return a function that invokes the retrieved cached method for its argument
      */
-    public static <T, U, R> BiFunction<T, U, R> memoiseMethodInvocation(Class<T> clazz, String name) {
-        Method method = getMethod(clazz, name);
-        return (t, u) -> invokeMethod(method, t, u);
+    public static <T, U, R> BiFunction<T, U, R> memoiseMethodInvocation(Class<T> clazz, String name, String... argTypes) {
+        final Method method = getMethod(clazz, name, argTypes);
+        return (t, u) -> {
+            // If they did not want to send any arguments, should be zero-length array
+            // This check is necessary cause of varargs, otherwise we get 1 length array of 0-length array
+            if(u instanceof Object[] && ((Object[]) u).length == 0)
+                return invokeMethod(method, t);
+
+            return invokeMethod(method, t, u);
+        };
     }
 
     public static Field getField(Class<?> clazz, String fieldName) {
@@ -259,4 +278,5 @@ public class Reflector {
     public interface UncheckedReflectionRunnable {
         void run() throws ReflectiveOperationException;
     }
+
 }

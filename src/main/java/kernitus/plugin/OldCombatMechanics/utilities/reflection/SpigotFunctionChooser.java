@@ -16,7 +16,7 @@ import java.util.function.BiFunction;
  * This means that no matter how often the feature branch is invoked, it will never reconsider its choice.
  *
  * @param <T> the type of the entity to apply the function to
- * @param <U> the type of the extra parameter(s). Use {@link Void} if unused, or list of objects if multiple.
+ * @param <U> the type of the extra parameter(s). Use {@link Object} if unused, or list of objects if multiple.
  * @param <R> the return type of the function
  */
 public class SpigotFunctionChooser<T, U, R> {
@@ -61,7 +61,7 @@ public class SpigotFunctionChooser<T, U, R> {
      * Version without extra parameter(s) of {@link #apply(Object, Object)}
      */
     public R apply(T target) {
-        return apply(target, null);
+        return apply(target, (U) new Object[0]);
     }
 
     /**
@@ -106,10 +106,10 @@ public class SpigotFunctionChooser<T, U, R> {
      * @return A new instance of {@link SpigotFunctionChooser}
      */
     public static <T, U, R> SpigotFunctionChooser<T, U, R> apiCompatReflectionCall(ExceptionalFunction<T, U, R> apiCall,
-                                                                                   Class<T> clazz, String name) {
-        return onException(apiCall, apiCall, Reflector.memoiseMethodInvocation(clazz, name));
+                                                                                   Class<T> clazz, String name,
+                                                                                   String... argTypes) {
+        return onException(apiCall, apiCall, Reflector.memoiseMethodInvocation(clazz, name, argTypes));
     }
-
 
     /**
      * Calls the Spigot API method if possible, otherwise uses the provided function as a workaround.

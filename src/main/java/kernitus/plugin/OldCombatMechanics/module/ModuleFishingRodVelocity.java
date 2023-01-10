@@ -29,7 +29,7 @@ public class ModuleFishingRodVelocity extends Module {
     private Random random;
     private boolean hasDifferentGravity;
     // In 1.12- getHook() returns a Fish which extends FishHook
-    private final SpigotFunctionChooser<PlayerFishEvent, Void, FishHook> getHook = SpigotFunctionChooser.apiCompatReflectionCall(
+    private final SpigotFunctionChooser<PlayerFishEvent, Object, FishHook> getHook = SpigotFunctionChooser.apiCompatReflectionCall(
             (e, params) -> e.getHook(),
             PlayerFishEvent.class, "getHook"
     );

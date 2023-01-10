@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -16,13 +17,13 @@ import org.bukkit.potion.PotionEffectType;
 public class DamageUtils {
 
     // Method added in 1.16.4
-    private static final SpigotFunctionChooser<LivingEntity, Void, Boolean> isInWater = SpigotFunctionChooser.apiCompatCall(
+    private static final SpigotFunctionChooser<LivingEntity, Object, Boolean> isInWater = SpigotFunctionChooser.apiCompatCall(
             (le, params) -> le.isInWater(),
             (le, params) -> le.getLocation().getBlock().getType() == Material.WATER
     );
 
     // Method added in 1.17.0
-    private static final SpigotFunctionChooser<LivingEntity, Void, Boolean> isClimbing = SpigotFunctionChooser.apiCompatCall(
+    private static final SpigotFunctionChooser<LivingEntity, Object, Boolean> isClimbing = SpigotFunctionChooser.apiCompatCall(
             (le, params) -> le.isClimbing(),
             (le, params) -> {
                 final Material material = le.getLocation().getBlock().getType();
@@ -31,10 +32,10 @@ public class DamageUtils {
     );
 
     // Method added in 1.16. Default parameter for reflected method is 0.5F
-    public static final SpigotFunctionChooser<HumanEntity, Float, Float> getAttackCooldown =
-            SpigotFunctionChooser.apiCompatReflectionCall(
+    public static final SpigotFunctionChooser<HumanEntity, Object, Float> getAttackCooldown =
+            SpigotFunctionChooser.apiCompatCall(
                     (he, params) -> he.getAttackCooldown(),
-                    HumanEntity.class, "getAttackCooldown" // getAttackStrengthScale in Mojang mappings
+                    (he, params) -> VersionCompatUtils.getAttackCooldown(he)
             );
 
     /**

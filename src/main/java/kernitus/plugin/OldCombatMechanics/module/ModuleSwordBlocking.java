@@ -9,11 +9,10 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -37,22 +36,6 @@ public class ModuleSwordBlocking extends Module {
     private int restoreDelay;
     private boolean blacklist;
     private List<Material> noBlockingItems = new ArrayList<>();
-
-    // Method added in 1.11
-    // Returns whether player has started trying to use an item
-    // We also have to check if said item is a shield
-    private final SpigotFunctionChooser<HumanEntity, Void, Boolean> isHandRaised =
-            SpigotFunctionChooser.apiCompatReflectionCall(
-                    (he, params) -> he.isHandRaised(),
-                    HumanEntity.class, "isHandRaised" // isUsingItem in Mojang mappings
-            );
-
-    // Method added in 1.17
-    private final SpigotFunctionChooser<HumanEntity, Void, ItemStack> getItemInUse =
-            SpigotFunctionChooser.apiCompatReflectionCall(
-                    (he, params) -> he.getItemInUse(),
-                    HumanEntity.class, "getActiveItem" // getUseItem in Mojang mappings
-            );
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
@@ -178,7 +161,7 @@ public class ModuleSwordBlocking extends Module {
 
         tryCancelTask(id);
 
-        // They are still blocking with the shield so postpone restoring
+        // If they are still blocking with the shield postpone restoring
         if (!areItemsStored(id)) return;
 
         if (isPlayerBlocking(p))
@@ -226,9 +209,10 @@ public class ModuleSwordBlocking extends Module {
      * Checks whether player is blocking or they have just begun to and shield is not fully up yet.
      */
     private boolean isPlayerBlocking(Player player) {
-        ItemStack usedItem = getItemInUse.apply(player);
         return player.isBlocking() ||
-                (isHandRaised.apply(player) && usedItem != null && usedItem.getType() == Material.SHIELD);
+                (Reflector.versionIsNewerOrEqualAs(1,11,0) && player.isHandRaised()
+                        && player.getInventory().getItemInOffHand().getType() == Material.SHIELD
+                );
     }
 
     private boolean hasShield(Player p) {
