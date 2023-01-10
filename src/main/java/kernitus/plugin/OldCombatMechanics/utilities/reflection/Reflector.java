@@ -91,12 +91,11 @@ public class Reflector {
 
     public static Method getMethod(Class<?> clazz, Class<?> returnType, String... parameterTypeSimpleNames){
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
-        Method found = Arrays.stream(clazz.getMethods())
+        return Arrays.stream(clazz.getMethods())
                 .filter(method -> method.getReturnType() == returnType)
                 .filter(it -> getParameterNames.apply(it).equals(typeNames))
                 .findFirst()
                 .orElse(null);
-        return found;
     }
 
     private static final Function<Method, List<String>> getParameterNames = method -> Arrays
@@ -107,7 +106,7 @@ public class Reflector {
 
     public static Method getMethod(Class<?> clazz, String name, String... parameterTypeSimpleNames) {
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
-        Method found = Stream.concat(
+        return Stream.concat(
                         Arrays.stream(clazz.getDeclaredMethods()),
                         Arrays.stream(clazz.getMethods())
                 )
@@ -116,7 +115,6 @@ public class Reflector {
                 .peek(it -> it.setAccessible(true))
                 .findFirst()
                 .orElse(null);
-        return found;
     }
 
     public static <T> T invokeMethod(Method method, Object handle, Object... params) {

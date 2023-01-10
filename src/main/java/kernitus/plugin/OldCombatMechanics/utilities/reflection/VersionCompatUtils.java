@@ -15,6 +15,8 @@ import java.lang.reflect.Method;
  * Utilities to help with keeping compatibility across multiple versions of the game.
  */
 public class VersionCompatUtils {
+    private static Method cooldownMethod, absorptionAmountMethod;
+
     /**
      * Returns a Craft object from the given Spigot object, e.g. CraftPlayer from Player.
      * Useful for accessing properties not available through Spigot's API.
@@ -29,13 +31,15 @@ public class VersionCompatUtils {
     public static float getAttackCooldown(HumanEntity he) {
         final Object craftHumanEntity = getCraftHandle(he);
         // public float x(float a), grab by return and param type, cause name changes in each version
-        final Method cooldownMethod = Reflector.getMethod(craftHumanEntity.getClass(), float.class, "float");
+        if (cooldownMethod == null) // cache this to not search for it every single time
+            cooldownMethod = Reflector.getMethod(getCraftHandle(he).getClass(), float.class, "float");
         return Reflector.invokeMethod(cooldownMethod, craftHumanEntity, 0.5F);
     }
 
     public static float getAbsorptionAmount(LivingEntity livingEntity) {
         final Object craftLivingEntity = getCraftHandle(livingEntity);
-        final Method method = Reflector.getMethod(craftLivingEntity.getClass(), "getAbsorptionHearts");
-        return Reflector.invokeMethod(method, craftLivingEntity);
+        if (absorptionAmountMethod == null) // cache this to not search for it every single time
+            absorptionAmountMethod = Reflector.getMethod(craftLivingEntity.getClass(), "getAbsorptionHearts");
+        return Reflector.invokeMethod(absorptionAmountMethod, craftLivingEntity);
     }
 }
