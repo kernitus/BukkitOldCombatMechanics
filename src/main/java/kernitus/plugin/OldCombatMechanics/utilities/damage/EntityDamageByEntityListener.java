@@ -9,8 +9,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
-import org.bukkit.attribute.Attributable;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -105,7 +103,7 @@ public class EntityDamageByEntityListener extends Module {
         // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
         // this implies 40 speed is the minimum to always have full attack strength
         if (damager instanceof HumanEntity) {
-            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);; // i.e. f2
+            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F); // i.e. f2
             debug("Scale by attack delay: " + newDamage + " *= 0.2 + " + cooldown + "^2 * 0.8");
             newDamage *= 0.2F + cooldown * cooldown * 0.8F;
         }
@@ -133,8 +131,7 @@ public class EntityDamageByEntityListener extends Module {
         if (damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
-
-                // This was either set to correct value above in this listener, or we're using the server's value
+                // Last damage was either set to correct value above in this listener, or we're using the server's value
                 final double lastDamage = livingDamagee.getLastDamage();
                 if (newDamage <= lastDamage) {
                     event.setCancelled(true);
@@ -146,14 +143,13 @@ public class EntityDamageByEntityListener extends Module {
                 // We must subtract previous damage from new weapon damage for this attack
                 newDamage -= livingDamagee.getLastDamage();
 
-                debug("Last damage " + lastDamage + " attack: " +
-                        ((Attributable) damager).getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).getValue()
-                        + " armour: " + ((Attributable) damagee).getAttribute(Attribute.GENERIC_ARMOR).getValue()
+                debug("Last damage " + lastDamage + " new damage: " + newLastDamage + " applied: " + newDamage
                         + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
                 );
-            } else {
-                lastDamages.put(damagee.getUniqueId(), newLastDamage);
             }
+            // Update the last damage done, including when it was overdamage.
+            // This means attacks must keep increasing in value during immunity period to keep dealing overdamage.
+            lastDamages.put(damagee.getUniqueId(), newLastDamage);
         }
 
         if (newDamage < 0) {
@@ -170,7 +166,9 @@ public class EntityDamageByEntityListener extends Module {
 
     /**
      * Set entity's last damage to 0 a tick after the event so all overdamage attacks get through.
-     * This is set automatically after the event to the original damage for some reason.
+     * The last damage is overridden by NMS code regardless of what the actual damage is set to via Spigot.
+     * In the above listener we then work out if the overdamage should actually happen or not.
+     * We do it this way as we don't want to miss any.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void afterEntityDamage(EntityDamageByEntityEvent e) {
