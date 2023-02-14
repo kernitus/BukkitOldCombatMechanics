@@ -46,8 +46,9 @@ public class ModuleOldArmourStrength extends Module {
         DefenceUtils.calculateDefenceDamageReduction(damagedEntity, damageModifiers, e.getCause());
 
         // Set the modifiers back to the event
-        damageModifiers.forEach(e::setDamage);
-
-        //damageModifiers.forEach((dm, value) -> debug(dm.name() + ": " + value));
+        damageModifiers.entrySet()
+                .stream()
+                .filter(entry -> e.isApplicable(entry.getKey()))
+                .forEach(entry -> e.setDamage(entry.getKey(), entry.getValue()));
     }
 }
