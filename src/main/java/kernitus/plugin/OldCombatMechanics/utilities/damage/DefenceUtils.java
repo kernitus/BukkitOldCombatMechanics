@@ -128,9 +128,11 @@ public class DefenceUtils {
             }
 
             // Absorption
-            final double absorptionAmount = getAbsorptionAmount.apply(damagedEntity);
-            double absorptionReduction = -Math.min(absorptionAmount, currentDamage);
-            damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
+            if(damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ABSORPTION)) {
+                final double absorptionAmount = getAbsorptionAmount.apply(damagedEntity);
+                double absorptionReduction = -Math.min(absorptionAmount, currentDamage);
+                damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
+            }
         }
 
         /*
