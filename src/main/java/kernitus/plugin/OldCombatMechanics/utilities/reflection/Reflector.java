@@ -117,6 +117,16 @@ public class Reflector {
                 .orElse(null);
     }
 
+    public static Method getMethodByGenericReturnType(TypeVariable<?> typeVar, Class<?> clazz){
+        for (Method method : clazz.getMethods()){
+            if (method.getGenericReturnType().getTypeName().equals(typeVar.getName())){
+                return method;
+            }
+        }
+        throw new RuntimeException("Method with type " + typeVar + " not found");
+    }
+
+
     public static <T> T invokeMethod(Method method, Object handle, Object... params) {
         try {
             @SuppressWarnings("unchecked")
