@@ -254,11 +254,14 @@ public class V17TeamPacket extends TeamPacket {
                     team,
                     (packOptionData & 0b10) != 0
             );
-            Reflector.invokeMethod(
-                    ScoreboardTeamMethods.getInstance().setNameTagVisibility,
-                    team,
-                    OptionalDataClassHelper.parseNameTagVisibility(nameTagVisibility)
-            );
+            Object parsedNameTagVisibility = OptionalDataClassHelper.parseNameTagVisibility(nameTagVisibility);
+            if (parsedNameTagVisibility != null) {
+                Reflector.invokeMethod(
+                        ScoreboardTeamMethods.getInstance().setNameTagVisibility,
+                        team,
+                        parsedNameTagVisibility
+                );
+            }
             Reflector.invokeMethod(
                     ScoreboardTeamMethods.getInstance().setCollisionRule,
                     team,
