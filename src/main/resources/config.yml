@@ -14,12 +14,27 @@
 # This is for modules such as sword blocking and disable-elytra
 interactive: [crafting_table,enchantment_table,anvil,brewing_stand,trapped_chest,chest,bed,boat,fence_gate,dispenser,dropper,furnace,jukebox,ender_chest,stone_button,wood_button,beacon,tripwire_hook,hopper,daylight_detector,daylight_detector_inverted,item_frame,diode,diode_block_off,diode_block_on,redstone_comparator,redstone_comparator_off,redstone_comparator_on,acacia_door,birch_door,dark_oak_door,jungle_door,spruce_door,wood_door,workbench,bed_block,lever,trap_door,burning_furnace,spruce_fence_gate,birch_fence_gate,jungle_fence_gate,dark_oak_fence_gate,acacia_fence_gate,white_shulker_box,orange_shulker_box,magenta_shulker_box,light_blue_shulker_box,yellow_shulker_box,lime_shulker_box,pink_shulker_box,gray_shulker_box,silver_shulker_box,cyan_shulker_box,purple_shulker_box,blue_shulker_box,brown_shulker_box,green_shulker_box,red_shulker_box,black_shulker_box,barrel]
 
+# When this is set to 'true', the 'worlds' section under each module config will represent worlds that the feature is disabled in
+# When this is set to 'false', the 'worlds' section under each module config will represent worlds that the feature is enabled in
 worlds-is-blacklist: false
+
 # To use the per-world feature you must specify a list of worlds in square brackets []
-# If empty, will be enabled in all worlds. Otherwise acts as whitelist / blacklist
-# A few examples:
-# worlds: [world,survival,creative,SkyWars]
-# worlds: [bestWorld]
+# If empty, will be enabled in all worlds.
+# Otherwise, it acts as whitelist / blacklist (as per the global 'worlds-is-blacklist' setting, see above).
+#
+# --- Example #1: this will enable 'disable-sword-seep' exclusively in 'world', 'survival', and 'creative'
+#
+# worlds-is-blacklist: false
+# disable-sword-sweep:
+#   enabled: true
+#   worlds: [world,survival,creative]
+#
+# --- Example #2: this will enable 'disable-sword-seep' in all worlds EXCEPT 'world_nether' & 'world_the_end'
+#
+# worlds-is-blacklist: true
+# disable-sword-sweep:
+#   enabled: true
+#   worlds: [world_nether,world_the_end]
 
 disable-attack-cooldown:
   # This is to disable the attack cooldown
@@ -170,6 +185,7 @@ sword-blocking:
 shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
   enabled: true
+  worlds: []
   # How much damage blocking should reduce
   # Firstly, amount is subtracted, them value is reduced to percentage
   # 1.8 default: (damage - 1) * 50%    1.9 default: 33%   1.11 default: 0%
