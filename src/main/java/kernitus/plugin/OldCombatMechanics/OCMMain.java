@@ -9,7 +9,6 @@ import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
-import kernitus.plugin.OldCombatMechanics.module.Module;
 import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
@@ -60,7 +59,7 @@ public class OCMMain extends JavaPlugin {
         PluginDescriptionFile pdfFile = this.getDescription();
 
         // Setting up config.yml
-        CH.setupConfig();
+        CH.setupConfigIfNotPresent();
 
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);

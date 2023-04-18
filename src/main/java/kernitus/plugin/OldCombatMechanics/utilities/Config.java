@@ -18,10 +18,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class Config {
 
+    private static final String CONFIG_NAME = "config.yml";
     private static OCMMain plugin;
     private static FileConfiguration config;
     private static List<Material> interactive = new ArrayList<>();
@@ -38,10 +40,9 @@ public class Config {
      */
     private static boolean checkConfigVersion() {
         final YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
-                new InputStreamReader(plugin.getResource("config.yml")));
+                new InputStreamReader(Objects.requireNonNull(plugin.getResource(CONFIG_NAME))));
 
         if (config.getInt("config-version") != defaultConfig.getInt("config-version")) {
-            plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
             plugin.upgradeConfig();
             reload();
             return true;
