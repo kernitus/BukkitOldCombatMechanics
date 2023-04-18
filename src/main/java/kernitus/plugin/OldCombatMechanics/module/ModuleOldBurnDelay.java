@@ -13,7 +13,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 /**
  * Bring back old fire burning delay behaviour
  */
-public class ModuleOldBurnDelay extends Module {
+public class ModuleOldBurnDelay extends OCMModule {
 
     private int fireTicks;
 

@@ -27,7 +27,7 @@ import java.util.EnumMap;
 /**
  * Brings back the old fishing-rod knockback.
  */
-public class ModuleFishingKnockback extends Module {
+public class ModuleFishingKnockback extends OCMModule {
 
     private final SpigotFunctionChooser<PlayerFishEvent, Object, Entity> getHookFunction;
     private final SpigotFunctionChooser<ProjectileHitEvent, Object, Entity> getHitEntityFunction;

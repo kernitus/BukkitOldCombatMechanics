@@ -24,7 +24,7 @@ import java.util.Locale;
 /**
  * Restores old tool damage.
  */
-public class ModuleOldToolDamage extends Module {
+public class ModuleOldToolDamage extends OCMModule {
 
     private static final String[] WEAPONS = {"sword", "axe", "pickaxe", "spade", "shovel", "hoe"};
     private boolean oldSharpness;

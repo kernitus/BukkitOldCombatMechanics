@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * A module to disable the new attack sounds.
  */
-public class ModuleAttackSounds extends Module {
+public class ModuleAttackSounds extends OCMModule {
 
     private final SoundListener soundListener;
 

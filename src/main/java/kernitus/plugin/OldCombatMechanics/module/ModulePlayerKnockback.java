@@ -34,7 +34,7 @@ import java.util.WeakHashMap;
  * Reverts knockback formula to 1.8.
  * Also disables netherite knockback resistance.
  */
-public class ModulePlayerKnockback extends Module {
+public class ModulePlayerKnockback extends OCMModule {
 
     private double knockbackHorizontal;
     private double knockbackVertical;

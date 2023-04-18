@@ -20,7 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 /**
  * Makes brewing stands not require fuel.
  */
-public class ModuleOldBrewingStand extends Module {
+public class ModuleOldBrewingStand extends OCMModule {
 
     public ModuleOldBrewingStand(OCMMain plugin) {
         super(plugin, "old-brewing-stand");

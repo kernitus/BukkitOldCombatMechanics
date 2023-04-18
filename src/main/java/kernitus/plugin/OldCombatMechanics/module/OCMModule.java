@@ -19,7 +19,7 @@ import java.util.Locale;
 /**
  * A module providing some specific functionality, e.g. restoring fishing rod knockback.
  */
-public abstract class Module implements Listener {
+public abstract class OCMModule implements Listener {
 
     protected OCMMain plugin;
 
@@ -32,7 +32,7 @@ public abstract class Module implements Listener {
      * @param plugin     the plugin instance
      * @param configName the name of the module in the config
      */
-    protected Module(OCMMain plugin, String configName){
+    protected OCMModule(OCMMain plugin, String configName){
         this.plugin = plugin;
         this.configName = configName;
         this.moduleName = getClass().getSimpleName();

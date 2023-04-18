@@ -20,7 +20,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-public class ModuleAttackFrequency extends Module {
+public class ModuleAttackFrequency extends OCMModule {
 
     private static final int DEFAULT_DELAY = 20;
     private static int playerDelay, mobDelay;

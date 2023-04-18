@@ -26,7 +26,7 @@ import java.util.function.BiPredicate;
 /**
  * Disables usage of the off hand.
  */
-public class ModuleDisableOffHand extends Module {
+public class ModuleDisableOffHand extends OCMModule {
 
     private static final int OFFHAND_SLOT = 40;
     private List<Material> materials = new ArrayList<>();

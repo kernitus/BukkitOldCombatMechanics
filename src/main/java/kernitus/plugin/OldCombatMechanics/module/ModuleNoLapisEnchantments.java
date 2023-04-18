@@ -21,7 +21,7 @@ import org.bukkit.permissions.Permissible;
 /**
  * Allows enchanting without needing lapis.
  */
-public class ModuleNoLapisEnchantments extends Module {
+public class ModuleNoLapisEnchantments extends OCMModule {
 
     private VersionedMaterial lapisLazuli;
 

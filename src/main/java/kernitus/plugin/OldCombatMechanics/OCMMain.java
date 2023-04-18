@@ -92,8 +92,8 @@ public class OCMMain extends JavaPlugin {
                 new SimpleBarChart(
                         "enabled_modules",
                         () -> ModuleLoader.getModules().stream()
-                                .filter(Module::isEnabled)
-                                .collect(Collectors.toMap(Module::toString, module -> 1))
+                                .filter(OCMModule::isEnabled)
+                                .collect(Collectors.toMap(OCMModule::toString, module -> 1))
                 )
         );
 

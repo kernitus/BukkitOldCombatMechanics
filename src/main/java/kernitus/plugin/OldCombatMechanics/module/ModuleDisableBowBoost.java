@@ -16,7 +16,7 @@ import org.bukkit.projectiles.ProjectileSource;
 /**
  * Prevents players from propelling themselves forward by shooting themselves.
  */
-public class ModuleDisableBowBoost extends Module {
+public class ModuleDisableBowBoost extends OCMModule {
 
     public ModuleDisableBowBoost(OCMMain plugin) {
         super(plugin, "disable-bow-boost");

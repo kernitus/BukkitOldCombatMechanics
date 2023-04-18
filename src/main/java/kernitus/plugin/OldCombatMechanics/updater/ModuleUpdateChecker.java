@@ -7,7 +7,7 @@ package kernitus.plugin.OldCombatMechanics.updater;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.UpdateChecker;
-import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,7 +16,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.io.File;
 
-public class ModuleUpdateChecker extends Module {
+public class ModuleUpdateChecker extends OCMModule {
     private final File pluginFile;
 
     public ModuleUpdateChecker(OCMMain plugin, File pluginFile){

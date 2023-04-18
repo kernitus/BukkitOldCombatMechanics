@@ -25,7 +25,7 @@ import java.util.WeakHashMap;
  * Establishes custom health regeneration rules.
  * Default values based on 1.8 from <a href="https://minecraft.gamepedia.com/Hunger?oldid=948685">wiki</a>
  */
-public class ModulePlayerRegen extends Module {
+public class ModulePlayerRegen extends OCMModule {
 
     private final Map<UUID, Long> healTimes = new WeakHashMap<>();
     private boolean spartanInstalled;

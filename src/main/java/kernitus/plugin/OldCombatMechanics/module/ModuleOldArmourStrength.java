@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * It is based on <a href="https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187">this revision</a>
  * of the minecraft wiki.
  */
-public class ModuleOldArmourStrength extends Module {
+public class ModuleOldArmourStrength extends OCMModule {
 // Defence order is armour defence points -> resistance -> armour enchants -> absorption
 
     public ModuleOldArmourStrength(OCMMain plugin) {

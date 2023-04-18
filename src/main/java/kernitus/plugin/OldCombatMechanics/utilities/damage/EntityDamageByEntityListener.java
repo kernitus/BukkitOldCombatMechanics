@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-public class EntityDamageByEntityListener extends Module {
+public class EntityDamageByEntityListener extends OCMModule {
 
     private static EntityDamageByEntityListener INSTANCE;
     private boolean enabled;

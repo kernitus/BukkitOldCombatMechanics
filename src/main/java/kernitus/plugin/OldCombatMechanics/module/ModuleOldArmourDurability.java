@@ -20,7 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ModuleOldArmourDurability extends Module {
+public class ModuleOldArmourDurability extends OCMModule {
 
     private final Map<UUID, List<ItemStack>> explosionDamaged = new WeakHashMap<>();
 

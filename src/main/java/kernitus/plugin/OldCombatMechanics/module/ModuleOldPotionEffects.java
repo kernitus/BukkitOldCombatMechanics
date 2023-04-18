@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Allows configurable potion effect durations.
  */
-public class ModuleOldPotionEffects extends Module {
+public class ModuleOldPotionEffects extends OCMModule {
     private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
             // This only includes 1.9 potions, others are added later for compatibility
             // Instant potions have no duration that can be modified

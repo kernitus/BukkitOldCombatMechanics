@@ -34,7 +34,7 @@ import java.util.Locale;
 /**
  * A module to disable the sweep attack.
  */
-public class ModuleSwordSweep extends Module {
+public class ModuleSwordSweep extends OCMModule {
 
     private final List<Location> sweepLocations = new ArrayList<>();
     private final ParticleListener particleListener;

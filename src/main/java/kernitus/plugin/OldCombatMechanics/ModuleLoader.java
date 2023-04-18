@@ -5,7 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
-import kernitus.plugin.OldCombatMechanics.module.Module;
+import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.EventRegistry;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 
@@ -15,7 +15,7 @@ import java.util.List;
 public class ModuleLoader {
 
     private static EventRegistry eventRegistry;
-    private static List<Module> modules = new ArrayList<>();
+    private static List<OCMModule> modules = new ArrayList<>();
 
     public static void initialise(OCMMain plugin) {
         ModuleLoader.eventRegistry = new EventRegistry(plugin);
@@ -25,7 +25,7 @@ public class ModuleLoader {
         modules.forEach(module -> setState(module, module.isEnabled()));
     }
 
-    private static void setState(Module module, boolean state) {
+    private static void setState(OCMModule module, boolean state) {
         if (state) {
             if (eventRegistry.registerListener(module)) {
                 Messenger.debug("Enabled " + module.getClass().getSimpleName());
@@ -37,11 +37,11 @@ public class ModuleLoader {
         }
     }
 
-    public static void addModule(Module module) {
+    public static void addModule(OCMModule module) {
         modules.add(module);
     }
 
-    public static List<Module> getModules() {
+    public static List<OCMModule> getModules() {
         return modules;
     }
 }

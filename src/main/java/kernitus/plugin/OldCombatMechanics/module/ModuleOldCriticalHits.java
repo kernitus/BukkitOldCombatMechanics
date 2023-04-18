@@ -9,7 +9,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import org.bukkit.event.EventHandler;
 
-public class ModuleOldCriticalHits extends Module {
+public class ModuleOldCriticalHits extends OCMModule {
 
     public ModuleOldCriticalHits(OCMMain plugin) {
         super(plugin, "old-critical-hits");

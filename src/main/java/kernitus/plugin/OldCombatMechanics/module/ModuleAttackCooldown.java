@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * Disables the attack cooldown.
  */
-public class ModuleAttackCooldown extends Module {
+public class ModuleAttackCooldown extends OCMModule {
 
     public ModuleAttackCooldown(OCMMain plugin) {
         super(plugin, "disable-attack-cooldown");

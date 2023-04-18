@@ -17,7 +17,7 @@ import org.bukkit.util.Vector;
 /**
  * Prevents the noise introduced when shooting with a bow to make arrows go straight.
  */
-public class ModuleDisableProjectileRandomness extends Module {
+public class ModuleDisableProjectileRandomness extends OCMModule {
 
     private static double EPSILON;
     // Method was added in 1.14.0

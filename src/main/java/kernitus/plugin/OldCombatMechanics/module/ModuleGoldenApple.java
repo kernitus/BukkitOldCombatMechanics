@@ -33,7 +33,7 @@ import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegi
 /**
  * Customise the golden apple effects.
  */
-public class ModuleGoldenApple extends Module {
+public class ModuleGoldenApple extends OCMModule {
 
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;

@@ -27,7 +27,7 @@ import org.bukkit.inventory.PlayerInventory;
 /**
  * Prevents players from equipping an elytra.
  */
-public class ModuleDisableElytra extends Module {
+public class ModuleDisableElytra extends OCMModule {
 
     private static final int CHEST_SLOT = 38;
     private static final int OFFHAND_SLOT = 40;

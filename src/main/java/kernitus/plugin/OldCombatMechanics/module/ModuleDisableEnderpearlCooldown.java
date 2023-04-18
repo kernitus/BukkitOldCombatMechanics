@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Allows you to throw enderpearls as often as you like, not only after a cooldown.
  */
-public class ModuleDisableEnderpearlCooldown extends Module {
+public class ModuleDisableEnderpearlCooldown extends OCMModule {
 
     /**
      * Contains players that threw an ender pearl. As the handler calls launchProjectile,

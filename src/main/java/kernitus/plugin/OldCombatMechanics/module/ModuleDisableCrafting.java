@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Makes the specified materials uncraftable.
  */
-public class ModuleDisableCrafting extends Module {
+public class ModuleDisableCrafting extends OCMModule {
 
     private List<Material> denied;
     private String message;

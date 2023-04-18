@@ -27,7 +27,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
-public class ModuleSwordBlocking extends Module {
+public class ModuleSwordBlocking extends OCMModule {
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here for reliability

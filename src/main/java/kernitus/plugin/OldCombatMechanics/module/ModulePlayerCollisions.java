@@ -30,7 +30,7 @@ import java.util.WeakHashMap;
 /**
  * Disables player collisions.
  */
-public class ModulePlayerCollisions extends Module {
+public class ModulePlayerCollisions extends OCMModule {
 
     private final CollisionPacketListener collisionPacketListener;
     private final Map<Player, TeamPacket> playerTeamMap;

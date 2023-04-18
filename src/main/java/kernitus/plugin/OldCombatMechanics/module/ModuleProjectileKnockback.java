@@ -17,7 +17,7 @@ import java.util.Locale;
 /**
  * Adds knockback to eggs, snowballs and ender pearls.
  */
-public class ModuleProjectileKnockback extends Module {
+public class ModuleProjectileKnockback extends OCMModule {
 
     public ModuleProjectileKnockback(OCMMain plugin) {
         super(plugin, "projectile-knockback");

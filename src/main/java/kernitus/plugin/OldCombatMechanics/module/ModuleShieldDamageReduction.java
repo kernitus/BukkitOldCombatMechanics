@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 /**
  * Allows customising the shield damage reduction percentages.
  */
-public class ModuleShieldDamageReduction extends Module {
+public class ModuleShieldDamageReduction extends OCMModule {
 
     private int genericDamageReductionAmount, genericDamageReductionPercentage, projectileDamageReductionAmount, projectileDamageReductionPercentage;
     private final Map<UUID, List<ItemStack>> fullyBlocked = new WeakHashMap<>();

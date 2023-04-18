@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * A module to control chorus fruits.
  */
-public class ModuleChorusFruit extends Module {
+public class ModuleChorusFruit extends OCMModule {
 
     public ModuleChorusFruit(OCMMain plugin) {
         super(plugin, "chorus-fruit");
