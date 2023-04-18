@@ -43,12 +43,13 @@ public class VersionChecker {
         // Group 5 = beta_version
 
         //This parses it to MAJOR.MINOR.PATCH.beta_version
-        //MAJOR & MINOR required, anything else is set to zero if omitted
+        //MAJOR & MINOR required, anything else is set to maximum value if omitted
+        // This is necessary otherwise somebody with a beta version will not see update to release version
         return new int[]{
                 Integer.parseInt(m.group(1)),
                 Integer.parseInt(m.group(2)),
-                m.group(3).isEmpty() ? 0 : Integer.parseInt(m.group(3)),
-                m.group(4) == null ? 0 : (m.group(5).isEmpty() ? 1 : Integer.parseInt(m.group(5)))
+                m.group(3).isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(m.group(3)),
+                m.group(4) == null ? Integer.MAX_VALUE : (m.group(5).isEmpty() ? 1 : Integer.parseInt(m.group(5)))
         };
     }
 }
