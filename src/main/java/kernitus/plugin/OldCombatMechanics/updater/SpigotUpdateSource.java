@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class SpigotUpdateSource implements UpdateSource {
-    private SpigetUpdateChecker updater;
+    private final SpigetUpdateChecker updater;
 
     public SpigotUpdateSource(){
         updater = new SpigetUpdateChecker();

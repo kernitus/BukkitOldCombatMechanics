@@ -26,6 +26,7 @@ public class SpigetUpdateChecker {
     private static final String USER_AGENT = "OldCombatMechanics";
     private static final String VERSIONS_URL = "https://api.spiget.org/v2/resources/19510/versions?size=15000";
     private static final String UPDATES_URL = "https://api.spiget.org/v2/resources/19510/updates?size=15000";
+    private static final String UPDATE_URL = "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update=";
     private String latestVersion = "";
 
     /**
@@ -33,19 +34,17 @@ public class SpigetUpdateChecker {
      *
      * @return true if an update is available
      */
-    public boolean isUpdateAvailable(){
-        try{
-            List<VersionPojo> versions = getVersions(VERSIONS_URL);
+    public boolean isUpdateAvailable() {
+        try {
+            final List<VersionPojo> versions = getVersions(VERSIONS_URL);
 
-            if(versions.isEmpty()){
-                return false;
-            }
+            if (versions.isEmpty()) return false;
 
-            VersionPojo currentVersion = versions.get(versions.size() - 1);
+            final VersionPojo currentVersion = versions.get(versions.size() - 1);
             latestVersion = currentVersion.getName();
 
             return VersionChecker.shouldUpdate(latestVersion);
-        } catch(Exception e){
+        } catch (Exception e) {
             return false;
         }
     }
@@ -53,21 +52,18 @@ public class SpigetUpdateChecker {
     /**
      * Returns the URL for the update.
      *
-     * @return the URL for the update
+     * @return URL for the update
      */
-    public String getUpdateURL(){
-        try{
-            List<VersionPojo> versions = getVersions(UPDATES_URL);
+    public String getUpdateURL() {
+        try {
+            final List<VersionPojo> versions = getVersions(UPDATES_URL);
 
-            if(versions.isEmpty()){
-                return "Error getting update URL";
-            }
+            if (versions.isEmpty()) return "Error getting update URL";
 
-            VersionPojo currentVersion = versions.get(versions.size() - 1);
+            final VersionPojo currentVersion = versions.get(versions.size() - 1);
 
-            String updateId = currentVersion.getId();
-            return "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update=" + updateId;
-        } catch(Exception e){
+            return UPDATE_URL + currentVersion.getId();
+        } catch (Exception e) {
             return "Error getting update URL";
         }
     }
@@ -77,7 +73,7 @@ public class SpigetUpdateChecker {
      *
      * @return the latest found version
      */
-    public String getLatestVersion(){
+    public String getLatestVersion() {
         return latestVersion;
     }
 
@@ -87,33 +83,32 @@ public class SpigetUpdateChecker {
      * @param urlString the url to read the json from
      * @return a list with all found versions
      */
-    private List<VersionPojo> getVersions(String urlString){
-        try{
-            InputStreamReader reader = fetchPage(urlString);
+    private List<VersionPojo> getVersions(String urlString) {
+        try {
+            final InputStreamReader reader = fetchPage(urlString);
 
-            Type pojoType = new TypeToken<List<VersionPojo>>() {
-            }.getType();
+            final Type pojoType = new TypeToken<List<VersionPojo>>() {}.getType();
 
-            List<VersionPojo> parsedVersions = new Gson().fromJson(reader, pojoType);
+            final List<VersionPojo> parsedVersions = new Gson().fromJson(reader, pojoType);
 
-            if(parsedVersions == null){
+            if (parsedVersions == null) {
                 System.err.println("JSON was at EOF when checking for spiget updates!");
                 return Collections.emptyList();
             }
 
             return parsedVersions;
-        } catch(JsonSyntaxException | IOException e){
+        } catch (JsonSyntaxException | IOException e) {
             e.printStackTrace();
             return Collections.emptyList();
         }
     }
 
-    private InputStreamReader fetchPage(String urlString) throws IOException{
-        URL url = new URL(urlString);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    private InputStreamReader fetchPage(String urlString) throws IOException {
+        final URL url = new URL(urlString);
+        final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.addRequestProperty("User-Agent", USER_AGENT);
 
-        InputStream inputStream = connection.getInputStream();
+        final InputStream inputStream = connection.getInputStream();
         return new InputStreamReader(inputStream);
     }
 
@@ -132,7 +127,7 @@ public class SpigetUpdateChecker {
          *
          * @return the name of this version
          */
-        String getName(){
+        String getName() {
             return name;
         }
 
@@ -141,7 +136,7 @@ public class SpigetUpdateChecker {
          *
          * @return the id of this version
          */
-        String getId(){
+        String getId() {
             return id;
         }
     }

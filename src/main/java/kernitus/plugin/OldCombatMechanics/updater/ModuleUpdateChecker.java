@@ -17,24 +17,22 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import java.io.File;
 
 public class ModuleUpdateChecker extends Module {
-    private static Module INSTANCE;
-    private File pluginFile;
+    private final File pluginFile;
 
     public ModuleUpdateChecker(OCMMain plugin, File pluginFile){
         super(plugin, "update-checker");
-        INSTANCE = this;
         this.pluginFile = pluginFile;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerLogin(PlayerJoinEvent e){
-        final Player p = e.getPlayer();
-        if(p.hasPermission("OldCombatMechanics.notify")){
+        final Player player = e.getPlayer();
+        if(player.hasPermission("OldCombatMechanics.notify")){
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-                UpdateChecker updateChecker = new UpdateChecker(plugin, pluginFile);
+                final UpdateChecker updateChecker = new UpdateChecker(plugin, pluginFile);
 
                 // Checking for updates
-                updateChecker.sendUpdateMessages(p);
+                updateChecker.sendUpdateMessages(player);
             }, 20L);
         }
     }
