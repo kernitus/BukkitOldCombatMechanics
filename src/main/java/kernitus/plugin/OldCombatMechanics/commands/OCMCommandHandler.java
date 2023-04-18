@@ -31,7 +31,7 @@ public class OCMCommandHandler implements CommandExecutor {
     private final OCMMain plugin;
     private final File pluginFile;
 
-    enum Subcommand {reload, toggle, test, enable, disable}
+    enum Subcommand {reload, toggle, enable, disable}
 
     public OCMCommandHandler(OCMMain instance, File pluginFile) {
         this.plugin = instance;
@@ -130,21 +130,30 @@ public class OCMCommandHandler implements CommandExecutor {
             help(plugin, sender);
         } else {
             try {
-                final Subcommand subcommand = Subcommand.valueOf(args[0].toLowerCase(Locale.ROOT));
-                if (checkPermissions(sender, subcommand, true)) {
-                    switch (subcommand) {
-                        case reload: reload(sender);
-                            break;
-                        case toggle: toggle(plugin, sender, args);
-                            break;
-                        //case test: test(plugin, sender);
-                        //    break;
-                        case enable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.NEW_PVP);
-                            break;
-                        case disable: wideToggle(sender, args, ModuleAttackCooldown.PVPMode.OLD_PVP);
-                            break;
-                        default: throw new CommandNotRecognisedException();
+                try {
+                    final Subcommand subcommand = Subcommand.valueOf(args[0].toLowerCase(Locale.ROOT));
+                    if (checkPermissions(sender, subcommand, true)) {
+                        switch (subcommand) {
+                            case reload:
+                                reload(sender);
+                                break;
+                            case toggle:
+                                toggle(plugin, sender, args);
+                                break;
+                            //case test: test(plugin, sender);
+                            //    break;
+                            case enable:
+                                wideToggle(sender, args, ModuleAttackCooldown.PVPMode.NEW_PVP);
+                                break;
+                            case disable:
+                                wideToggle(sender, args, ModuleAttackCooldown.PVPMode.OLD_PVP);
+                                break;
+                            default:
+                                throw new CommandNotRecognisedException();
+                        }
                     }
+                } catch (IllegalArgumentException e) {
+                    throw new CommandNotRecognisedException();
                 }
             } catch (CommandNotRecognisedException e) {
                 Messenger.sendNormalMessage(sender, "Subcommand not recognised!");
@@ -153,7 +162,8 @@ public class OCMCommandHandler implements CommandExecutor {
         return true;
     }
 
-    private static class CommandNotRecognisedException extends IllegalArgumentException{}
+    private static class CommandNotRecognisedException extends IllegalArgumentException {
+    }
 
     static boolean checkPermissions(CommandSender sender, Subcommand subcommand) {
         return checkPermissions(sender, subcommand, false);
