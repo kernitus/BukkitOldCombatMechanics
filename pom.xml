@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>kernitus.plugin.OldCombatMechanics</groupId>
     <artifactId>OldCombatMechanics</artifactId>
-    <version>2.0.0BETA</version>
+    <version>1.12.0BETA</version>
     <name>OldCombatMechanics</name>
     <description>Implements pre-1.9 combat-related mechanics</description>
     <url>https://github.com/kernitus/BukkitOldCombatMechanics</url>
@@ -45,26 +45,26 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.19.3-R0.1-SNAPSHOT</version>
+            <version>1.19.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.2</version>
             <scope>compile</scope>
         </dependency>
         <!--Shaded in by bukkit -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.86.Final</version>
+            <version>4.1.91.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
-            <version>2.11.1</version>
+            <version>2.11.3</version>
             <scope>provided</scope>
         </dependency>
 
