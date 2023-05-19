@@ -14,6 +14,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
@@ -57,12 +58,19 @@ public class ModuleOldToolDamage extends OCMModule {
         // If damage was not what we expected, ignore it because it's probably a custom weapon or from another plugin
         final double oldBaseDamage = event.getBaseDamage();
         final double expectedBaseDamage = NewWeaponDamage.getDamage(weaponMaterial);
-        // We check difference as calculation inaccuracies can make it not match
-        if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
-            debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
-            return;
+        if (damager instanceof HumanEntity) {
+            if (DamageUtils.getAttackCooldown(((HumanEntity) damager)) != null) {
+                // We check difference as calculation inaccuracies can make it not match
+                if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
+                    debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
+                    return;
+                }
+            } else {
+                debug("Could not obtain cooldown, assuming weapon was not custom");
+                // This is done for better compatibility with <1.16, but breaks compat with some other plugins
+                // Tradeoff is necessary due to method not being available in 1.15 and below
+            }
         }
-
         final double newWeaponBaseDamage = WeaponDamages.getDamage(weaponMaterial);
         if (newWeaponBaseDamage <= 0) {
             debug("Unknown tool type: " + weaponMaterial, damager);

@@ -99,9 +99,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         // Scale enchantment damage by attack cooldown
         if (damager instanceof HumanEntity) {
-            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
-            mobEnchantmentsDamage *= cooldown;
-            sharpnessDamage *= cooldown;
+            final Float cooldown = DamageUtils.getAttackCooldown((HumanEntity) damager);
+            if(cooldown != null) {
+                mobEnchantmentsDamage *= cooldown;
+                sharpnessDamage *= cooldown;
+            } else {
+                debug("Could not obtain cooldown, assuming attack was at full strength");
+            }
         }
 
         debug(livingDamager, "Mob: " + mobEnchantmentsDamage + " Sharpness: " + sharpnessDamage);
@@ -126,8 +130,14 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         // Un-scale the damage by the attack strength
         if (damager instanceof HumanEntity) {
-            final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
-            tempDamage /= 0.2F + cooldown * cooldown * 0.8F;
+            final Float cooldown = DamageUtils.getAttackCooldown((HumanEntity) damager);
+            if(cooldown != null) {
+                tempDamage /= 0.2F + cooldown * cooldown * 0.8F;
+                debug(livingDamager, "Cooldown: " + cooldown);
+                debug(livingDamager, "Unscaled cooldown damage: " + tempDamage);
+            } else {
+                debug("Could not obtain cooldown, assuming attack was at full strength");
+            }
         }
 
         // amplifier 0 = Strength I    amplifier 1 = Strength II
