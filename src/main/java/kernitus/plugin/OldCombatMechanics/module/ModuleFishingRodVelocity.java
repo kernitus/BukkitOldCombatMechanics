@@ -47,7 +47,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
         hasDifferentGravity = Reflector.versionIsNewerOrEqualAs(1, 14, 0);
     }
 
-    @EventHandler
+    @EventHandler (ignoreCancelled = true)
     public void onFishEvent(PlayerFishEvent event) {
         final FishHook fishHook = getHook.apply(event);
 

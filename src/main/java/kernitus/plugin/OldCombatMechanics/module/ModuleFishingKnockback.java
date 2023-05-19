@@ -55,7 +55,7 @@ public class ModuleFishingKnockback extends OCMModule {
         knockbackNonPlayerEntities = isSettingEnabled("knockbackNonPlayerEntities");
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onRodLand(ProjectileHitEvent e) {
         final Entity hookEntity = e.getEntity();
         final World world = hookEntity.getWorld();
@@ -142,7 +142,7 @@ public class ModuleFishingKnockback extends OCMModule {
     /**
      * This is to cancel dragging the entity closer when you reel in
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e) {
         if (e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
 
