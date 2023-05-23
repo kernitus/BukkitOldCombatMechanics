@@ -6,7 +6,7 @@
 
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 
 import java.lang.reflect.Method;
@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
  * Utilities to help with keeping compatibility across multiple versions of the game.
  */
 public class VersionCompatUtils {
-    private static Method absorptionAmountMethod;
+    private static Method cooldownMethod, absorptionAmountMethod;
 
     /**
      * Returns a Craft object from the given Spigot object, e.g. CraftPlayer from Player.
@@ -28,14 +28,18 @@ public class VersionCompatUtils {
         return Reflector.invokeMethod(Reflector.getMethod(spigotObject.getClass(), "getHandle"), spigotObject);
     }
 
-    // Added in 1.15
+    public static float getAttackCooldown(HumanEntity he) {
+        final Object craftHumanEntity = getCraftHandle(he);
+        // public float x(float a), grab by return and param type, cause name changes in each version
+        if (cooldownMethod == null) // cache this to not search for it every single time
+            cooldownMethod = Reflector.getMethod(getCraftHandle(he).getClass(), float.class, "float");
+        return Reflector.invokeMethod(cooldownMethod, craftHumanEntity, 0.5F);
+    }
+
     public static float getAbsorptionAmount(LivingEntity livingEntity) {
-        // getAbsorptionAmount is from Damageable interface
         final Object craftLivingEntity = getCraftHandle(livingEntity);
-        if (absorptionAmountMethod == null) { // cache this to not search for it every single time
+        if (absorptionAmountMethod == null) // cache this to not search for it every single time
             absorptionAmountMethod = Reflector.getMethod(craftLivingEntity.getClass(), "getAbsorptionHearts");
-            Messenger.debug("Obtained absorption amount method name: " + absorptionAmountMethod.getName());
-        }
         return Reflector.invokeMethod(absorptionAmountMethod, craftLivingEntity);
     }
 }

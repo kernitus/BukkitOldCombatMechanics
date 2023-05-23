@@ -5,8 +5,8 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -31,25 +31,12 @@ public class DamageUtils {
             }
     );
 
-    /**
-     * Gets attack cooldown from player, if possible.
-     * Method added in 1.16.
-     * @param humanEntity The player to get the attack cooldown from
-     * @return The attack cooldown, between 0 and 1. Null if method not present in this Spigot version.
-     */
-    public static Float getAttackCooldown(HumanEntity humanEntity) {
-        // In versions below 1.16, the attack cooldown is immediately reset during the attack processing,
-        // before the EntityDamageEvent is called. This means even using reflection we cannot recover the cooldown
-        // from just before the attack.
-        float attackCooldown;
-        try {
-            attackCooldown = humanEntity.getAttackCooldown();
-        } catch (NoSuchMethodError e) {
-            Messenger.debug("getAttackCooldown method not found, using alternative behaviour...");
-            return null;
-        }
-        return attackCooldown;
-    }
+    // Method added in 1.16. Default parameter for reflected method is 0.5F
+    public static final SpigotFunctionChooser<HumanEntity, Object, Float> getAttackCooldown =
+            SpigotFunctionChooser.apiCompatCall(
+                    (he, params) -> he.getAttackCooldown(),
+                    (he, params) -> VersionCompatUtils.getAttackCooldown(he)
+            );
 
     /**
      * Get sharpness damage multiplier for 1.9
@@ -92,8 +79,6 @@ public class DamageUtils {
     }
 
     public static boolean isCriticalHit1_9(Player player) {
-        final Float attackCooldown = getAttackCooldown(player);
-        // If we cannot get the attack cooldown, assume the critical hit happened
-        return isCriticalHit1_8(player) && (attackCooldown == null || attackCooldown > 0.9F) && !player.isSprinting();
+        return isCriticalHit1_8(player) && getAttackCooldown.apply(player) > 0.9F && !player.isSprinting();
     }
 }
