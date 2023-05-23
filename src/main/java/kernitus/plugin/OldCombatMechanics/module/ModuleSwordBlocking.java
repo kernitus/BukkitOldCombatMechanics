@@ -6,13 +6,11 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.RunnableSeries;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,6 +19,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -50,43 +49,41 @@ public class ModuleSwordBlocking extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRightClick(PlayerInteractEvent e) {
-        if (e.getItem() == null) return;
-
         final Action action = e.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        final Block block = e.getClickedBlock();
-        if (action == Action.RIGHT_CLICK_BLOCK && block != null &&
-                Config.getInteractiveBlocks().contains(block.getType()))
-            return;
+        // If they clicked on an interactive block, the 2nd event with the offhand won't fire
+        // This is also the case if the main hand item was used, e.g. a bow
+        if (e.getHand() == EquipmentSlot.HAND) return;
 
-        final Player p = e.getPlayer();
-        final World world = p.getWorld();
+        final Player player = e.getPlayer();
+        final PlayerInventory inventory = player.getInventory();
+        // The offhand event won't have the sword as the item unless it's in the offhand
+        final ItemStack mainHandItem = inventory.getItemInMainHand();
+        final ItemStack offHandItem = inventory.getItemInOffHand();
+        final boolean isHoldingSword = isHoldingSword(mainHandItem.getType()) || isHoldingSword(offHandItem.getType());
+
+        final World world = player.getWorld();
 
         if (!isEnabled(world)) return;
 
         if (module().getBoolean("use-permission") &&
-                !p.hasPermission("oldcombatmechanics.swordblock")) return;
+                !player.hasPermission("oldcombatmechanics.swordblock")) return;
 
-        final UUID id = p.getUniqueId();
+        final UUID id = player.getUniqueId();
 
-        if (!isPlayerBlocking(p)) {
-            final ItemStack item = e.getItem();
+        if (!isPlayerBlocking(player)) {
+            if (!isHoldingSword || hasShield(player)) return;
 
-            if (!isHoldingSword(item.getType()) || hasShield(p)) return;
-
-            final PlayerInventory inv = p.getInventory();
-
-            final boolean isNoBlockingItem = noBlockingItems.contains(inv.getItemInOffHand().getType());
+            final boolean isNoBlockingItem = noBlockingItems.contains(inventory.getItemInOffHand().getType());
 
             if (blacklist && isNoBlockingItem || !blacklist && !isNoBlockingItem) return;
 
-            storedOffhandItems.put(id, inv.getItemInOffHand());
+            storedOffhandItems.put(id, inventory.getItemInOffHand());
 
-            inv.setItemInOffHand(SHIELD);
+            inventory.setItemInOffHand(SHIELD);
         }
-
-        scheduleRestore(p);
+        scheduleRestore(player);
     }
 
     @EventHandler

@@ -9,14 +9,12 @@ import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -26,7 +24,6 @@ public class Config {
     private static final String CONFIG_NAME = "config.yml";
     private static OCMMain plugin;
     private static FileConfiguration config;
-    private static List<Material> interactive = new ArrayList<>();
 
     public static void initialise(OCMMain plugin) {
         Config.plugin = plugin;
@@ -67,9 +64,6 @@ public class Config {
         Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
 
         WeaponDamages.initialise(plugin); //Reload weapon damages from config
-
-        // Load all interactive blocks (used by sword blocking and elytra modules)
-        reloadInteractiveBlocks();
 
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
         final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
@@ -134,14 +128,6 @@ public class Config {
     public static void setModuleSetting(String moduleName, String moduleSettingName, boolean value) {
         config.set(moduleName + "." + moduleSettingName, value);
         plugin.saveConfig();
-    }
-
-    private static void reloadInteractiveBlocks() {
-        interactive = ConfigUtils.loadMaterialList(config, "interactive");
-    }
-
-    public static List<Material> getInteractiveBlocks() {
-        return interactive;
     }
 
     /**
