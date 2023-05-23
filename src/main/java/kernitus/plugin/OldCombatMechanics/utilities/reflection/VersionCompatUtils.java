@@ -10,12 +10,15 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Utilities to help with keeping compatibility across multiple versions of the game.
  */
 public class VersionCompatUtils {
-    private static Method cooldownMethod, absorptionAmountMethod;
+    private static Method cooldownMethod;
+    private static final Map<Class<?>, Method> absorptionAmountMethodCache = new WeakHashMap<>();
 
     /**
      * Returns a Craft object from the given Spigot object, e.g. CraftPlayer from Player.
@@ -38,8 +41,25 @@ public class VersionCompatUtils {
 
     public static float getAbsorptionAmount(LivingEntity livingEntity) {
         final Object craftLivingEntity = getCraftHandle(livingEntity);
-        if (absorptionAmountMethod == null) // cache this to not search for it every single time
+        final Class<?> leClass = craftLivingEntity.getClass();
+        final Method absorptionAmountMethod;
+        // Cache method for each subclass of LivingEntity to not search for it every single time
+        // Cannot cache for LE itself because method is obtained from each subclass
+        if(!absorptionAmountMethodCache.containsKey(leClass)){
             absorptionAmountMethod = Reflector.getMethod(craftLivingEntity.getClass(), "getAbsorptionHearts");
+            absorptionAmountMethodCache.put(leClass, absorptionAmountMethod);
+        } else {
+            absorptionAmountMethod = absorptionAmountMethodCache.get(leClass);
+        }
+
+        // Give useful debugging information in case the method cannot be applied
+        if (!absorptionAmountMethod.getDeclaringClass().isAssignableFrom(craftLivingEntity.getClass())) {
+            throw new IllegalArgumentException(
+                    "Cannot call method '" + absorptionAmountMethod + "' of class '" + absorptionAmountMethod.getDeclaringClass().getName()
+                            + "' using object '" + craftLivingEntity + "' of class '" + craftLivingEntity.getClass().getName() + "' because"
+                            + " object '" + craftLivingEntity + "' is not an instance of '" + absorptionAmountMethod.getDeclaringClass().getName() + "'");
+        }
+
         return Reflector.invokeMethod(absorptionAmountMethod, craftLivingEntity);
     }
 }
