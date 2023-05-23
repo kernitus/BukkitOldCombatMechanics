@@ -6,7 +6,6 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -35,8 +34,17 @@ public class DamageUtils {
     public static final SpigotFunctionChooser<HumanEntity, Object, Float> getAttackCooldown =
             SpigotFunctionChooser.apiCompatCall(
                     (he, params) -> he.getAttackCooldown(),
-                    (he, params) -> VersionCompatUtils.getAttackCooldown(he)
+                    (he, params) -> getAttackCooldown(he)
             );
+
+    /**
+     * Gets last stored attack cooldown. Used when method is not available and we are keeping track of value ourselves.
+     * @param humanEntity The player to get the attack cooldown from
+     * @return The attack cooldown, as a value between 0 and 1
+     */
+    private static float getAttackCooldown(HumanEntity humanEntity){
+        return AttackCooldownTracker.getLastCooldown(humanEntity.getUniqueId());
+    }
 
     /**
      * Get sharpness damage multiplier for 1.9
