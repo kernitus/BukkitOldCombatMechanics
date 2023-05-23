@@ -10,7 +10,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,6 +20,7 @@ import org.bukkit.event.player.PlayerStatisticIncrementEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -112,8 +112,8 @@ public class ModuleGoldenApple extends OCMModule {
 
         if (!isEnabled(p.getWorld())) return;
 
-        ItemStack item = e.getItem();
-        final Material consumedMaterial = item.getType();
+        final ItemStack originalItem = e.getItem();
+        final Material consumedMaterial = originalItem.getType();
 
         if (consumedMaterial != Material.GOLDEN_APPLE &&
                 !ENCHANTED_GOLDEN_APPLE.isSame(e.getItem())) return;
@@ -124,7 +124,7 @@ public class ModuleGoldenApple extends OCMModule {
         lastEaten.putIfAbsent(uuid, new LastEaten());
 
         // If on cooldown send appropriate cooldown message
-        if (cooldown.isOnCooldown(item, lastEaten.get(uuid))) {
+        if (cooldown.isOnCooldown(originalItem, lastEaten.get(uuid))) {
             final LastEaten le = lastEaten.get(uuid);
 
             final long baseCooldown;
@@ -154,45 +154,42 @@ public class ModuleGoldenApple extends OCMModule {
             return;
         }
 
-        lastEaten.get(p.getUniqueId()).setForItem(item);
+        lastEaten.get(p.getUniqueId()).setForItem(originalItem);
 
         if (!isSettingEnabled("old-potion-effects")) return;
-        e.setCancelled(true);
 
-        final ItemStack originalItem = e.getItem();
         final PlayerInventory inv = p.getInventory();
 
         // Hunger level
         final int foodLevel = Math.min(p.getFoodLevel() + 4, 20);
         p.setFoodLevel(foodLevel);
 
-        if (p.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
-
         // Gapple and Napple saturation is 9.6
-        float saturation = p.getSaturation() + 9.6f;
-        // "The total saturation never gets higher than the total number of hunger points"
-        if (saturation > foodLevel)
-            saturation = foodLevel;
+        p.setSaturation(Math.min(p.getSaturation() + 9.6f, foodLevel));
 
-        p.setSaturation(saturation);
+        e.setItem(makePotionItem(ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ? enchantedGoldenAppleEffects : goldenAppleEffects));
 
-        if (ENCHANTED_GOLDEN_APPLE.isSame(item)) applyEffects(p, enchantedGoldenAppleEffects);
-        else applyEffects(p, goldenAppleEffects);
-
-        if (item.getAmount() <= 0) item = null;
-
+        // Set the right amount of apples in the player's hand after the event has completed
         final ItemStack mainHand = inv.getItemInMainHand();
         final ItemStack offHand = inv.getItemInOffHand();
 
-        if (mainHand.equals(originalItem)) inv.setItemInMainHand(item);
-        else if (offHand.equals(originalItem)) inv.setItemInOffHand(item);
-        else if (mainHand.getType() == Material.GOLDEN_APPLE || ENCHANTED_GOLDEN_APPLE.isSame(mainHand))
-            inv.setItemInMainHand(item);
-        // The bug occurs here, so we must check which hand has the apples
-        // A player can't eat food in the offhand if there is any in the main hand
-        // On this principle if there are gapples in the mainhand it must be that one, else it's the offhand
+        final ItemStack newItem;
+        if (p.getGameMode() == GameMode.CREATIVE) {
+            newItem = originalItem.clone();
+        } else {
+            final ItemStack temp = originalItem.clone();
+            temp.setAmount(temp.getAmount() - 1);
+            newItem = temp.getAmount() > 0 ? temp : null;
+        }
 
-        // Below here are fixes for statistics & advancements, given we are cancelling the event
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (mainHand.equals(originalItem)) inv.setItemInMainHand(newItem);
+            else if (offHand.equals(originalItem)) inv.setItemInOffHand(newItem);
+            else if (mainHand.getType() == Material.GOLDEN_APPLE || ENCHANTED_GOLDEN_APPLE.isSame(mainHand))
+                inv.setItemInMainHand(newItem);
+        }, 1L);
+
+        // Below here are fixes for statistics & advancements, given we are changing the item consumed
         final int initialValue = p.getStatistic(Statistic.USE_ITEM, consumedMaterial);
 
         // We need to increment player statistics for having eaten a gapple
@@ -213,6 +210,20 @@ public class ModuleGoldenApple extends OCMModule {
         } // Pre 1.12 does not have advancements
     }
 
+    /**
+     * Creates a potion item with the desired effects
+     *
+     * @param effects A list of effects to apply to the potion
+     * @return The potion, with the given effects
+     */
+    private ItemStack makePotionItem(List<PotionEffect> effects) {
+        final ItemStack potion = new ItemStack(Material.POTION);
+        final PotionMeta potionmeta = (PotionMeta) potion.getItemMeta();
+        effects.forEach(effect -> potionmeta.addCustomEffect(effect, true));
+        potion.setItemMeta(potionmeta);
+        return potion;
+    }
+
     private List<PotionEffect> getPotionEffects(String apple) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
 
@@ -228,23 +239,6 @@ public class ModuleGoldenApple extends OCMModule {
             appleEffects.add(fx);
         }
         return appleEffects;
-    }
-
-    private void applyEffects(LivingEntity target, List<PotionEffect> effects) {
-        for (PotionEffect effect : effects) {
-            OptionalInt maxActiveAmplifier = target.getActivePotionEffects().stream()
-                    .filter(potionEffect -> potionEffect.getType() == effect.getType())
-                    .mapToInt(PotionEffect::getAmplifier)
-                    .max();
-
-            // the active one is stronger, so do not apply the weaker one
-            if (maxActiveAmplifier.orElse(-1) > effect.getAmplifier()) continue;
-
-            // remove it, as the active one is weaker
-            maxActiveAmplifier.ifPresent(ignored -> target.removePotionEffect(effect.getType()));
-
-            target.addPotionEffect(effect);
-        }
     }
 
     @EventHandler
