@@ -571,7 +571,17 @@ support:
 
 # This is to toggle the update checker
 update-checker:
+  # Whether to check for updates and notify players with the oldcombatmechanics.notify permission
   enabled: true
+  # Whether to automatically download an update of the plugin
+  # The update is applied on the next restart/reload of the server
+  # Auto update is disabled if Spigot version is below 1.18.1 and force-below-1-18-1-config-upgrade is false
+  # This is to prevent accidentally resetting the config
+  auto-update: true
+
+# Whether to force config upgrade even in Spigot versions below 1.18.1
+# This is not advised, as all the comments would be removed
+force-below-1-18-1-config-upgrade: false
 
 # This enables command argument completion when pressing tab
 command-completer:
@@ -582,4 +592,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 56
+config-version: 57

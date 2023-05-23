@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -26,8 +27,10 @@ public class OCMConfigHandler {
         final File backup = getFile("config-backup.yml");
         if (backup.exists()) backup.delete();
 
-        // YAML comment methods not available in lower versions
-        if (Reflector.versionIsNewerOrEqualAs(1, 18, 1)) {
+        // Keeping YAML comments not available in lower versions
+        if (Reflector.versionIsNewerOrEqualAs(1, 18, 1) ||
+                Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
+        ) {
             plugin.getLogger().warning("Config version does not match, upgrading old config");
             // Load values from old config
             final YamlConfiguration oldConfig = getConfig(CONFIG_NAME);
@@ -38,7 +41,7 @@ public class OCMConfigHandler {
             for (String key : defaultConfig.getKeys(true)) {
                 if (key.equals("config-version") || !oldConfig.contains(key)) continue;
 
-                if(defaultConfig.isConfigurationSection(key)) continue; // Only get leaf keys
+                if (defaultConfig.isConfigurationSection(key)) continue; // Only get leaf keys
 
                 defaultConfig.set(key, oldConfig.get(key));
             }

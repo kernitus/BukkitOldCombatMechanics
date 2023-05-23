@@ -6,7 +6,6 @@
 package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.UpdateChecker;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -39,7 +38,6 @@ public class OCMCommandHandler implements CommandExecutor {
     }
 
     private void help(OCMMain plugin, CommandSender sender) {
-        final FileConfiguration config = plugin.getConfig();
         final PluginDescriptionFile description = plugin.getDescription();
 
         Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
@@ -54,8 +52,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
         Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
 
-        // Check for updates
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> new UpdateChecker(plugin, pluginFile).sendUpdateMessages(sender));
+
     }
 
     private void reload(CommandSender sender) {

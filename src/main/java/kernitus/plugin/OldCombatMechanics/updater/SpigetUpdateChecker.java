@@ -8,13 +8,15 @@ package kernitus.plugin.OldCombatMechanics.updater;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class SpigetUpdateChecker {
     private static final String VERSIONS_URL = "https://api.spiget.org/v2/resources/19510/versions?size=15000";
     private static final String UPDATES_URL = "https://api.spiget.org/v2/resources/19510/updates?size=15000";
     private static final String UPDATE_URL = "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update=";
+    private static final String DOWNLOAD_URL = "https://api.spiget.org/v2/resources/19510/download";
     private String latestVersion = "";
 
     /**
@@ -45,6 +48,7 @@ public class SpigetUpdateChecker {
 
             return VersionChecker.shouldUpdate(latestVersion);
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -78,6 +82,39 @@ public class SpigetUpdateChecker {
     }
 
     /**
+     * Downloads the latest version of the plugin to the specified location.
+     *
+     * @param updateFolderFile The location of the server's plugin update folder
+     * @param fileName         The name of the JAR file to be updated
+     * @return Whether the file was downloaded successfully or not
+     */
+    public boolean downloadLatestVersion(File updateFolderFile, String fileName) {
+        updateFolderFile.mkdirs(); // Create all parent directories if required
+        File downloadFile = new File(updateFolderFile, fileName);
+
+        try {
+            final HttpURLConnection connection = (HttpURLConnection) new URL(DOWNLOAD_URL).openConnection();
+            connection.addRequestProperty("User-Agent", USER_AGENT);
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(downloadFile);
+                 final ReadableByteChannel readableByteChannel = Channels.newChannel(connection.getInputStream());
+                 final FileChannel fileChannel = fileOutputStream.getChannel();
+            ) {
+                // Use NIO for better performance
+                fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+            } catch (Exception e) {
+                downloadFile.delete(); // Remove downloaded file is something went wrong
+                throw new RuntimeException(e); // Rethrow exception to catch in outer scope
+            }
+        } catch (IOException e) {
+            Messenger.warn("Tried to download plugin update, but an error occurred");
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Returns all versions.
      *
      * @param urlString the url to read the json from
@@ -87,7 +124,8 @@ public class SpigetUpdateChecker {
         try {
             final InputStreamReader reader = fetchPage(urlString);
 
-            final Type pojoType = new TypeToken<List<VersionPojo>>() {}.getType();
+            final Type pojoType = new TypeToken<List<VersionPojo>>() {
+            }.getType();
 
             final List<VersionPojo> parsedVersions = new Gson().fromJson(reader, pojoType);
 

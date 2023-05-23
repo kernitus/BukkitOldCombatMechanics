@@ -11,29 +11,19 @@ import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.io.File;
-
 public class ModuleUpdateChecker extends OCMModule {
-    private final File pluginFile;
 
-    public ModuleUpdateChecker(OCMMain plugin, File pluginFile){
+    public ModuleUpdateChecker(OCMMain plugin) {
         super(plugin, "update-checker");
-        this.pluginFile = pluginFile;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerLogin(PlayerJoinEvent e){
+    @EventHandler
+    public void onPlayerLogin(PlayerJoinEvent e) {
         final Player player = e.getPlayer();
-        if(player.hasPermission("OldCombatMechanics.notify")){
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-                final UpdateChecker updateChecker = new UpdateChecker(plugin, pluginFile);
-
-                // Checking for updates
-                updateChecker.sendUpdateMessages(player);
-            }, 20L);
-        }
+        if (player.hasPermission("OldCombatMechanics.notify"))
+            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin,
+                    () -> new UpdateChecker(plugin).performUpdate(), 20L);
     }
 }

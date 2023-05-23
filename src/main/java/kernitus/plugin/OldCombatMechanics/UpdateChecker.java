@@ -5,35 +5,64 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
-import kernitus.plugin.OldCombatMechanics.updater.SpigotUpdateSource;
-import kernitus.plugin.OldCombatMechanics.updater.UpdateSource;
+import kernitus.plugin.OldCombatMechanics.updater.SpigetUpdateChecker;
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.command.CommandSender;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.io.File;
-import java.util.Objects;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class UpdateChecker {
-    private UpdateSource updateSource;
+    private final SpigetUpdateChecker updater;
+    private final boolean autoDownload;
+    private final OCMMain plugin;
 
-    public UpdateChecker(OCMMain plugin, File pluginFile) {
-        this.updateSource = new SpigotUpdateSource();
+    public UpdateChecker(OCMMain plugin) {
+        updater = new SpigetUpdateChecker();
+        this.plugin = plugin;
+        // We don't really want to auto update if the config is not going to be upgraded automatically
+        autoDownload = Config.moduleSettingEnabled("update-checker", "auto-update") &&
+                (Reflector.versionIsNewerOrEqualAs(1, 18, 1) ||
+                        Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
+                );
     }
 
-    public void sendUpdateMessages(CommandSender sender) {
-        if (sender instanceof Player) {
-            sendUpdateMessages(((Player) sender)::sendMessage);
-        } else {
-            sendUpdateMessages(Messenger::info);
+
+    public void performUpdate() {
+        performUpdate(null);
+    }
+
+    public void performUpdate(@Nullable Player player) {
+        if (player != null)
+            update(player::sendMessage);
+        else
+            update(Messenger::info);
+    }
+
+    private void update(Consumer<String> target) {
+        final List<String> messages = new ArrayList<>();
+        if (updater.isUpdateAvailable()) {
+            messages.add(ChatColor.BLUE + "An update for OldCombatMechanics to version " + updater.getLatestVersion() + " is available!");
+            if (!autoDownload) {
+                messages.add(ChatColor.BLUE + "Click here to download it: " + ChatColor.GRAY + updater.getUpdateURL());
+            } else {
+                messages.add(ChatColor.BLUE + "Downloading update: " + ChatColor.GRAY + updater.getUpdateURL());
+                try {
+                    if (updater.downloadLatestVersion(plugin.getServer().getUpdateFolderFile(), plugin.getFile().getName()))
+                        messages.add(ChatColor.GREEN + "Update downloaded. Restart or reload server to enable new version.");
+                    else throw new RuntimeException();
+                } catch (Exception e) {
+                    messages.add(ChatColor.RED + "Error occurred while downloading update! Check console for more details");
+                    e.printStackTrace();
+                }
+            }
         }
-    }
 
-    private void sendUpdateMessages(Consumer<String> target) {//Sends messages to a player
-        updateSource.getUpdateMessages().stream()
-                .filter(Objects::nonNull)
-                .filter(message -> !message.isEmpty())
-                .forEach(target);
+        messages.forEach(target);
     }
 }

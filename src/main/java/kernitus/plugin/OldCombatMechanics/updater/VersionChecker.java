@@ -13,11 +13,7 @@ import java.util.regex.Pattern;
 public class VersionChecker {
 
     public static boolean shouldUpdate(String remoteVersion) {
-        return shouldUpdate(remoteVersion, OCMMain.getVersion());
-    }
-
-    public static boolean shouldUpdate(String remoteVersion, String localVersion) {
-        return isUpdateOut(remoteVersion, localVersion);
+        return isUpdateOut(remoteVersion, OCMMain.getVersion());
     }
 
     private static boolean isUpdateOut(String remoteVersion, String localVersion) {
@@ -42,9 +38,9 @@ public class VersionChecker {
         // Group 4 = beta
         // Group 5 = beta_version
 
-        //This parses it to MAJOR.MINOR.PATCH.beta_version
-        //MAJOR & MINOR required, anything else is set to maximum value if omitted
-        // This is necessary otherwise somebody with a beta version will not see update to release version
+        //This parses it to MAJOR.MINOR.PATCH-beta_version
+        //MAJOR & MINOR required, anything else is set to maximum value if omitted - necessary otherwise
+        // somebody with a beta version will not see update to release version
         return new int[]{
                 Integer.parseInt(m.group(1)),
                 Integer.parseInt(m.group(2)),
