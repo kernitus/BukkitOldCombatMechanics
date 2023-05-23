@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
@@ -43,7 +44,12 @@ public class DamageUtils {
      * @return The attack cooldown, as a value between 0 and 1
      */
     private static float getAttackCooldown(HumanEntity humanEntity){
-        return AttackCooldownTracker.getLastCooldown(humanEntity.getUniqueId());
+        final Float cooldown = AttackCooldownTracker.getLastCooldown(humanEntity.getUniqueId());
+        if(cooldown == null){
+            Messenger.debug("Last attack cooldown null for " + humanEntity.getName() + ", assuming full attack strength");
+            return 1L;
+        }
+        return cooldown;
     }
 
     /**
