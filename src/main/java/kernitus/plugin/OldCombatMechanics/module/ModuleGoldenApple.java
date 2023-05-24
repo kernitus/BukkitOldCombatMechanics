@@ -178,6 +178,8 @@ public class ModuleGoldenApple extends OCMModule {
                 player.addPotionEffects(previousEffects);
                 // Add new custom effects from eating the apple
                 applyEffects(player, newEffects);
+            } else {
+                Messenger.warn("Could not find previous potion effects for player " + player.getName());
             }
         }, 1L);
     }
