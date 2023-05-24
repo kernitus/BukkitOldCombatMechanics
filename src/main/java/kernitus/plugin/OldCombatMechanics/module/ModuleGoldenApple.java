@@ -176,6 +176,7 @@ public class ModuleGoldenApple extends OCMModule {
                 // Add previous potion effects from before eating the apple
                 // This overrides existing effects, including downgrading amplifier if necessary
                 player.addPotionEffects(previousEffects);
+                previousPotionEffects.remove(uuid);
                 // Add new custom effects from eating the apple
                 applyEffects(player, newEffects);
             } else {
