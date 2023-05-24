@@ -5,6 +5,8 @@ import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +31,11 @@ public class AttackCooldownTracker extends OCMModule {
                         VersionCompatUtils.getAttackCooldown(player)
                 ));
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, cooldownTask, 0, 1L);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event){
+        lastCooldown.remove(event.getPlayer().getUniqueId());
     }
 
     public static Float getLastCooldown(UUID uuid) {
