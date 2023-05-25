@@ -27,7 +27,6 @@ import org.bukkit.potion.PotionEffectType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
@@ -167,14 +166,11 @@ public class ModuleGoldenApple extends OCMModule {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (previousPotionEffects.containsKey(uuid)) {
                 final Collection<PotionEffect> previousEffects = previousPotionEffects.get(uuid);
-                final Set<PotionEffectType> previousTypes = previousEffects.stream().map(PotionEffect::getType).collect(Collectors.toSet());
-                // Remove extraneous potion effects, in case we don't want some of the default effects
+                // Remove all current potion effects
                 player.getActivePotionEffects().stream()
                         .map(PotionEffect::getType)
-                        .filter(type -> !previousTypes.contains(type))
                         .forEach(player::removePotionEffect);
                 // Add previous potion effects from before eating the apple
-                // This overrides existing effects, including downgrading amplifier if necessary
                 player.addPotionEffects(previousEffects);
                 previousPotionEffects.remove(uuid);
                 // Add new custom effects from eating the apple
@@ -221,7 +217,9 @@ public class ModuleGoldenApple extends OCMModule {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
-        if (lastEaten != null) lastEaten.remove(e.getPlayer().getUniqueId());
+        final UUID uuid = e.getPlayer().getUniqueId();
+        if (lastEaten != null) lastEaten.remove(uuid);
+        if (previousPotionEffects != null) previousPotionEffects.remove(uuid);
     }
 
     private static class LastEaten {
