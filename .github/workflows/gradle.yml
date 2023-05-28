@@ -15,17 +15,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up JDK 8
       uses: actions/setup-java@v3
       with:
         java-version: '8'
         distribution: 'adopt'
+
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
         gradle-version: wrapper
+
     - name: Run Gradle
-      uses: ./gradlew clean shadowJar
+      run: ./gradlew clean shadowJar
+
     - name: Archive jar file
       uses: actions/upload-artifact@v3
       with:
