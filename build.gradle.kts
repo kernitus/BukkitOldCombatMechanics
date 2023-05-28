@@ -72,7 +72,7 @@ tasks.named("assemble").configure {
 }
 
 tasks.named<ShadowJar>("shadowJar") {
-    archiveBaseName.set("OldCombatMechanics")
+    archiveFileName.set("${project.name}.jar")
     dependencies {
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
     }
