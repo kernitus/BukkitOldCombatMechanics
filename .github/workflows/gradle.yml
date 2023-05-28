@@ -28,7 +28,7 @@ jobs:
         gradle-version: wrapper
 
     - name: Run Gradle
-      run: ./gradlew clean shadowJar
+      run: ./gradlew clean build
 
     - name: Archive jar file
       uses: actions/upload-artifact@v3
