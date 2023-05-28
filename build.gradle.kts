@@ -24,7 +24,7 @@ repositories {
     // Netty library from Minecraft
     maven("https://libraries.minecraft.net/")
     // Local copy of Spartan API
-    maven("file:///home/yee/IdeaProjects/BukkitOldCombatMechanics/internal-file-repo")
+    maven("file://${projectDir}/internal-file-repo")
 }
 
 dependencies {
