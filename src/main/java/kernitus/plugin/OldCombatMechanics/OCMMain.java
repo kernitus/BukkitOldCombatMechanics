@@ -132,10 +132,13 @@ public class OCMMain extends JavaPlugin {
         // Logging to console the enabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
-
-        if(Config.moduleEnabled("update-checker"))
+        if (Config.moduleEnabled("update-checker"))
             Bukkit.getScheduler().runTaskLaterAsynchronously(this,
                     () -> new UpdateChecker(this).performUpdate(), 20L);
+
+        new SimplePie("auto_update_pie",
+                () -> Config.moduleSettingEnabled("update-checker",
+                        "auto-update") ? "enabled" : "disabled");
     }
 
     @Override
