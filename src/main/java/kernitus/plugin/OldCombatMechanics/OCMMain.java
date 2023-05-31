@@ -136,9 +136,10 @@ public class OCMMain extends JavaPlugin {
             Bukkit.getScheduler().runTaskLaterAsynchronously(this,
                     () -> new UpdateChecker(this).performUpdate(), 20L);
 
-        new SimplePie("auto_update_pie",
+        metrics.addCustomChart(new SimplePie("auto_update_pie",
                 () -> Config.moduleSettingEnabled("update-checker",
-                        "auto-update") ? "enabled" : "disabled");
+                        "auto-update") ? "enabled" : "disabled"));
+
     }
 
     @Override
