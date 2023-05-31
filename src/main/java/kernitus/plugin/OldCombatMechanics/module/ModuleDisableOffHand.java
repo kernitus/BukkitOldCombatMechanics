@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -55,17 +56,29 @@ public class ModuleDisableOffHand extends OCMModule {
         try {
             if (clickType == ClickType.SWAP_OFFHAND) {
                 e.setResult(Event.Result.DENY);
-                e.setCancelled(true);
                 return;
             }
         } catch (NoSuchFieldError ignored) {
         } // For versions below 1.16
 
-        if (e.getInventory().getType() != InventoryType.CRAFTING || e.getSlot() != OFFHAND_SLOT) return;
+        final Inventory clickedInventory = e.getClickedInventory();
+        if (clickedInventory == null) return;
+        final InventoryType inventoryType = clickedInventory.getType();
+        // If they're in their own inventory, and not chests etc.
+        if (inventoryType != InventoryType.PLAYER) return;
 
-        if (clickType == ClickType.NUMBER_KEY || shouldWeCancel(e.getCursor())) {
+        // Prevent shift-clicking a shield into the offhand item slot
+        final ItemStack currentItem = e.getCurrentItem();
+        if (currentItem != null && currentItem.getType() == Material.SHIELD && shouldWeCancel(currentItem) && e.getSlot() != OFFHAND_SLOT && e.isShiftClick()) {
             e.setResult(Event.Result.DENY);
-            e.setCancelled(true);
+        }
+
+        if (e.getSlot() == OFFHAND_SLOT &&
+                // Let allowed items be placed into offhand slot with number keys (hotbar swap)
+                ((clickType == ClickType.NUMBER_KEY && shouldWeCancel(clickedInventory.getItem(e.getHotbarButton())))
+                        || shouldWeCancel(e.getCursor())) // Deny placing not allowed items into offhand slot
+        ) {
+            e.setResult(Event.Result.DENY);
         }
     }
 
@@ -77,7 +90,6 @@ public class ModuleDisableOffHand extends OCMModule {
 
         if (shouldWeCancel(e.getOldCursor())) {
             e.setResult(Event.Result.DENY);
-            e.setCancelled(true);
         }
     }
 

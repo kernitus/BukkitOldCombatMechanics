@@ -60,8 +60,7 @@ public class ModuleDisableElytra extends OCMModule {
                     || (slot == CHEST_SLOT && isElytra(cursor))
 
                     // If they shift-clicked an elytra into the chest slot
-                    || (isElytra(currentItem) && slot != CHEST_SLOT &&
-                    (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT))
+                    || (isElytra(currentItem) && slot != CHEST_SLOT && e.isShiftClick())
 
                     // If they used F to swap an elytra from the offhand slot into the chest slot
                     || (clickType == ClickType.SWAP_OFFHAND && slot == CHEST_SLOT && isElytra(inv.getItem(OFFHAND_SLOT)))
