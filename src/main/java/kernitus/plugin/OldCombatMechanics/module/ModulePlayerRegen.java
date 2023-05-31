@@ -36,10 +36,8 @@ public class ModulePlayerRegen extends OCMModule {
         initSpartan();
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onRegen(EntityRegainHealthEvent e) {
-        if (e.isCancelled()) return; // In case some other plugin cancelled the event
-
         if (e.getEntityType() != EntityType.PLAYER
                 || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
             return;

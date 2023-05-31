@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
+import com.google.common.collect.ImmutableSet;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
@@ -35,11 +36,17 @@ import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegi
  */
 public class ModuleGoldenApple extends OCMModule {
 
+    // Default apple effects
+    // Gapple: absorption I, regen II
+    private static final Set<PotionEffectType> gappleEffects = ImmutableSet.of(PotionEffectType.ABSORPTION,
+            PotionEffectType.REGENERATION);
+    // Napple: absorption IV, regen II, fire resistance I, resistance I
+    private static final Set<PotionEffectType> nappleEffects = ImmutableSet.of(PotionEffectType.ABSORPTION,
+            PotionEffectType.REGENERATION, PotionEffectType.FIRE_RESISTANCE, PotionEffectType.DAMAGE_RESISTANCE);
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
 
     private Map<UUID, LastEaten> lastEaten;
-    private Map<UUID, Collection<PotionEffect>> previousPotionEffects;
     private Cooldown cooldown;
 
     private String normalCooldownMessage, enchantedCooldownMessage;
@@ -60,7 +67,6 @@ public class ModuleGoldenApple extends OCMModule {
                 module().getBoolean("cooldown.is-shared")
         );
         lastEaten = new WeakHashMap<>();
-        previousPotionEffects = new WeakHashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("napple");
         goldenAppleEffects = getPotionEffects("gapple");
@@ -158,26 +164,23 @@ public class ModuleGoldenApple extends OCMModule {
         if (!isSettingEnabled("old-potion-effects")) return;
 
         // Save player's current potion effects
-        previousPotionEffects.put(uuid, player.getActivePotionEffects());
+        final Collection<PotionEffect> previousPotionEffects = player.getActivePotionEffects();
 
         final List<PotionEffect> newEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ?
                 enchantedGoldenAppleEffects : goldenAppleEffects;
+        final Set<PotionEffectType> defaultEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ?
+                nappleEffects : gappleEffects;
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (previousPotionEffects.containsKey(uuid)) {
-                final Collection<PotionEffect> previousEffects = previousPotionEffects.get(uuid);
-                // Remove all current potion effects
-                player.getActivePotionEffects().stream()
-                        .map(PotionEffect::getType)
-                        .forEach(player::removePotionEffect);
-                // Add previous potion effects from before eating the apple
-                player.addPotionEffects(previousEffects);
-                previousPotionEffects.remove(uuid);
-                // Add new custom effects from eating the apple
-                applyEffects(player, newEffects);
-            } else {
-                Messenger.warn("Could not find previous potion effects for player " + player.getName());
-            }
+            // Remove all potion effects the apple added
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .filter(defaultEffects::contains)
+                    .forEach(player::removePotionEffect);
+            // Add previous potion effects from before eating the apple
+            player.addPotionEffects(previousPotionEffects);
+            // Add new custom effects from eating the apple
+            applyEffects(player, newEffects);
         }, 1L);
     }
 
@@ -219,7 +222,6 @@ public class ModuleGoldenApple extends OCMModule {
     public void onPlayerQuit(PlayerQuitEvent e) {
         final UUID uuid = e.getPlayer().getUniqueId();
         if (lastEaten != null) lastEaten.remove(uuid);
-        if (previousPotionEffects != null) previousPotionEffects.remove(uuid);
     }
 
     private static class LastEaten {
