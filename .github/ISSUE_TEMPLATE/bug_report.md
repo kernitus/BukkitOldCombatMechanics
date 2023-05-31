@@ -15,20 +15,26 @@ assignees: ''
 * Server Version: 
 
 <!-- Version of OldCombatMechanics, e.g. 1.7.2 or dev build #46 -->
-<!-- Please don't say 'latest', that is meaningless when a new version is released -->
+<!-- Please don't say 'latest', that is meaningless as new versions are frequently released -->
 * OldCombatMechanics version: 
 
 <!-- Console log from the server, please paste it within the backticks (i.e. ```) -->
 * Server Log File: 
+<details><summary>Server Log</summary>
+  
 ``` console
 
 ```
+</details>
 
 <!-- OldCombatMechanics config.yml, please paste it within the backticks (i.e. ```) -->
 * OldCombatMechanics config file: 
+<details><summary>config.yml</summary>
+  
 ``` yaml
 
 ```
+</details>
 
 <!-- If the issue is damage related, please enable debug mode in the config and provide screenshots or log of the output-->
 
