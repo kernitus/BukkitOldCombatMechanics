@@ -7,7 +7,6 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
@@ -161,7 +160,7 @@ public class EntityDamageByEntityListener extends OCMModule {
 
         // Set damage, this should scale effects in the 1.9 way in case some of our modules are disabled
         event.setDamage(newDamage);
-        Messenger.debug("SET NEW DAMAGE TO: " + newDamage);
+        debug("Set final damage to: " + newDamage);
     }
 
     /**

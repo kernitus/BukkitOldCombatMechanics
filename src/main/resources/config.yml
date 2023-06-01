@@ -184,8 +184,8 @@ shield-damage-reduction:
   enabled: true
   worlds: []
   # How much damage blocking should reduce
-  # Firstly, amount is subtracted, them value is reduced to percentage
-  # 1.8 default: (damage - 1) * 50%    1.9 default: 33%   1.11 default: 0%
+  # Firstly, amount is subtracted, then value is multiplied by percentage
+  # 1.8: (damage - 1) * 50%    1.9: damage * 33%   1.11: damage * 0%
   # Damage reduction = (damage - damageReductionAmount) * damageReductionPercentage / 100
   generalDamageReductionAmount: 1
   generalDamageReductionPercentage: 50
