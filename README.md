@@ -51,6 +51,7 @@ A performant Bukkit/Spigot plugin to revert combat-related mechanics to pre-1.9 
 - Replicate 1.8 entity knockback
 - Replicate and configure 1.8 critical hits
 - Per-user pvp mode toggle
+- Compatible with Spartan anticheat
 
 ## Installation
 To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
