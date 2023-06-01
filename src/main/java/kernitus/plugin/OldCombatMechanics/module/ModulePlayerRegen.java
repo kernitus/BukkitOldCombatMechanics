@@ -7,7 +7,8 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
-import me.vagdedes.spartan.system.Enums;
+import me.vagdedes.spartan.api.API;
+import me.vagdedes.spartan.system.Enums.HackType;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EntityType;
@@ -36,7 +37,7 @@ public class ModulePlayerRegen extends OCMModule {
         initSpartan();
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onRegen(EntityRegainHealthEvent e) {
         if (e.getEntityType() != EntityType.PLAYER
                 || e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
@@ -94,8 +95,7 @@ public class ModulePlayerRegen extends OCMModule {
     }
 
     private void disableSpartanRegenCheck(Player player) {
-        final int ticksToCancel = plugin.getConfig().getInt("support.spartan-cancel-ticks", 1);
-        me.vagdedes.spartan.api.API.cancelCheck(player, Enums.HackType.FastHeal, ticksToCancel);
+        API.cancelCheck(player, HackType.FastHeal, 1);
     }
 
     private void initSpartan() {

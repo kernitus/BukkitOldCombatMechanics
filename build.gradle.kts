@@ -23,8 +23,8 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/")
     // Netty library from Minecraft
     maven("https://libraries.minecraft.net/")
-    // Local copy of Spartan API
-    maven("file://${projectDir}/internal-file-repo")
+    // Spartan API
+    maven("https://repo.crazycrew.us/api")
 }
 
 dependencies {
@@ -34,7 +34,7 @@ dependencies {
     compileOnly("io.netty:netty-all:4.1.93.Final")
     compileOnly("me.clip:placeholderapi:2.11.3")
     // Spartan API
-    compileOnly("me.vagdedes.spartan:SpartanAPI:200")
+    compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"

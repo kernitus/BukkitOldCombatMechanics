@@ -556,12 +556,6 @@ old-critical-hits:
   allow-sprinting: true
 
 # ########################
-# SUPPORT SETTINGS BELOW #
-# ########################
-support:
-  spartan-cancel-ticks: 1
-
-# ########################
 # SPECIAL SETTINGS BELOW #
 # ########################
 
