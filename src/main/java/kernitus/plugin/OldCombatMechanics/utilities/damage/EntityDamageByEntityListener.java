@@ -122,11 +122,32 @@ public class EntityDamageByEntityListener extends OCMModule {
         newDamage += enchantmentDamage;
         debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);
 
-        // Overdamage due to immunity
-        // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable.
-        // According to NMS, the last damage should actually be base tool + strength + crit, before overdamage
-        final double newLastDamage = newDamage;
+        debug("New Damage: " + newDamage, damager);
 
+        // Set damage, this should scale effects in the 1.9 way in case some of our modules are disabled
+        event.setDamage(newDamage);
+        debug("Set final damage to: " + newDamage);
+    }
+
+    /**
+     * Work out if attack was during immunity period, after all plugins have done their thing.
+     * If it was, reduce damage accordingly (if overdamage) or cancel (if immune and new damage too low).
+     * In either case, store attack damage as the new last attack damage, which includes other plugins' modifications.
+     * Then, set entity's last damage to 0 a tick after the event so all overdamage attacks get through.
+     * The last damage is overridden by NMS code regardless of what the actual damage is set to via Spigot.
+     * Finally, the lowest priority listener will set the last damage back to the correct value for other plugins to use.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void afterEntityDamage(EntityDamageByEntityEvent event) {
+        final Entity damager = event.getDamager();
+        final Entity damagee = event.getEntity();
+
+        // Get the attack damage after all plugins have done their thing
+        final double newLastDamage = event.getDamage();
+        double newDamage = newLastDamage;
+
+        // Overdamage due to immunity
+        // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable
         if (damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
@@ -149,37 +170,20 @@ public class EntityDamageByEntityListener extends OCMModule {
             // Update the last damage done, including when it was overdamage.
             // This means attacks must keep increasing in value during immunity period to keep dealing overdamage.
             lastDamages.put(damagee.getUniqueId(), newLastDamage);
-        }
 
-        if (newDamage < 0) {
-            debug("Damage was " + newDamage + " setting to 0", damager);
-            newDamage = 0;
-        }
-
-        debug("New Damage: " + newDamage, damager);
-
-        // Set damage, this should scale effects in the 1.9 way in case some of our modules are disabled
-        event.setDamage(newDamage);
-        debug("Set final damage to: " + newDamage);
-    }
-
-    /**
-     * Set entity's last damage to 0 a tick after the event so all overdamage attacks get through.
-     * The last damage is overridden by NMS code regardless of what the actual damage is set to via Spigot.
-     * In the above listener we then work out if the overdamage should actually happen or not.
-     * We do it this way as we don't want to miss any.
-     */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void afterEntityDamage(EntityDamageByEntityEvent e) {
-        final Entity damagee = e.getEntity();
-        if (damagee instanceof LivingEntity) {
-            final UUID damageeId = damagee.getUniqueId();
-            if (lastDamages.containsKey(damageeId)) {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    ((LivingEntity) damagee).setLastDamage(0);
-                    debug("Set last damage to 0", damagee);
-                }, 1L);
+            if (newDamage < 0) {
+                debug("Damage was " + newDamage + " setting to 0", damager);
+                newDamage = 0;
             }
+
+            // Set the final event damage, taking into account the subtraction if it was overdamage
+            event.setDamage(newDamage);
+
+            // Set last damage to 0, so we can detect attacks even by weapons with a weaker attack value than what OCM would calculate
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                ((LivingEntity) damagee).setLastDamage(0);
+                debug("Set last damage to 0", damagee);
+            }, 1L);
         }
     }
 
