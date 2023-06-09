@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
-    compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT")
     // Shaded in by Bukkit
     compileOnly("io.netty:netty-all:4.1.93.Final")
     compileOnly("me.clip:placeholderapi:2.11.3")
