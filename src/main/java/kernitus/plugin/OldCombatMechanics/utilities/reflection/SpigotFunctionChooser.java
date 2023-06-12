@@ -60,6 +60,7 @@ public class SpigotFunctionChooser<T, U, R> {
     /**
      * Version without extra parameter(s) of {@link #apply(Object, Object)}
      */
+    @SuppressWarnings("unchecked")
     public R apply(T target) {
         return apply(target, (U) new Object[0]);
     }
