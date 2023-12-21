@@ -63,7 +63,10 @@ public class InGameTester {
         defender = Bukkit.getPlayer(fakeDefender.getUuid());
 
         // Turn defender to face attacker
-        defender.setRotation(180,0);
+        final Location defenderLocation = defender.getLocation();
+        defenderLocation.setYaw(180);
+        defenderLocation.setPitch(0);
+        defender.teleport(defenderLocation);
 
         beforeAll();
         tally = new Tally();
