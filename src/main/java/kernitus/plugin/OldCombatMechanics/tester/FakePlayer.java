@@ -18,16 +18,13 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket;
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.players.PlayerList;
-import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +44,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -153,41 +149,22 @@ public class FakePlayer {
 
     public void removePlayer() {
         final MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
-        final ServerLevel worldServer = entityPlayer.getLevel(); // entityPlayer.getWorld().getWorld().getHandle();
 
-        entityPlayer.awardStat(Stats.LEAVE_GAME);
-
-        final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(bukkitPlayer, "§e" + entityPlayer.displayName + " left the game");
+        // TODO this message never shows - does the event trigger?
+        final net.kyori.adventure.text.Component quitMessage = net.kyori.adventure.text.Component.text("§e" + entityPlayer.displayName + " left the game");
+        final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(bukkitPlayer, quitMessage, PlayerQuitEvent.QuitReason.DISCONNECTED);
 
         Bukkit.getPluginManager().callEvent(playerQuitEvent);
 
-        entityPlayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
+        entityPlayer.getBukkitEntity().disconnect(quitMessage.toString());
 
         // TODO isSameThread might not be correct method - is this even necessary?
         if (!mcServer.isSameThread()) { // t() MinecraftServer.isNotMainThread()
             entityPlayer.doTick();
         }
 
-        worldServer.removePlayerImmediately(entityPlayer, Entity.RemovalReason.KILLED);
-        entityPlayer.getAdvancements().stopListening();
-
         final PlayerList playerList = mcServer.getPlayerList();
-        playerList.players.remove(entityPlayer);
-
-        // Get private playerByUUID Map from PlayerList class and remove player from it
-        final Field playerByUUIDField = Reflector.getInaccessibleField(PlayerList.class, "l");
-        final Map<UUID, ServerPlayer> playerByUUID = (Map<UUID, ServerPlayer>) Reflector.getFieldValue(playerByUUIDField, playerList);
-        playerByUUID.remove(uuid);
-
-        // connection.sendPacket(new ClientboundRemoveEntitiesPacket(entityPlayer.getId()));
-        sendPacket(new ClientboundRemoveEntitiesPacket(uuid.hashCode()));
-        sendPacket(new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, entityPlayer));
-
-        // PlayerList.save(ServerPlayer)
-        // TODO maybe playerList.remove(entityPlayer)
-        Method saveMethod = Reflector.getMethod(PlayerList.class, "b", "ServerPlayer");
-        saveMethod.setAccessible(true);
-        Reflector.invokeMethod(saveMethod, playerList, entityPlayer);
+        playerList.remove(entityPlayer);
     }
 
     public void attack(org.bukkit.entity.Entity bukkitEntity) {
