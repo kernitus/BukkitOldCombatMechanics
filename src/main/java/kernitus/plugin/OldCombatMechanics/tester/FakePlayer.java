@@ -184,6 +184,7 @@ public class FakePlayer {
         sendPacket(new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, entityPlayer));
 
         // PlayerList.save(ServerPlayer)
+        // TODO maybe playerList.remove(entityPlayer)
         Method saveMethod = Reflector.getMethod(PlayerList.class, "b", "ServerPlayer");
         saveMethod.setAccessible(true);
         Reflector.invokeMethod(saveMethod, playerList, entityPlayer);
@@ -226,7 +227,11 @@ public class FakePlayer {
 
         final LivingEntity entityLiving = ((CraftLivingEntity) bukkitPlayer).getHandle();
         entityLiving.startUsingItem(InteractionHand.MAIN_HAND);
+        // getUseDuration of SHIELD is 72000
+        // this.useItemRemaining = itemstack.getUseDuration();
+
         // For isBlocking to be true, useDuration - getUseItemRemainingTicks() must be >= 5
+        // EFFECTIVE_BLOCK_DELAY=5 in ItemShield
         // Which means we have to wait at least 5 ticks before user is actually blocking
         // Here we just set it manually
         Field useItemRemainingField = Reflector.getField(LivingEntity.class, "bA"); // int useItemRemaining

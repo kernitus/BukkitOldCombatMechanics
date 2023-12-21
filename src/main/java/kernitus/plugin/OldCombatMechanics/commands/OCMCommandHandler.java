@@ -7,10 +7,12 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
+import kernitus.plugin.OldCombatMechanics.tester.InGameTester;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -20,7 +22,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,13 +29,11 @@ public class OCMCommandHandler implements CommandExecutor {
     private static final String NO_PERMISSION = "&cYou need the permission '%s' to do that!";
 
     private final OCMMain plugin;
-    private final File pluginFile;
 
-    enum Subcommand {reload, toggle, enable, disable}
+    enum Subcommand {reload, toggle, enable, disable, test}
 
-    public OCMCommandHandler(OCMMain instance, File pluginFile) {
+    public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;
-        this.pluginFile = pluginFile;
     }
 
     private void help(OCMMain plugin, CommandSender sender) {
@@ -98,7 +97,6 @@ public class OCMCommandHandler implements CommandExecutor {
         Messenger.sendNormalMessage(sender, message);
     }
 
-    /*
     private void test(OCMMain plugin, CommandSender sender) {
         final Location location = sender instanceof Player ?
                 ((Player) sender).getLocation() :
@@ -106,7 +104,6 @@ public class OCMCommandHandler implements CommandExecutor {
 
         new InGameTester(plugin).performTests(sender, location);
     }
-     */
 
     private void wideToggle(CommandSender sender, String[] args, ModuleAttackCooldown.PVPMode mode) {
         final Set<World> worlds = args.length > 1 ?
@@ -137,8 +134,9 @@ public class OCMCommandHandler implements CommandExecutor {
                             case toggle:
                                 toggle(plugin, sender, args);
                                 break;
-                            //case test: test(plugin, sender);
-                            //    break;
+                            case test:
+                                test(plugin, sender);
+                                break;
                             case enable:
                                 wideToggle(sender, args, ModuleAttackCooldown.PVPMode.NEW_PVP);
                                 break;

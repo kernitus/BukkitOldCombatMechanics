@@ -79,7 +79,7 @@ public class OCMMain extends JavaPlugin {
         hooks.forEach(hook -> hook.init(this));
 
         // Set up the command handler
-        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));
+        getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));
         // Set up command tab completer
         getCommand("OldCombatMechanics").setTabCompleter(new OCMCommandCompleter());
 
