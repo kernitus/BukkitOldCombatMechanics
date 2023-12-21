@@ -9,6 +9,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     `java-library`
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.github.patrick.remapper") version "1.4.0"
 }
 
 repositories {
@@ -25,16 +26,27 @@ repositories {
     maven("https://libraries.minecraft.net/")
     // Spartan API
     maven("https://repo.crazycrew.us/api")
+    maven("https://repo.minebench.de/")
+
+    // For local maven repo (mojang mappings jar)
+    mavenLocal()
 }
 
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
-    compileOnly("org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT"){
+        exclude(group = "com.mojang", module = "authlib")
+        exclude(group = "com.mojang", module = "datafixerupper")
+        exclude(group = "com.mojang", module = "logging")
+    }
     // Shaded in by Bukkit
     compileOnly("io.netty:netty-all:4.1.93.Final")
     compileOnly("me.clip:placeholderapi:2.11.3")
     // Spartan API
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
+    // Mojang mappings for NMS
+    compileOnly("org.spigotmc:spigot:1.19.2-R0.1-SNAPSHOT:remapped-mojang")
+    compileOnly("com.mojang:authlib:4.0.43")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
@@ -43,14 +55,15 @@ description = "OldCombatMechanics"
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
+        // At least 17 required for MC 1.19
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
 sourceSets {
     main {
         java {
-            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
+            //exclude("kernitus/plugin/OldCombatMechanics/tester/**")
         }
     }
 }
@@ -76,4 +89,8 @@ tasks.named<ShadowJar>("shadowJar") {
     dependencies {
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
     }
+}
+
+tasks.remap {
+    version.set("1.19.1")
 }
