@@ -42,8 +42,9 @@ dependencies {
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
     // Mojang mappings for NMS
     compileOnly("com.mojang:authlib:4.0.43")
-
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
+    // For reflection remapping
+    implementation("xyz.jpenilla:reflection-remapper:0.1.0")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"

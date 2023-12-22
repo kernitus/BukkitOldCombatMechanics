@@ -40,6 +40,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import xyz.jpenilla.reflectionremapper.ReflectionRemapper;
 
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -104,24 +105,26 @@ public class FakePlayer {
         entityPlayer.setYRot(0);
 
         try {
-            AsyncPlayerPreLoginEvent asyncPreLoginEvent = new AsyncPlayerPreLoginEvent(name, InetAddress.getByName("127.0.0.1"), uuid);
+            final InetAddress ipAddress = InetAddress.getByName("127.0.0.1");
+            final AsyncPlayerPreLoginEvent asyncPreLoginEvent = new AsyncPlayerPreLoginEvent(name, ipAddress, uuid);
             new Thread(() -> Bukkit.getPluginManager().callEvent(asyncPreLoginEvent)).start();
+
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
 
-        // TODO playerloginevent
+        // TODO playerloginevent might need to get called separately
+        //PlayerLoginEvent playerLoginEvent = new PlayerLoginEvent((Player) entityPlayer, "hostname", ipAddress, ipAddress);
 
         final PlayerList playerList = mcServer.getPlayerList();
-
         playerList.load(entityPlayer);
         entityPlayer.spawnIn(worldServer);
-
         playerList.getPlayers().add(entityPlayer);
 
         // Get private playerByUUID Map from PlayerList class and add player to it
-        final Field playerByUUIDField = Reflector.getInaccessibleField(PlayerList.class, "l");
-        final Map<UUID, ServerPlayer> playerByUUID = (Map<UUID, ServerPlayer>) Reflector.getFieldValue(playerByUUIDField, playerList);
+        // private final Map<UUID, EntityPlayer> playersByUUID = Maps.newHashMap();
+        final Field playersByUUIDField = Reflector.getMapFieldWithTypes(PlayerList.class, UUID.class, ServerPlayer.class);
+        final Map<UUID, ServerPlayer> playerByUUID = (Map<UUID, ServerPlayer>) Reflector.getFieldValue(playersByUUIDField, playerList);
         playerByUUID.put(uuid, entityPlayer);
 
         bukkitPlayer = Bukkit.getPlayer(uuid);
@@ -145,8 +148,6 @@ public class FakePlayer {
         // Spawn the player for the client
         sendPacket(new ClientboundAddPlayerPacket(entityPlayer));
 
-        System.out.println("Respawning");
-
         // todo should probably cancel this task when we remove the player
         Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
     }
@@ -156,7 +157,6 @@ public class FakePlayer {
 
         final net.kyori.adventure.text.Component quitMessage = net.kyori.adventure.text.Component.text("§e" + entityPlayer.displayName + " left the game");
         final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(bukkitPlayer, quitMessage, PlayerQuitEvent.QuitReason.DISCONNECTED);
-
         Bukkit.getPluginManager().callEvent(playerQuitEvent);
 
         entityPlayer.getBukkitEntity().disconnect(quitMessage.toString());
@@ -203,13 +203,12 @@ public class FakePlayer {
         final LivingEntity entityLiving = ((CraftLivingEntity) bukkitPlayer).getHandle();
         entityLiving.startUsingItem(InteractionHand.MAIN_HAND);
         // getUseDuration of SHIELD is 72000
-        // this.useItemRemaining = itemstack.getUseDuration();
-
         // For isBlocking to be true, useDuration - getUseItemRemainingTicks() must be >= 5
-        // EFFECTIVE_BLOCK_DELAY=5 in ItemShield
         // Which means we have to wait at least 5 ticks before user is actually blocking
         // Here we just set it manually
-        Field useItemRemainingField = Reflector.getField(LivingEntity.class, "bA"); // int useItemRemaining
-        Reflector.setFieldValue(useItemRemainingField, entityLiving, 10);
+        final ReflectionRemapper reflectionRemapper = ReflectionRemapper.forReobfMappingsInPaperJar();
+        final String remapped = reflectionRemapper.remapFieldName(LivingEntity.class, "useItemRemaining");
+        final Field useItemRemainingField = Reflector.getField(LivingEntity.class, remapped);
+        Reflector.setFieldValue(useItemRemainingField, entityLiving, 200);
     }
 }

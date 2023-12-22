@@ -19,7 +19,6 @@ out
 builds
 target
 META-INF
-dependency-reduced-pom.xml
 /build/
 /gradle/
 /.gradle/

@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -177,6 +178,29 @@ public class Reflector {
             }
         }
         throw new RuntimeException("Field with type " + simpleClassName + " not found");
+    }
+
+    public static Field getMapFieldWithTypes(Class<?> clazz, Class<?> keyType, Class<?> valueType) {
+        for (Field field : clazz.getDeclaredFields()) {
+            // Check if the field is a Map
+            if (Map.class.isAssignableFrom(field.getType())) {
+                // Get the generic type of the field
+                final Type genericType = field.getGenericType();
+                if (genericType instanceof ParameterizedType) {
+                    final ParameterizedType parameterizedType = (ParameterizedType) genericType;
+                    final Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                    // Check if the map's key and value types match the specified classes
+                    if (actualTypeArguments.length == 2 &&
+                            actualTypeArguments[0].equals(keyType) &&
+                            actualTypeArguments[1].equals(valueType)) {
+                        field.setAccessible(true);
+                        return field;
+                    }
+                }
+            }
+        }
+        throw new RuntimeException("Map field with key type " + keyType.getSimpleName() +
+                " and value type " + valueType.getSimpleName() + " not found");
     }
 
     public static Field getInaccessibleField(Class<?> clazz, String fieldName) {
