@@ -13,7 +13,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import net.minecraft.network.Connection;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
@@ -37,7 +36,6 @@ import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_19_R1.util.CraftChatMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -61,7 +59,7 @@ import java.util.UUID;
     https://www.spigotmc.org/threads/nms-serverplayer-entityplayer-for-the-1-17-1-18-mojang-mappings-with-fall-damage-and-knockback.551281/
 
     - NMS mappings for checking Mojang / Spigot / Obfuscated class, field, and method names
-    https://nms.screamingsandals.org/
+    https://mappings.cephx.dev/
  */
 
 public class FakePlayer {
@@ -90,18 +88,20 @@ public class FakePlayer {
 
     public void spawn(Location location) {
         ServerLevel worldServer = ((CraftWorld) location.getWorld()).getHandle();
-
         MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
 
         final GameProfile gameProfile = new GameProfile(uuid, name);
         this.entityPlayer = new ServerPlayer(mcServer, worldServer, gameProfile, null);
 
-        // entityPlayer.playerConnection
         entityPlayer.connection = new ServerGamePacketListenerImpl(mcServer, new Connection(PacketFlow.CLIENTBOUND), entityPlayer);
-
-        // entityPlayer.playerConnection.networkManager.channel
         entityPlayer.connection.connection.channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
         entityPlayer.connection.connection.channel.close();
+
+        entityPlayer.setGameMode(GameType.SURVIVAL);
+
+        entityPlayer.setPos(location.getX(), location.getY(), location.getZ());
+        entityPlayer.setXRot(0);
+        entityPlayer.setYRot(0);
 
         try {
             AsyncPlayerPreLoginEvent asyncPreLoginEvent = new AsyncPlayerPreLoginEvent(name, InetAddress.getByName("127.0.0.1"), uuid);
@@ -110,19 +110,14 @@ public class FakePlayer {
             e.printStackTrace();
         }
 
-        mcServer.getPlayerList().load(entityPlayer);
+        // TODO playerloginevent
 
-        entityPlayer.setPos(location.getX(), location.getY(), location.getZ()); // Entity.setLocation
-        entityPlayer.setXRot(0); // Entity.setXRot()
-        entityPlayer.setYRot(0); // Entity.setYRot()
-
-        entityPlayer.spawnIn(worldServer);
-        // entityPlayer.playerInteractManager.changeGameModeForPlayer(GameType.SURVIVAL);
-        entityPlayer.setGameMode(GameType.SURVIVAL);
-
-        worldServer.addNewPlayer(entityPlayer);
         final PlayerList playerList = mcServer.getPlayerList();
-        playerList.players.add(entityPlayer);
+
+        playerList.load(entityPlayer);
+        entityPlayer.spawnIn(worldServer);
+
+        playerList.getPlayers().add(entityPlayer);
 
         // Get private playerByUUID Map from PlayerList class and add player to it
         final Field playerByUUIDField = Reflector.getInaccessibleField(PlayerList.class, "l");
@@ -130,38 +125,41 @@ public class FakePlayer {
         playerByUUID.put(uuid, entityPlayer);
 
         bukkitPlayer = Bukkit.getPlayer(uuid);
-        final String joinMessage = "§e" + entityPlayer.displayName + " joined the game";
-        final PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(bukkitPlayer, CraftChatMessage.fromComponent(Component.literal(joinMessage)));
 
+        if(bukkitPlayer == null)
+            throw new RuntimeException("Bukkit player with UUID " + uuid + " not found!");
+
+        final String joinMessage = "§e" + entityPlayer.displayName + " joined the game";
+        final PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(bukkitPlayer, net.kyori.adventure.text.Component.text(joinMessage));
         Bukkit.getPluginManager().callEvent(playerJoinEvent);
 
-        // connection.sendPacket(new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.EnumPlayerInfoAction.ADD_PLAYER, entityPlayer));
+        // Let other client know player is there
         sendPacket(new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.ADD_PLAYER, entityPlayer));
+
+        worldServer.addNewPlayer(entityPlayer);
+
+        // Send world info to player client
+        playerList.sendLevelInfo(entityPlayer, worldServer);
+        entityPlayer.sendServerStatus(playerList.getServer().getStatus());
+
         // Spawn the player for the client
         sendPacket(new ClientboundAddPlayerPacket(entityPlayer));
-        // Remove player name from tablist
-        sendPacket(new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER));
+
+        System.out.println("Respawning");
 
         // todo should probably cancel this task when we remove the player
-        // ServerPlayer.doTick() a.k.a. ServerPlayer.playerTick()
         Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
     }
 
     public void removePlayer() {
         final MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
 
-        // TODO this message never shows - does the event trigger?
         final net.kyori.adventure.text.Component quitMessage = net.kyori.adventure.text.Component.text("§e" + entityPlayer.displayName + " left the game");
         final PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(bukkitPlayer, quitMessage, PlayerQuitEvent.QuitReason.DISCONNECTED);
 
         Bukkit.getPluginManager().callEvent(playerQuitEvent);
 
         entityPlayer.getBukkitEntity().disconnect(quitMessage.toString());
-
-        // TODO isSameThread might not be correct method - is this even necessary?
-        if (!mcServer.isSameThread()) { // t() MinecraftServer.isNotMainThread()
-            entityPlayer.doTick();
-        }
 
         final PlayerList playerList = mcServer.getPlayerList();
         playerList.remove(entityPlayer);
