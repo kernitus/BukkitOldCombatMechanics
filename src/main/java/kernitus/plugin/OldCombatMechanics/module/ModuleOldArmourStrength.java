@@ -26,8 +26,11 @@ import java.util.stream.Collectors;
 public class ModuleOldArmourStrength extends OCMModule {
 // Defence order is armour defence points -> resistance -> armour enchants -> absorption
 
+    private boolean randomness;
+
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
+        randomness = module().getBoolean("randomness");
     }
 
     @SuppressWarnings("deprecation")
@@ -43,11 +46,9 @@ public class ModuleOldArmourStrength extends OCMModule {
                         .filter(e::isApplicable)
                         .collect(Collectors.toMap(m -> m, e::getDamage));
 
-        DefenceUtils.calculateDefenceDamageReduction(damagedEntity, damageModifiers, e.getCause());
+        DefenceUtils.calculateDefenceDamageReduction(damagedEntity, damageModifiers, e.getCause(), randomness);
 
         // Set the modifiers back to the event
         damageModifiers.forEach(e::setDamage);
-
-        //damageModifiers.forEach((dm, value) -> debug(dm.name() + ": " + value));
     }
 }

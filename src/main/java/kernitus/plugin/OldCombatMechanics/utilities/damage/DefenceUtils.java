@@ -78,7 +78,8 @@ public class DefenceUtils {
     @SuppressWarnings("deprecation")
     public static void calculateDefenceDamageReduction(LivingEntity damagedEntity,
                                                        Map<EntityDamageEvent.DamageModifier, Double> damageModifiers,
-                                                       EntityDamageEvent.DamageCause damageCause) {
+                                                       EntityDamageEvent.DamageCause damageCause,
+                                                       boolean randomness) {
 
         final double armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR).getValue();
         // Make sure we don't go over 100% protection
@@ -121,14 +122,14 @@ public class DefenceUtils {
             // Apply armour enchants
             // Don't calculate enchants if damage already 0 (like 1.8 NMS). Enchants cap at 80% reduction
             if (currentDamage > 0 && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
-                final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(damagedEntity.getEquipment().getArmorContents(), damageCause);
+                final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(damagedEntity.getEquipment().getArmorContents(), damageCause, randomness);
                 final double enchantsReduction = currentDamage * -enchantsReductionFactor;
                 damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, enchantsReduction);
                 currentDamage += enchantsReduction;
             }
 
             // Absorption
-            if(damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ABSORPTION)) {
+            if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ABSORPTION)) {
                 final double absorptionAmount = getAbsorptionAmount.apply(damagedEntity);
                 double absorptionReduction = -Math.min(absorptionAmount, currentDamage);
                 damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
@@ -149,9 +150,10 @@ public class DefenceUtils {
      * @param baseDamage     The base damage done by the event, including weapon enchants, potions, crits
      * @param armourContents The 4 pieces of armour contained in the armour slots
      * @param damageCause    The source of damage
+     * @param randomness     Whether to apply random multiplier
      * @return The damage done to the entity after armour is taken into account
      */
-    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause) {
+    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause, boolean randomness) {
         double armourPoints = 0;
         for (int i = 0; i < armourContents.length; i++) {
             final ItemStack itemStack = armourContents[i];
@@ -166,7 +168,7 @@ public class DefenceUtils {
         double finalDamage = baseDamage - (ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
 
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
-        final double enchantmentReductionFactor = calculateArmourEnchantmentReductionFactor(armourContents, damageCause);
+        final double enchantmentReductionFactor = calculateArmourEnchantmentReductionFactor(armourContents, damageCause, randomness);
         if (finalDamage > 0) {
             finalDamage -= finalDamage * enchantmentReductionFactor;
         }
@@ -201,7 +203,8 @@ public class DefenceUtils {
         return sum;
     }
 
-    private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents, EntityDamageEvent.DamageCause cause) {
+
+    private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents, EntityDamageEvent.DamageCause cause, boolean randomness) {
         int totalEpf = 0;
         for (ItemStack armourItem : armourContents) {
             if (armourItem != null && armourItem.getType() != Material.AIR) {
@@ -221,8 +224,8 @@ public class DefenceUtils {
         totalEpf = Math.min(25, totalEpf);
 
         // Multiply by random value between 50% and 100%, then round up
-        totalEpf = (int) Math.ceil(totalEpf * ThreadLocalRandom.current().nextDouble(0.5, 1));
-        // totalEpf = (int) Math.ceil(totalEpf); // remove randomness for testing
+        double multiplier = randomness ? ThreadLocalRandom.current().nextDouble(0.5, 1) : 1.0;
+        totalEpf = (int) Math.ceil(totalEpf * multiplier);
 
         // Cap at 20
         totalEpf = Math.min(20, totalEpf);

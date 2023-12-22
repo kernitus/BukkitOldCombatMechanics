@@ -230,7 +230,7 @@ public class InGameTester {
         }
 
         // Armour effects (1.8, with OldArmourStrength module)
-        expectedDamage = DefenceUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK);
+        expectedDamage = DefenceUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK, false);
 
         // Status effects (Resistance)
         if(defender.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)){

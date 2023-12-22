@@ -347,6 +347,8 @@ old-armour-strength:
   # Based on this: https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187
   enabled: true
   worlds: []
+  # Whether to introduce randomness in the calculation, as in 1.8
+  randomness: true
 
 old-armour-durability:
   # This makes armour take a constant amount of durability damage (except for explosions)
@@ -582,4 +584,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 57
+config-version: 58
