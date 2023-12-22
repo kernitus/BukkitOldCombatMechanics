@@ -69,10 +69,12 @@ public class FakePlayer {
     private final String name;
     private ServerPlayer entityPlayer;
     private Player bukkitPlayer;
+    private Integer tickTaskId;
 
     public FakePlayer() {
         uuid = UUID.randomUUID();
         name = uuid.toString().substring(0, 16);
+        tickTaskId = null;
     }
 
     public UUID getUuid() {
@@ -148,11 +150,13 @@ public class FakePlayer {
         // Spawn the player for the client
         sendPacket(new ClientboundAddPlayerPacket(entityPlayer));
 
-        // todo should probably cancel this task when we remove the player
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
+        tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
     }
 
     public void removePlayer() {
+        if(tickTaskId != null) Bukkit.getScheduler().cancelTask(tickTaskId);
+        tickTaskId = null;
+
         final MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
 
         final net.kyori.adventure.text.Component quitMessage = net.kyori.adventure.text.Component.text("§e" + entityPlayer.displayName + " left the game");
