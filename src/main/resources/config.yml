@@ -260,14 +260,8 @@ old-fishing-knockback:
   # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
   enabled: true
   worlds: []
-  # This makes OCM check if other plugins are stopping the rod damage and follow their choice
-  # Set to false to always have rod damage
-  checkCancelled: false
   # This is the damage done by the fishing rod attack
   damage: 0.0001
-  # Whether the EntityDamageEvent should be used instead of the EntityDamageByEntityEvent
-  # Set to true when using plugins like NCP that check range
-  useEntityDamageEvent: false
   # This is to cancel dragging in the entity attached to the fishing rod when reeling in, like in 1.8
   # Options: all, players, mobs, none. players allows compatibility with WorldGuard pvp-deny regions
   cancelDraggingIn: players

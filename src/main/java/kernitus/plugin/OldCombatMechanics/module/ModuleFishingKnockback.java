@@ -5,24 +5,17 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableMap;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.util.Vector;
-
-import java.util.EnumMap;
 
 /**
  * Brings back the old fishing-rod knockback.
@@ -93,17 +86,9 @@ public class ModuleFishingKnockback extends OCMModule {
         if (livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f) return;
 
         double damage = module().getDouble("damage");
-        if (damage < 0) damage = 0.2;
+        if (damage < 0) damage = 0.0001;
 
-        final EntityDamageEvent event = makeEvent(rodder, hitEntity, damage);
-        Bukkit.getPluginManager().callEvent(event);
-
-        if (module().getBoolean("checkCancelled") && event.isCancelled()) {
-            debug("You can't do that here!", rodder);
-            return;
-        }
-
-        livingEntity.damage(damage);
+        livingEntity.damage(damage, rodder);
         livingEntity.setVelocity(calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
     }
 
@@ -154,19 +139,5 @@ public class ModuleFishingKnockback extends OCMModule {
             getHookFunction.apply(e).remove(); // Remove the bobber and don't do anything else
             e.setCancelled(true);
         }
-    }
-
-    @SuppressWarnings({"deprecation"})
-    private EntityDamageEvent makeEvent(Player rodder, Entity entity, double damage) {
-        if (module().getBoolean("useEntityDamageEvent"))
-            return new EntityDamageEvent(entity,
-                    EntityDamageEvent.DamageCause.PROJECTILE,
-                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
-        else
-            return new EntityDamageByEntityEvent(rodder, entity,
-                    EntityDamageEvent.DamageCause.PROJECTILE,
-                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
-                    new EnumMap<>(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
     }
 }
