@@ -72,14 +72,15 @@ public class ModuleShieldDamageReduction extends OCMModule {
         if (!isEnabled(player.getWorld())) return;
 
         // Blocking is calculated after base and hard hat, and before armour etc.
-        double currentDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
-        if (!shieldBlockedDamage(currentDamage, e.getDamage(DamageModifier.BLOCKING))) return;
+        final double baseDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
+        if (!shieldBlockedDamage(baseDamage, e.getDamage(DamageModifier.BLOCKING))) return;
 
-        final double damageReduction = getDamageReduction(currentDamage, e.getCause());
+        final double damageReduction = getDamageReduction(baseDamage, e.getCause());
         e.setDamage(DamageModifier.BLOCKING, -damageReduction);
-        currentDamage -= damageReduction;
+        final double currentDamage = baseDamage - damageReduction;
 
-        debug("Damage reduced by: " + damageReduction + " to " + currentDamage + " before armour, resistance, absorption", player);
+        debug("Blocking: " + baseDamage + " - " + damageReduction + " = " + currentDamage, player);
+        debug("Blocking: " + baseDamage + " - " + damageReduction + " = " + currentDamage);
 
         final UUID uuid = player.getUniqueId();
 
@@ -97,18 +98,21 @@ public class ModuleShieldDamageReduction extends OCMModule {
     }
 
     private double getDamageReduction(double damage, DamageCause damageCause) {
-        // 1.8 NMS code, where f is damage done: f = (1.0F + f) * 0.5F;
+        // 1.8 NMS code, where f is damage done, to calculate new damage.
+        // f = (1.0F + f) * 0.5F;
 
-        // Reduce by amount
-        damage -= damageCause == DamageCause.PROJECTILE ? projectileDamageReductionAmount : genericDamageReductionAmount;
+        // We subtract, to calculate damage reduction instead of new damage
+        double reduction = damage - (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionAmount : genericDamageReductionAmount);
 
         // Reduce to percentage
-        damage *= (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100.0;
+        reduction *= (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100.0;
 
         // Don't reduce by more than the actual damage done
-        if (damage < 0) damage = 0;
+        // As far as I can tell this is not checked in 1.8NMS, and if the damage was low enough
+        // blocking would lead to higher damage. However, this is hardly the desired result.
+        if (reduction < 0) reduction = 0;
 
-        return damage;
+        return reduction;
     }
 
     private boolean shieldBlockedDamage(double attackDamage, double blockingReduction) {

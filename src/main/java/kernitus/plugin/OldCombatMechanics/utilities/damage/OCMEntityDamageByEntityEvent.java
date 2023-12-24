@@ -58,7 +58,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
-    // Perform the opposite of the following:
+    // Performs the opposite of the following:
     // (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay), Overdamage, Armour
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
         this.damager = damager;

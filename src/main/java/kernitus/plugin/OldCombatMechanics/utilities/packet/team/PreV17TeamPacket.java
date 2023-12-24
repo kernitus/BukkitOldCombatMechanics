@@ -66,10 +66,10 @@ public class PreV17TeamPacket extends TeamPacket {
 
         private PacketAccess(){
             Class<?> packetClass = PacketHelper.getPacketClass(PacketType.PlayOut, "ScoreboardTeam");
-            this.fieldCollisionRule = Reflector.getInaccessibleField(packetClass, "f");
-            this.fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "h");
-            this.fieldAction = Reflector.getInaccessibleField(packetClass, "i");
-            this.fieldName = Reflector.getInaccessibleField(packetClass, "a");
+            this.fieldCollisionRule = Reflector.getField(packetClass, "f");
+            this.fieldPlayerNames = Reflector.getField(packetClass, "h");
+            this.fieldAction = Reflector.getField(packetClass, "i");
+            this.fieldName = Reflector.getField(packetClass, "a");
 
             this.constructorTeamPacket = Reflector.getConstructor(packetClass, 0);
         }

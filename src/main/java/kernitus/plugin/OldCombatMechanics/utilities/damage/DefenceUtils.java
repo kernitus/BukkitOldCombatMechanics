@@ -6,7 +6,6 @@
 
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
@@ -26,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+
+import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
 
 /**
  * Utilities for calculating damage reduction from armour and status effects.
@@ -135,25 +136,19 @@ public class DefenceUtils {
                 damageModifiers.put(EntityDamageEvent.DamageModifier.ABSORPTION, absorptionReduction);
             }
         }
-
-        /*
-        final double finalDamage = damageModifiers.values().stream().reduce(0.0, Double::sum);
-        debug(String.format("Reductions: Armour %.0f, Ench %.0f, Total %.2f, Final Damage: %.2f", reductionPercentage * 100,
-                enchantmentReductionPercentage * 100, (reductionPercentage + (1 - reductionPercentage) * enchantmentReductionPercentage) * 100,
-                finalDamage), damagedEntity);
-         */
     }
 
     /**
-     * Return the damage after applying armour and armour enchants protections, following 1.8 algorithm.
+     * Return the damage after applying armour, resistance, and armour enchants protections, following 1.8 algorithm.
      *
+     * @param defender       The entity that is being attacked
      * @param baseDamage     The base damage done by the event, including weapon enchants, potions, crits
      * @param armourContents The 4 pieces of armour contained in the armour slots
      * @param damageCause    The source of damage
      * @param randomness     Whether to apply random multiplier
      * @return The damage done to the entity after armour is taken into account
      */
-    public static double getDamageAfterArmour1_8(double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause, boolean randomness) {
+    public static double getDamageAfterArmour1_8(LivingEntity defender, double baseDamage, ItemStack[] armourContents, EntityDamageEvent.DamageCause damageCause, boolean randomness) {
         double armourPoints = 0;
         for (int i = 0; i < armourContents.length; i++) {
             final ItemStack itemStack = armourContents[i];
@@ -167,13 +162,19 @@ public class DefenceUtils {
         // Apply armour damage reduction
         double finalDamage = baseDamage - (ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
 
+        // Calculate resistance
+        if (defender.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)) {
+            int resistanceLevel = defender.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
+            finalDamage *= 1.0 - (resistanceLevel * 0.2);
+        }
+
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
         final double enchantmentReductionFactor = calculateArmourEnchantmentReductionFactor(armourContents, damageCause, randomness);
         if (finalDamage > 0) {
             finalDamage -= finalDamage * enchantmentReductionFactor;
         }
 
-        Messenger.debug("Reductions: Armour %.0f%%, Ench %.0f%%, Total %.2f%%, Start dmg: %.2f Final: %.2f", reductionFactor * 100,
+        debug("Reductions: Armour %.0f%%, Ench %.0f%%, Total %.2f%%, Start dmg: %.2f Final: %.2f", reductionFactor * 100,
                 enchantmentReductionFactor * 100, (reductionFactor + (1 - reductionFactor) * enchantmentReductionFactor) * 100,
                 baseDamage, finalDamage);
 

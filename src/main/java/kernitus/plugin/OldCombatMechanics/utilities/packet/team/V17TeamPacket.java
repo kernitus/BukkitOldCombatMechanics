@@ -70,9 +70,9 @@ public class V17TeamPacket extends TeamPacket {
             Class<?> packetClass = PacketHelper.getPacketClass(PacketType.PlayOut, "ScoreboardTeam");
             Class<?> dataClass = Reflector.getClass(packetClass.getName() + "$b");
 
-            fieldPlayerNames = Reflector.getInaccessibleField(packetClass, "j");
-            fieldAction = Reflector.getInaccessibleField(packetClass, "h");
-            fieldName = Reflector.getInaccessibleField(packetClass, "i");
+            fieldPlayerNames = Reflector.getField(packetClass, "j");
+            fieldAction = Reflector.getField(packetClass, "h");
+            fieldName = Reflector.getField(packetClass, "i");
             fieldDataOptional = Reflector.getFieldByType(packetClass, "Optional");
 
             constructorTeamPacket = Reflector.getConstructor(packetClass, 4);

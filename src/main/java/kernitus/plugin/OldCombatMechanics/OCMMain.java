@@ -116,7 +116,7 @@ public class OCMMain extends JavaPlugin {
                 .collect(Collectors.toList());
 
         Bukkit.getOnlinePlayers().forEach(player -> {
-            PlayerJoinEvent event = new PlayerJoinEvent(player, "");
+            final PlayerJoinEvent event = new PlayerJoinEvent(player, "");
 
             // Trick all the modules into thinking the player just joined in case the plugin was loaded with Plugman.
             // This way attack speeds, item modifications, etc. will be applied immediately instead of after a re-log.
@@ -156,7 +156,7 @@ public class OCMMain extends JavaPlugin {
         // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
         // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
         Bukkit.getOnlinePlayers().forEach(player -> {
-            PlayerQuitEvent event = new PlayerQuitEvent(player, "");
+            final PlayerQuitEvent event = new PlayerQuitEvent(player, "");
 
             quitListeners.forEach(registeredListener -> {
                 try {
@@ -172,7 +172,7 @@ public class OCMMain extends JavaPlugin {
     }
 
     private void registerModules() {
-        // Update Checker (also a module so we can use the dynamic registering/unregistering)
+        // Update Checker (also a module, so we can use the dynamic registering/unregistering)
         ModuleLoader.addModule(new ModuleUpdateChecker(this));
 
         // Module listeners
@@ -184,7 +184,7 @@ public class OCMMain extends JavaPlugin {
             ModuleLoader.addModule(new AttackCooldownTracker(this));
         }
 
-        //Listeners registered after with same priority appear to be called later
+        //Listeners registered later with same priority are called later
 
         //These four listen to OCMEntityDamageByEntityEvent:
         ModuleLoader.addModule(new ModuleOldToolDamage(this));
@@ -193,12 +193,14 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleOldCriticalHits(this));
 
         //Next block are all on LOWEST priority, so will be called in the following order:
-        //Damage order: base -> potion effects -> critical hit -> enchantments -> blocking -> armour effects
+        // Damage order: base -> potion effects -> critical hit -> enchantments
+        // Defence order: overdamage -> blocking -> armour -> resistance -> armour enchs -> absorption
         //EntityDamageByEntityListener calls OCMEntityDamageByEntityEvent, see modules above
+        // For everything from base to overdamage
         ModuleLoader.addModule(new EntityDamageByEntityListener(this));
-        //Then ModuleSwordBlocking to calculate blocking
+        // ModuleSwordBlocking to calculate blocking
         ModuleLoader.addModule(new ModuleShieldDamageReduction(this));
-        //Then OldArmourStrength to recalculate armour defense accordingly
+        // OldArmourStrength for armour -> resistance -> armour enchs -> absorption
         ModuleLoader.addModule(new ModuleOldArmourStrength(this));
 
         ModuleLoader.addModule(new ModuleSwordBlocking(this));

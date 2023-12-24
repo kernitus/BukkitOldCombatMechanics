@@ -164,7 +164,9 @@ public class Reflector {
 
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
-            return clazz.getDeclaredField(fieldName);
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field;
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
@@ -203,11 +205,6 @@ public class Reflector {
                 " and value type " + valueType.getSimpleName() + " not found");
     }
 
-    public static Field getInaccessibleField(Class<?> clazz, String fieldName) {
-        Field field = getField(clazz, fieldName);
-        field.setAccessible(true);
-        return field;
-    }
 
     public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception {
         for (Field declaredField : object.getClass().getDeclaredFields()) {

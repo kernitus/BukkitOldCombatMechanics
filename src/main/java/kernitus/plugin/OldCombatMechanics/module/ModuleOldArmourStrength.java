@@ -30,6 +30,11 @@ public class ModuleOldArmourStrength extends OCMModule {
 
     public ModuleOldArmourStrength(OCMMain plugin) {
         super(plugin, "old-armour-strength");
+        reload();
+    }
+
+    @Override
+    public void reload() {
         randomness = module().getBoolean("randomness");
     }
 
@@ -50,5 +55,15 @@ public class ModuleOldArmourStrength extends OCMModule {
 
         // Set the modifiers back to the event
         damageModifiers.forEach(e::setDamage);
+
+        debug("BASE: " + damageModifiers.get(EntityDamageEvent.DamageModifier.BASE));
+        debug("BLOCKING: " + damageModifiers.get(EntityDamageEvent.DamageModifier.BLOCKING));
+        debug("ARMOUR: " + damageModifiers.get(EntityDamageEvent.DamageModifier.ARMOR));
+        debug("RESISTANCE: " + damageModifiers.get(EntityDamageEvent.DamageModifier.RESISTANCE));
+        debug("ARMOUR ENCHS: " + damageModifiers.get(EntityDamageEvent.DamageModifier.MAGIC));
+        debug("ABSORPTION: " + damageModifiers.get(EntityDamageEvent.DamageModifier.ABSORPTION));
+
+        final double finalDamage = damageModifiers.values().stream().reduce(0.0, Double::sum);
+        debug("Final damage after defence calc: " + finalDamage);
     }
 }

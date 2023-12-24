@@ -88,7 +88,7 @@ public class InGameTester {
 
     private void testArmour() {
         final String[] materials = {"LEATHER", "CHAINMAIL", "GOLDEN", "IRON", "DIAMOND", "NETHERITE"};
-        final String[] slots = {"BOOTS", "LEGGINGS", "CHESTPLATE", "HELMET" };
+        final String[] slots = {"BOOTS", "LEGGINGS", "CHESTPLATE", "HELMET"};
         final Random random = new Random(System.currentTimeMillis());
 
         final ItemStack[] armourContents = new ItemStack[4];
@@ -119,16 +119,16 @@ public class InGameTester {
 
             // only axe and sword can have sharpness
             try {
-                weapon.addEnchantment(Enchantment.DAMAGE_ALL,3);}
-            catch (IllegalArgumentException ignored){
+                weapon.addEnchantment(Enchantment.DAMAGE_ALL, 3);
+            } catch (IllegalArgumentException ignored) {
             }
 
             final String message = weaponType.name() + " Sharpness 3";
             queueAttack(new OCMTest(weapon, armour, 2, message, () -> {
                 preparations.run();
                 defender.setMaximumNoDamageTicks(0);
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE,10,0,false));
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,10,-1,false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 10, 0, false));
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false));
                 Messenger.debug("TESTING WEAPON " + weaponType);
                 attacker.setFallDistance(2); // Crit
             }));
@@ -159,11 +159,11 @@ public class InGameTester {
         }
     }
 
-    private void queueAttack(OCMTest test){
+    private void queueAttack(OCMTest test) {
         testQueue.add(test);
     }
 
-    private double calculateAttackDamage(ItemStack weapon){
+    private double calculateAttackDamage(ItemStack weapon) {
         final Material weaponType = weapon.getType();
         // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
         // Hurt components order: Overdamage - Armour Effects
@@ -176,7 +176,7 @@ public class InGameTester {
         // Strength effect
         // 1.8: +130% for each strength level
         final PotionEffect strength = attacker.getPotionEffect(PotionEffectType.INCREASE_DAMAGE);
-        if(strength != null)
+        if (strength != null)
             expectedDamage += (strength.getAmplifier() + 1) * 1.3 * expectedDamage;
 
         expectedDamage += weaknessAddend;
@@ -186,7 +186,7 @@ public class InGameTester {
         expectedDamage *= 0.2F + attackCooldown * attackCooldown * 0.8F;
 
         // Critical hit
-        if(DamageUtils.isCriticalHit1_8(attacker)){
+        if (DamageUtils.isCriticalHit1_8(attacker)) {
             expectedDamage *= 1.5;
         }
 
@@ -218,6 +218,7 @@ public class InGameTester {
         if (wasOverdamaged(expectedDamage)) {
             double lastDamage = defender.getLastDamage();
             Messenger.sendNormalMessage(sender, "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
+            Messenger.debug("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
             expectedDamage -= lastDamage;
         }
 
@@ -225,18 +226,31 @@ public class InGameTester {
 
         // Blocking
         //1.8 default: (damage - 1) * 50%  1.9 default: 33%   1.11 default: 100%
-        if(defender.isBlocking()){
-           expectedDamage -= Math.max(0, (expectedDamage - 1)) * 0.5;
+        if (defender.isBlocking()) {
+            Messenger.debug("DEFENDER IS BLOCKING " + expectedDamage);
+            //expectedDamage = (1.0F + expectedDamage) * 0.5F;
+            expectedDamage -= Math.max(0, (expectedDamage - 1)) * 0.5;
+            Messenger.debug("AFTER BLOCC " + expectedDamage);
         }
 
-        // Armour effects (1.8, with OldArmourStrength module)
-        expectedDamage = DefenceUtils.getDamageAfterArmour1_8(expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK, false);
+        // Armour, resistance, armour enchants (1.8, with OldArmourStrength module)
+        expectedDamage = DefenceUtils.getDamageAfterArmour1_8(defender, expectedDamage, armourContents, EntityDamageEvent.DamageCause.ENTITY_ATTACK, false);
 
-        // Status effects (Resistance)
-        if(defender.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)){
-            int resistanceLevel = defender.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
-            expectedDamage *= 1.0 - (resistanceLevel * 0.2);
+        /* 1.8 NMS
+        float f1 = f;
+        f = Math.max(f - this.getAbsorptionHearts(), 0.0F);
+        this.setAbsorptionHearts(this.getAbsorptionHearts() - (f1 - f));
+        if (f != 0.0F) {
+            this.applyExhaustion(damagesource.getExhaustionCost());
+            float f2 = this.getHealth();
+
+            this.setHealth(this.getHealth() - f);
+            this.bs().a(damagesource, f2, f);
+            if (f < 3.4028235E37F) {
+                this.a(StatisticList.x, Math.round(f * 10.0F));
+            }
         }
+         */
 
         return (float) expectedDamage;
     }
@@ -258,10 +272,10 @@ public class InGameTester {
                 ItemStack expectedWeapon = test.weapon;
                 float expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
 
-                while(weaponType != expectedWeapon.getType()){ // One of the attacks dealt no damage
+                while (weaponType != expectedWeapon.getType()) { // One of the attacks dealt no damage
                     expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
                     Messenger.sendNormalMessage(sender, "&bSKIPPED &f" + expectedWeapon.getType() + " &fExpected Damage: &b" + expectedDamage);
-                    if(expectedDamage == 0)
+                    if (expectedDamage == 0)
                         tally.passed();
                     else
                         tally.failed();
@@ -331,7 +345,7 @@ public class InGameTester {
         }
     }
 
-    private void preparePlayer(ItemStack weapon){
+    private void preparePlayer(ItemStack weapon) {
         if (weapon.hasItemMeta()) {
             final ItemMeta meta = weapon.getItemMeta();
             meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
@@ -358,7 +372,7 @@ public class InGameTester {
             final ItemStack itemStack = armourContents[i];
             if (itemStack == null) continue;
             final Material type = itemStack.getType();
-            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET,EquipmentSlot.LEGS,EquipmentSlot.CHEST,EquipmentSlot.HEAD}[i];
+            final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}[i];
             for (AttributeModifier attributeModifier : type.getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR)) {
                 defenderArmour.removeModifier(attributeModifier);
                 defenderArmour.addModifier(attributeModifier);
