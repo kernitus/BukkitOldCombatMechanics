@@ -7,19 +7,28 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.util.Vector;
+
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Prevents the noise introduced when shooting with a bow to make arrows go straight.
  */
 public class ModuleDisableProjectileRandomness extends OCMModule {
 
-    private static double EPSILON;
+    private double EPSILON;
+    private List<EntityType> projectileTypes;
+
     // Method was added in 1.14.0
     private static final SpigotFunctionChooser<Vector, Double, Vector> rotateAroundY = SpigotFunctionChooser.apiCompatCall(
             (vector, angle) -> vector.rotateAroundY(angle),
@@ -41,12 +50,16 @@ public class ModuleDisableProjectileRandomness extends OCMModule {
     @Override
     public void reload() {
         EPSILON = module().getDouble("epsilon");
+        projectileTypes = module().getStringList("projectile-types").stream()
+                .map(str -> str.toUpperCase(Locale.ROOT)).map(EntityType::valueOf).toList();
     }
 
     @EventHandler
     public void onProjectileLaunch(ProjectileLaunchEvent e) {
         final Projectile projectile = e.getEntity();
         final ProjectileSource shooter = projectile.getShooter();
+
+        if(!projectileTypes.contains(e.getEntityType())) return;
 
         if (shooter instanceof Player) {
             final Player player = (Player) shooter;
@@ -60,15 +73,17 @@ public class ModuleDisableProjectileRandomness extends OCMModule {
             final double originalMagnitude = projectileDirection.length();
             projectileDirection.normalize();
 
-            // The following works because using rotate modifies the vector, so we must double it to undo the rotation
-            // The vector is rotated around the Y axis and matched by checking only the X and Z values
-            // Angles is specified in radians, where 10° = 0.17 radians
-            if (!fuzzyVectorEquals(projectileDirection, playerDirection)) { // If the projectile is not going straight
-                if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection, 0.17))) {
-                    debug("10° Offset", player);
-                } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection, -0.35)))
-                    // arrowVelocity.rotateAroundY(-10);
+            final ItemStack item = player.getInventory().getItemInMainHand();
+
+            // If the projectile is not going straight (e.g. multishot arrows)
+            if (item.getType() == Material.CROSSBOW && item.getEnchantmentLevel(Enchantment.MULTISHOT) > 0) {
+                if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), 0.17))) {
+                    debug("10° Offset", player); // 10 degrees is 0.17 radians
+                    rotateAroundY.apply(playerDirection, 0.17);
+                } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), -0.17))) {
                     debug("-10° Offset", player);
+                    rotateAroundY.apply(playerDirection, -0.17);
+                }
             }
 
             playerDirection.multiply(originalMagnitude);
