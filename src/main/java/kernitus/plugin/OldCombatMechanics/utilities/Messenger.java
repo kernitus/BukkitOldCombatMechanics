@@ -15,11 +15,18 @@ import java.util.logging.Level;
 public class Messenger {
 
     public static final String HORIZONTAL_BAR = ChatColor.STRIKETHROUGH + "----------------------------------------------------";
-    static boolean DEBUG_ENABLED = false;
     private static OCMMain plugin;
+
+    private static boolean DEBUG_ENABLED = false;
+    private static String PREFIX = "&6[OCM]&r";
 
     public static void initialise(OCMMain plugin) {
         Messenger.plugin = plugin;
+    }
+
+    public static void reloadConfig(boolean debugEnabled, String prefix){
+        DEBUG_ENABLED = debugEnabled;
+        PREFIX = prefix;
     }
 
     public static void info(String message, Object... args) {
@@ -65,7 +72,7 @@ public class Messenger {
     }
 
     public static void sendNormalMessage(CommandSender sender, String message, Object... args) {
-        sendWithPrefix(sender, message, "&6[OCM]&r", args);
+        sendWithPrefix(sender, message, PREFIX, args);
     }
 
     private static void sendDebugMessage(CommandSender sender, String message, Object... args) {

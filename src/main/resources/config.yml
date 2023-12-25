@@ -558,6 +558,8 @@ old-critical-hits:
 # SPECIAL SETTINGS BELOW #
 # ########################
 
+message-prefix: "&6[OCM]&r"
+
 # This is to toggle the update checker
 update-checker:
   # Whether to check for updates and notify players with the oldcombatmechanics.notify permission

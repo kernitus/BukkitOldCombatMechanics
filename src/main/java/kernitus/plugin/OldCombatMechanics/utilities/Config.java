@@ -61,7 +61,7 @@ public class Config {
             return;
         }
 
-        Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+        Messenger.reloadConfig(config.getBoolean("debug.enabled"), config.getString("message-prefix"));
 
         WeaponDamages.initialise(plugin); //Reload weapon damages from config
 
