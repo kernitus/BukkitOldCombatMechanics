@@ -56,6 +56,7 @@ public class ModuleFishingKnockback extends OCMModule {
         if (!isEnabled(world)) return;
 
         if (e.getEntityType() != EntityType.FISHING_HOOK) return;
+        final FishHook hook = (FishHook) hookEntity;
 
         final Entity hitEntity = getHitEntityFunction.apply(e);
 
@@ -67,7 +68,6 @@ public class ModuleFishingKnockback extends OCMModule {
         // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
         if (hitEntity.hasMetadata("NPC")) return;
 
-        final FishHook hook = (FishHook) hookEntity;
         final Player rodder = (Player) hook.getShooter();
 
         if (!knockbackNonPlayerEntities) {

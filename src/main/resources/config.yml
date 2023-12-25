@@ -279,7 +279,7 @@ fishing-rod-velocity:
 
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
-  # This has been a Bukkit bug for so long people thought it was vanilla when it was recently patched
+  # This has been a Bukkit bug for so long people thought it was vanilla when it was patched
   enabled: true
   worlds: []
   # This is the damage done by each projectile
