@@ -145,9 +145,22 @@ public class SpigetUpdateChecker {
         final URL url = new URL(urlString);
         final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.addRequestProperty("User-Agent", USER_AGENT);
+        connection.setConnectTimeout(10000); // 10 seconds
+        connection.setReadTimeout(10000); // 10 seconds
 
-        final InputStream inputStream = connection.getInputStream();
-        return new InputStreamReader(inputStream);
+        try {
+            int status = connection.getResponseCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                InputStream inputStream = connection.getInputStream();
+                return new InputStreamReader(inputStream);
+            } else {
+                // Log error or handle other status codes appropriately
+                throw new IOException("Server returned non-OK status: " + status);
+            }
+        } catch (IOException e) {
+            // Log exception with as much detail as possible
+            throw e;
+        }
     }
 
     /**
