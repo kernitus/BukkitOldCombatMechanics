@@ -57,13 +57,13 @@ public class InGameTester {
         fakeAttacker = new FakePlayer();
         fakeAttacker.spawn(location.add(2, 0, 0));
         fakeDefender = new FakePlayer();
-        fakeDefender.spawn(location.add(0, 0, 2));
+        final Location defenderLocation = location.add(0, 0, 2);
+        fakeDefender.spawn(defenderLocation);
 
         attacker = Bukkit.getPlayer(fakeAttacker.getUuid());
         defender = Bukkit.getPlayer(fakeDefender.getUuid());
 
         // Turn defender to face attacker
-        final Location defenderLocation = defender.getLocation();
         defenderLocation.setYaw(180);
         defenderLocation.setPitch(0);
         defender.teleport(defenderLocation);

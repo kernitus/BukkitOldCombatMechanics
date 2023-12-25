@@ -49,6 +49,10 @@ public class EntityDamageByEntityListener extends OCMModule {
         final Entity damager = event.getDamager();
         final Entity damagee = event.getEntity();
 
+        // Call event constructor before setting lastDamage back, because we need it for calculations
+        final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
+                (damager, damagee, event.getCause(), event.getDamage());
+
         // Set last damage to actual value for other modules and plugins to use
         // This will be set back to 0 in MONITOR listener on the next tick to detect all potential overdamages.
         // If there is large delay between last time an entity was damaged and the next damage,
@@ -59,9 +63,6 @@ public class EntityDamageByEntityListener extends OCMModule {
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
             livingDamagee.setLastDamage(lastStoredDamage);
         }
-
-        final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
-                (damager, damagee, event.getCause(), event.getDamage());
 
         // Call event for the other modules to make their modifications
         plugin.getServer().getPluginManager().callEvent(e);
@@ -174,6 +175,7 @@ public class EntityDamageByEntityListener extends OCMModule {
      * The last damage is overridden by NMS code regardless of what the actual damage is set to via Spigot.
      * Finally, the LOWEST priority listener above will set the last damage back to the correct value
      * for other plugins to use the next time the entity is damaged.
+     * Technically, we should also include non-entity damage, but this tends to be small and thus irrelevant.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void afterEntityDamage(EntityDamageByEntityEvent event) {
