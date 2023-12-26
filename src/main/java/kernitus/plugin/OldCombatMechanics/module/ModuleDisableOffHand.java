@@ -7,7 +7,11 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,43 +23,56 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiPredicate;
 
 /**
- * Disables usage of the off hand.
+ * Disables usage of the off-hand.
  */
 public class ModuleDisableOffHand extends OCMModule {
 
     private static final int OFFHAND_SLOT = 40;
-    private List<Material> materials = new ArrayList<>();
+    private List<Material> materials;
+    private String deniedMessage;
+    private BlockType blockType;
 
     public ModuleDisableOffHand(OCMMain plugin) {
         super(plugin, "disable-offhand");
+        reload();
     }
 
     @Override
     public void reload() {
+        blockType = module().getBoolean("whitelist") ? BlockType.WHITELIST : BlockType.BLACKLIST;
         materials = ConfigUtils.loadMaterialList(module(), "items");
+        deniedMessage = module().getString("denied-message");
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    private void sendDeniedMessage(CommandSender sender) {
+        if(!deniedMessage.isBlank())
+            Messenger.sendNormalMessage(sender, deniedMessage);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
-        if (isEnabled(e.getPlayer().getWorld()) && shouldWeCancel(e.getOffHandItem())) {
+        final Player player = e.getPlayer();
+        if (isEnabled(player.getWorld()) && shouldWeCancel(e.getOffHandItem())) {
             e.setCancelled(true);
+            sendDeniedMessage(player);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
-        if (!isEnabled(e.getWhoClicked().getWorld())) return;
+        final HumanEntity player = e.getWhoClicked();
+        if (!isEnabled(player.getWorld())) return;
         final ClickType clickType = e.getClick();
 
         try {
             if (clickType == ClickType.SWAP_OFFHAND) {
                 e.setResult(Event.Result.DENY);
+                sendDeniedMessage(player);
                 return;
             }
         } catch (NoSuchFieldError ignored) {
@@ -69,8 +86,13 @@ public class ModuleDisableOffHand extends OCMModule {
 
         // Prevent shift-clicking a shield into the offhand item slot
         final ItemStack currentItem = e.getCurrentItem();
-        if (currentItem != null && currentItem.getType() == Material.SHIELD && shouldWeCancel(currentItem) && e.getSlot() != OFFHAND_SLOT && e.isShiftClick()) {
+        if (currentItem != null
+                && currentItem.getType() == Material.SHIELD
+                && shouldWeCancel(currentItem)
+                && e.getSlot() != OFFHAND_SLOT
+                && e.isShiftClick()) {
             e.setResult(Event.Result.DENY);
+            sendDeniedMessage(player);
         }
 
         if (e.getSlot() == OFFHAND_SLOT &&
@@ -79,17 +101,20 @@ public class ModuleDisableOffHand extends OCMModule {
                         || shouldWeCancel(e.getCursor())) // Deny placing not allowed items into offhand slot
         ) {
             e.setResult(Event.Result.DENY);
+            sendDeniedMessage(player);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent e) {
-        if (!isEnabled(e.getWhoClicked().getWorld())
+        final HumanEntity player = e.getWhoClicked();
+        if (!isEnabled(player.getWorld())
                 || e.getInventory().getType() != InventoryType.CRAFTING
                 || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
 
         if (shouldWeCancel(e.getOldCursor())) {
             e.setResult(Event.Result.DENY);
+            sendDeniedMessage(player);
         }
     }
 
@@ -98,18 +123,14 @@ public class ModuleDisableOffHand extends OCMModule {
             return false;
         }
 
-        return !getBlockType().isAllowed(materials, item.getType());
-    }
-
-    private BlockType getBlockType() {
-        return module().getBoolean("whitelist") ? BlockType.WHITELIST : BlockType.BLACKLIST;
+        return !blockType.isAllowed(materials, item.getType());
     }
 
     private enum BlockType {
         WHITELIST(Collection::contains),
         BLACKLIST(not(Collection::contains));
 
-        private BiPredicate<Collection<Material>, Material> filter;
+        private final BiPredicate<Collection<Material>, Material> filter;
 
         BlockType(BiPredicate<Collection<Material>, Material> filter) {
             this.filter = filter;

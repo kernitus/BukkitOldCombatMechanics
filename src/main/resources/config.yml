@@ -82,6 +82,13 @@ disable-offhand:
   # Won't affect sword-blocking module
   enabled: true
   worlds: []
+  # Whether the following list allows items or blocks them
+  whitelist: true
+  # List of items that should be allowed/blocked
+  # Example: [diamond_sword,BOW]
+  items: []
+  # Message to send user when denied. Set to '' to disable
+  denied-message: "&cOff-hand is disabled"
 
 old-brewing-stand:
   # Automatically refuels brewing stands
@@ -578,4 +585,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 58
+config-version: 59
