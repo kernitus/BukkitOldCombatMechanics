@@ -19,9 +19,11 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,14 +52,14 @@ public class ModuleDisableOffHand extends OCMModule {
     }
 
     private void sendDeniedMessage(CommandSender sender) {
-        if(!deniedMessage.isBlank())
+        if (!deniedMessage.isBlank())
             Messenger.sendNormalMessage(sender, deniedMessage);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
         final Player player = e.getPlayer();
-        if (isEnabled(player.getWorld()) && shouldWeCancel(e.getOffHandItem())) {
+        if (isEnabled(player.getWorld()) && isItemAllowed(e.getOffHandItem())) {
             e.setCancelled(true);
             sendDeniedMessage(player);
         }
@@ -88,7 +90,7 @@ public class ModuleDisableOffHand extends OCMModule {
         final ItemStack currentItem = e.getCurrentItem();
         if (currentItem != null
                 && currentItem.getType() == Material.SHIELD
-                && shouldWeCancel(currentItem)
+                && isItemAllowed(currentItem)
                 && e.getSlot() != OFFHAND_SLOT
                 && e.isShiftClick()) {
             e.setResult(Event.Result.DENY);
@@ -97,28 +99,42 @@ public class ModuleDisableOffHand extends OCMModule {
 
         if (e.getSlot() == OFFHAND_SLOT &&
                 // Let allowed items be placed into offhand slot with number keys (hotbar swap)
-                ((clickType == ClickType.NUMBER_KEY && shouldWeCancel(clickedInventory.getItem(e.getHotbarButton())))
-                        || shouldWeCancel(e.getCursor())) // Deny placing not allowed items into offhand slot
+                ((clickType == ClickType.NUMBER_KEY && isItemAllowed(clickedInventory.getItem(e.getHotbarButton())))
+                        || isItemAllowed(e.getCursor())) // Deny placing not allowed items into offhand slot
         ) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent e) {
         final HumanEntity player = e.getWhoClicked();
         if (!isEnabled(player.getWorld())
                 || e.getInventory().getType() != InventoryType.CRAFTING
                 || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
 
-        if (shouldWeCancel(e.getOldCursor())) {
+        if (isItemAllowed(e.getOldCursor())) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
     }
 
-    private boolean shouldWeCancel(ItemStack item) {
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onWorldChange(PlayerChangedWorldEvent e) {
+        final Player player = e.getPlayer();
+        final PlayerInventory inventory = player.getInventory();
+        final ItemStack offHandItem = inventory.getItemInOffHand();
+
+        if (isItemAllowed(offHandItem)) {
+            sendDeniedMessage(player);
+            inventory.setItemInOffHand(new ItemStack(Material.AIR));
+            if (!inventory.addItem(offHandItem).isEmpty())
+                player.getWorld().dropItemNaturally(player.getLocation(), offHandItem);
+        }
+    }
+
+    private boolean isItemAllowed(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
             return false;
         }
