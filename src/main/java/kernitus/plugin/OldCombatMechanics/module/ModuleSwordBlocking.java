@@ -30,19 +30,9 @@ public class ModuleSwordBlocking extends OCMModule {
 
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here, for extra reliability
-    private final Map<UUID, StoredItem> storedItems = new HashMap<>();
+    private final Map<UUID, ItemStack> storedItems = new HashMap<>();
     private final Map<UUID, Collection<BukkitTask>> correspondingTasks = new HashMap<>();
     private int restoreDelay;
-
-    private static final class StoredItem {
-        final ItemStack item;
-        final EquipmentSlot slot;
-
-        public StoredItem(ItemStack item, EquipmentSlot slot) {
-            this.item = item;
-            this.slot = slot;
-        }
-    }
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
@@ -81,12 +71,7 @@ public class ModuleSwordBlocking extends OCMModule {
         final ItemStack mainHandItem = inventory.getItemInMainHand();
         final ItemStack offHandItem = inventory.getItemInOffHand();
 
-        final boolean swordInMainHand = isHoldingSword(mainHandItem.getType());
-        final boolean swordInOffHand = isHoldingSword(offHandItem.getType());
-        final boolean isHoldingSword = swordInMainHand || swordInOffHand;
-
-        final EquipmentSlot nonSwordSlot = swordInMainHand ? EquipmentSlot.OFF_HAND : EquipmentSlot.HAND;
-        final ItemStack nonSwordItem = inventory.getItem(nonSwordSlot);
+        if(!isHoldingSword(mainHandItem.getType())) return;
 
         final World world = player.getWorld();
 
@@ -98,11 +83,11 @@ public class ModuleSwordBlocking extends OCMModule {
         final UUID id = player.getUniqueId();
 
         if (!isPlayerBlocking(player)) {
-            if (!isHoldingSword || hasShield(inventory)) return;
-            debug("Storing " + nonSwordItem, player);
-            storedItems.put(id, new StoredItem(nonSwordItem, nonSwordSlot));
+            if (hasShield(inventory)) return;
+            debug("Storing " + offHandItem, player);
+            storedItems.put(id, offHandItem);
 
-            inventory.setItem(nonSwordSlot, SHIELD);
+            inventory.setItemInOffHand(SHIELD);
         }
         scheduleRestore(player);
     }
@@ -130,7 +115,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
         e.getDrops().replaceAll(item ->
                 item.getType() == Material.SHIELD ?
-                        storedItems.remove(id).item : item
+                        storedItems.remove(id) : item
         );
 
         // Handle keepInventory = true
@@ -180,14 +165,10 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!areItemsStored(id)) return;
 
         plugin.getLogger().info("Restoring items for player " + p.getName() + ": Current offhand: " +
-                p.getInventory().getItemInOffHand() + ", Stored item: " + storedItems.get(id).item);
+                p.getInventory().getItemInOffHand() + ", Stored item: " + storedItems.get(id));
 
-        if (isPlayerBlocking(p))
-            scheduleRestore(p);
-        else {
-            final StoredItem storedItem = storedItems.remove(id);
-            p.getInventory().setItem(storedItem.slot, storedItem.item);
-        }
+        if (isPlayerBlocking(p)) scheduleRestore(p);
+        else p.getInventory().setItemInOffHand(storedItems.remove(id));
     }
 
     private void tryCancelTask(UUID id) {
@@ -198,7 +179,6 @@ public class ModuleSwordBlocking extends OCMModule {
     private void scheduleRestore(Player p) {
         final UUID id = p.getUniqueId();
         tryCancelTask(id);
-
 
         final BukkitTask removeItem = Bukkit.getScheduler()
                 .runTaskLater(plugin, () -> restore(p), restoreDelay);
@@ -230,8 +210,7 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private boolean hasShield(PlayerInventory inventory) {
-        return inventory.getItemInOffHand().getType() == Material.SHIELD
-                || inventory.getItemInMainHand().getType() == Material.SHIELD;
+        return inventory.getItemInOffHand().getType() == Material.SHIELD;
     }
 
     private boolean isHoldingSword(Material mat) {
