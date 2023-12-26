@@ -82,11 +82,6 @@ disable-offhand:
   # Won't affect sword-blocking module
   enabled: true
   worlds: []
-  # Whether the following list allows items or blocks them
-  whitelist: true
-  # List of items that should be allowed/blocked
-  # Example: [diamond_sword,BOW]
-  items: []
 
 old-brewing-stand:
   # Automatically refuels brewing stands
