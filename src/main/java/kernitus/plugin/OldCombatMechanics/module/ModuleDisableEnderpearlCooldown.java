@@ -61,7 +61,7 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
         if (!(shooter instanceof Player)) return;
         final Player player = (Player) shooter;
 
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         final UUID uuid = player.getUniqueId();
 

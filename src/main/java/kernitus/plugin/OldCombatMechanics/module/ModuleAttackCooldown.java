@@ -8,7 +8,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -60,9 +59,7 @@ public class ModuleAttackCooldown extends OCMModule {
      * @param player the player to set it for
      */
     private void adjustAttackSpeed(Player player) {
-        final World world = player.getWorld();
-
-        final double attackSpeed = isEnabled(world)
+        final double attackSpeed = isEnabled(player)
                 ? module().getDouble("generic-attack-speed")
                 : PVPMode.NEW_PVP.getBaseAttackSpeed();
 
@@ -136,12 +133,11 @@ public class ModuleAttackCooldown extends OCMModule {
          * @return the PVP mode of the player
          */
         public static PVPMode getModeForPlayer(Player player) {
-            Objects.requireNonNull(player, "player cannot be null!");
+            Objects.requireNonNull(player, "Player cannot be null!");
 
             final double baseAttackSpeed = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED).getBaseValue();
 
-            return getByBaseAttackSpeed(baseAttackSpeed)
-                    .orElse(PVPMode.OLD_PVP);
+            return getByBaseAttackSpeed(baseAttackSpeed).orElse(PVPMode.OLD_PVP);
         }
 
         private static Optional<PVPMode> getByBaseAttackSpeed(double speed) {

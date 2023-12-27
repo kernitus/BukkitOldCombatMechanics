@@ -15,7 +15,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.packet.particle.ParticlePack
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -25,7 +24,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +38,7 @@ public class ModuleSwordSweep extends OCMModule {
     private final List<Location> sweepLocations = new ArrayList<>();
     private final ParticleListener particleListener;
     private EntityDamageEvent.DamageCause sweepDamageCause;
-    private BukkitRunnable task;
+    private BukkitTask task;
 
     public ModuleSwordSweep(OCMMain plugin) {
         super(plugin, "disable-sword-sweep");
@@ -47,12 +46,11 @@ public class ModuleSwordSweep extends OCMModule {
         this.particleListener = new ParticleListener();
 
         try {
-            // Will be available from some 1.11 version onwards
+            // Available from 1.11 onwards
             sweepDamageCause = EntityDamageEvent.DamageCause.valueOf("ENTITY_SWEEP_ATTACK");
         } catch (IllegalArgumentException e) {
             sweepDamageCause = null;
         }
-
 
         // inject all players at startup, so the plugin still works properly after a reload
         OCMMain.getInstance().addEnableListener(() -> {
@@ -69,14 +67,7 @@ public class ModuleSwordSweep extends OCMModule {
 
         if (task != null) task.cancel();
 
-        task = new BukkitRunnable() {
-            @Override
-            public void run() {
-                sweepLocations.clear();
-            }
-        };
-
-        task.runTaskTimer(plugin, 0, 1);
+        task = Bukkit.getScheduler().runTaskTimer(plugin, sweepLocations::clear, 0, 1);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -89,11 +80,9 @@ public class ModuleSwordSweep extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamaged(EntityDamageByEntityEvent e) {
         final Entity damager = e.getDamager();
-        final World world = damager.getWorld();
-
-        if (!isEnabled(world)) return;
 
         if (!(damager instanceof Player)) return;
+        if (!isEnabled(damager, e.getEntity())) return;
 
         if (sweepDamageCause != null) {
             if (e.getCause() == sweepDamageCause) {

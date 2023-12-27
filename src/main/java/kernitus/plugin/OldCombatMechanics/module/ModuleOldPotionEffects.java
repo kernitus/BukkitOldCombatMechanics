@@ -71,7 +71,7 @@ public class ModuleOldPotionEffects extends OCMModule {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPlayerDrinksPotion(PlayerItemConsumeEvent event) {
         final Player player = event.getPlayer();
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         final ItemStack potionItem = event.getItem();
         if (potionItem.getType() != Material.POTION) return;
@@ -95,7 +95,7 @@ public class ModuleOldPotionEffects extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPotionThrow(PlayerInteractEvent event) {
         final Player player = event.getPlayer();
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         final Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
@@ -140,7 +140,7 @@ public class ModuleOldPotionEffects extends OCMModule {
     @EventHandler(ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event) {
         final Entity damager = event.getDamager();
-        if (!isEnabled(damager.getWorld())) return;
+        if (!isEnabled(damager, event.getDamagee())) return;
 
         if (event.hasWeakness()) {
             event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));

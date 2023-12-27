@@ -29,11 +29,10 @@ public class ModuleOldBurnDelay extends OCMModule {
 
     @EventHandler
     public void onFireTick(EntityDamageEvent e) {
-        final Entity entity = e.getEntity();
-
-        if (!isEnabled(entity.getWorld())) return;
-
         if (e.getCause() == EntityDamageEvent.DamageCause.FIRE) {
+            final Entity entity = e.getEntity();
+            if(!isEnabled(entity)) return;
+
             entity.setFireTicks(fireTicks);
             debug("Setting fire ticks to " + fireTicks, entity);
         }

@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
@@ -15,7 +16,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,7 +32,7 @@ public class ModuleOldArmourDurability extends OCMModule {
     public void onItemDamage(PlayerItemDamageEvent e) {
         final Player player = e.getPlayer();
 
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
         final ItemStack item = e.getItem();
         final Material itemType = item.getType();
 
@@ -80,16 +80,11 @@ public class ModuleOldArmourDurability extends OCMModule {
         final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
         explosionDamaged.put(uuid, armour);
 
-        BukkitRunnable runnable = new BukkitRunnable() {
-            @Override
-            public void run() {
-                explosionDamaged.remove(uuid);
-                debug("Removed from explosion set!", player);
-            }
-        };
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            explosionDamaged.remove(uuid);
+            debug("Removed from explosion set!", player);
+        }, 1L); // This delay seems enough for the durability events to fire
 
-        // This delay seems enough for the durability events to fire
-        runnable.runTaskLater(plugin, 1);
         debug("Detected explosion!", player);
     }
 }

@@ -11,6 +11,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionCho
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.FishHook;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -50,8 +51,9 @@ public class ModuleFishingRodVelocity extends OCMModule {
     @EventHandler (ignoreCancelled = true)
     public void onFishEvent(PlayerFishEvent event) {
         final FishHook fishHook = getHook.apply(event);
+        final Player player = event.getPlayer();
 
-        if (!isEnabled(fishHook.getWorld()) || event.getState() != PlayerFishEvent.State.FISHING) return;
+        if (!isEnabled(player) || event.getState() != PlayerFishEvent.State.FISHING) return;
 
         final Location location = event.getPlayer().getLocation();
         final double playerYaw = location.getYaw();
@@ -80,6 +82,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
         fishHook.setVelocity(new Vector(velocityX, velocityY, velocityZ));
 
         if (!hasDifferentGravity) return;
+
         // Adjust gravity on every tick unless it's in water
         new BukkitRunnable() {
             @Override

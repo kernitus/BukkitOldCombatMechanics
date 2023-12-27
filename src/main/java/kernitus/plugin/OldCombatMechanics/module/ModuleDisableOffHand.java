@@ -52,14 +52,14 @@ public class ModuleDisableOffHand extends OCMModule {
     }
 
     private void sendDeniedMessage(CommandSender sender) {
-        if (!deniedMessage.isBlank())
+        if (deniedMessage.trim().length() > 0)
             Messenger.sendNormalMessage(sender, deniedMessage);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
         final Player player = e.getPlayer();
-        if (isEnabled(player.getWorld()) && isItemAllowed(e.getOffHandItem())) {
+        if (isEnabled(player) && isItemAllowed(e.getOffHandItem())) {
             e.setCancelled(true);
             sendDeniedMessage(player);
         }
@@ -68,7 +68,7 @@ public class ModuleDisableOffHand extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
         final HumanEntity player = e.getWhoClicked();
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
         final ClickType clickType = e.getClick();
 
         try {
@@ -110,7 +110,7 @@ public class ModuleDisableOffHand extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent e) {
         final HumanEntity player = e.getWhoClicked();
-        if (!isEnabled(player.getWorld())
+        if (!isEnabled(player)
                 || e.getInventory().getType() != InventoryType.CRAFTING
                 || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
 

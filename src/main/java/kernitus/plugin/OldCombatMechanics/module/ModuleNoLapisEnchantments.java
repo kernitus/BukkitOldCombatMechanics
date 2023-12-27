@@ -8,8 +8,8 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry;
 import kernitus.plugin.OldCombatMechanics.versions.materials.VersionedMaterial;
-import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.*;
@@ -23,7 +23,7 @@ import org.bukkit.permissions.Permissible;
  */
 public class ModuleNoLapisEnchantments extends OCMModule {
 
-    private VersionedMaterial lapisLazuli;
+    private final VersionedMaterial lapisLazuli;
 
     public ModuleNoLapisEnchantments(OCMMain plugin) {
         super(plugin, "no-lapis-enchantments");
@@ -33,10 +33,10 @@ public class ModuleNoLapisEnchantments extends OCMModule {
 
     @EventHandler
     public void onEnchant(EnchantItemEvent e) {
-        final Block block = e.getEnchantBlock();
-        if (!isEnabled(block.getWorld())) return;
+        final Player player = e.getEnchanter();
+        if (!isEnabled(player)) return;
 
-        if (hasNoPermission(e.getEnchanter())) return;
+        if (hasNoPermission(player)) return;
 
         final EnchantingInventory ei = (EnchantingInventory) e.getInventory(); //Not checking here because how else would event be fired?
         ei.setSecondary(getLapis());
@@ -44,7 +44,7 @@ public class ModuleNoLapisEnchantments extends OCMModule {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
-        if (!isEnabled(e.getWhoClicked().getWorld())) return;
+        if (!isEnabled(e.getWhoClicked())) return;
 
         if (e.getInventory().getType() != InventoryType.ENCHANTING) return;
 
@@ -64,7 +64,7 @@ public class ModuleNoLapisEnchantments extends OCMModule {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent e) {
-        if (!isEnabled(e.getPlayer().getWorld())) return;
+        if (!isEnabled(e.getPlayer())) return;
 
         final Inventory inventory = e.getInventory();
         if (inventory == null || inventory.getType() != InventoryType.ENCHANTING) return;
@@ -79,7 +79,7 @@ public class ModuleNoLapisEnchantments extends OCMModule {
     }
 
     private void fillUpEnchantingTable(HumanEntity player, Inventory inventory) {
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         if (inventory == null || inventory.getType() != InventoryType.ENCHANTING || hasNoPermission(player)) return;
         ((EnchantingInventory) inventory).setSecondary(getLapis());

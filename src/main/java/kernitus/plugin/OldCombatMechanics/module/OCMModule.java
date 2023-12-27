@@ -11,10 +11,16 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.Listener;
+import org.bukkit.metadata.MetadataValue;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * A module providing some specific functionality, e.g. restoring fishing rod knockback.
@@ -44,7 +50,7 @@ public abstract class OCMModule implements Listener {
      * @param world the world to check. Null to check whether it is globally disabled
      * @return true if the module is enabled in that world
      */
-    public boolean isEnabled(World world){
+    public boolean isEnabled(@NotNull World world){
         return Config.moduleEnabled(configName, world);
     }
 
@@ -54,7 +60,41 @@ public abstract class OCMModule implements Listener {
      * @return true if this module is globally enabled
      */
     public boolean isEnabled(){
-        return isEnabled(null);
+        return Config.moduleEnabled(configName, null);
+    }
+
+    /**
+     * Whether this module should be enabled for this player and for the world he is currently in
+     */
+    public boolean isEnabled(@NotNull HumanEntity humanEntity){
+        // TODO should actually store modeset in a more permanent way
+        final List<MetadataValue> metadataValues = humanEntity.getMetadata("OCM-modeset");
+        if(metadataValues.size() > 0){
+            final String modesetName = metadataValues.get(0).asString();
+            final Set<String> modeset = Config.getModesets().get(modesetName);
+
+            return isEnabled(humanEntity.getWorld()) && modeset != null && modeset.contains(configName);
+        }
+        return isEnabled(humanEntity.getWorld());
+    }
+
+    public boolean isEnabled(@NotNull Entity entity){
+        if(entity instanceof HumanEntity)
+            return isEnabled((HumanEntity) entity);
+        return isEnabled(entity.getWorld());
+    }
+
+    /**
+     * Returns if module should be enabled, giving priority to the attacker, if a human.
+     * If neither entity a human, checks if module should be enabled in the defender's world.
+     * @param attacker
+     * @param defender
+     * @return
+     */
+    public boolean isEnabled(@NotNull Entity attacker, @NotNull Entity defender){
+        if(attacker instanceof HumanEntity) return isEnabled((HumanEntity) attacker);
+        if(defender instanceof HumanEntity) return isEnabled((HumanEntity) defender);
+        return isEnabled(defender.getWorld());
     }
 
     /**
@@ -119,5 +159,9 @@ public abstract class OCMModule implements Listener {
      */
     public String getModuleName(){
         return moduleName;
+    }
+
+    public String getConfigName(){
+        return configName;
     }
 }

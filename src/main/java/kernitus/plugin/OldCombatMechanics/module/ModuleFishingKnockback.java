@@ -53,10 +53,12 @@ public class ModuleFishingKnockback extends OCMModule {
         final Entity hookEntity = e.getEntity();
         final World world = hookEntity.getWorld();
 
-        if (!isEnabled(world)) return;
-
         if (e.getEntityType() != EntityType.FISHING_HOOK) return;
         final FishHook hook = (FishHook) hookEntity;
+
+        if(!(hook.getShooter() instanceof Player)) return;
+        final Player rodder = (Player) hook.getShooter();
+        if (!isEnabled(rodder)) return;
 
         final Entity hitEntity = getHitEntityFunction.apply(e);
 
@@ -69,8 +71,6 @@ public class ModuleFishingKnockback extends OCMModule {
         if (hitEntity.hasMetadata("NPC")) return;
 
 
-        if(!(hook.getShooter() instanceof Player)) return;
-        final Player rodder = (Player) hook.getShooter();
 
         if (!knockbackNonPlayerEntities) {
             final Player player = (Player) hitEntity;

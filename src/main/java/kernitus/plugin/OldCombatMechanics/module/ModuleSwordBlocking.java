@@ -9,7 +9,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -46,7 +45,7 @@ public class ModuleSwordBlocking extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockCanBuildEvent e) {
         final Player player = e.getPlayer();
-        if (player == null) return;
+        if (player == null || !isEnabled(player)) return;
 
         if (!e.isBuildable()) doShieldBlock(player);
     }
@@ -55,6 +54,8 @@ public class ModuleSwordBlocking extends OCMModule {
     public void onRightClick(PlayerInteractEvent e) {
         final Action action = e.getAction();
         final Player player = e.getPlayer();
+
+        if (!isEnabled(player)) return;
 
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
         // If they clicked on an interactive block, the 2nd event with the offhand won't fire
@@ -72,10 +73,6 @@ public class ModuleSwordBlocking extends OCMModule {
         final ItemStack offHandItem = inventory.getItemInOffHand();
 
         if(!isHoldingSword(mainHandItem.getType())) return;
-
-        final World world = player.getWorld();
-
-        if (!isEnabled(world)) return;
 
         if (module().getBoolean("use-permission") &&
                 !player.hasPermission("oldcombatmechanics.swordblock")) return;

@@ -6,13 +6,13 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -30,7 +30,7 @@ public class ModuleChorusFruit extends OCMModule {
         if (e.getItem().getType() != Material.CHORUS_FRUIT) return;
         final Player player = e.getPlayer();
 
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         if (module().getBoolean("prevent-eating")) {
             e.setCancelled(true);
@@ -44,18 +44,15 @@ public class ModuleChorusFruit extends OCMModule {
 
         // Run it on the next tick to reset things while not cancelling the chorus fruit eat event
         // This ensures the teleport event is fired and counts towards statistics
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                final int newFoodLevel = Math.min(hungerValue + previousFoodLevel, 20);
-                final float newSaturation = Math.min((float) (saturationValue + previousSaturation), newFoodLevel);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            final int newFoodLevel = Math.min(hungerValue + previousFoodLevel, 20);
+            final float newSaturation = Math.min((float) (saturationValue + previousSaturation), newFoodLevel);
 
-                player.setFoodLevel(newFoodLevel);
-                player.setSaturation(newSaturation);
+            player.setFoodLevel(newFoodLevel);
+            player.setSaturation(newSaturation);
 
-                debug("Food level changed from: " + previousFoodLevel + " to " + player.getFoodLevel(), player);
-            }
-        }.runTaskLater(plugin, 2);
+            debug("Food level changed from: " + previousFoodLevel + " to " + player.getFoodLevel(), player);
+        }, 2L);
     }
 
     @EventHandler
@@ -63,7 +60,7 @@ public class ModuleChorusFruit extends OCMModule {
         if (e.getCause() != PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT) return;
 
         final Player player = e.getPlayer();
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         final double distance = getMaxTeleportationDistance();
 
@@ -79,7 +76,7 @@ public class ModuleChorusFruit extends OCMModule {
         }
 
         // Not sure when this can occur, but it is marked as @Nullable
-        Location toLocation = e.getTo();
+        final Location toLocation = e.getTo();
 
         if (toLocation == null) {
             debug("Teleport target is null", player);

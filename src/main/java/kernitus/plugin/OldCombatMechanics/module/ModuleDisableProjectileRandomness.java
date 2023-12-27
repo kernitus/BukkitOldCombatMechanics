@@ -20,6 +20,7 @@ import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Prevents the noise introduced when shooting with a bow to make arrows go straight.
@@ -50,8 +51,11 @@ public class ModuleDisableProjectileRandomness extends OCMModule {
     @Override
     public void reload() {
         EPSILON = module().getDouble("epsilon");
-        projectileTypes = module().getStringList("projectile-types").stream()
-                .map(str -> str.toUpperCase(Locale.ROOT)).map(EntityType::valueOf).toList();
+        projectileTypes = module()
+                .getStringList("projectile-types").stream()
+                .map(str -> str.toUpperCase(Locale.ROOT))
+                .map(EntityType::valueOf)
+                .collect(Collectors.toList());
     }
 
     @EventHandler
@@ -59,36 +63,36 @@ public class ModuleDisableProjectileRandomness extends OCMModule {
         final Projectile projectile = e.getEntity();
         final ProjectileSource shooter = projectile.getShooter();
 
-        if(!projectileTypes.contains(e.getEntityType())) return;
+        if (!projectileTypes.contains(e.getEntityType())) return;
 
-        if (shooter instanceof Player) {
-            final Player player = (Player) shooter;
-            if (!isEnabled(player.getWorld())) return;
-            debug("Making projectile go straight", player);
+        if (!(shooter instanceof Player)) return;
+        final Player player = (Player) shooter;
+        if (!isEnabled(player)) return;
 
-            final Vector playerDirection = player.getLocation().getDirection().normalize();
-            final Vector projectileDirection = projectile.getVelocity();
+        debug("Making projectile go straight", player);
 
-            // Keep original speed
-            final double originalMagnitude = projectileDirection.length();
-            projectileDirection.normalize();
+        final Vector playerDirection = player.getLocation().getDirection().normalize();
+        final Vector projectileDirection = projectile.getVelocity();
 
-            final ItemStack item = player.getInventory().getItemInMainHand();
+        // Keep original speed
+        final double originalMagnitude = projectileDirection.length();
+        projectileDirection.normalize();
 
-            // If the projectile is not going straight (e.g. multishot arrows)
-            if (item.getType() == Material.CROSSBOW && item.getEnchantmentLevel(Enchantment.MULTISHOT) > 0) {
-                if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), 0.17))) {
-                    debug("10° Offset", player); // 10 degrees is 0.17 radians
-                    rotateAroundY.apply(playerDirection, 0.17);
-                } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), -0.17))) {
-                    debug("-10° Offset", player);
-                    rotateAroundY.apply(playerDirection, -0.17);
-                }
+        final ItemStack item = player.getInventory().getItemInMainHand();
+
+        // If the projectile is not going straight (e.g. multishot arrows)
+        if (item.getType() == Material.CROSSBOW && item.getEnchantmentLevel(Enchantment.MULTISHOT) > 0) {
+            if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), 0.17))) {
+                debug("10° Offset", player); // 10 degrees is 0.17 radians
+                rotateAroundY.apply(playerDirection, 0.17);
+            } else if (fuzzyVectorEquals(projectileDirection, rotateAroundY.apply(playerDirection.clone(), -0.17))) {
+                debug("-10° Offset", player);
+                rotateAroundY.apply(playerDirection, -0.17);
             }
-
-            playerDirection.multiply(originalMagnitude);
-            projectile.setVelocity(playerDirection);
         }
+
+        playerDirection.multiply(originalMagnitude);
+        projectile.setVelocity(playerDirection);
     }
 
     private boolean fuzzyVectorEquals(Vector a, Vector b) {

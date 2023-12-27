@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,7 +16,6 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +44,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onItemDamage(PlayerItemDamageEvent e) {
         final Player player = e.getPlayer();
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
         final UUID uuid = player.getUniqueId();
         final ItemStack item = e.getItem();
 
@@ -69,7 +69,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
         final Player player = (Player) entity;
 
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(e.getDamager(), player)) return;
 
         // Blocking is calculated after base and hard hat, and before armour etc.
         final double baseDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
@@ -87,13 +87,11 @@ public class ModuleShieldDamageReduction extends OCMModule {
         if (currentDamage <= 0) { // Make sure armour is not damaged if fully blocked
             final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
             fullyBlocked.put(uuid, armour);
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    fullyBlocked.remove(uuid);
-                    debug("Removed from fully blocked set!", player);
-                }
-            }.runTaskLater(plugin, 1);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                fullyBlocked.remove(uuid);
+                debug("Removed from fully blocked set!", player);
+            }, 1L);
         }
     }
 

@@ -44,8 +44,8 @@ public class ModulePlayerRegen extends OCMModule {
             return;
 
         final Player p = (Player) e.getEntity();
+        if (!isEnabled(p)) return;
 
-        if (!isEnabled(p.getWorld())) return;
         final UUID playerId = p.getUniqueId();
 
         // We cancel the regen, but saturation and exhaustion need to be adjusted separately

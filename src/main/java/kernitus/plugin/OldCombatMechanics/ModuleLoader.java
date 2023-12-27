@@ -15,7 +15,7 @@ import java.util.List;
 public class ModuleLoader {
 
     private static EventRegistry eventRegistry;
-    private static List<OCMModule> modules = new ArrayList<>();
+    private static final List<OCMModule> modules = new ArrayList<>();
 
     public static void initialise(OCMMain plugin) {
         ModuleLoader.eventRegistry = new EventRegistry(plugin);

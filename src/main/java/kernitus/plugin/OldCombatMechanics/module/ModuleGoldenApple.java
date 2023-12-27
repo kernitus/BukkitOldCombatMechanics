@@ -11,8 +11,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -102,11 +102,11 @@ public class ModuleGoldenApple extends OCMModule {
             return; // This should never ever ever ever run. If it does then you probably screwed something up.
 
         if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
-            final World world = e.getView().getPlayer().getWorld();
+            final HumanEntity player = e.getView().getPlayer();
 
             if (isSettingEnabled("no-conflict-mode")) return;
 
-            if (!isEnabled(world) || !isSettingEnabled("enchanted-golden-apple-crafting"))
+            if (!isEnabled(player) || !isSettingEnabled("enchanted-golden-apple-crafting"))
                 e.getInventory().setResult(null);
         }
     }
@@ -115,7 +115,7 @@ public class ModuleGoldenApple extends OCMModule {
     public void onItemConsume(PlayerItemConsumeEvent e) {
         final Player player = e.getPlayer();
 
-        if (!isEnabled(player.getWorld())) return;
+        if (!isEnabled(player)) return;
 
         final ItemStack originalItem = e.getItem();
         final Material consumedMaterial = originalItem.getType();

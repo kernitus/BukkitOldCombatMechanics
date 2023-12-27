@@ -11,13 +11,13 @@ import org.bukkit.event.EventHandler;
 
 public class ModuleOldCriticalHits extends OCMModule {
 
+    private boolean allowSprinting;
+    private double multiplier;
+
     public ModuleOldCriticalHits(OCMMain plugin) {
         super(plugin, "old-critical-hits");
         reload();
     }
-
-    private boolean allowSprinting;
-    private double multiplier;
 
     @Override
     public void reload() {
@@ -27,11 +27,10 @@ public class ModuleOldCriticalHits extends OCMModule {
 
     @EventHandler
     public void onOCMDamage(OCMEntityDamageByEntityEvent e) {
-        if (!isEnabled(e.getDamagee().getWorld())) return;
+        if (!isEnabled(e.getDamager(), e.getDamagee())) return;
 
-        // In 1.9 a critical hit requires the player not to be sprinting
-        if (e.was1_8Crit() && (allowSprinting || !e.wasSprinting())) {
+        // In 1.9, a critical hit requires the player not to be sprinting
+        if (e.was1_8Crit() && (allowSprinting || !e.wasSprinting()))
             e.setCriticalMultiplier(multiplier);
-        }
     }
 }

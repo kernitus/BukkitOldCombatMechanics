@@ -61,13 +61,16 @@ public class OCMMain extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
 
-        PluginDescriptionFile pdfFile = this.getDescription();
+        final PluginDescriptionFile pdfFile = this.getDescription();
 
         // Setting up config.yml
         CH.setupConfigIfNotPresent();
 
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
+
+        // Initialise Config utility
+        Config.initialise(this);
 
         // Register all the modules
         registerModules();
@@ -86,11 +89,10 @@ public class OCMMain extends JavaPlugin {
         // Initialise the Messenger utility
         Messenger.initialise(this);
 
-        // Initialise Config utility
-        Config.initialise(this);
+        Config.reload();
 
         // BStats Metrics
-        Metrics metrics = new Metrics(this, 53);
+        final Metrics metrics = new Metrics(this, 53);
 
         // Simple bar chart
         metrics.addCustomChart(
@@ -111,7 +113,7 @@ public class OCMMain extends JavaPlugin {
         enableListeners.forEach(Runnable::run);
 
         // Properly handle Plugman load/unload.
-        List<RegisteredListener> joinListeners = Arrays.stream(PlayerJoinEvent.getHandlerList().getRegisteredListeners())
+        final List<RegisteredListener> joinListeners = Arrays.stream(PlayerJoinEvent.getHandlerList().getRegisteredListeners())
                 .filter(registeredListener -> registeredListener.getPlugin().equals(this))
                 .collect(Collectors.toList());
 
@@ -149,7 +151,7 @@ public class OCMMain extends JavaPlugin {
         disableListeners.forEach(Runnable::run);
 
         // Properly handle Plugman load/unload.
-        List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
+        final List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
                 .filter(registeredListener -> registeredListener.getPlugin().equals(this))
                 .collect(Collectors.toList());
 
@@ -229,9 +231,8 @@ public class OCMMain extends JavaPlugin {
     }
 
     private void registerHooks() {
-        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI"))
             hooks.add(new PlaceholderAPIHook());
-        }
     }
 
     public void upgradeConfig() {

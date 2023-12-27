@@ -7,9 +7,9 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,7 +27,7 @@ public class ModuleAttackFrequency extends OCMModule {
 
     public ModuleAttackFrequency(OCMMain plugin) {
         super(plugin, "attack-frequency");
-        module().getInt("delay");
+        reload();
     }
 
     @Override
@@ -36,16 +36,17 @@ public class ModuleAttackFrequency extends OCMModule {
         mobDelay = module().getInt("mobDelay");
 
         Bukkit.getWorlds().forEach(world -> world.getLivingEntities().forEach(livingEntity -> {
-            final int toApply = livingEntity instanceof HumanEntity ? playerDelay : mobDelay;
-            livingEntity.setMaximumNoDamageTicks(isEnabled(world) ? toApply : DEFAULT_DELAY);
+            if (livingEntity instanceof Player)
+                livingEntity.setMaximumNoDamageTicks(isEnabled((Player) livingEntity) ? playerDelay : DEFAULT_DELAY);
+            else
+                livingEntity.setMaximumNoDamageTicks(isEnabled(world) ? mobDelay : DEFAULT_DELAY);
         }));
     }
 
     @EventHandler
     public void onPlayerLogin(PlayerJoinEvent e) {
         final Player player = e.getPlayer();
-        final World world = player.getWorld();
-        if (isEnabled(world)) setDelay(player, playerDelay);
+        if (isEnabled(player)) setDelay(player, playerDelay);
     }
 
     @EventHandler
@@ -56,15 +57,13 @@ public class ModuleAttackFrequency extends OCMModule {
     @EventHandler
     public void onPlayerChangeWorld(PlayerChangedWorldEvent e) {
         final Player player = e.getPlayer();
-        final World world = player.getWorld();
-        setDelay(player, isEnabled(world) ? playerDelay : DEFAULT_DELAY);
+        setDelay(player, isEnabled(player) ? playerDelay : DEFAULT_DELAY);
     }
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent e) {
         final Player player = e.getPlayer();
-        final World world = player.getWorld();
-        setDelay(player, isEnabled(world) ? playerDelay : DEFAULT_DELAY);
+        setDelay(player, isEnabled(player) ? playerDelay : DEFAULT_DELAY);
     }
 
     private void setDelay(Player player, int delay) {
@@ -81,12 +80,16 @@ public class ModuleAttackFrequency extends OCMModule {
 
     @EventHandler
     public void onEntityTeleportEvent(EntityTeleportEvent e) {
+        // This event is only fired for non-player entities
         final Entity entity = e.getEntity();
         if (!(entity instanceof LivingEntity)) return;
         final LivingEntity livingEntity = (LivingEntity) entity;
 
         final World fromWorld = e.getFrom().getWorld();
-        final World toWorld = e.getTo().getWorld();
-        if (fromWorld.getUID() != toWorld.getUID()) livingEntity.setMaximumNoDamageTicks(isEnabled(toWorld) ? mobDelay : DEFAULT_DELAY);
+        final Location toLocation = e.getTo();
+        if(toLocation == null) return;
+        final World toWorld = toLocation.getWorld();
+        if (fromWorld.getUID() != toWorld.getUID())
+            livingEntity.setMaximumNoDamageTicks(isEnabled(toWorld) ? mobDelay : DEFAULT_DELAY);
     }
 }

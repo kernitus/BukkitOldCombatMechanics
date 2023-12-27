@@ -14,6 +14,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -80,7 +81,18 @@ public class ModulePlayerKnockback extends OCMModule {
         // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
         final Entity entity = event.getEntity();
         if (!(entity instanceof Player) || netheriteKnockbackResistance) return;
-        final AttributeInstance attribute = ((Player) entity).getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
+        final Player damagee = (Player) entity;
+
+        // This depends on the attacker's combat mode
+        if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
+                && event instanceof EntityDamageByEntityEvent) {
+            final Entity damager = ((EntityDamageByEntityEvent) event).getDamager();
+            if(!isEnabled(damager)) return;
+        } else {
+            if(!isEnabled(damagee)) return;
+        }
+
+        final AttributeInstance attribute = damagee.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
         attribute.getModifiers().forEach(attribute::removeModifier);
     }
 
@@ -91,15 +103,16 @@ public class ModulePlayerKnockback extends OCMModule {
         if (!(damager instanceof LivingEntity)) return;
         final LivingEntity attacker = (LivingEntity) damager;
 
-        if (!isEnabled(attacker.getWorld())) return;
-
         final Entity damagee = event.getEntity();
         if (!(damagee instanceof Player)) return;
+        final Player victim = (Player) damagee;
 
         if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
         if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) > 0) return;
 
-        final Player victim = (Player) damagee;
+        if(attacker instanceof HumanEntity){
+            if (!isEnabled(attacker)) return;
+        } else if(!isEnabled(victim)) return;
 
         // Figure out base knockback direction
         Location attackerLocation = attacker.getLocation();

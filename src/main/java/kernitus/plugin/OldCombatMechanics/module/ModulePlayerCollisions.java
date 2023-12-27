@@ -78,7 +78,7 @@ public class ModulePlayerCollisions extends OCMModule {
      * @param player the player to send it to
      */
     private void createOrUpdateTeam(Player player) {
-        CollisionRule collisionRule = isEnabled(player.getWorld())
+        CollisionRule collisionRule = isEnabled(player)
                 ? CollisionRule.NEVER
                 : CollisionRule.ALWAYS;
 
@@ -141,7 +141,7 @@ public class ModulePlayerCollisions extends OCMModule {
             Object nmsPacket = packetEvent.getPacket().getNmsPacket();
             TeamPacket incomingTeamPacket = TeamPacket.from(nmsPacket);
 
-            CollisionRule collisionRule = isEnabled(packetEvent.getPlayer().getWorld())
+            CollisionRule collisionRule = isEnabled(packetEvent.getPlayer())
                     ? CollisionRule.NEVER
                     : CollisionRule.ALWAYS;
 
@@ -151,7 +151,7 @@ public class ModulePlayerCollisions extends OCMModule {
             }
 
             // always update, only react when enabled
-            if (!isEnabled(packetEvent.getPlayer().getWorld())) {
+            if (!isEnabled(packetEvent.getPlayer())) {
                 return;
             }
 

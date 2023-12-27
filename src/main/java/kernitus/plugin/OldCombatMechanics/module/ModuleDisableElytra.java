@@ -40,7 +40,7 @@ public class ModuleDisableElytra extends OCMModule {
         if (!(e.getWhoClicked() instanceof Player)) return;
         final Player player = (Player) e.getWhoClicked();
 
-        if (!isEnabled(player.getWorld()) || player.getGameMode() == GameMode.CREATIVE) return;
+        if (!isEnabled(player) || player.getGameMode() == GameMode.CREATIVE) return;
 
         // If they're in their own inventory, and not chests etc.
         final InventoryType inventoryType = e.getInventory().getType();
@@ -76,7 +76,7 @@ public class ModuleDisableElytra extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRightClick(PlayerInteractEvent e) {
-        if (!isEnabled(e.getPlayer().getWorld())) return;
+        if (!isEnabled(e.getPlayer())) return;
 
         // Must not be able to right click while holding an elytra to wear it
         final Action action = e.getAction();
@@ -89,7 +89,7 @@ public class ModuleDisableElytra extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDrag(InventoryDragEvent e) {
-        if (!isEnabled(e.getWhoClicked().getWorld())) return;
+        if (!isEnabled(e.getWhoClicked())) return;
 
         final ItemStack oldCursor = e.getOldCursor();
 
@@ -101,7 +101,7 @@ public class ModuleDisableElytra extends OCMModule {
     public void onWorldChange(PlayerChangedWorldEvent e) {
         final Player player = e.getPlayer();
         final World world = player.getWorld();
-        if (!isEnabled(world)) return;
+        if (!isEnabled(player)) return;
 
         final PlayerInventory inventory = player.getInventory();
         final ItemStack chestplate = inventory.getChestplate();

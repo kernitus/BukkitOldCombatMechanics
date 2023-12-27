@@ -69,7 +69,7 @@ public class ModuleAttackSounds extends OCMModule {
 
         @Override
         public void onPacketSend(PacketEvent packetEvent) {
-            if (disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())) return;
+            if (disabledDueToError || !isEnabled(packetEvent.getPlayer())) return;
 
             try {
                 SoundPacket.from(packetEvent.getPacket())

@@ -9,7 +9,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -41,10 +40,9 @@ public class ModuleDisableCrafting extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPrepareItemCraft(PrepareItemCraftEvent e) {
         final List<HumanEntity> viewers = e.getViewers();
-        if (viewers.size() < 1) return;
+        if (viewers.size() == 0) return;
 
-        final World world = viewers.get(0).getWorld();
-        if (!isEnabled(world)) return;
+        if (!isEnabled(viewers.get(0))) return;
 
         final CraftingInventory inv = e.getInventory();
         final ItemStack result = inv.getResult();
