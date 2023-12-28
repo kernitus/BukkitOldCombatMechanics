@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.commands;
 
+import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.tester.InGameTester;
@@ -62,28 +63,30 @@ public class OCMCommandHandler implements CommandExecutor {
     private void modeset(OCMMain plugin, CommandSender sender, String[] args) {
         final FileConfiguration config = plugin.getConfig();
 
-        if (args.length < 3) {
-            Messenger.sendNormalMessage(sender, "Command usage: /ocm modeset <player> <modeset>");
+        if (args.length < 2) {
+            Messenger.sendNormalMessage(sender, "Command usage: /ocm modeset <modeset> [player]");
             return;
         }
 
-        final Player player = Bukkit.getPlayer(args[1]);
-
-        if (player == null) {
-            final String message = config.getString("disable-attack-cooldown.message-usage",
-                    "&4ERROR: &rdisable-attack-cooldown.message-usage string missing");
-            Messenger.sendNormalMessage(sender, message);
-            return;
-        }
-
-        if (args[2] == null) {
-            Messenger.sendNormalMessage(sender, "&4Please specify a modeset!");
-        }
-
-        final String modesetName = args[2].toLowerCase(Locale.ROOT);
+        final String modesetName = args[1].toLowerCase(Locale.ROOT);
 
         if (!Config.getModesets().containsKey(modesetName)) {
             Messenger.sendNormalMessage(sender, "&4Please specify a valid modeset!");
+        }
+
+        Player player;
+        if (args.length < 3) {
+            if (sender instanceof Player)
+                player = (Player) sender;
+            else {
+                Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
+                return;
+            }
+        } else player = Bukkit.getPlayer(args[2]);
+
+        if (player == null) {
+            Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
+            return;
         }
 
         final Document data = PlayerStorage.getPlayerData(player.getUniqueId());
@@ -91,7 +94,10 @@ public class OCMCommandHandler implements CommandExecutor {
         PlayerStorage.setPlayerData(player.getUniqueId(), data);
         PlayerStorage.saveData(); // TODO should defer saving to regular interval
 
-        //todo what about changing the player attack speed if it has already been set?
+        Messenger.sendNormalMessage(player, "Set modeset to " + modesetName);
+
+        // Re-apply things like attack speed and collision team
+        ModuleLoader.getModules().forEach(module -> module.reapply(player));
     }
 
     private void toggle(OCMMain plugin, CommandSender sender, String[] args) {

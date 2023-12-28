@@ -59,6 +59,11 @@ public class ModulePlayerCollisions extends OCMModule {
         });
     }
 
+    @Override
+    public void reapply(Player player) {
+        createOrUpdateTeam(player);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLogin(PlayerJoinEvent e) {
         // always attach the listener, it checks internally

@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.commands;
 
+import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -37,7 +38,7 @@ public class OCMCommandCompleter implements TabCompleter {
                     .filter(arg -> OCMCommandHandler.checkPermissions(sender, arg))
                     .map(Enum::toString).collect(Collectors.toList()));
         } else {
-             if (args[0].equalsIgnoreCase(Subcommand.toggle.toString())) {
+            if (args[0].equalsIgnoreCase(Subcommand.toggle.toString())) {
                 if (args.length < 3) {
                     completions.addAll(Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
@@ -50,9 +51,20 @@ public class OCMCommandCompleter implements TabCompleter {
                 // Do not use method reference to get world name because with 1.18 method was moved from World to WorldInfo
                 completions.addAll(Bukkit.getWorlds().stream()
                         .map(w -> w.getName())
-                        .filter(name -> !Arrays.asList(args).subList(1,args.length).contains(name))
+                        .filter(name -> !Arrays.asList(args).subList(1, args.length).contains(name))
                         .filter(arg -> arg.startsWith(args[args.length - 1]))
                         .collect(Collectors.toList()));
+            } else if (args[0].equalsIgnoreCase(Subcommand.modeset.toString())) {
+                if (args.length < 3) {
+                    completions.addAll(Config.getModesets().keySet().stream()
+                            .filter(ms -> ms.startsWith(args[1]))
+                            .collect(Collectors.toList()));
+                } else {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .filter(arg -> arg.startsWith(args[2]))
+                            .collect(Collectors.toList()));
+                }
             }
         }
 

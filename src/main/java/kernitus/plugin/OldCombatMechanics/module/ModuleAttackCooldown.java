@@ -66,6 +66,11 @@ public class ModuleAttackCooldown extends OCMModule {
         setAttackSpeed(player, attackSpeed);
     }
 
+    @Override
+    public void reapply(Player player){
+        adjustAttackSpeed(player);
+    }
+
     /**
      * Sets the attack speed to the given value.
      *

@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.NotNull;
 
@@ -120,6 +121,15 @@ public abstract class OCMModule implements Listener {
      * changed.
      */
     public void reload() {
+        // Intentionally left blank! Meant for individual modules to use.
+    }
+
+    /**
+     * Called when player changes modeset. Re-apply any more permanent changes
+     * depending on result of isEnabled(player).
+     * @param player The player that changed modeset
+     */
+    public void reapply(Player player){
         // Intentionally left blank! Meant for individual modules to use.
     }
 
