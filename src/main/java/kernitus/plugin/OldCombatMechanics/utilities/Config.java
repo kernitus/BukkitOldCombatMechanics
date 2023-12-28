@@ -122,7 +122,6 @@ public class Config {
     }
 
     public static boolean moduleEnabled(String name, World world) {
-        final boolean isBlacklist = config.getBoolean("worlds-is-blacklist");
         final ConfigurationSection section = config.getConfigurationSection(name);
 
         if (section == null) {
@@ -140,6 +139,8 @@ public class Config {
         if (list.size() == 0) return true;
 
         boolean isInList = list.stream().anyMatch(entry -> entry.equalsIgnoreCase(worldName));
+
+        final boolean isBlacklist = section.getBoolean("blacklist", false);
         return isBlacklist != isInList;
     }
 

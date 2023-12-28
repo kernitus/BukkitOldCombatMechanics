@@ -87,9 +87,9 @@ public abstract class OCMModule implements Listener {
     /**
      * Returns if module should be enabled, giving priority to the attacker, if a human.
      * If neither entity a human, checks if module should be enabled in the defender's world.
-     * @param attacker
-     * @param defender
-     * @return
+     * @param attacker The entity that is performing the attack
+     * @param defender The entity that is being attacked
+     * @return Whether the module should be enabled for this particular interaction
      */
     public boolean isEnabled(@NotNull Entity attacker, @NotNull Entity defender){
         if(attacker instanceof HumanEntity) return isEnabled((HumanEntity) attacker);
