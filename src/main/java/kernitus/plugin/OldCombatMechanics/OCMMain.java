@@ -13,6 +13,7 @@ import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.PlayerStorage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.AttackCooldownTracker;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
@@ -61,10 +62,11 @@ public class OCMMain extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
 
-        final PluginDescriptionFile pdfFile = this.getDescription();
-
         // Setting up config.yml
         CH.setupConfigIfNotPresent();
+
+        // Initialise persistent player storage
+        PlayerStorage.initialise(this);
 
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
@@ -132,6 +134,7 @@ public class OCMMain extends JavaPlugin {
         });
 
         // Logging to console the enabling of OCM
+        final PluginDescriptionFile pdfFile = this.getDescription();
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
         if (Config.moduleEnabled("update-checker"))

@@ -19,14 +19,7 @@ public class MathsHelper {
      * @return The clamped value.
      */
     public static double clamp(double value, double min, double max) {
-        double realMin = Math.min(min, max);
-        double realMax = Math.max(min, max);
-
-        if (value < realMin) value = realMin;
-
-        if (value > realMax) value = realMax;
-
-        return value;
+        return Math.max(Math.min(value, max), min);
     }
 
 }

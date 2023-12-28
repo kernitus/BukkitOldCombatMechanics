@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -87,14 +88,11 @@ public class ModuleChorusFruit extends OCMModule {
 
         e.setTo(player.getLocation().add(
                 ThreadLocalRandom.current().nextDouble(-distance, distance),
-                clamp(ThreadLocalRandom.current().nextDouble(-distance, distance), 0, maxheight - 1),
+                MathsHelper.clamp(ThreadLocalRandom.current().nextDouble(-distance, distance), 0, maxheight - 1),
                 ThreadLocalRandom.current().nextDouble(-distance, distance)
         ));
     }
 
-    private double clamp(double x, double min, double max) {
-        return Math.max(Math.min(x, max), min);
-    }
 
     private double getMaxTeleportationDistance() {
         return module().getDouble("max-teleportation-distance");

@@ -10,6 +10,8 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
 import kernitus.plugin.OldCombatMechanics.tester.InGameTester;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.PlayerStorage;
+import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -30,7 +32,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
     private final OCMMain plugin;
 
-    enum Subcommand {reload, toggle, enable, disable, test}
+    enum Subcommand {reload, toggle, enable, disable, test, modeset}
 
     public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;
@@ -50,13 +52,46 @@ public class OCMCommandHandler implements CommandExecutor {
             Messenger.send(sender, "&eYou can use &c/ocm <enable/disable> [world] &e to toggle cooldown for the server or world");
 
         Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
-
-
     }
 
     private void reload(CommandSender sender) {
         Config.reload();
         Messenger.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
+    }
+
+    private void modeset(OCMMain plugin, CommandSender sender, String[] args) {
+        final FileConfiguration config = plugin.getConfig();
+
+        if (args.length < 3) {
+            Messenger.sendNormalMessage(sender, "Command usage: /ocm modeset <player> <modeset>");
+            return;
+        }
+
+        final Player player = Bukkit.getPlayer(args[1]);
+
+        if (player == null) {
+            final String message = config.getString("disable-attack-cooldown.message-usage",
+                    "&4ERROR: &rdisable-attack-cooldown.message-usage string missing");
+            Messenger.sendNormalMessage(sender, message);
+            return;
+        }
+
+        if (args[2] == null) {
+            Messenger.sendNormalMessage(sender, "&4Please specify a modeset!");
+        }
+
+        final String modesetName = args[2].toLowerCase(Locale.ROOT);
+
+        if (!Config.getModesets().containsKey(modesetName)) {
+            Messenger.sendNormalMessage(sender, "&4Please specify a valid modeset!");
+        }
+
+        final Document data = PlayerStorage.getPlayerData(player.getUniqueId());
+        data.put("modeset", modesetName);
+        PlayerStorage.setPlayerData(player.getUniqueId(), data);
+        PlayerStorage.saveData(); // TODO should defer saving to regular interval
+
+        //todo what about changing the player attack speed if it has already been set?
     }
 
     private void toggle(OCMMain plugin, CommandSender sender, String[] args) {
@@ -142,6 +177,9 @@ public class OCMCommandHandler implements CommandExecutor {
                                 break;
                             case disable:
                                 wideToggle(sender, args, ModuleAttackCooldown.PVPMode.OLD_PVP);
+                                break;
+                            case modeset:
+                                modeset(plugin, sender, args);
                                 break;
                             default:
                                 throw new CommandNotRecognisedException();

@@ -45,6 +45,8 @@ dependencies {
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
     // For reflection remapping
     implementation("xyz.jpenilla:reflection-remapper:0.1.0")
+    // For BSON file serialisation
+    implementation("org.mongodb:bson:4.11.0")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"

@@ -8,17 +8,16 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.PlayerStorage;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.Listener;
-import org.bukkit.metadata.MetadataValue;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -38,7 +37,7 @@ public abstract class OCMModule implements Listener {
      * @param plugin     the plugin instance
      * @param configName the name of the module in the config
      */
-    protected OCMModule(OCMMain plugin, String configName){
+    protected OCMModule(OCMMain plugin, String configName) {
         this.plugin = plugin;
         this.configName = configName;
         this.moduleName = getClass().getSimpleName();
@@ -50,7 +49,7 @@ public abstract class OCMModule implements Listener {
      * @param world the world to check. Null to check whether it is globally disabled
      * @return true if the module is enabled in that world
      */
-    public boolean isEnabled(@NotNull World world){
+    public boolean isEnabled(@NotNull World world) {
         return Config.moduleEnabled(configName, world);
     }
 
@@ -59,27 +58,26 @@ public abstract class OCMModule implements Listener {
      *
      * @return true if this module is globally enabled
      */
-    public boolean isEnabled(){
+    public boolean isEnabled() {
         return Config.moduleEnabled(configName, null);
     }
 
     /**
      * Whether this module should be enabled for this player and for the world he is currently in
      */
-    public boolean isEnabled(@NotNull HumanEntity humanEntity){
-        // TODO should actually store modeset in a more permanent way
-        final List<MetadataValue> metadataValues = humanEntity.getMetadata("OCM-modeset");
-        if(metadataValues.size() > 0){
-            final String modesetName = metadataValues.get(0).asString();
-            final Set<String> modeset = Config.getModesets().get(modesetName);
+    public boolean isEnabled(@NotNull HumanEntity humanEntity) {
+        final String modesetName = PlayerStorage.getPlayerData(humanEntity.getUniqueId()).getString("modeset");
 
-            return isEnabled(humanEntity.getWorld()) && modeset != null && modeset.contains(configName);
+        if(modesetName == null){
+            return isEnabled(humanEntity.getWorld());
         }
-        return isEnabled(humanEntity.getWorld());
+
+        final Set<String> modeset = Config.getModesets().get(modesetName);
+        return isEnabled(humanEntity.getWorld()) && modeset != null && modeset.contains(configName);
     }
 
-    public boolean isEnabled(@NotNull Entity entity){
-        if(entity instanceof HumanEntity)
+    public boolean isEnabled(@NotNull Entity entity) {
+        if (entity instanceof HumanEntity)
             return isEnabled((HumanEntity) entity);
         return isEnabled(entity.getWorld());
     }
@@ -87,13 +85,14 @@ public abstract class OCMModule implements Listener {
     /**
      * Returns if module should be enabled, giving priority to the attacker, if a human.
      * If neither entity a human, checks if module should be enabled in the defender's world.
+     *
      * @param attacker The entity that is performing the attack
      * @param defender The entity that is being attacked
      * @return Whether the module should be enabled for this particular interaction
      */
-    public boolean isEnabled(@NotNull Entity attacker, @NotNull Entity defender){
-        if(attacker instanceof HumanEntity) return isEnabled((HumanEntity) attacker);
-        if(defender instanceof HumanEntity) return isEnabled((HumanEntity) defender);
+    public boolean isEnabled(@NotNull Entity attacker, @NotNull Entity defender) {
+        if (attacker instanceof HumanEntity) return isEnabled((HumanEntity) attacker);
+        if (defender instanceof HumanEntity) return isEnabled((HumanEntity) defender);
         return isEnabled(defender.getWorld());
     }
 
@@ -103,7 +102,7 @@ public abstract class OCMModule implements Listener {
      * @param name the name of the setting
      * @return true if the setting with that name is enabled. Returns false if the setting did not exist.
      */
-    public boolean isSettingEnabled(String name){
+    public boolean isSettingEnabled(String name) {
         return plugin.getConfig().getBoolean(configName + "." + name, false);
     }
 
@@ -112,7 +111,7 @@ public abstract class OCMModule implements Listener {
      *
      * @return the configuration section for this module
      */
-    public ConfigurationSection module(){
+    public ConfigurationSection module() {
         return plugin.getConfig().getConfigurationSection(configName);
     }
 
@@ -120,7 +119,7 @@ public abstract class OCMModule implements Listener {
      * Called when the plugin is reloaded. Should re-read all relevant config keys and other resources that might have
      * changed.
      */
-    public void reload(){
+    public void reload() {
         // Intentionally left blank! Meant for individual modules to use.
     }
 
@@ -129,7 +128,7 @@ public abstract class OCMModule implements Listener {
      *
      * @param text the message text
      */
-    protected void debug(String text){
+    protected void debug(String text) {
         Messenger.debug("[" + moduleName + "] " + text);
     }
 
@@ -139,14 +138,14 @@ public abstract class OCMModule implements Listener {
      * @param text   the message text
      * @param sender the sender to send it to
      */
-    protected void debug(String text, CommandSender sender){
-        if(Config.debugEnabled()){
+    protected void debug(String text, CommandSender sender) {
+        if (Config.debugEnabled()) {
             Messenger.send(sender, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return Arrays.stream(configName.split("-"))
                 .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase(Locale.ROOT))
                 .reduce((a, b) -> a + " " + b)
@@ -155,13 +154,14 @@ public abstract class OCMModule implements Listener {
 
     /**
      * Get the module's name, as taken from the class name
+     *
      * @return The module name, e.g. ModuleDisableAttackCooldown
      */
-    public String getModuleName(){
+    public String getModuleName() {
         return moduleName;
     }
 
-    public String getConfigName(){
+    public String getConfigName() {
         return configName;
     }
 }
