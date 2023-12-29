@@ -153,7 +153,7 @@ public class ModuleGoldenApple extends OCMModule {
             final long seconds = baseCooldown - (Instant.now().getEpochSecond() - current.getEpochSecond());
 
             if (message != null && !message.isEmpty())
-                Messenger.sendNormalMessage(player, message.replaceAll("%seconds%", String.valueOf(seconds)));
+                Messenger.send(player, message.replaceAll("%seconds%", String.valueOf(seconds)));
 
             e.setCancelled(true);
             return;

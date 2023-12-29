@@ -25,11 +25,11 @@ public class TesterUtils {
         if (a == b) {
             tally.passed();
             for (CommandSender sender : senders)
-                Messenger.sendNormalMessage(sender, "&aPASSED &f" + testName + " [E: " + a + " / A: " + b + "]");
+                Messenger.send(sender, "&aPASSED &f" + testName + " [E: " + a + " / A: " + b + "]");
         } else {
             tally.failed();
             for (CommandSender sender : senders)
-                Messenger.sendNormalMessage(sender, "&cFAILED &f" + testName + " [E: " + a + " / A: " + b + "]");
+                Messenger.send(sender, "&cFAILED &f" + testName + " [E: " + a + " / A: " + b + "]");
         }
     }
 }

@@ -38,27 +38,27 @@ public class OCMCommandHandler implements CommandExecutor {
     private void help(OCMMain plugin, CommandSender sender) {
         final PluginDescriptionFile description = plugin.getDescription();
 
-        Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
-        Messenger.send(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s", description.getVersion());
+        Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
+        Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s", description.getVersion());
 
         if (checkPermissions(sender, Subcommand.reload))
-            Messenger.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
+            Messenger.sendNoPrefix(sender, "&eYou can use &c/ocm reload&e to reload the config file");
         if (checkPermissions(sender, Subcommand.mode))
-            Messenger.sendNormalMessage(sender,
+            Messenger.sendNoPrefix(sender,
                     Config.getConfig().getString("mode-messages.message-usage",
                             "&4ERROR: &rmode-messages.message-usage string missing"));
 
-        Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
+        Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
     }
 
     private void reload(CommandSender sender) {
         Config.reload();
-        Messenger.send(sender, "&6&lOldCombatMechanics&e config file reloaded");
+        Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e config file reloaded");
     }
 
     private void mode(OCMMain plugin, CommandSender sender, String[] args) {
         if (args.length < 2) {
-            Messenger.sendNormalMessage(sender,
+            Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.message-usage",
                             "&4ERROR: &rmode-messages.message-usage string missing"));
             return;
@@ -67,8 +67,8 @@ public class OCMCommandHandler implements CommandExecutor {
         final String modesetName = args[1].toLowerCase(Locale.ROOT);
 
         if (!Config.getModesets().containsKey(modesetName)) {
-            Messenger.sendNormalMessage(sender, "&cPlease specify a valid modeset!");
-            Messenger.sendNormalMessage(sender,
+            Messenger.send(sender, "&cPlease specify a valid modeset!");
+            Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-modeset",
                             "&4ERROR: &rmode-messages.invalid-modeset string missing"));
             return;
@@ -79,7 +79,7 @@ public class OCMCommandHandler implements CommandExecutor {
             if (sender instanceof Player)
                 player = (Player) sender;
             else {
-                Messenger.sendNormalMessage(sender,
+                Messenger.send(sender,
                         Config.getConfig().getString("mode-messages.invalid-player",
                                 "&4ERROR: &rmode-messages.invalid-player string missing"));
                 return;
@@ -88,7 +88,7 @@ public class OCMCommandHandler implements CommandExecutor {
             player = Bukkit.getPlayer(args[2]);
 
         if (player == null) {
-            Messenger.sendNormalMessage(sender,
+            Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-player",
                             "&4ERROR: &rmode-messages.invalid-player string missing"));
             return;
@@ -99,7 +99,7 @@ public class OCMCommandHandler implements CommandExecutor {
         PlayerStorage.setPlayerData(player.getUniqueId(), data);
         PlayerStorage.scheduleSave();
 
-        Messenger.sendNormalMessage(sender,
+        Messenger.send(sender,
                 Config.getConfig().getString("mode-messages.mode-set",
                         "&4ERROR: &rmode-messages.mode-set string missing"),
                 modesetName
@@ -144,7 +144,7 @@ public class OCMCommandHandler implements CommandExecutor {
                     throw new CommandNotRecognisedException();
                 }
             } catch (CommandNotRecognisedException e) {
-                Messenger.sendNormalMessage(sender, "Subcommand not recognised!");
+                Messenger.send(sender, "Subcommand not recognised!");
             }
         }
         return true;
@@ -160,7 +160,7 @@ public class OCMCommandHandler implements CommandExecutor {
     static boolean checkPermissions(CommandSender sender, Subcommand subcommand, boolean sendMessage) {
         final boolean hasPermission = sender.hasPermission("oldcombatmechanics." + subcommand);
         if (sendMessage && !hasPermission)
-            Messenger.send(sender, NO_PERMISSION, "oldcombatmechanics." + subcommand);
+            Messenger.sendNoPrefix(sender, NO_PERMISSION, "oldcombatmechanics." + subcommand);
         return hasPermission;
     }
 }

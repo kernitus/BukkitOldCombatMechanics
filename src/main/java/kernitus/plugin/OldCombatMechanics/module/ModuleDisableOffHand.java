@@ -53,7 +53,7 @@ public class ModuleDisableOffHand extends OCMModule {
 
     private void sendDeniedMessage(CommandSender sender) {
         if (deniedMessage.trim().length() > 0)
-            Messenger.sendNormalMessage(sender, deniedMessage);
+            Messenger.send(sender, deniedMessage);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

@@ -50,7 +50,7 @@ public class Messenger {
      * @param message The message to send.
      * @param args    The args to format the message with.
      */
-    public static void send(CommandSender sender, String message, Object... args) {
+    public static void sendNoPrefix(CommandSender sender, String message, Object... args) {
         Objects.requireNonNull(sender, "sender cannot be null!");
         Objects.requireNonNull(message, "message cannot be null!");
 
@@ -68,10 +68,10 @@ public class Messenger {
      * @param args    The args to format the message with.
      */
     private static void sendWithPrefix(CommandSender sender, String message, String prefix, Object... args) {
-        send(sender, prefix + " " + message, args);
+        sendNoPrefix(sender, prefix + " " + message, args);
     }
 
-    public static void sendNormalMessage(CommandSender sender, String message, Object... args) {
+    public static void send(CommandSender sender, String message, Object... args) {
         sendWithPrefix(sender, message, PREFIX, args);
     }
 

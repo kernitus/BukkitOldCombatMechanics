@@ -75,7 +75,7 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
             if (lastLaunched.containsKey(uuid)) {
                 final long elapsedSeconds = currentTime - lastLaunched.get(uuid);
                 if (elapsedSeconds < cooldown) {
-                    if (message != null) Messenger.sendNormalMessage(player, message, cooldown - elapsedSeconds);
+                    if (message != null) Messenger.send(player, message, cooldown - elapsedSeconds);
                     return;
                 }
             }

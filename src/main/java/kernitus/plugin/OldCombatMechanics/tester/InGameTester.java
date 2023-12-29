@@ -217,7 +217,7 @@ public class InGameTester {
         // Overdamage
         if (wasOverdamaged(expectedDamage)) {
             double lastDamage = defender.getLastDamage();
-            Messenger.sendNormalMessage(sender, "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
+            Messenger.send(sender, "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
             Messenger.debug("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage));
             expectedDamage -= lastDamage;
         }
@@ -256,7 +256,7 @@ public class InGameTester {
     }
 
     private void runQueuedTests() {
-        Messenger.sendNormalMessage(sender, "Running " + testQueue.size() + " tests");
+        Messenger.send(sender, "Running " + testQueue.size() + " tests");
 
         // Listener gets called every time defender is damaged
         Listener listener = new Listener() {
@@ -274,7 +274,7 @@ public class InGameTester {
 
                 while (weaponType != expectedWeapon.getType()) { // One of the attacks dealt no damage
                     expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour);
-                    Messenger.sendNormalMessage(sender, "&bSKIPPED &f" + expectedWeapon.getType() + " &fExpected Damage: &b" + expectedDamage);
+                    Messenger.send(sender, "&bSKIPPED &f" + expectedWeapon.getType() + " &fExpected Damage: &b" + expectedDamage);
                     if (expectedDamage == 0)
                         tally.passed();
                     else
@@ -285,7 +285,7 @@ public class InGameTester {
 
 
                 if (wasFakeOverdamage(weapon) && e.isCancelled()) {
-                    Messenger.sendNormalMessage(sender, "&aPASSED &fFake overdamage " + expectedDamage + " < " + ((LivingEntity) e.getEntity()).getLastDamage());
+                    Messenger.send(sender, "&aPASSED &fFake overdamage " + expectedDamage + " < " + ((LivingEntity) e.getEntity()).getLastDamage());
                     tally.passed();
                 } else {
                     final String weaponMessage = "E: " + expectedWeapon.getType().name() + " A: " + weaponType.name();
@@ -334,7 +334,7 @@ public class InGameTester {
         fakeDefender.removePlayer();
 
         final long missed = testCount - tally.getTotal();
-        Messenger.send(sender, "Passed: &a%d &rFailed: &c%d &rTotal: &7%d &rMissed: &7%d", tally.getPassed(), tally.getFailed(), tally.getTotal(), missed);
+        Messenger.sendNoPrefix(sender, "Passed: &a%d &rFailed: &c%d &rTotal: &7%d &rMissed: &7%d", tally.getPassed(), tally.getFailed(), tally.getTotal(), missed);
     }
 
     private void beforeEach() {

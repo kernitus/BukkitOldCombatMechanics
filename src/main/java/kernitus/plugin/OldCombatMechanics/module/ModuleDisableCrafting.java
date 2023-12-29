@@ -49,7 +49,7 @@ public class ModuleDisableCrafting extends OCMModule {
 
         if (result != null && denied.contains(result.getType())) {
             inv.setResult(null);
-            if (message != null) viewers.forEach(viewer -> Messenger.sendNormalMessage(viewer, message));
+            if (message != null) viewers.forEach(viewer -> Messenger.send(viewer, message));
         }
     }
 }

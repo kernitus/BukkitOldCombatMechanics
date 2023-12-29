@@ -150,7 +150,7 @@ public abstract class OCMModule implements Listener {
      */
     protected void debug(String text, CommandSender sender) {
         if (Config.debugEnabled()) {
-            Messenger.send(sender, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
+            Messenger.sendNoPrefix(sender, "&8&l[&fDEBUG&8&l][&f" + moduleName + "&8&l]&7 " + text);
         }
     }
 
