@@ -63,7 +63,6 @@ public class EntityDamageByEntityListener extends OCMModule {
         if (lastStoredDamage != null && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
             livingDamagee.setLastDamage(lastStoredDamage);
-            lastDamages.remove(damagee.getUniqueId());
         }
 
         // Call event for the other modules to make their modifications
