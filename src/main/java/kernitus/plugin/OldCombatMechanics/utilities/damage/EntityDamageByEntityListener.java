@@ -14,6 +14,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -62,6 +63,7 @@ public class EntityDamageByEntityListener extends OCMModule {
         if (lastStoredDamage != null && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
             livingDamagee.setLastDamage(lastStoredDamage);
+            lastDamages.remove(damagee.getUniqueId());
         }
 
         // Call event for the other modules to make their modifications
@@ -175,18 +177,23 @@ public class EntityDamageByEntityListener extends OCMModule {
      * The last damage is overridden by NMS code regardless of what the actual damage is set to via Spigot.
      * Finally, the LOWEST priority listener above will set the last damage back to the correct value
      * for other plugins to use the next time the entity is damaged.
-     * Technically, we should also include non-entity damage, but this tends to be small and thus irrelevant.
      */
     @EventHandler(priority = EventPriority.MONITOR)
-    public void afterEntityDamage(EntityDamageByEntityEvent event) {
+    public void afterEntityDamage(EntityDamageEvent event) {
         final Entity damagee = event.getEntity();
 
-        if (lastDamages.containsKey(damagee.getUniqueId())) {
-            // Set last damage to 0, so we can detect attacks even by weapons with a weaker attack value than what OCM would calculate
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                ((LivingEntity) damagee).setLastDamage(0);
-                debug("Set last damage to 0", damagee);
-            }, 1L);
+        if(event instanceof EntityDamageByEntityEvent) {
+            if (lastDamages.containsKey(damagee.getUniqueId())) {
+                // Set last damage to 0, so we can detect attacks even by weapons with a weaker attack value than what OCM would calculate
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    ((LivingEntity) damagee).setLastDamage(0);
+                    debug("Set last damage to 0", damagee);
+                }, 1L);
+            }
+        } else {
+            // if not EDBYE then we leave last damage as is
+            lastDamages.remove(damagee.getUniqueId());
+            debug("Non-entity damage, using default last damage", damagee);
         }
     }
 
