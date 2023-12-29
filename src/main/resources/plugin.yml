@@ -25,9 +25,7 @@ permissions:
     children:
       OldCombatMechanics.commands: true
       OldCombatMechanics.notify: true
-      OldCombatMechanics.toggle: true
-      OldCombatMechanics.enable: true
-      OldCombatMechanics.disable: true
+      OldCombatMechanics.mode: true
       OldCombatMechanics.nolapis: true
       OldCombatMechanics.swordblock: true
   OldCombatMechanics.commands:
@@ -36,14 +34,11 @@ permissions:
   OldCombatMechanics.notify:
     description: Notifies of new OCM updates
     default: op
-  OldCombatMechanics.toggle:
-    description: Allows enabling and disabling attack cooldown
+  OldCombatMechanics.mode.own:
+    description: Allows setting player combat mode
     default: op
-  OldCombatMechanics.enable:
-    description: Allows enabling attack cooldown for server or world
-    default: op
-  OldCombatMechanics.disable:
-    description: Allows disabling attack cooldown for server or world
+  OldCombatMechanics.mode.others:
+    description: Allows setting other players' combat mode
     default: op
   OldCombatMechanics.nolapis:
     description: Allows lapis to be auto-placed in enchantment tables

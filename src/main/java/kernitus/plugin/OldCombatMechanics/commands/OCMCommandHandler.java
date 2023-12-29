@@ -69,7 +69,7 @@ public class OCMCommandHandler implements CommandExecutor {
             Messenger.sendNormalMessage(sender, "&4Please specify a valid modeset!");
         }
 
-        Player player;
+        Player player = null;
         if (args.length < 3) {
             if (sender instanceof Player)
                 player = (Player) sender;
@@ -77,7 +77,8 @@ public class OCMCommandHandler implements CommandExecutor {
                 Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
                 return;
             }
-        } else player = Bukkit.getPlayer(args[2]);
+        } else if (sender.hasPermission("oldcombatmechanics.mode.others"))
+            player = Bukkit.getPlayer(args[2]);
 
         if (player == null) {
             Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
@@ -92,7 +93,8 @@ public class OCMCommandHandler implements CommandExecutor {
         Messenger.sendNormalMessage(player, "Set modeset to " + modesetName);
 
         // Re-apply things like attack speed and collision team
-        ModuleLoader.getModules().forEach(module -> module.reapply(player));
+        final Player playerCopy = player;
+        ModuleLoader.getModules().forEach(module -> module.reapply(playerCopy));
     }
 
     private void test(OCMMain plugin, CommandSender sender) {

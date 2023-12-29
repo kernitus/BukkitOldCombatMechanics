@@ -41,7 +41,7 @@ public class OCMCommandCompleter implements TabCompleter {
                 completions.addAll(Config.getModesets().keySet().stream()
                         .filter(ms -> ms.startsWith(args[1]))
                         .collect(Collectors.toList()));
-            } else {
+            } else if(sender.hasPermission("oldcombatmechanics.mode.others")){
                 completions.addAll(Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
                         .filter(arg -> arg.startsWith(args[2]))
