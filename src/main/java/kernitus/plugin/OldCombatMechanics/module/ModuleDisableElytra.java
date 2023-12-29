@@ -8,7 +8,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -99,8 +98,11 @@ public class ModuleDisableElytra extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onWorldChange(PlayerChangedWorldEvent e) {
-        final Player player = e.getPlayer();
-        final World world = player.getWorld();
+        reapply(e.getPlayer());
+    }
+
+    @Override
+    public void reapply(Player player) {
         if (!isEnabled(player)) return;
 
         final PlayerInventory inventory = player.getInventory();
@@ -113,6 +115,7 @@ public class ModuleDisableElytra extends OCMModule {
         if (inventory.firstEmpty() != -1)
             inventory.addItem(chestplate);
         else
-            world.dropItem(player.getLocation(), chestplate);
+            player.getWorld().dropItem(player.getLocation(), chestplate);
+
     }
 }

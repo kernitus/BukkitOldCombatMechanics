@@ -59,7 +59,7 @@ public class ModuleDisableOffHand extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
         final Player player = e.getPlayer();
-        if (isEnabled(player) && isItemAllowed(e.getOffHandItem())) {
+        if (isEnabled(player) && isItemBlocked(e.getOffHandItem())) {
             e.setCancelled(true);
             sendDeniedMessage(player);
         }
@@ -90,7 +90,7 @@ public class ModuleDisableOffHand extends OCMModule {
         final ItemStack currentItem = e.getCurrentItem();
         if (currentItem != null
                 && currentItem.getType() == Material.SHIELD
-                && isItemAllowed(currentItem)
+                && isItemBlocked(currentItem)
                 && e.getSlot() != OFFHAND_SLOT
                 && e.isShiftClick()) {
             e.setResult(Event.Result.DENY);
@@ -99,8 +99,8 @@ public class ModuleDisableOffHand extends OCMModule {
 
         if (e.getSlot() == OFFHAND_SLOT &&
                 // Let allowed items be placed into offhand slot with number keys (hotbar swap)
-                ((clickType == ClickType.NUMBER_KEY && isItemAllowed(clickedInventory.getItem(e.getHotbarButton())))
-                        || isItemAllowed(e.getCursor())) // Deny placing not allowed items into offhand slot
+                ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.getHotbarButton())))
+                        || isItemBlocked(e.getCursor())) // Deny placing not allowed items into offhand slot
         ) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
@@ -114,7 +114,7 @@ public class ModuleDisableOffHand extends OCMModule {
                 || e.getInventory().getType() != InventoryType.CRAFTING
                 || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
 
-        if (isItemAllowed(e.getOldCursor())) {
+        if (isItemBlocked(e.getOldCursor())) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
@@ -122,11 +122,15 @@ public class ModuleDisableOffHand extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onWorldChange(PlayerChangedWorldEvent e) {
-        final Player player = e.getPlayer();
+        reapply(e.getPlayer());
+    }
+
+    @Override
+    public void reapply(Player player) {
         final PlayerInventory inventory = player.getInventory();
         final ItemStack offHandItem = inventory.getItemInOffHand();
 
-        if (isItemAllowed(offHandItem)) {
+        if (isItemBlocked(offHandItem)) {
             sendDeniedMessage(player);
             inventory.setItemInOffHand(new ItemStack(Material.AIR));
             if (!inventory.addItem(offHandItem).isEmpty())
@@ -134,7 +138,7 @@ public class ModuleDisableOffHand extends OCMModule {
         }
     }
 
-    private boolean isItemAllowed(ItemStack item) {
+    private boolean isItemBlocked(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
             return false;
         }
