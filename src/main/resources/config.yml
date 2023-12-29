@@ -33,6 +33,13 @@ modesets:
       - "old-critical-hits"
   new: [ ]
 
+mode-messages:
+  # Messages used when changing player mode
+  message-usage: "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset"
+  invalid-modeset: "&cPlease specify a valid modeset!"
+  invalid-player: "&cPlease specify a valid player!"
+  mode-set: "&2Set modeset to &r%s"
+
 disable-attack-cooldown:
   # This is to disable the attack cooldown
   enabled: true
@@ -40,9 +47,6 @@ disable-attack-cooldown:
   blacklist: false # Whether worlds list is blacklist or whitelist
   # What to set the attack speed to. Default for 1.9 is 4, at least 40 is needed for no cooldown.
   generic-attack-speed: 40
-  message-enabled: "&aAttack cooldown enabled for %player%"
-  message-disabled: "&cAttack cooldown disabled for %player%"
-  message-usage: "Usage: &7/ocm toggle [player] [on/off]"
 
 disable-player-collisions:
   # This is to disable player collisions
@@ -609,4 +613,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 60
+config-version: 61

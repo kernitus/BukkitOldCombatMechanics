@@ -34,12 +34,16 @@ permissions:
   OldCombatMechanics.notify:
     description: Notifies of new OCM updates
     default: op
-  OldCombatMechanics.mode.own:
+  OldCombatMechanics.mode:
     description: Allows setting player combat mode
     default: op
-  OldCombatMechanics.mode.others:
-    description: Allows setting other players' combat mode
-    default: op
+    children:
+      OldCombatMechanics.mode.own:
+        description: Allows setting player own combat mode
+        default: op
+      OldCombatMechanics.mode.others:
+        description: Allows setting other players combat mode
+        default: op
   OldCombatMechanics.nolapis:
     description: Allows lapis to be auto-placed in enchantment tables
     default: op

@@ -18,7 +18,6 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +44,9 @@ public class OCMCommandHandler implements CommandExecutor {
         if (checkPermissions(sender, Subcommand.reload))
             Messenger.send(sender, "&eYou can use &c/ocm reload&e to reload the config file");
         if (checkPermissions(sender, Subcommand.mode))
-            Messenger.send(sender, "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset");
+            Messenger.sendNormalMessage(sender,
+                    Config.getConfig().getString("mode-messages.message-usage",
+                            "&4ERROR: &rmode-messages.message-usage string missing"));
 
         Messenger.send(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
     }
@@ -56,17 +57,21 @@ public class OCMCommandHandler implements CommandExecutor {
     }
 
     private void mode(OCMMain plugin, CommandSender sender, String[] args) {
-        final FileConfiguration config = plugin.getConfig();
-
         if (args.length < 2) {
-            Messenger.sendNormalMessage(sender, "Command usage: /ocm modeset <modeset> [player]");
+            Messenger.sendNormalMessage(sender,
+                    Config.getConfig().getString("mode-messages.message-usage",
+                            "&4ERROR: &rmode-messages.message-usage string missing"));
             return;
         }
 
         final String modesetName = args[1].toLowerCase(Locale.ROOT);
 
         if (!Config.getModesets().containsKey(modesetName)) {
-            Messenger.sendNormalMessage(sender, "&4Please specify a valid modeset!");
+            Messenger.sendNormalMessage(sender, "&cPlease specify a valid modeset!");
+            Messenger.sendNormalMessage(sender,
+                    Config.getConfig().getString("mode-messages.invalid-modeset",
+                            "&4ERROR: &rmode-messages.invalid-modeset string missing"));
+            return;
         }
 
         Player player = null;
@@ -74,14 +79,18 @@ public class OCMCommandHandler implements CommandExecutor {
             if (sender instanceof Player)
                 player = (Player) sender;
             else {
-                Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
+                Messenger.sendNormalMessage(sender,
+                        Config.getConfig().getString("mode-messages.invalid-player",
+                                "&4ERROR: &rmode-messages.invalid-player string missing"));
                 return;
             }
         } else if (sender.hasPermission("oldcombatmechanics.mode.others"))
             player = Bukkit.getPlayer(args[2]);
 
         if (player == null) {
-            Messenger.sendNormalMessage(sender, "&4Please specify a valid player!");
+            Messenger.sendNormalMessage(sender,
+                    Config.getConfig().getString("mode-messages.invalid-player",
+                            "&4ERROR: &rmode-messages.invalid-player string missing"));
             return;
         }
 
@@ -90,7 +99,11 @@ public class OCMCommandHandler implements CommandExecutor {
         PlayerStorage.setPlayerData(player.getUniqueId(), data);
         PlayerStorage.scheduleSave();
 
-        Messenger.sendNormalMessage(player, "Set modeset to " + modesetName);
+        Messenger.sendNormalMessage(sender,
+                Config.getConfig().getString("mode-messages.mode-set",
+                        "&4ERROR: &rmode-messages.mode-set string missing"),
+                modesetName
+                );
 
         // Re-apply things like attack speed and collision team
         final Player playerCopy = player;

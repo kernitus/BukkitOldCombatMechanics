@@ -172,6 +172,8 @@ public class OCMMain extends JavaPlugin {
             });
         });
 
+        PlayerStorage.instantSave();
+
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
     }

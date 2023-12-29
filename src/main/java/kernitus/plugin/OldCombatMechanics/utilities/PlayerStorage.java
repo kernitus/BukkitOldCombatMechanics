@@ -71,13 +71,13 @@ public class PlayerStorage {
         // Schedule a task for later, if there isn't one already scheduled
         saveTask.compareAndSet(null,
                 Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-                    saveData();
+                    instantSave();
                     saveTask.set(null);
                 }, 2400L) // Save after 2 minutes
         );
     }
 
-    private static void saveData() {
+    public static void instantSave() {
         final BasicOutputBuffer outputBuffer = new BasicOutputBuffer();
         final BsonWriter writer = new BsonBinaryWriter(outputBuffer);
         documentCodec.encode(writer, data, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
