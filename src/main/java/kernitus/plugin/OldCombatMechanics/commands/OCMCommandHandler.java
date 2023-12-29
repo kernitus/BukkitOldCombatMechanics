@@ -87,7 +87,7 @@ public class OCMCommandHandler implements CommandExecutor {
         final Document data = PlayerStorage.getPlayerData(player.getUniqueId());
         data.put("modeset", modesetName);
         PlayerStorage.setPlayerData(player.getUniqueId(), data);
-        PlayerStorage.saveData(); // TODO should defer saving to regular interval
+        PlayerStorage.scheduleSave();
 
         Messenger.sendNormalMessage(player, "Set modeset to " + modesetName);
 

@@ -15,6 +15,8 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
+import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 /**
@@ -34,6 +37,7 @@ public class PlayerStorage {
     private static Path dataFilePath;
     private static DocumentCodec documentCodec;
     private static Document data;
+    private static final AtomicReference<BukkitTask> saveTask = new AtomicReference<>();
 
     public static void initialise(OCMMain plugin) {
         PlayerStorage.plugin = plugin;
@@ -46,6 +50,8 @@ public class PlayerStorage {
         PlayerStorage.documentCodec = new DocumentCodec(codecRegistry);
 
         data = loadData();
+
+        saveTask.set(null);
     }
 
     private static Document loadData() {
@@ -61,7 +67,17 @@ public class PlayerStorage {
         return new Document();
     }
 
-    public static void saveData() {
+    public static void scheduleSave() {
+        // Schedule a task for later, if there isn't one already scheduled
+        saveTask.compareAndSet(null,
+                Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                    saveData();
+                    saveTask.set(null);
+                }, 2400L) // Save after 2 minutes
+        );
+    }
+
+    private static void saveData() {
         final BasicOutputBuffer outputBuffer = new BasicOutputBuffer();
         final BsonWriter writer = new BsonBinaryWriter(outputBuffer);
         documentCodec.encode(writer, data, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
@@ -78,7 +94,7 @@ public class PlayerStorage {
 
     public static Document getPlayerData(UUID uuid) {
         Document playerData = (Document) data.get(uuid.toString());
-        if (playerData == null){
+        if (playerData == null) {
             playerData = new Document();
             data.put(uuid.toString(), playerData);
         }
