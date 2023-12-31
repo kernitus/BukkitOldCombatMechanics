@@ -7,14 +7,12 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.tester.InGameTester;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.PlayerStorage;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -29,7 +27,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
     private final OCMMain plugin;
 
-    enum Subcommand {reload, mode, test}
+    enum Subcommand {reload, mode}
 
     public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;
@@ -103,13 +101,14 @@ public class OCMCommandHandler implements CommandExecutor {
                 Config.getConfig().getString("mode-messages.mode-set",
                         "&4ERROR: &rmode-messages.mode-set string missing"),
                 modesetName
-                );
+        );
 
         // Re-apply things like attack speed and collision team
         final Player playerCopy = player;
         ModuleLoader.getModules().forEach(module -> module.reapply(playerCopy));
     }
 
+    /*
     private void test(OCMMain plugin, CommandSender sender) {
         final Location location = sender instanceof Player ?
                 ((Player) sender).getLocation() :
@@ -117,6 +116,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
         new InGameTester(plugin).performTests(sender, location);
     }
+     */
 
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if (args.length < 1) {
@@ -130,9 +130,11 @@ public class OCMCommandHandler implements CommandExecutor {
                             case reload:
                                 reload(sender);
                                 break;
+                                /*
                             case test:
                                 test(plugin, sender);
                                 break;
+                                 */
                             case mode:
                                 mode(plugin, sender, args);
                                 break;

@@ -9,7 +9,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     `java-library`
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("io.papermc.paperweight.userdev") version "1.5.10"
+    // For ingametesting
+    //id("io.papermc.paperweight.userdev") version "1.5.10"
 }
 
 repositories {
@@ -22,48 +23,53 @@ repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     // CodeMC Repo for bStats
     maven("https://repo.codemc.org/repository/maven-public/")
-    // Netty library from Minecraft
+    // Auth library from Minecraft
     maven("https://libraries.minecraft.net/")
     // Spartan API
     maven("https://repo.crazycrew.us/api")
     maven("https://repo.minebench.de/")
 
     // For local maven repo (mojang mappings jar)
-    mavenLocal()
+    // For ingametesting
+    // mavenLocal()
 }
 
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
-    //compileOnly("org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT")
     // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.93.Final")
+    compileOnly("io.netty:netty-all:4.1.104.Final")
     compileOnly("me.clip:placeholderapi:2.11.3")
     // Spartan API
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
+    // For BSON file serialisation
+    implementation("org.mongodb:bson:4.11.0")
+
+    compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
+
+    /* For ingametesting
     // Mojang mappings for NMS
     compileOnly("com.mojang:authlib:4.0.43")
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
     // For reflection remapping
     implementation("xyz.jpenilla:reflection-remapper:0.1.0")
-    // For BSON file serialisation
-    implementation("org.mongodb:bson:4.11.0")
+     */
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "1.12.3-beta"
+version = "1.13.0-beta"
 description = "OldCombatMechanics"
 
 java {
     toolchain {
-        // At least 17 required for MC 1.19
-        languageVersion.set(JavaLanguageVersion.of(17))
+        // At least 17 required for MC 1.19 for ingametesting
+        languageVersion.set(JavaLanguageVersion.of(8))
     }
 }
 
 sourceSets {
     main {
         java {
-            //exclude("kernitus/plugin/OldCombatMechanics/tester/**")
+            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
         }
     }
 }
@@ -88,10 +94,14 @@ tasks.named<ShadowJar>("shadowJar") {
     }
 }
 
+/* For ingametesting
 tasks.reobfJar {
     outputJar.set(File(buildDir, "libs/${project.name}.jar"))
 }
+ */
 
 tasks.assemble {
-    dependsOn("reobfJar")
+    // For ingametesting
+    //dependsOn("reobfJar")
+    dependsOn("jar")
 }
