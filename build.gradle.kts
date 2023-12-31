@@ -88,7 +88,7 @@ tasks.withType<JavaCompile> {
 
 tasks.named<ShadowJar>("shadowJar") {
     dependsOn("jar")
-    //archiveFileName.set("${project.name}.jar")
+    archiveFileName.set("${project.name}.jar")
     dependencies {
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
     }
@@ -103,5 +103,5 @@ tasks.reobfJar {
 tasks.assemble {
     // For ingametesting
     //dependsOn("reobfJar")
-    dependsOn("jar")
+    dependsOn("shadowJar")
 }
