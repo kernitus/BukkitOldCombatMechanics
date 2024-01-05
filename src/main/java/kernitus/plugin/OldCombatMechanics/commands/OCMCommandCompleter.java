@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -38,10 +39,18 @@ public class OCMCommandCompleter implements TabCompleter {
                     .map(Enum::toString).collect(Collectors.toList()));
         } else if (args[0].equalsIgnoreCase(Subcommand.mode.toString())) {
             if (args.length < 3) {
-                completions.addAll(Config.getModesets().keySet().stream()
-                        .filter(ms -> ms.startsWith(args[1]))
-                        .collect(Collectors.toList()));
-            } else if(sender.hasPermission("oldcombatmechanics.mode.others")){
+                if (sender instanceof Player) { // Get the modesets allowed in the world player is in
+                    final World world = ((Player) sender).getWorld();
+                    completions.addAll(
+                            Config.getWorlds().get(world.getUID()).stream()
+                                    .filter(ms -> ms.startsWith(args[1]))
+                                    .collect(Collectors.toList()));
+                } else {
+                    completions.addAll(Config.getModesets().keySet().stream()
+                            .filter(ms -> ms.startsWith(args[1]))
+                            .collect(Collectors.toList()));
+                }
+            } else if (sender.hasPermission("oldcombatmechanics.mode.others")) {
                 completions.addAll(Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
                         .filter(arg -> arg.startsWith(args[2]))

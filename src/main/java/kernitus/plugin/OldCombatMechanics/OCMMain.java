@@ -16,6 +16,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.AttackCooldownTracker;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.ModesetListener;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimpleBarChart;
@@ -181,6 +182,9 @@ public class OCMMain extends JavaPlugin {
     private void registerModules() {
         // Update Checker (also a module, so we can use the dynamic registering/unregistering)
         ModuleLoader.addModule(new ModuleUpdateChecker(this));
+
+        // Modeset listener, for when player joins or changes world
+        ModuleLoader.addModule(new ModesetListener(this));
 
         // Module listeners
         ModuleLoader.addModule(new ModuleAttackCooldown(this));

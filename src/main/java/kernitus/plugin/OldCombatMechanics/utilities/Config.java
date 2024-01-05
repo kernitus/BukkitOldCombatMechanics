@@ -224,4 +224,8 @@ public class Config {
     public static Map<String, Set<String>> getModesets(){
         return modesets;
     }
+
+    public static Map<UUID, LinkedHashSet<String>> getWorlds() {
+        return worlds;
+    }
 }

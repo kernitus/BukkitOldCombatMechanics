@@ -20,7 +20,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.UUID;
 
 public class OCMCommandHandler implements CommandExecutor {
     private static final String NO_PERMISSION = "&cYou need the permission '%s' to do that!";
@@ -65,7 +67,6 @@ public class OCMCommandHandler implements CommandExecutor {
         final String modesetName = args[1].toLowerCase(Locale.ROOT);
 
         if (!Config.getModesets().containsKey(modesetName)) {
-            Messenger.send(sender, "&cPlease specify a valid modeset!");
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-modeset",
                             "&4ERROR: &rmode-messages.invalid-modeset string missing"));
@@ -92,8 +93,18 @@ public class OCMCommandHandler implements CommandExecutor {
             return;
         }
 
+        final UUID worldId = player.getWorld().getUID();
+        final LinkedHashSet<String> worldModesets = Config.getWorlds().get(worldId);
+
+        if(!worldModesets.contains(modesetName)){ // Modeset not allowed in current world
+            Messenger.send(sender,
+                    Config.getConfig().getString("mode-messages.invalid-modeset",
+                            "&4ERROR: &rmode-messages.invalid-modeset string missing"));
+            return;
+        }
+
         final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
-        playerData.setModesetForWorld(player.getWorld().getUID(), modesetName);
+        playerData.setModesetForWorld(worldId, modesetName);
         PlayerStorage.setPlayerData(player.getUniqueId(), playerData);
         PlayerStorage.scheduleSave();
 
