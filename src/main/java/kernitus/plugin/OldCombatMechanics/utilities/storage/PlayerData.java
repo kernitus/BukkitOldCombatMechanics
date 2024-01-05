@@ -8,26 +8,43 @@ package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import org.bson.Document;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class PlayerData {
-    private String modeset;
+    private Map<UUID, String> modesetByWorld;
 
     public PlayerData() {
-        // Default constructor
+        modesetByWorld = new HashMap<>();
     }
 
-    // Getters and setters for each field
-    public String getModeset() {
-        return modeset;
+    public Map<UUID, String> getModesetByWorld() {
+        return modesetByWorld;
     }
 
-    public void setModeset(String modeset) {
-        this.modeset = modeset;
+    public void setModesetByWorld(Map<UUID, String> modesetByWorld) {
+        this.modesetByWorld = modesetByWorld;
+    }
+
+    public void setModesetForWorld(UUID worldId, String modeset) {
+        modesetByWorld.put(worldId, modeset);
+    }
+
+    public String getModesetForWorld(UUID worldId) {
+        return modesetByWorld.get(worldId);
     }
 
     public static PlayerData fromDocument(Document doc) {
         final PlayerData playerData = new PlayerData();
-        playerData.setModeset(doc.getString("modeset"));
-        // Set other fields from the document
+        Document modesetByWorldDoc = (Document) doc.get("modesetByWorld");
+        if (modesetByWorldDoc != null) {
+            for (Map.Entry<String, Object> entry : modesetByWorldDoc.entrySet()) {
+                UUID worldId = UUID.fromString(entry.getKey());
+                String modeset = (String) entry.getValue();
+                playerData.setModesetForWorld(worldId, modeset);
+            }
+        }
         return playerData;
     }
 }

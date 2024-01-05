@@ -45,16 +45,6 @@ public abstract class OCMModule implements Listener {
     }
 
     /**
-     * Checks whether the module is enabled in the given world.
-     *
-     * @param world the world to check. Null to check whether it is globally disabled
-     * @return true if the module is enabled in that world
-     */
-    public boolean isEnabled(@NotNull World world) {
-        return Config.moduleEnabled(configName, world);
-    }
-
-    /**
      * Checks whether this module is globally en/disabled.
      *
      * @return true if this module is globally enabled
@@ -64,17 +54,31 @@ public abstract class OCMModule implements Listener {
     }
 
     /**
-     * Whether this module should be enabled for this player and for the world he is currently in
+     * Checks whether the module is present in the default modeset for the specified world
+     *
+     * @param world The world to get the default modeset for
+     * @return Whether the module is enabled for the found modeset in the given world
+     */
+    public boolean isEnabled(World world) {
+        return Config.moduleEnabled(configName, world);
+    }
+
+    /**
+     * Whether this module should be enabled for this player given his current modeset
      */
     public boolean isEnabled(@NotNull HumanEntity humanEntity) {
-        final String modesetName = PlayerStorage.getPlayerData(humanEntity.getUniqueId()).getModeset();
+        final World world = humanEntity.getWorld();
+        final String modesetName = PlayerStorage.getPlayerData(humanEntity.getUniqueId()).getModesetForWorld(world.getUID());
 
-        if(modesetName == null){
-            return isEnabled(humanEntity.getWorld());
+        if (modesetName == null) {
+            debug("No modeset found!", humanEntity);
+            Messenger.warn("No modeset found for " + humanEntity.getName());
+            return isEnabled(world);
         }
 
+        // Check if the modeset contains this module's name
         final Set<String> modeset = Config.getModesets().get(modesetName);
-        return isEnabled(humanEntity.getWorld()) && modeset != null && modeset.contains(configName);
+        return modeset != null && modeset.contains(configName);
     }
 
     public boolean isEnabled(@NotNull Entity entity) {
@@ -85,7 +89,7 @@ public abstract class OCMModule implements Listener {
 
     /**
      * Returns if module should be enabled, giving priority to the attacker, if a human.
-     * If neither entity a human, checks if module should be enabled in the defender's world.
+     * If neither entity is a human, checks if module should be enabled in the defender's world.
      *
      * @param attacker The entity that is performing the attack
      * @param defender The entity that is being attacked
@@ -127,9 +131,10 @@ public abstract class OCMModule implements Listener {
     /**
      * Called when player changes modeset. Re-apply any more permanent changes
      * depending on result of isEnabled(player).
+     *
      * @param player The player that changed modeset
      */
-    public void reapply(Player player){
+    public void reapply(Player player) {
         // Intentionally left blank! Meant for individual modules to use.
     }
 

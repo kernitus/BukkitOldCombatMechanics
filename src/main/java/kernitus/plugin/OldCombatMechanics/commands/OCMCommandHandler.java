@@ -93,7 +93,7 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
-        playerData.setModeset(modesetName);
+        playerData.setModesetForWorld(player.getWorld().getUID(), modesetName);
         PlayerStorage.setPlayerData(player.getUniqueId(), playerData);
         PlayerStorage.scheduleSave();
 

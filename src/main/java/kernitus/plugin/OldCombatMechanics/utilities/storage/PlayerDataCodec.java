@@ -14,13 +14,19 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
 
+import java.util.Map;
+import java.util.UUID;
+
 public class PlayerDataCodec implements Codec<PlayerData> {
 
     @Override
     public void encode(BsonWriter writer, PlayerData value, EncoderContext encoderContext) {
         final Document document = new Document();
-        document.put("modeset", value.getModeset());
-        // Add other fields to the document as needed
+        Document modesetByWorldDoc = new Document();
+        for (Map.Entry<UUID, String> entry : value.getModesetByWorld().entrySet()) {
+            modesetByWorldDoc.put(entry.getKey().toString(), entry.getValue());
+        }
+        document.put("modesetByWorld", modesetByWorldDoc);
         new DocumentCodec().encode(writer, document, encoderContext);
     }
 
