@@ -9,11 +9,12 @@ package kernitus.plugin.OldCombatMechanics.utilities.storage;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.spigotmc.event.player.PlayerSpawnLocationEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.Set;
 import java.util.UUID;
@@ -28,19 +29,27 @@ public class ModesetListener extends OCMModule {
         super(plugin, "modeset-listener");
     }
 
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         final Player player = event.getPlayer();
         final UUID playerId = player.getUniqueId();
         final PlayerData playerData = PlayerStorage.getPlayerData(playerId);
         final String modesetFromName = playerData.getModesetForWorld(event.getFrom().getUID());
-        updateModeset(event.getPlayer().getUniqueId(), event.getPlayer().getWorld().getUID(), modesetFromName);
+        updateModeset(player, player.getWorld().getUID(), modesetFromName);
     }
 
-    private static void updateModeset(UUID playerId, UUID worldId, String modesetFromName) {
+    private static void updateModeset(Player player, UUID worldId, String modesetFromName) {
+        final UUID playerId = player.getUniqueId();
         final PlayerData playerData = PlayerStorage.getPlayerData(playerId);
+        Messenger.debug("PLAYER DATA: " + playerData);
         final String originalModeset = playerData.getModesetForWorld(worldId);
         String modesetName = playerData.getModesetForWorld(worldId);
+        Messenger.debug("modeset name: " + originalModeset);
 
         // Get modesets allowed in to world
         Set<String> allowedModesets = Config.getWorlds().get(worldId);
@@ -59,14 +68,20 @@ public class ModesetListener extends OCMModule {
         // If the modeset changed, set and save
         if (originalModeset == null || !originalModeset.equals(modesetName)) {
             playerData.setModesetForWorld(worldId, modesetName);
+            PlayerStorage.setPlayerData(playerId, playerData);
             PlayerStorage.scheduleSave();
+
+            Messenger.send(player,
+                    Config.getConfig().getString("mode-messages.mode-set",
+                            "&4ERROR: &rmode-messages.mode-set string missing"),
+                    modesetName
+            );
         }
     }
 
-    // Another plugin could modify the spawn location, so we use highest priority
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerSpawnLocation(PlayerSpawnLocationEvent event) {
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerJoin(PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        updateModeset(player.getUniqueId(), player.getWorld().getUID(), null);
+        updateModeset(player, player.getWorld().getUID(), null);
     }
 }

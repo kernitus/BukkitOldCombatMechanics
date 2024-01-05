@@ -14,10 +14,7 @@ package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bson.*;
-import org.bson.codecs.BsonValueCodecProvider;
-import org.bson.codecs.DecoderContext;
-import org.bson.codecs.DocumentCodec;
-import org.bson.codecs.EncoderContext;
+import org.bson.codecs.*;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
@@ -51,9 +48,11 @@ public class PlayerStorage {
         dataFilePath = Paths.get(plugin.getDataFolder() + File.separator + "players.bson");
 
         codecRegistry = CodecRegistries.fromRegistries(
+                CodecRegistries.fromCodecs(new DocumentCodec()), // Explicitly provide a DocumentCodec
                 CodecRegistries.fromCodecs(new PlayerDataCodec()),
-                CodecRegistries.fromProviders(new BsonValueCodecProvider()) // For BSON values
+                CodecRegistries.fromProviders(new BsonValueCodecProvider(), new ValueCodecProvider()) // For BSON values
         );
+
         PlayerStorage.documentCodec = new DocumentCodec(codecRegistry);
 
         data = loadData();
@@ -104,6 +103,7 @@ public class PlayerStorage {
         if (playerDoc == null) {
             final PlayerData playerData = new PlayerData();
             setPlayerData(uuid, playerData);
+            scheduleSave();
             return playerData;
         }
         final BsonDocument bsonDocument = new BsonDocumentWrapper<>(playerDoc, documentCodec);
@@ -111,8 +111,23 @@ public class PlayerStorage {
     }
 
     public static void setPlayerData(UUID uuid, PlayerData playerData) {
-        BsonDocument bsonDocument = new BsonDocument();
-        codecRegistry.get(PlayerData.class).encode(new BsonDocumentWriter(bsonDocument), playerData, EncoderContext.builder().build());
-        data.put(uuid.toString(), bsonDocument);
+        // Create a BsonDocumentWriter to hold the encoded data
+        BsonDocumentWriter writer = new BsonDocumentWriter(new BsonDocument());
+
+        // Get the PlayerDataCodec from the CodecRegistry
+        PlayerDataCodec playerDataCodec = (PlayerDataCodec) codecRegistry.get(PlayerData.class);
+
+        // Encode the PlayerData object to the writer
+        playerDataCodec.encode(writer, playerData, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
+
+        // Retrieve the BsonDocument
+        BsonDocument bsonDocument = writer.getDocument();
+
+        // Convert the BsonDocument to a Document
+        Document document = new Document();
+        bsonDocument.forEach((key, value) -> document.put(key, value.isDocument() ? new Document(value.asDocument()) : value));
+
+        // Put the Document into your data map
+        data.put(uuid.toString(), document);
     }
 }

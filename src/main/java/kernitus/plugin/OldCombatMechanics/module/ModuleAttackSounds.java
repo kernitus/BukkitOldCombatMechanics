@@ -39,15 +39,17 @@ public class ModuleAttackSounds extends OCMModule {
 
         // inject all players at startup, so the plugin still works properly after a reload
         OCMMain.getInstance().addEnableListener(() -> {
-            for (Player player : Bukkit.getOnlinePlayers())
-                PacketManager.getInstance().addListener(soundListener, player);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if(isEnabled(player))
+                    PacketManager.getInstance().addListener(soundListener, player);
+            }
         });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLogin(PlayerJoinEvent e) {
-        // always attach the listener, it checks internally
-        PacketManager.getInstance().addListener(soundListener, e.getPlayer());
+        if(isEnabled(e.getPlayer()))
+            PacketManager.getInstance().addListener(soundListener, e.getPlayer());
     }
 
     @Override
@@ -69,7 +71,7 @@ public class ModuleAttackSounds extends OCMModule {
 
         @Override
         public void onPacketSend(PacketEvent packetEvent) {
-            if (disabledDueToError || !isEnabled(packetEvent.getPlayer())) return;
+            if (disabledDueToError) return;
 
             try {
                 SoundPacket.from(packetEvent.getPacket())

@@ -72,7 +72,7 @@ public abstract class OCMModule implements Listener {
 
         if (modesetName == null) {
             debug("No modeset found!", humanEntity);
-            Messenger.warn("No modeset found for " + humanEntity.getName());
+            debug("No modeset found for " + humanEntity.getName());
             return isEnabled(world);
         }
 

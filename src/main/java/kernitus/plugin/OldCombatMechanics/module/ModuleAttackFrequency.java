@@ -44,7 +44,7 @@ public class ModuleAttackFrequency extends OCMModule {
     }
 
     @EventHandler
-    public void onPlayerLogin(PlayerJoinEvent e) {
+    public void onPlayerJoin(PlayerJoinEvent e) {
         final Player player = e.getPlayer();
         if (isEnabled(player)) setDelay(player, playerDelay);
     }
