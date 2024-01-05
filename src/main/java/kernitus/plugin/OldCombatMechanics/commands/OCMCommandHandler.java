@@ -9,8 +9,8 @@ import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.PlayerStorage;
-import org.bson.Document;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -92,9 +92,9 @@ public class OCMCommandHandler implements CommandExecutor {
             return;
         }
 
-        final Document data = PlayerStorage.getPlayerData(player.getUniqueId());
-        data.put("modeset", modesetName);
-        PlayerStorage.setPlayerData(player.getUniqueId(), data);
+        final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
+        playerData.setModeset(modesetName);
+        PlayerStorage.setPlayerData(player.getUniqueId(), playerData);
         PlayerStorage.scheduleSave();
 
         Messenger.send(sender,

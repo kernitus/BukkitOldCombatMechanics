@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package kernitus.plugin.OldCombatMechanics.utilities;
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import org.bson.*;
@@ -38,13 +44,14 @@ public class PlayerStorage {
     private static DocumentCodec documentCodec;
     private static Document data;
     private static final AtomicReference<BukkitTask> saveTask = new AtomicReference<>();
+    private static CodecRegistry codecRegistry;
 
     public static void initialise(OCMMain plugin) {
         PlayerStorage.plugin = plugin;
         dataFilePath = Paths.get(plugin.getDataFolder() + File.separator + "players.bson");
 
-        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-                CodecRegistries.fromCodecs(new DocumentCodec()), // Explicitly provide a DocumentCodec
+        codecRegistry = CodecRegistries.fromRegistries(
+                CodecRegistries.fromCodecs(new PlayerDataCodec()),
                 CodecRegistries.fromProviders(new BsonValueCodecProvider()) // For BSON values
         );
         PlayerStorage.documentCodec = new DocumentCodec(codecRegistry);
@@ -92,16 +99,20 @@ public class PlayerStorage {
         }
     }
 
-    public static Document getPlayerData(UUID uuid) {
-        Document playerData = (Document) data.get(uuid.toString());
-        if (playerData == null) {
-            playerData = new Document();
-            data.put(uuid.toString(), playerData);
+    public static PlayerData getPlayerData(UUID uuid) {
+        final Document playerDoc = (Document) data.get(uuid.toString());
+        if (playerDoc == null) {
+            final PlayerData playerData = new PlayerData();
+            setPlayerData(uuid, playerData);
+            return playerData;
         }
-        return playerData;
+        final BsonDocument bsonDocument = new BsonDocumentWrapper<>(playerDoc, documentCodec);
+        return codecRegistry.get(PlayerData.class).decode(bsonDocument.asBsonReader(), DecoderContext.builder().build());
     }
 
-    public static void setPlayerData(UUID uuid, Document playerData) {
-        data.put(uuid.toString(), playerData);
+    public static void setPlayerData(UUID uuid, PlayerData playerData) {
+        BsonDocument bsonDocument = new BsonDocument();
+        codecRegistry.get(PlayerData.class).encode(new BsonDocumentWriter(bsonDocument), playerData, EncoderContext.builder().build());
+        data.put(uuid.toString(), bsonDocument);
     }
 }
