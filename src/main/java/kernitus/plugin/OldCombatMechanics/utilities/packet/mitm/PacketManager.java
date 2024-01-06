@@ -48,7 +48,6 @@ public class PacketManager implements Listener {
      *
      * @return An instance of the PacketManager
      */
-    @SuppressWarnings("unused")
     public static synchronized PacketManager getInstance(){
         if(instance == null){
             instance = new PacketManager(OCMMain.getInstance());
@@ -63,7 +62,6 @@ public class PacketManager implements Listener {
      * @param player   The Player to listen for
      * @throws NullPointerException if any parameter is null
      */
-    @SuppressWarnings("unused")
     public void addListener(PacketListener listener, Player player){
         Objects.requireNonNull(listener, "listener can not be null");
         Objects.requireNonNull(player, "player can not be null");
@@ -92,7 +90,6 @@ public class PacketManager implements Listener {
      * @param player   The player to remove it for
      * @throws NullPointerException if any parameter is null
      */
-    @SuppressWarnings("unused")
     public void removeListener(PacketListener listener, Player player){
         Objects.requireNonNull(listener, "listener can not be null");
         Objects.requireNonNull(player, "player can not be null");
@@ -118,7 +115,6 @@ public class PacketManager implements Listener {
      * @param uuid The {@link UUID} of the Player to remove all listeners for
      * @throws NullPointerException if uuid is null
      */
-    @SuppressWarnings("WeakerAccess")
     public void removeAllListeners(UUID uuid){
         Objects.requireNonNull(uuid, "uuid can not be null");
 

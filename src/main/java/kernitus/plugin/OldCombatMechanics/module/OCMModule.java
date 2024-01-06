@@ -134,7 +134,7 @@ public abstract class OCMModule implements Listener {
      *
      * @param player The player that changed modeset
      */
-    public void reapply(Player player) {
+    public void onModesetChange(Player player) {
         // Intentionally left blank! Meant for individual modules to use.
     }
 

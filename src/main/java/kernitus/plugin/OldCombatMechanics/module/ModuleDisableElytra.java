@@ -98,11 +98,11 @@ public class ModuleDisableElytra extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onWorldChange(PlayerChangedWorldEvent e) {
-        reapply(e.getPlayer());
+        onModesetChange(e.getPlayer());
     }
 
     @Override
-    public void reapply(Player player) {
+    public void onModesetChange(Player player) {
         if (!isEnabled(player)) return;
 
         final PlayerInventory inventory = player.getInventory();

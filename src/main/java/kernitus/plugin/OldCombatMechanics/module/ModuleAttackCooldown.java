@@ -67,7 +67,7 @@ public class ModuleAttackCooldown extends OCMModule {
     }
 
     @Override
-    public void reapply(Player player){
+    public void onModesetChange(Player player){
         adjustAttackSpeed(player);
     }
 

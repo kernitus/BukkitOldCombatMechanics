@@ -60,7 +60,7 @@ public class ModulePlayerCollisions extends OCMModule {
     }
 
     @Override
-    public void reapply(Player player) {
+    public void onModesetChange(Player player) {
         createOrUpdateTeam(player);
     }
 

@@ -38,17 +38,23 @@ public class ModuleAttackSounds extends OCMModule {
         this.blockedSounds = new HashSet<>(getBlockedSounds());
 
         // inject all players at startup, so the plugin still works properly after a reload
-        OCMMain.getInstance().addEnableListener(() -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if(isEnabled(player))
-                    PacketManager.getInstance().addListener(soundListener, player);
-            }
-        });
+        OCMMain.getInstance().addEnableListener(this::updateListenersForAllPlayers);
+    }
+
+    private void updateListenersForAllPlayers() {
+        Bukkit.getOnlinePlayers().forEach(this::updateListener);
+    }
+
+    private void updateListener(Player player){
+        if (isEnabled(player))
+            PacketManager.getInstance().addListener(soundListener, player);
+        else
+            PacketManager.getInstance().removeListener(soundListener, player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLogin(PlayerJoinEvent e) {
-        if(isEnabled(e.getPlayer()))
+        if (isEnabled(e.getPlayer()))
             PacketManager.getInstance().addListener(soundListener, e.getPlayer());
     }
 
@@ -56,6 +62,12 @@ public class ModuleAttackSounds extends OCMModule {
     public void reload() {
         blockedSounds.clear();
         blockedSounds.addAll(getBlockedSounds());
+        updateListenersForAllPlayers();
+    }
+
+    @Override
+    public void onModesetChange(Player player) {
+        updateListener(player);
     }
 
     private Collection<String> getBlockedSounds() {

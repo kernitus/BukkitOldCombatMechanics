@@ -122,11 +122,11 @@ public class ModuleDisableOffHand extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onWorldChange(PlayerChangedWorldEvent e) {
-        reapply(e.getPlayer());
+        onModesetChange(e.getPlayer());
     }
 
     @Override
-    public void reapply(Player player) {
+    public void onModesetChange(Player player) {
         final PlayerInventory inventory = player.getInventory();
         final ItemStack offHandItem = inventory.getItemInOffHand();
 

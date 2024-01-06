@@ -128,7 +128,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
         // Re-apply things like attack speed and collision team
         final Player playerCopy = player;
-        ModuleLoader.getModules().forEach(module -> module.reapply(playerCopy));
+        ModuleLoader.getModules().forEach(module -> module.onModesetChange(playerCopy));
     }
 
     /*
