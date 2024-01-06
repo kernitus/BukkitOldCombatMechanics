@@ -46,10 +46,11 @@ worlds:
 
 mode-messages:
   # Messages used when changing player mode
+  mode-status: '&bYour current modeset is: &7%s'
   message-usage: "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset"
   invalid-modeset: "&cPlease specify a valid modeset!"
   invalid-player: "&cPlease specify a valid player!"
-  mode-set: "&2Set modeset to &r%s"
+  mode-set: "&2Set modeset to &7%s"
 
 # ########################
 # MODULE SETTINGS

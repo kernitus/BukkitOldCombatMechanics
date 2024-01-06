@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import org.bson.Document;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class PlayerData {
         modesetByWorld.put(worldId, modeset);
     }
 
-    public String getModesetForWorld(UUID worldId) {
+    public @Nullable String getModesetForWorld(UUID worldId) {
         return modesetByWorld.get(worldId);
     }
 

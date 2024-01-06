@@ -56,8 +56,20 @@ public class OCMCommandHandler implements CommandExecutor {
         Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e config file reloaded");
     }
 
-    private void mode(OCMMain plugin, CommandSender sender, String[] args) {
+    private void mode(CommandSender sender, String[] args) {
         if (args.length < 2) {
+            if(sender instanceof Player) {
+                final Player player = ((Player) sender);
+                final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
+                String modeName = playerData.getModesetForWorld(player.getWorld().getUID());
+                if(modeName == null || modeName.isEmpty()) modeName = "unknown";
+
+                Messenger.send(sender,
+                        Config.getConfig().getString("mode-messages.mode-status",
+                                "&4ERROR: &rmode-messages.mode-status string missing"),
+                                modeName
+                        );
+            }
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.message-usage",
                             "&4ERROR: &rmode-messages.message-usage string missing"));
@@ -147,7 +159,7 @@ public class OCMCommandHandler implements CommandExecutor {
                                 break;
                                  */
                             case mode:
-                                mode(plugin, sender, args);
+                                mode(sender, args);
                                 break;
                             default:
                                 throw new CommandNotRecognisedException();
