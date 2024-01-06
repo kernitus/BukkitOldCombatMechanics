@@ -46,10 +46,8 @@ public class ModesetListener extends OCMModule {
     private static void updateModeset(Player player, UUID worldId, String modesetFromName) {
         final UUID playerId = player.getUniqueId();
         final PlayerData playerData = PlayerStorage.getPlayerData(playerId);
-        Messenger.debug("PLAYER DATA: " + playerData);
         final String originalModeset = playerData.getModesetForWorld(worldId);
         String modesetName = playerData.getModesetForWorld(worldId);
-        Messenger.debug("modeset name: " + originalModeset);
 
         // Get modesets allowed in to world
         Set<String> allowedModesets = Config.getWorlds().get(worldId);

@@ -205,15 +205,20 @@ public class Reflector {
                 " and value type " + valueType.getSimpleName() + " not found");
     }
 
+    public static Object getFieldValueByType(Object object, String simpleClassName) throws Exception {
+        Stream<Field> publicFields = Stream.of(object.getClass().getFields());
+        Stream<Field> declaredFields = Stream.of(object.getClass().getDeclaredFields());
+        Stream<Field> allFields = Stream.concat(publicFields, declaredFields);
 
-    public static Object getDeclaredFieldValueByType(Object object, String simpleClassName) throws Exception {
-        for (Field declaredField : object.getClass().getDeclaredFields()) {
-            if (declaredField.getType().getSimpleName().equals(simpleClassName)) {
-                declaredField.setAccessible(true);
-                return declaredField.get(object);
-            }
-        }
-        throw new NoSuchFieldException("Couldn't find field with type " + simpleClassName + " in " + object.getClass());
+        // Find the first field that matches the type name
+        Field matchingField = allFields
+                .filter(declaredField -> declaredField.getType().getSimpleName().equals(simpleClassName))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchFieldException("Couldn't find field with type " + simpleClassName + " in " + object.getClass()));
+
+        // Make the field accessible and return its value
+        matchingField.setAccessible(true);
+        return matchingField.get(object);
     }
 
     public static Object getFieldValue(Field field, Object handle) {

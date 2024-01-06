@@ -60,9 +60,9 @@ class PacketInjector extends ChannelDuplexHandler {
             return;
         }
 
-        Object manager = Reflector.getDeclaredFieldValueByType(playerConnection, "NetworkManager");
+        Object manager = Reflector.getFieldValueByType(playerConnection, "NetworkManager");
 
-        channel = (Channel) Reflector.getDeclaredFieldValueByType(manager, "Channel");
+        channel = (Channel) Reflector.getFieldValueByType(manager, "Channel");
 
         // remove old listener, if it wasn't properly cleared up
         if (channel.pipeline().get("ocm_handler") != null) {
