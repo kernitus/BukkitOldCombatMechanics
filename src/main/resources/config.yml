@@ -69,10 +69,12 @@ disable-player-collisions:
 
 disable-sword-sweep:
   # This is to disable the sword sweep attack
-  # Particle effect is also removed
+  # With ProtocolLib, particle effect is also removed
   enabled: true
 
 disable-attack-sounds:
+  # Disables attack sounds that were added with 1.9+
+  # Requires ProtocolLib
   enabled: false
   # The sounds that will be blocked by this module
   blocked-sounds:

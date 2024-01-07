@@ -27,7 +27,7 @@ public class EventRegistry {
      * Registers a listener and returns <code>true</code> if the listener was not already registered.
      *
      * @param listener The {@link Listener} to register.
-     * @return Whether or not the listener was successfully registered.
+     * @return Whether the listener was successfully registered.
      */
     public boolean registerListener(Listener listener) {
         if (listeners.contains(listener)) return false;
@@ -41,7 +41,7 @@ public class EventRegistry {
      * Unregisters a listener and returns <code>true</code> if the listener was already registered.
      *
      * @param listener The {@link Listener} to register.
-     * @return Whether or not the listener was successfully unregistered.
+     * @return Whether the listener was successfully unregistered.
      */
     public boolean unregisterListener(Listener listener) {
         if (!listeners.contains(listener)) return false;

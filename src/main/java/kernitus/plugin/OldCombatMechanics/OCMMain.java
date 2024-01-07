@@ -5,6 +5,8 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
@@ -46,22 +48,17 @@ public class OCMMain extends JavaPlugin {
     private final List<Runnable> disableListeners = new ArrayList<>();
     private final List<Runnable> enableListeners = new ArrayList<>();
     private final List<Hook> hooks = new ArrayList<>();
+    private ProtocolManager protocolManager;
 
     public OCMMain() {
         super();
     }
 
-    public static OCMMain getInstance() {
-        return INSTANCE;
-    }
-
-    public static String getVersion() {
-        return INSTANCE.getDescription().getVersion();
-    }
-
     @Override
     public void onEnable() {
         INSTANCE = this;
+
+        protocolManager = ProtocolLibrary.getProtocolManager();
 
         // Setting up config.yml
         CH.setupConfigIfNotPresent();
@@ -279,5 +276,17 @@ public class OCMMain extends JavaPlugin {
     @Override
     public File getFile() {
         return super.getFile();
+    }
+
+    public static OCMMain getInstance() {
+        return INSTANCE;
+    }
+
+    public static String getVersion() {
+        return INSTANCE.getDescription().getVersion();
+    }
+
+    public ProtocolManager getProtocolManager() {
+        return protocolManager;
     }
 }

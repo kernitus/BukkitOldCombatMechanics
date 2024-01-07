@@ -5,13 +5,14 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketAdapter;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketEvent;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.mitm.PacketManager;
-import kernitus.plugin.OldCombatMechanics.utilities.packet.particle.ParticlePacket;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,8 +23,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -37,13 +38,15 @@ public class ModuleSwordSweep extends OCMModule {
 
     private final List<Location> sweepLocations = new ArrayList<>();
     private final ParticleListener particleListener;
+    private final ProtocolManager protocolManager;
     private EntityDamageEvent.DamageCause sweepDamageCause;
     private BukkitTask task;
 
     public ModuleSwordSweep(OCMMain plugin) {
         super(plugin, "disable-sword-sweep");
 
-        this.particleListener = new ParticleListener();
+        protocolManager = plugin.getProtocolManager();
+        particleListener = new ParticleListener(plugin);
 
         try {
             // Available from 1.11 onwards
@@ -52,28 +55,22 @@ public class ModuleSwordSweep extends OCMModule {
             sweepDamageCause = null;
         }
 
-        // inject all players at startup, so the plugin still works properly after a reload
-        OCMMain.getInstance().addEnableListener(() -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                PacketManager.getInstance().addListener(particleListener, player);
-            }
-        });
+        reload();
     }
 
     @Override
     public void reload() {
+        if (isEnabled())
+            protocolManager.addPacketListener(particleListener);
+        else
+            protocolManager.removePacketListener(particleListener);
+
         // we didn't set anything up in the first place
         if (sweepDamageCause != null) return;
 
         if (task != null) task.cancel();
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, sweepLocations::clear, 0, 1);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerLogin(PlayerJoinEvent e) {
-        // always attach the listener, it checks internally
-        PacketManager.getInstance().addListener(particleListener, e.getPlayer());
     }
 
     //Changed from HIGHEST to LOWEST to support DamageIndicator plugin
@@ -135,16 +132,28 @@ public class ModuleSwordSweep extends OCMModule {
 
         private boolean disabledDueToError;
 
+        public ParticleListener(Plugin plugin) {
+            super(plugin, PacketType.Play.Server.WORLD_PARTICLES);
+        }
+
         @Override
-        public void onPacketSend(PacketEvent packetEvent) {
-            if (disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld())) {
+        public void onPacketSending(PacketEvent packetEvent) {
+            if (disabledDueToError || !isEnabled(packetEvent.getPlayer().getWorld()))
                 return;
-            }
 
             try {
-                ParticlePacket.from(packetEvent.getPacket())
-                        .filter(it -> it.getParticleName().toUpperCase(Locale.ROOT).contains("SWEEP"))
-                        .ifPresent(e -> packetEvent.setCancelled(true));
+                final PacketContainer packetContainer = packetEvent.getPacket();
+                String particleName;
+                try {
+                    particleName = packetContainer.getNewParticles().read(0).getParticle().name();
+                } catch (Exception exception){
+                    particleName = packetContainer.getParticles().read(0).name(); // for pre 1.13
+                }
+
+                if (particleName.toUpperCase(Locale.ROOT).contains("SWEEP")) {
+                    packetEvent.setCancelled(true);
+                    debug("Cancelled sweep particles", packetEvent.getPlayer());
+                }
             } catch (Exception | ExceptionInInitializerError e) {
                 disabledDueToError = true;
                 Messenger.warn(

@@ -11,6 +11,15 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
+    idea
+}
+
+// Make sure javadocs are available to IDE
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
 
 repositories {
@@ -28,6 +37,8 @@ repositories {
     // Spartan API
     maven("https://repo.crazycrew.us/api")
     maven("https://repo.minebench.de/")
+    // Protocollib
+    maven("https://repo.dmulloy2.net/repository/public/")
 
     // For local maven repo (mojang mappings jar)
     // For ingametesting
@@ -45,6 +56,8 @@ dependencies {
     implementation("org.mongodb:bson:4.11.0")
 
     compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
+
+    compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
     /* For ingametesting
     // Mojang mappings for NMS
