@@ -58,8 +58,6 @@ public class OCMMain extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
 
-        protocolManager = ProtocolLibrary.getProtocolManager();
-
         // Setting up config.yml
         CH.setupConfigIfNotPresent();
 
@@ -71,6 +69,19 @@ public class OCMMain extends JavaPlugin {
 
         // Initialise Config utility
         Config.initialise(this);
+
+        // Initialise the Messenger utility
+        Messenger.initialise(this);
+
+        try {
+            if (getServer().getPluginManager().getPlugin("ProtocolLib") != null &&
+                    getServer().getPluginManager().getPlugin("ProtocolLib").isEnabled())
+                protocolManager = ProtocolLibrary.getProtocolManager();
+            else
+                Messenger.warn("No ProtocolLib detected, some features might be disabled");
+        } catch (Exception e) {
+            Messenger.warn("No ProtocolLib detected, some features might be disabled");
+        }
 
         // Register all the modules
         registerModules();
@@ -85,9 +96,6 @@ public class OCMMain extends JavaPlugin {
         getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this));
         // Set up command tab completer
         getCommand("OldCombatMechanics").setTabCompleter(new OCMCommandCompleter());
-
-        // Initialise the Messenger utility
-        Messenger.initialise(this);
 
         Config.reload();
 
@@ -230,10 +238,17 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
         ModuleLoader.addModule(new ModuleChorusFruit(this));
 
-        ModuleLoader.addModule(new ModuleAttackSounds(this));
         ModuleLoader.addModule(new ModuleOldBurnDelay(this));
         ModuleLoader.addModule(new ModuleAttackFrequency(this));
         ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
+
+        // These modules require ProtocolLib
+        if (protocolManager != null) {
+            ModuleLoader.addModule(new ModuleAttackSounds(this));
+            ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
+        } else {
+            Messenger.warn("ProtocolLib is null!");
+        }
     }
 
     private void registerHooks() {

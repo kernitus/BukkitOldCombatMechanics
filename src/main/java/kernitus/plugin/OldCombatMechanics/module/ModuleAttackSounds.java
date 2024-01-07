@@ -24,16 +24,12 @@ import java.util.Set;
  */
 public class ModuleAttackSounds extends OCMModule {
 
-    private final SoundListener soundListener;
-    private final ProtocolManager protocolManager;
-    private final Set<String> blockedSounds;
+    private final ProtocolManager protocolManager = plugin.getProtocolManager();
+    private final SoundListener soundListener = new SoundListener(plugin);
+    private final Set<String> blockedSounds = new HashSet<>(getBlockedSounds());
 
     public ModuleAttackSounds(OCMMain plugin) {
         super(plugin, "disable-attack-sounds");
-
-        protocolManager = plugin.getProtocolManager();
-        this.soundListener = new SoundListener(plugin);
-        this.blockedSounds = new HashSet<>(getBlockedSounds());
 
         reload();
     }
@@ -50,7 +46,7 @@ public class ModuleAttackSounds extends OCMModule {
     }
 
     private Collection<String> getBlockedSounds() {
-        return module().getStringList("blocked-sounds");
+        return module().getStringList("blocked-sound-names");
     }
 
     /**
@@ -70,7 +66,7 @@ public class ModuleAttackSounds extends OCMModule {
             try {
                 final PacketContainer packetContainer = packetEvent.getPacket();
                 final Sound sound = packetContainer.getSoundEffects().read(0);
-                final String soundName = sound.getKey().toString();
+                final String soundName = sound.toString(); // Works for both string and namespaced key
 
                 if (blockedSounds.contains(soundName)) {
                     packetEvent.setCancelled(true);

@@ -72,18 +72,23 @@ disable-sword-sweep:
   # With ProtocolLib, particle effect is also removed
   enabled: true
 
+disable-sword-sweep-particles:
+  # This is to disable the sword sweep attack particles
+  # Requires ProtocolLib
+  enabled: false
+
 disable-attack-sounds:
   # Disables attack sounds that were added with 1.9+
   # Requires ProtocolLib
   enabled: false
   # The sounds that will be blocked by this module
-  blocked-sounds:
-    - "minecraft:entity.player.attack.strong"
-    - "minecraft:entity.player.attack.sweep"
-    - "minecraft:entity.player.attack.nodamage"
-    - "minecraft:entity.player.attack.knockback"
-    - "minecraft:entity.player.attack.crit"
-    - "minecraft:entity.player.attack.weak"
+  blocked-sound-names:
+    - "ENTITY_PLAYER_ATTACK_STRONG"
+    - "ENTITY_PLAYER_ATTACK_SWEEP"
+    - "ENTITY_PLAYER_ATTACK_NODAMAGE"
+    - "ENTITY_PLAYER_ATTACK_KNOCKBACK"
+    - "ENTITY_PLAYER_ATTACK_CRIT"
+    - "ENTITY_PLAYER_ATTACK_WEAK"
 
 disable-crafting:
   # Disable the crafting of specified items
@@ -577,4 +582,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 62
+config-version: 63
