@@ -18,7 +18,7 @@ Modesets can be configured for your players to choose from. Each modeset can hav
 ## Configurable Features
 Features are grouped in `module`s as listed below and can be individually configured and disabled. Modules that are fully disabled will have no impact on server performance.
 
-#### Combat modules
+#### Combat
 - Attack cooldown
 - Attack frequency
 - Tool damage
