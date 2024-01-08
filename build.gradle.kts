@@ -55,9 +55,9 @@ dependencies {
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
     // For BSON file serialisation
     implementation("org.mongodb:bson:4.11.0")
-
+    // Spigot
     compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
-
+    // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
     /* For ingametesting
