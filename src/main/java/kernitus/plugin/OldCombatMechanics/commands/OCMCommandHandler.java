@@ -87,8 +87,10 @@ public class OCMCommandHandler implements CommandExecutor {
 
         Player player = null;
         if (args.length < 3) {
-            if (sender instanceof Player)
-                player = (Player) sender;
+            if (sender instanceof Player) {
+                if (sender.hasPermission("oldcombatmechanics.mode.own"))
+                    player = (Player) sender;
+            }
             else {
                 Messenger.send(sender,
                         Config.getConfig().getString("mode-messages.invalid-player",

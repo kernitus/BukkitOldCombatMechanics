@@ -39,16 +39,20 @@ public class OCMCommandCompleter implements TabCompleter {
                     .map(Enum::toString).collect(Collectors.toList()));
         } else if (args[0].equalsIgnoreCase(Subcommand.mode.toString())) {
             if (args.length < 3) {
-                if (sender instanceof Player) { // Get the modesets allowed in the world player is in
-                    final World world = ((Player) sender).getWorld();
-                    completions.addAll(
-                            Config.getWorlds().get(world.getUID()).stream()
-                                    .filter(ms -> ms.startsWith(args[1]))
-                                    .collect(Collectors.toList()));
-                } else {
-                    completions.addAll(Config.getModesets().keySet().stream()
-                            .filter(ms -> ms.startsWith(args[1]))
-                            .collect(Collectors.toList()));
+                if (sender.hasPermission("oldcombatmechanics.mode.others")
+                        || sender.hasPermission("oldcombatmechanics.mode.own")
+                ) {
+                    if (sender instanceof Player) { // Get the modesets allowed in the world player is in
+                        final World world = ((Player) sender).getWorld();
+                        completions.addAll(
+                                Config.getWorlds().get(world.getUID()).stream()
+                                        .filter(ms -> ms.startsWith(args[1]))
+                                        .collect(Collectors.toList()));
+                    } else {
+                        completions.addAll(Config.getModesets().keySet().stream()
+                                .filter(ms -> ms.startsWith(args[1]))
+                                .collect(Collectors.toList()));
+                    }
                 }
             } else if (sender.hasPermission("oldcombatmechanics.mode.others")) {
                 completions.addAll(Bukkit.getOnlinePlayers().stream()
