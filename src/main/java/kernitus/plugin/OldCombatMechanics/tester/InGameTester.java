@@ -10,6 +10,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -67,6 +69,15 @@ public class InGameTester {
         defenderLocation.setYaw(180);
         defenderLocation.setPitch(0);
         defender.teleport(defenderLocation);
+
+        // modeset of attacker takes precedence
+        PlayerData playerData = PlayerStorage.getPlayerData(attacker.getUniqueId());
+        playerData.setModesetForWorld(attacker.getWorld().getUID(), "old");
+        PlayerStorage.setPlayerData(attacker.getUniqueId(), playerData);
+
+        playerData = PlayerStorage.getPlayerData(defender.getUniqueId());
+        playerData.setModesetForWorld(defender.getWorld().getUID(), "new");
+        PlayerStorage.setPlayerData(defender.getUniqueId(), playerData);
 
         beforeAll();
         tally = new Tally();

@@ -7,12 +7,14 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.tester.InGameTester;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -29,7 +31,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
     private final OCMMain plugin;
 
-    enum Subcommand {reload, mode}
+    enum Subcommand {reload, mode, test}
 
     public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;
@@ -131,7 +133,6 @@ public class OCMCommandHandler implements CommandExecutor {
         ModuleLoader.getModules().forEach(module -> module.onModesetChange(playerCopy));
     }
 
-    /*
     private void test(OCMMain plugin, CommandSender sender) {
         final Location location = sender instanceof Player ?
                 ((Player) sender).getLocation() :
@@ -139,7 +140,6 @@ public class OCMCommandHandler implements CommandExecutor {
 
         new InGameTester(plugin).performTests(sender, location);
     }
-     */
 
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if (args.length < 1) {
@@ -153,11 +153,9 @@ public class OCMCommandHandler implements CommandExecutor {
                             case reload:
                                 reload(sender);
                                 break;
-                                /*
                             case test:
                                 test(plugin, sender);
                                 break;
-                                 */
                             case mode:
                                 mode(sender, args);
                                 break;

@@ -246,8 +246,6 @@ public class OCMMain extends JavaPlugin {
         if (protocolManager != null) {
             ModuleLoader.addModule(new ModuleAttackSounds(this));
             ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
-        } else {
-            Messenger.warn("ProtocolLib is null!");
         }
     }
 

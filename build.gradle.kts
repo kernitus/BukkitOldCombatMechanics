@@ -10,7 +10,7 @@ plugins {
     `java-library`
     id("com.github.johnrengelman.shadow") version "8.1.1"
     // For ingametesting
-    //id("io.papermc.paperweight.userdev") version "1.5.10"
+    id("io.papermc.paperweight.userdev") version "1.5.10"
     idea
 }
 
@@ -56,17 +56,16 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:4.11.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
+    //compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
-    /* For ingametesting
+     //For ingametesting
     // Mojang mappings for NMS
     compileOnly("com.mojang:authlib:4.0.43")
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
     // For reflection remapping
     implementation("xyz.jpenilla:reflection-remapper:0.1.0")
-     */
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
@@ -76,14 +75,14 @@ description = "OldCombatMechanics"
 java {
     toolchain {
         // At least 17 required for MC 1.19 for ingametesting
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
 sourceSets {
     main {
         java {
-            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
+            //exclude("kernitus/plugin/OldCombatMechanics/tester/**")
         }
     }
 }
@@ -102,20 +101,19 @@ tasks.withType<JavaCompile> {
 
 tasks.named<ShadowJar>("shadowJar") {
     dependsOn("jar")
-    archiveFileName.set("${project.name}.jar")
+    //archiveFileName.set("${project.name}.jar")
     dependencies {
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
     }
 }
 
-/* For ingametesting
+// For ingametesting
 tasks.reobfJar {
     outputJar.set(File(buildDir, "libs/${project.name}.jar"))
 }
- */
 
 tasks.assemble {
     // For ingametesting
-    //dependsOn("reobfJar")
-    dependsOn("shadowJar")
+    dependsOn("reobfJar")
+    //dependsOn("shadowJar")
 }
