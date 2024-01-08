@@ -25,6 +25,11 @@ public class PlaceholderAPIHook implements Hook {
             }
 
             @Override
+            public boolean persist() {
+                return true;
+            }
+
+            @Override
             public @NotNull String getIdentifier() {
                 return "ocm";
             }
@@ -41,17 +46,12 @@ public class PlaceholderAPIHook implements Hook {
 
             @Override
             public String onPlaceholderRequest(Player player, @NotNull String identifier) {
-                if(player == null) {
-                    return null;
-                }
-                if(identifier.equals("modeset")) {
-                    final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
-                    String modeName = playerData.getModesetForWorld(player.getWorld().getUID());
-                    if(modeName == null || modeName.isEmpty()) modeName = "unknown";
-                    return modeName;
-                }
-                return null;
+                if (player == null || !identifier.equals("modeset")) return null;
 
+                final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
+                String modeName = playerData.getModesetForWorld(player.getWorld().getUID());
+                if (modeName == null || modeName.isEmpty()) modeName = "unknown";
+                return modeName;
             }
         };
 

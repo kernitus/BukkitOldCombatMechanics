@@ -28,7 +28,7 @@ repositories {
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://oss.sonatype.org/content/repositories/central")
-    // Placeholder API for reflection utils
+    // Placeholder API
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     // CodeMC Repo for bStats
     maven("https://repo.codemc.org/repository/maven-public/")
@@ -49,7 +49,8 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
     // Shaded in by Bukkit
     compileOnly("io.netty:netty-all:4.1.104.Final")
-    compileOnly("me.clip:placeholderapi:2.11.3")
+    // Placeholder API
+    compileOnly("me.clip:placeholderapi:2.11.5")
     // Spartan API
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
     // For BSON file serialisation
