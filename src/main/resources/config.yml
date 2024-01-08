@@ -53,7 +53,7 @@ mode-messages:
   mode-set: "&2Set modeset to &7%s"
 
 # ########################
-# MODULE SETTINGS
+# COMBAT MODULE SETTINGS
 # ########################
 
 disable-attack-cooldown:
@@ -62,78 +62,12 @@ disable-attack-cooldown:
   # What to set the attack speed to. Default for 1.9 is 4, at least 40 is needed for no cooldown.
   generic-attack-speed: 40
 
-disable-player-collisions:
-  # This is to disable player collisions
-  # This is compatible with most scoreboard and tablist-editing plugins
-  enabled: false
-
-disable-sword-sweep:
-  # This is to disable the sword sweep attack
-  # With ProtocolLib, particle effect is also removed
+attack-frequency:
+  # Allows changing the player invulnerability between hits
   enabled: true
-
-disable-sword-sweep-particles:
-  # This is to disable the sword sweep attack particles
-  # Requires ProtocolLib
-  enabled: false
-
-disable-attack-sounds:
-  # Disables attack sounds that were added with 1.9+
-  # Requires ProtocolLib
-  enabled: false
-  # The sounds that will be blocked by this module
-  blocked-sound-names:
-    - "ENTITY_PLAYER_ATTACK_STRONG"
-    - "ENTITY_PLAYER_ATTACK_SWEEP"
-    - "ENTITY_PLAYER_ATTACK_NODAMAGE"
-    - "ENTITY_PLAYER_ATTACK_KNOCKBACK"
-    - "ENTITY_PLAYER_ATTACK_CRIT"
-    - "ENTITY_PLAYER_ATTACK_WEAK"
-
-disable-crafting:
-  # Disable the crafting of specified items
-  enabled: true
-  # List of denied items
-  denied:
-    - shield
-  # Show the user a message if they try to craft a blacklisted item
-  showMessage: true
-  message: "&cYou cannot craft that item!"
-
-disable-offhand:
-  # Disable the usage of the offhand
-  # Won't affect sword-blocking module
-  enabled: true
-  # Whether the following list allows items or blocks them
-  whitelist: true
-  # List of items that should be allowed/blocked
-  # Example: [diamond_sword,BOW]
-  items: [ ]
-  # Message to send user when denied. Set to '' to disable
-  denied-message: "&cOff-hand is disabled"
-
-old-brewing-stand:
-  # Automatically refuels brewing stands
-  enabled: true
-
-no-lapis-enchantments:
-  # Automatically adds lapis to enchantment tables upon opening
-  enabled: false
-  # Whether to only allow this for players with oldcombatmechanics.nolapis permission
-  usePermission: false
-
-disable-elytra:
-  # Do not allow players to wear elytra
-  enabled: false
-
-disable-enderpearl-cooldown:
-  # Disables enderpearl cooldown
-  enabled: true
-  # The cooldown, in seconds
-  cooldown: 0
-  # Show the user a message if they try to use an enderpearl and the cooldown has not expired yet
-  showMessage: true
-  message: "&cYou must wait &7%ds&c before using an enderpearl again!"
+  # The hit delay to apply. Default for 1.9+ is 20 ticks (1 second)
+  playerDelay: 18
+  mobDelay: 16
 
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
@@ -182,16 +116,51 @@ old-tool-damage:
     DIAMOND_HOE: 1
     NETHERITE_HOE: 1
 
-sword-blocking:
-  # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
+old-critical-hits:
+  # Makes critical hits work like in 1.8
+  # With a critical hit, the damage will be multiplied by 1.5
+  # In 1.9, the user must also not be sprinting for it to be a crit
   enabled: true
-  # How often, in ticks, OCM should check if the player is still blocking with a shield, and remove it if not
-  # If this is too fast, the player will have their shield disappear before they're able to block again causing a slight delay
-  # If this is too slow, players will have a shield in their hand well after they've stopped blocking
-  # 20 ticks = 1 second
-  restoreDelay: 40
-  # Whether to require players to have oldcombatmechanics.swordblock permission to block with a sword
-  use-permission: false
+  world: [ ]
+  # What the damage, after applying potions effects, is multiplied by
+  multiplier: 1.5
+  # Whether to allow crits while sprinting. 1.8: true, 1.9: false
+  allow-sprinting: true
+
+old-player-regen:
+  # This is to make players' regeneration act mostly like it did in pre-1.9
+  # Based on https://minecraft.gamepedia.com/Hunger?oldid=948685
+  enabled: true
+  # How often a player should regenerate health, in milliseconds (In 1.8: 4 seconds)
+  # The foodTickerTimer might not be perfectly accurate so we give it ~10ms of leeway
+  interval: 3990
+  # How many half-hearts the player should heal by, every seconds specified above
+  amount: 1
+  # How much exhaustion the player should get from healing. In 1.8: 3    In 1.9: 4    In 1.11: 6
+  # If, after adding this, Minecraft finds the value is above 4, it subtracts 4
+  # and either reduces saturation or, if saturation is 0, reduces food level by 1 (1/2 a stick)
+  exhaustion: 3
+
+# ########################
+# ARMOUR
+# ########################
+
+old-armour-strength:
+  # This is to make armour calculations like in 1.8
+  # Based on this: https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187
+  enabled: true
+  # Whether to introduce randomness in the calculation, as in 1.8
+  randomness: true
+
+old-armour-durability:
+  # This makes armour take a constant amount of durability damage (except for explosions)
+  enabled: true
+  # By how much to reduce durability every attack. 1.8 default is 1
+  reduction: 1
+
+# ########################
+# SWEEP, SHIELDS & BLOCKING
+# ########################
 
 shield-damage-reduction:
   # This module allows changing the damage reduction behaviour of shields
@@ -206,6 +175,96 @@ shield-damage-reduction:
   # Set amount to 0 and percentage to 100 for 1.8 behaviour, i.e. arrows go through shields
   projectileDamageReductionAmount: 1
   projectileDamageReductionPercentage: 50
+
+sword-blocking:
+  # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
+  enabled: true
+  # How often, in ticks, OCM should check if the player is still blocking with a shield, and remove it if not
+  # If this is too fast, the player will have their shield disappear before they're able to block again causing a slight delay
+  # If this is too slow, players will have a shield in their hand well after they've stopped blocking
+  # 20 ticks = 1 second
+  restoreDelay: 40
+  # Whether to require players to have oldcombatmechanics.swordblock permission to block with a sword
+  use-permission: false
+
+disable-sword-sweep:
+  # This is to disable the sword sweep attack
+  # With ProtocolLib, particle effect is also removed
+  enabled: true
+
+disable-sword-sweep-particles:
+  # This is to disable the sword sweep attack particles
+  # Requires ProtocolLib
+  enabled: false
+
+# ########################
+# KNOCKBACK
+# ########################
+
+old-player-knockback:
+  # This is to change knockback players receive from attacks.  Default values are as in 1.8.
+  #
+  # Practice servers tend to use lower knockback, for example:
+  # knockback-horizontal: 0.35
+  # knockback-vertical: 0.35
+  # knockback-vertical-limit: 0.4
+  # knockback-extra-horizontal: 0.425
+  # knockback-extra-vertical: 0.085
+  #
+  # Minigame servers use higher vertical knockback and lower horizontal knockback, exact values are unknown.
+  enabled: true
+  # Horizontal knockback is reduced by 40% for every successful attack by the player, with no limit
+  # Increase to make clicking more important, decrease to make it less important
+  knockback-horizontal: 0.4
+  # Vertical knockback is not reduced by clicking faster
+  # Increase to make clicking less important, decrease to make clicking more important
+  knockback-vertical: 0.4
+  # Vertical knockback limit is applied after base vertical knockback
+  # This limit can be exceeded by sprint hitting or knockback enchantments, from the extra vertical knockback
+  knockback-vertical-limit: 0.4
+  # Extra horizontal knockback is applied for each level of knockback enchant, and for sprinting
+  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
+  # Increase to make clicking more important, decrease to make clicking less important
+  knockback-extra-horizontal: 0.5
+  # Extra vertical knockback is applied for each level of knockback enchant, and for sprinting
+  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
+  # Increase to make clicking less important, decrease to make clicking more important
+  knockback-extra-vertical: 0.1
+  # Should knockback resistance be enabled? (e.g. netherite armour knockback resistance)
+  enable-knockback-resistance: false
+
+old-fishing-knockback:
+  # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
+  enabled: true
+  # This is the damage done by the fishing rod attack
+  damage: 0.0001
+  # This is to cancel dragging in the entity attached to the fishing rod when reeling in, like in 1.8
+  # Options: all, players, mobs, none. players allows compatibility with WorldGuard pvp-deny regions
+  cancelDraggingIn: players
+  # Whether to also give knockback on non-player living entities (e.g. mobs)
+  knockbackNonPlayerEntities: false
+  # This is the delay in milliseconds in-between rod damage, so the player hit has time to fall back down
+  hitCooldown: 1000
+
+fishing-rod-velocity:
+  # In 1.9+ fishing rods go 8 blocks instead of 12 blocks
+  # This is due to both gravity and initial launch speed
+  # Set to true to revert back to the old calculations and gravity
+  enabled: true
+
+projectile-knockback:
+  # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
+  # This has been a Bukkit bug for so long people thought it was vanilla when it was patched
+  enabled: true
+  # This is the damage done by each projectile
+  damage:
+    snowball: 0.0001
+    egg: 0.0001
+    ender_pearl: 0.0001
+
+# ########################
+# GAPPLES & POTIONS
+# ########################
 
 old-golden-apples:
   # This is to change the behaviour / crafting of golden apples to how it was in pre-1.9
@@ -267,112 +326,6 @@ old-golden-apples:
   # Enable this if you have another plugin which adds a crafting recipe for
   # enchanted golden apples (requires server restart)
   no-conflict-mode: false
-
-old-fishing-knockback:
-  # This is to make the knockback of players when they get hit by a fishing bobber the same as it was in pre-1.9
-  enabled: true
-  # This is the damage done by the fishing rod attack
-  damage: 0.0001
-  # This is to cancel dragging in the entity attached to the fishing rod when reeling in, like in 1.8
-  # Options: all, players, mobs, none. players allows compatibility with WorldGuard pvp-deny regions
-  cancelDraggingIn: players
-  # Whether to also give knockback on non-player living entities (e.g. mobs)
-  knockbackNonPlayerEntities: false
-  # This is the delay in milliseconds in-between rod damage, so the player hit has time to fall back down
-  hitCooldown: 1000
-
-fishing-rod-velocity:
-  # In 1.9+ fishing rods go 8 blocks instead of 12 blocks
-  # This is due to both gravity and initial launch speed
-  # Set to true to revert back to the old calculations and gravity
-  enabled: true
-
-projectile-knockback:
-  # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
-  # This has been a Bukkit bug for so long people thought it was vanilla when it was patched
-  enabled: true
-  # This is the damage done by each projectile
-  damage:
-    snowball: 0.0001
-    egg: 0.0001
-    ender_pearl: 0.0001
-
-old-player-knockback:
-  # This is to change knockback players receive from attacks.  Default values are as in 1.8.
-  #
-  # Practice servers tend to use lower knockback, for example:
-  # knockback-horizontal: 0.35
-  # knockback-vertical: 0.35
-  # knockback-vertical-limit: 0.4
-  # knockback-extra-horizontal: 0.425
-  # knockback-extra-vertical: 0.085
-  #
-  # Minigame servers use higher vertical knockback and lower horizontal knockback, exact values are unknown.
-  enabled: true
-  # Horizontal knockback is reduced by 40% for every successful attack by the player, with no limit
-  # Increase to make clicking more important, decrease to make it less important
-  knockback-horizontal: 0.4
-  # Vertical knockback is not reduced by clicking faster
-  # Increase to make clicking less important, decrease to make clicking more important
-  knockback-vertical: 0.4
-  # Vertical knockback limit is applied after base vertical knockback
-  # This limit can be exceeded by sprint hitting or knockback enchantments, from the extra vertical knockback
-  knockback-vertical-limit: 0.4
-  # Extra horizontal knockback is applied for each level of knockback enchant, and for sprinting
-  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
-  # Increase to make clicking more important, decrease to make clicking less important
-  knockback-extra-horizontal: 0.5
-  # Extra vertical knockback is applied for each level of knockback enchant, and for sprinting
-  # Increase to make sprint resetting (w-tapping) more important, decrease to make it less important
-  # Increase to make clicking less important, decrease to make clicking more important
-  knockback-extra-vertical: 0.1
-  # Should knockback resistance be enabled? (e.g. netherite armour knockback resistance)
-  enable-knockback-resistance: false
-
-old-player-regen:
-  # This is to make players' regeneration act mostly like it did in pre-1.9
-  # Based on https://minecraft.gamepedia.com/Hunger?oldid=948685
-  enabled: true
-  # How often a player should regenerate health, in milliseconds (In 1.8: 4 seconds)
-  # The foodTickerTimer might not be perfectly accurate so we give it ~10ms of leeway
-  interval: 3990
-  # How many half-hearts the player should heal by, every seconds specified above
-  amount: 1
-  # How much exhaustion the player should get from healing. In 1.8: 3    In 1.9: 4    In 1.11: 6
-  # If, after adding this, Minecraft finds the value is above 4, it subtracts 4
-  # and either reduces saturation or, if saturation is 0, reduces food level by 1 (1/2 a stick)
-  exhaustion: 3
-
-old-armour-strength:
-  # This is to make armour calculations like in 1.8
-  # Based on this: https://minecraft.gamepedia.com/index.php?title=Armor&oldid=909187
-  enabled: true
-  # Whether to introduce randomness in the calculation, as in 1.8
-  randomness: true
-
-old-armour-durability:
-  # This makes armour take a constant amount of durability damage (except for explosions)
-  enabled: true
-  # By how much to reduce durability every attack. 1.8 default is 1
-  reduction: 1
-
-disable-projectile-randomness:
-  # This is to remove projectile randomness while firing arrows with a bow
-  # Or to remove effects of velocity when player is running and launching potions etc
-  # This is actually a very old feature and has been in the game for quite some time
-  enabled: false
-  # What projectiles are affected e.g. arrow, splash_potion, snowball, egg, fishing_hook
-  projectile-types: [ arrow ]
-  # This is the threshold between projectiles' (X,Z) values before they're considered the same and straightened
-  # This value is only useful for multishot. The default of 0.1 works at all but extremely shallow angles,
-  # where arrows end up bunched together. Set to 1 if you want multishots to all follow the same path.
-  epsilon: 0.1
-
-disable-bow-boost:
-  # This is to stop players from boosting themselves forward by hitting themselves
-  # while running with a punch II arrow from their bow
-  # This module simply stops them from hitting themselves with arrows entirely
-  enabled: false
 
 old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
@@ -509,6 +462,55 @@ old-potion-effects:
     modifier: -0.5
     multiplier: false
 
+# ########################
+# MISCELLANEOUS
+# ########################
+
+disable-crafting:
+  # Disable the crafting of specified items
+  enabled: true
+  # List of denied items
+  denied:
+    - shield
+  # Show the user a message if they try to craft a blacklisted item
+  showMessage: true
+  message: "&cYou cannot craft that item!"
+
+disable-offhand:
+  # Disable the usage of the offhand
+  # Won't affect sword-blocking module
+  enabled: true
+  # Whether the following list allows items or blocks them
+  whitelist: true
+  # List of items that should be allowed/blocked
+  # Example: [diamond_sword,BOW]
+  items: [ ]
+  # Message to send user when denied. Set to '' to disable
+  denied-message: "&cOff-hand is disabled"
+
+old-brewing-stand:
+  # Automatically refuels brewing stands
+  enabled: true
+
+no-lapis-enchantments:
+  # Automatically adds lapis to enchantment tables upon opening
+  enabled: false
+  # Whether to only allow this for players with oldcombatmechanics.nolapis permission
+  usePermission: false
+
+disable-elytra:
+  # Do not allow players to wear elytra
+  enabled: false
+
+disable-enderpearl-cooldown:
+  # Disables enderpearl cooldown
+  enabled: true
+  # The cooldown, in seconds
+  cooldown: 0
+  # Show the user a message if they try to use an enderpearl and the cooldown has not expired yet
+  showMessage: true
+  message: "&cYou must wait &7%ds&c before using an enderpearl again!"
+
 chorus-fruit:
   # This makes the chorus fruit behaviour configurable
   enabled: false
@@ -535,23 +537,41 @@ old-burn-delay:
   # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
-attack-frequency:
-  # Allows changing the player invulnerability between hits
-  enabled: true
-  # The hit delay to apply. Default for 1.9+ is 20 ticks (1 second)
-  playerDelay: 18
-  mobDelay: 16
+disable-projectile-randomness:
+  # This is to remove projectile randomness while firing arrows with a bow
+  # Or to remove effects of velocity when player is running and launching potions etc
+  # This is actually a very old feature and has been in the game for quite some time
+  enabled: false
+  # What projectiles are affected e.g. arrow, splash_potion, snowball, egg, fishing_hook
+  projectile-types: [ arrow ]
+  # This is the threshold between projectiles' (X,Z) values before they're considered the same and straightened
+  # This value is only useful for multishot. The default of 0.1 works at all but extremely shallow angles,
+  # where arrows end up bunched together. Set to 1 if you want multishots to all follow the same path.
+  epsilon: 0.1
 
-old-critical-hits:
-  # Makes critical hits work like in 1.8
-  # With a critical hit, the damage will be multiplied by 1.5
-  # In 1.9, the user must also not be sprinting for it to be a crit
-  enabled: true
-  world: [ ]
-  # What the damage, after applying potions effects, is multiplied by
-  multiplier: 1.5
-  # Whether to allow crits while sprinting. 1.8: true, 1.9: false
-  allow-sprinting: true
+disable-bow-boost:
+  # This is to stop players from boosting themselves forward by hitting themselves
+  # while running with a punch II arrow from their bow
+  # This module simply stops them from hitting themselves with arrows entirely
+  enabled: false
+
+disable-attack-sounds:
+  # Disables attack sounds that were added with 1.9+
+  # Requires ProtocolLib
+  enabled: false
+  # The sounds that will be blocked by this module
+  blocked-sound-names:
+    - "ENTITY_PLAYER_ATTACK_STRONG"
+    - "ENTITY_PLAYER_ATTACK_SWEEP"
+    - "ENTITY_PLAYER_ATTACK_NODAMAGE"
+    - "ENTITY_PLAYER_ATTACK_KNOCKBACK"
+    - "ENTITY_PLAYER_ATTACK_CRIT"
+    - "ENTITY_PLAYER_ATTACK_WEAK"
+
+disable-player-collisions:
+  # This is to disable player collisions
+  # This is compatible with most scoreboard and tablist-editing plugins
+  enabled: false
 
 # ########################
 # SPECIAL SETTINGS BELOW #
