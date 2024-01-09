@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,7 +46,8 @@ public class OCMCommandCompleter implements TabCompleter {
                         final World world = ((Player) sender).getWorld();
                         completions.addAll(
                                 Config.getWorlds()
-                                        .getOrDefault(world.getUID(), new LinkedHashSet<>())
+                                        // If world not in config, all modesets allowed
+                                        .getOrDefault(world.getUID(), Config.getModesets().keySet())
                                         .stream()
                                         .filter(ms -> ms.startsWith(args[1]))
                                         .collect(Collectors.toList()));

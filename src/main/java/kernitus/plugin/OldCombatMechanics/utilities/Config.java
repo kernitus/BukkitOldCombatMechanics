@@ -28,7 +28,7 @@ public class Config {
     private static OCMMain plugin;
     private static FileConfiguration config;
     private static final Map<String, Set<String>> modesets = new HashMap<>();
-    private static final Map<UUID, LinkedHashSet<String>> worlds = new HashMap<>();
+    private static final Map<UUID, Set<String>> worlds = new HashMap<>();
 
     public static void initialise(OCMMain plugin) {
         Config.plugin = plugin;
@@ -154,7 +154,8 @@ public class Config {
      */
     public static @Nullable Set<String> getDefaultModeset(UUID worldId){
         if(!worlds.containsKey(worldId)) return null;
-        final LinkedHashSet<String> set = worlds.get(worldId);
+
+        final Set<String> set = worlds.get(worldId);
         if(set == null || set.isEmpty()) return null;
 
         final Iterator<String> iterator = set.iterator();
@@ -187,7 +188,6 @@ public class Config {
         final Set<String> defaultModeset = getDefaultModeset(world.getUID());
         // If no default modeset found, the module should be enabled
         if(defaultModeset == null){
-            Messenger.debug("No default modeset found for " + world.getName());
             return true;
         }
 
@@ -225,7 +225,7 @@ public class Config {
         return modesets;
     }
 
-    public static Map<UUID, LinkedHashSet<String>> getWorlds() {
+    public static Map<UUID, Set<String>> getWorlds() {
         return worlds;
     }
 }
