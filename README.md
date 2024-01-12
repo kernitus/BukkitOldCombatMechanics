@@ -63,9 +63,6 @@ Most plugins will work fine with OCM. Some had to be explicitly supported. These
 - Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
 - Spartan anticheat (to avoid triggerring anticheat on regen)
 
-## Installation
-To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
-
 ## Contributions
 
 If you are interested in contributing, please [check this page first](.github/CONTRIBUTING.md).
