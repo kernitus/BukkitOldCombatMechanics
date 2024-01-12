@@ -25,6 +25,7 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -50,9 +51,11 @@ public class ModuleGoldenApple extends OCMModule {
     private Cooldown cooldown;
 
     private String normalCooldownMessage, enchantedCooldownMessage;
+    private static ModuleGoldenApple INSTANCE;
 
     public ModuleGoldenApple(OCMMain plugin) {
         super(plugin, "old-golden-apples");
+        INSTANCE = this;
     }
 
     @SuppressWarnings("deprecated")
@@ -85,6 +88,10 @@ public class ModuleGoldenApple extends OCMModule {
                 .setIngredient('a', Material.APPLE);
 
         registerCrafting();
+    }
+
+    public static ModuleGoldenApple getInstance() {
+        return ModuleGoldenApple.INSTANCE;
     }
 
     private void registerCrafting() {
@@ -222,6 +229,36 @@ public class ModuleGoldenApple extends OCMModule {
     public void onPlayerQuit(PlayerQuitEvent e) {
         final UUID uuid = e.getPlayer().getUniqueId();
         if (lastEaten != null) lastEaten.remove(uuid);
+    }
+
+    /**
+     * Get player's current golden apple cooldown
+     * @param playerUUID The player's UUID
+     * @return The current cooldown, in seconds
+     */
+    public long getGappleCooldown(UUID playerUUID) {
+        final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
+        if (lastEatenInfo != null && lastEatenInfo.lastNormalEaten != null) {
+            long timeElapsedSinceEaten = Duration.between(lastEatenInfo.lastNormalEaten, Instant.now()).getSeconds();
+            long cooldownRemaining = cooldown.normal - timeElapsedSinceEaten;
+            return Math.max(cooldownRemaining, 0); // Return 0 if the cooldown has expired
+        }
+        return 0;
+    }
+
+    /**
+     * Get player's current enchanted golden apple cooldown
+     * @param playerUUID The player's UUID
+     * @return The current cooldown, in seconds
+     */
+    public long getNappleCooldown(UUID playerUUID) {
+        final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
+        if (lastEatenInfo != null && lastEatenInfo.lastEnchantedEaten != null) {
+            long timeElapsedSinceEaten = Duration.between(lastEatenInfo.lastEnchantedEaten, Instant.now()).getSeconds();
+            long cooldownRemaining = cooldown.enchanted - timeElapsedSinceEaten;
+            return Math.max(cooldownRemaining, 0); // Return 0 if the cooldown has expired
+        }
+        return 0;
     }
 
     private static class LastEaten {
