@@ -60,7 +60,7 @@ Features are grouped in `module`s as listed below and can be individually config
 
 ## Plugin Compatibility
 Most plugins will work fine with OCM. Some had to be explicitly supported. These include:
-- Placeholder API (for the `%ocm_modeset% placeholder)
+- Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
 - Spartan anticheat (to avoid triggerring anticheat on regen)
 
 ## Installation
