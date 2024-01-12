@@ -35,9 +35,11 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
     private Map<UUID, Long> lastLaunched;
     private int cooldown;
     private String message;
+    private static ModuleDisableEnderpearlCooldown INSTANCE;
 
     public ModuleDisableEnderpearlCooldown(OCMMain plugin) {
         super(plugin, "disable-enderpearl-cooldown");
+        INSTANCE = this;
         reload();
     }
 
@@ -48,6 +50,10 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
         } else lastLaunched = null;
 
         message = module().getBoolean("showMessage") ? module().getString("message") : null;
+    }
+
+    public static ModuleDisableEnderpearlCooldown getInstance() {
+        return INSTANCE;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -111,5 +117,21 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         if (lastLaunched != null) lastLaunched.remove(e.getPlayer().getUniqueId());
+    }
+
+    /**
+     * Get the remaining cooldown time for ender pearls for a given player.
+     * @param playerUUID The UUID of the player to check the cooldown for.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
+     */
+    public long getEnderpearlCooldown(UUID playerUUID) {
+        if (lastLaunched != null && lastLaunched.containsKey(playerUUID)) {
+            final long currentTime = System.currentTimeMillis() / 1000; // Current time in seconds
+            final long lastLaunchTime = lastLaunched.get(playerUUID); // Last launch time in seconds
+            final long elapsedSeconds = currentTime - lastLaunchTime;
+            final long cooldownRemaining = cooldown - elapsedSeconds;
+            return Math.max(cooldownRemaining, 0); // Return the remaining cooldown or 0 if it has expired
+        }
+        return 0;
     }
 }

@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.hooks;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
+import kernitus.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
@@ -49,29 +50,36 @@ public class PlaceholderAPIHook implements Hook {
             public String onPlaceholderRequest(Player player, @NotNull String identifier) {
                 if (player == null) return null;
 
-                switch (identifier){
+                switch (identifier) {
                     case "modeset":
                         return getModeset(player);
                     case "gapple_cooldown":
                         return getGappleCooldown(player);
                     case "napple_cooldown":
                         return getNappleCooldown(player);
+                    case "enderpearl_cooldown":
+                        return getEnderpearlCooldown(player);
                 }
 
                 return null;
             }
 
-            private  String getGappleCooldown(Player player){
+            private String getGappleCooldown(Player player) {
                 final long seconds = ModuleGoldenApple.getInstance().getGappleCooldown(player.getUniqueId());
-                return seconds > 0 ? String.valueOf(seconds) : "No cooldown";
+                return seconds > 0 ? String.valueOf(seconds) : "None";
             }
 
-            private  String getNappleCooldown(Player player){
+            private String getNappleCooldown(Player player) {
                 final long seconds = ModuleGoldenApple.getInstance().getNappleCooldown(player.getUniqueId());
-                return seconds > 0 ? String.valueOf(seconds) : "No cooldown";
+                return seconds > 0 ? String.valueOf(seconds) : "None";
             }
 
-            private String getModeset(Player player){
+            private String getEnderpearlCooldown(Player player) {
+                final long seconds = ModuleDisableEnderpearlCooldown.getInstance().getEnderpearlCooldown(player.getUniqueId());
+                return seconds > 0 ? String.valueOf(seconds) : "None";
+            }
+
+            private String getModeset(Player player) {
                 final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
                 String modeName = playerData.getModesetForWorld(player.getWorld().getUID());
                 if (modeName == null || modeName.isEmpty()) modeName = "unknown";

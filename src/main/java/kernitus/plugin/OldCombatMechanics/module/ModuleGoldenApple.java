@@ -233,8 +233,8 @@ public class ModuleGoldenApple extends OCMModule {
 
     /**
      * Get player's current golden apple cooldown
-     * @param playerUUID The player's UUID
-     * @return The current cooldown, in seconds
+     * @param playerUUID The UUID of the player to check the cooldown for.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
      */
     public long getGappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
@@ -248,8 +248,8 @@ public class ModuleGoldenApple extends OCMModule {
 
     /**
      * Get player's current enchanted golden apple cooldown
-     * @param playerUUID The player's UUID
-     * @return The current cooldown, in seconds
+     * @param playerUUID The UUID of the player to check the cooldown for.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
      */
     public long getNappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
