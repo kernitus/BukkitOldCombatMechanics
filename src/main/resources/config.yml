@@ -47,6 +47,8 @@ worlds:
 
 mode-messages:
   # Messages used when changing player mode
+  # To disable any message, leave the corresponding string empty (e.g., mode-status: "").
+  # This applies to all messages in the configuration.
   mode-status: "&bYour current modeset is: &7%s"
   message-usage: "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset"
   invalid-modeset: "&cPlease specify a valid modeset!"
