@@ -11,9 +11,9 @@
 # ###########################################################################
 
 modesets:
-  # These modesets are lists of modules that are enabled for a player in that mode.
+  # Modesets are lists of modules that are enabled for a player in that mode.
   # Modules not listed in any modeset are assumed to always be available.
-  # You can create as many modesets as you like by adding a new key and corresponding list.
+  # You can create, remove, and rename as many modesets as you like by modifying the list below.
   # When in PvP, the modeset of the attacker is checked first.
   # If not PvP, the modeset of the defending entity is checked.
   # Of course, the module must also be enabled in its own config section.
