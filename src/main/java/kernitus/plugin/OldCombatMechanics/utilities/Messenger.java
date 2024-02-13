@@ -53,7 +53,8 @@ public class Messenger {
     public static void sendNoPrefix(CommandSender sender, String message, Object... args) {
         Objects.requireNonNull(sender, "sender cannot be null!");
         Objects.requireNonNull(message, "message cannot be null!");
-
+        // Prevents sending of individual empty messages, allowing for selective message disabling.
+        if (message.isEmpty()) return;
         sender.sendMessage(TextUtils.colourise(String.format(message, args)));
     }
 
