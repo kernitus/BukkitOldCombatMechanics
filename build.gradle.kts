@@ -52,7 +52,7 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:4.11.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
@@ -66,7 +66,7 @@ dependencies {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.0.1"
+version = "2.0.2-beta"
 description = "OldCombatMechanics"
 
 java {
