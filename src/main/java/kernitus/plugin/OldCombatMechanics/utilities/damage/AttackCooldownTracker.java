@@ -2,6 +2,7 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -31,7 +32,7 @@ public class AttackCooldownTracker extends OCMModule {
                 player -> lastCooldown.put(player.getUniqueId(),
                         VersionCompatUtils.getAttackCooldown(player)
                 ));
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, cooldownTask, 0, 1L);
+        SchedulerManager.INSTANCE.getScheduler().runTaskTimer(plugin, cooldownTask, 0, 1L);
     }
 
     @EventHandler

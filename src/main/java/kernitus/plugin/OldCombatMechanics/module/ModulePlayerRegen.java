@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import me.vagdedes.spartan.api.API;
 import me.vagdedes.spartan.system.Enums.HackType;
@@ -65,7 +66,7 @@ public class ModulePlayerRegen extends OCMModule {
 
         // If we're skipping this heal, we must fix the exhaustion in the following tick
         if (hasLastHealTime && currentTime - lastHealTime <= module().getLong("interval")) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> p.setExhaustion(previousExhaustion), 1L);
+            SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> p.setExhaustion(previousExhaustion), 1L);
             return;
         }
 
@@ -81,7 +82,7 @@ public class ModulePlayerRegen extends OCMModule {
         // Calculate new exhaustion value, must be between 0 and 4. If above, it will reduce the saturation in the following tick.
         final float exhaustionToApply = (float) module().getDouble("exhaustion");
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> {
             // We do this in the next tick because bukkit doesn't stop the exhaustion change when cancelling the event
             p.setExhaustion(previousExhaustion + exhaustionToApply);
             debug("Exh before: " + previousExhaustion + " Now: " + p.getExhaustion() +

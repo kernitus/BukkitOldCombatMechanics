@@ -12,6 +12,7 @@ import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
 import kernitus.plugin.OldCombatMechanics.hooks.api.Hook;
 import kernitus.plugin.OldCombatMechanics.module.*;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -58,6 +59,7 @@ public class OCMMain extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
 
+        SchedulerManager.INSTANCE.loadPlatform();
         // Setting up config.yml
         CH.setupConfigIfNotPresent();
 
@@ -142,7 +144,7 @@ public class OCMMain extends JavaPlugin {
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
         if (Config.moduleEnabled("update-checker"))
-            Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+            SchedulerManager.INSTANCE.getScheduler().runTaskLaterAsync(this,
                     () -> new UpdateChecker(this).performUpdate(), 20L);
 
         metrics.addCustomChart(new SimplePie("auto_update_pie",

@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.tester;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils;
@@ -304,7 +305,7 @@ public class InGameTester {
         for (OCMTest test : testQueue) {
             attackDelay += test.attackDelay;
 
-            Bukkit.getScheduler().runTaskLater(ocm, () -> {
+            SchedulerManager.INSTANCE.getScheduler().runTaskLater(ocm, () -> {
                 beforeEach();
                 test.preparations.run();
                 preparePlayer(test.weapon);
@@ -314,7 +315,7 @@ public class InGameTester {
 
         }
 
-        Bukkit.getScheduler().runTaskLater(ocm, () -> {
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(ocm, () -> {
             afterAll(testCount);
             EntityDamageByEntityEvent.getHandlerList().unregister(listener);
         }, attackDelay + 1);

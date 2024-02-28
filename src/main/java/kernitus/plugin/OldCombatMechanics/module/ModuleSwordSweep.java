@@ -6,6 +6,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
+import kernitus.plugin.OldCombatMechanics.scheduler.task.ITaskWrapper;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -30,7 +32,7 @@ public class ModuleSwordSweep extends OCMModule {
 
     private final List<Location> sweepLocations = new ArrayList<>();
     private EntityDamageEvent.DamageCause sweepDamageCause;
-    private BukkitTask task;
+    private ITaskWrapper task;
 
     public ModuleSwordSweep(OCMMain plugin) {
         super(plugin, "disable-sword-sweep");
@@ -52,7 +54,7 @@ public class ModuleSwordSweep extends OCMModule {
 
         if (task != null) task.cancel();
 
-        task = Bukkit.getScheduler().runTaskTimer(plugin, sweepLocations::clear, 0, 1);
+        task = SchedulerManager.INSTANCE.getScheduler().runTaskTimer(plugin, sweepLocations::clear, 0, 1);
     }
 
 

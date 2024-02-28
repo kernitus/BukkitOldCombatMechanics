@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -88,7 +89,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
             final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
             fullyBlocked.put(uuid, armour);
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> {
                 fullyBlocked.remove(uuid);
                 debug("Removed from fully blocked set!", player);
             }, 1L);

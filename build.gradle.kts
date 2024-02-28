@@ -37,6 +37,8 @@ repositories {
     // Spartan API
     maven("https://repo.crazycrew.us/api")
     maven("https://repo.minebench.de/")
+    // Folia API
+    maven("https://repo.papermc.io/repository/maven-public/")
     // Protocollib
     maven("https://repo.dmulloy2.net/repository/public/")
 }
@@ -52,7 +54,9 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:4.11.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
+//    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
+    // Folia
+    compileOnly("dev.folia:folia-api:1.20.4-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
@@ -72,7 +76,7 @@ description = "OldCombatMechanics"
 java {
     toolchain {
         // At least 17 required for MC 1.19 for ingametesting
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
