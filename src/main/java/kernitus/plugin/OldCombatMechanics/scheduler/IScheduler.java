@@ -9,68 +9,68 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 平台调度器接口
+ * Platform scheduler interface
  */
 public interface IScheduler {
 
     /**
-     * 执行一个任务
+     * Schedules this in server scheduler to run on next tick.
      *
-     * @param plugin 调用的插件
-     * @param task   需要执行的任务
+     * @param plugin the reference to the plugin scheduling task
+     * @param task   the task to be run
      */
     ITaskWrapper runTask(@NotNull Plugin plugin, @NotNull Runnable task);
 
     /**
-     * 异步执行一个任务
+     * Schedules this in server scheduler to run asynchronously.
      *
-     * @param plugin 调用的插件
-     * @param task   需要执行的任务
+     * @param plugin the reference to the plugin scheduling task
+     * @param task   the task to be run
      */
     ITaskWrapper runTaskAsync(@NotNull Plugin plugin, @NotNull Runnable task);
 
     /**
-     * 在延迟后执行一个任务
+     * Schedules this to run after the specified number of server ticks.
      *
-     * @param plugin     调用的插件
-     * @param task       需要执行的任务
-     * @param delayTicks 延迟的时间
+     * @param plugin     the reference to the plugin scheduling task
+     * @param task       the task to be run
+     * @param delayTicks the ticks to wait before running the task
      */
     ITaskWrapper runTaskLater(@NotNull Plugin plugin, @NotNull Runnable task, long delayTicks);
 
     /**
-     * 在延迟后异步执行一个任务
+     * Schedules this to run asynchronously after the specified number of server ticks.
      *
-     * @param plugin     调用的插件
-     * @param task       需要执行的任务
-     * @param delayTicks 延迟的时间，单位为tick
+     * @param plugin     the reference to the plugin scheduling task
+     * @param task       the task to be run
+     * @param delayTicks the ticks to wait before running the task
      */
     ITaskWrapper runTaskLaterAsync(@NotNull Plugin plugin, @NotNull Runnable task, long delayTicks);
 
     /**
-     * 在延迟后循环执行任务
+     * Returns a task that will repeatedly run until cancelled, starting after the specified number of server ticks.
      *
-     * @param plugin      调用的插件
-     * @param task        需要执行的任务
-     * @param delayTicks  延迟的时间，单位为tick
-     * @param periodTicks 循环执行的间隔时间，单位为tick
+     * @param plugin      the reference to the plugin scheduling task
+     * @param task        the task to be run
+     * @param delayTicks  the ticks to wait before running the task
+     * @param periodTicks the ticks to wait between runs
      */
     ITaskWrapper runTaskTimer(@NotNull Plugin plugin, @NotNull Runnable task, long delayTicks, long periodTicks);
 
     /**
-     * 在延迟后循环执行任务
+     * Returns a task that will repeatedly run asynchronously until cancelled, starting after the specified number of server ticks
      *
-     * @param plugin      调用的插件
-     * @param task        需要执行的任务
-     * @param delayTicks  延迟的时间，单位为tick
-     * @param periodTicks 循环执行的间隔时间，单位为tick
+     * @param plugin      the reference to the plugin scheduling task
+     * @param task        the task to be run
+     * @param delayTicks  the ticks to wait before running the task
+     * @param periodTicks the ticks to wait between runs
      */
     ITaskWrapper runTaskTimerAsync(@NotNull Plugin plugin, @NotNull Runnable task, long delayTicks, long periodTicks);
 
     /**
-     * 取消某个任务
+     * Removes task from scheduler.
      *
-     * @param task 需要取消的任务的包装
+     * @param task the task to be removed
      */
     default void cancelTask(@NotNull ITaskWrapper task) {
         if (task instanceof BukkitTask) {
@@ -87,72 +87,75 @@ public interface IScheduler {
     void cancelTasks(@NotNull Plugin plugin);
 
     /**
-     * 在指定实体的调度器上执行任务
-     * 当平台为非Folia时，效果等同于runTask
+     * Schedules a task to execute on the next tick. If the task failed to schedule because the scheduler is retired (entity removed), then returns null. Otherwise, either the task callback will be invoked after the specified delay, or the retired callback will be invoked if the scheduler is retired. Note that the retired callback is invoked in critical code, so it should not attempt to remove the entity, remove other entities, load chunks, load worlds, modify ticket levels, etc.
+     * It is guaranteed that the task and retired callback are invoked on the region which owns the entity.
+     * When the platform is not Folia, the effect is equivalent to runTask
      *
-     * @param plugin      执行的插件
-     * @param entity      执行载体
-     * @param task        执行的任务
-     * @param retriedTask 执行任务失败时, 重新尝试的任务
+     * @param plugin      the plugin that owns the task
+     * @param entity      the task's owning entity
+     * @param task        the task to be run
+     * @param retriedTask retire callback to run if the entity is retired before the run callback can be invoked, may be null.
      */
     ITaskWrapper runTaskOnEntity(Plugin plugin, Entity entity, Runnable task, Runnable retriedTask);
 
     /**
-     * 在指定实体的调度器上延迟执行任务
-     * 当平台为非Folia时，效果等同于runTaskLater
+     * Schedules a task with the given delay. If the task failed to schedule because the scheduler is retired (entity removed), then returns null. Otherwise, either the task callback will be invoked after the specified delay, or the retired callback will be invoked if the scheduler is retired. Note that the retired callback is invoked in critical code, so it should not attempt to remove the entity, remove other entities, load chunks, load worlds, modify ticket levels, etc.
+     * It is guaranteed that the task and retired callback are invoked on the region which owns the entity.
+     * When the platform is not Folia, the effect is equivalent to runTaskLater
      *
-     * @param plugin      执行的插件
-     * @param entity      执行载体
-     * @param task        执行的任务
-     * @param retriedTask 执行任务失败时, 重新尝试的任务
-     * @param delayTicks  延迟执行的时间
+     * @param plugin      the plugin that owns the task
+     * @param entity      the task's owning entity
+     * @param task        the task to be run
+     * @param retriedTask retire callback to run if the entity is retired before the run callback can be invoked, may be null.
+     * @param delayTicks  the ticks to wait before running the task
      */
     ITaskWrapper runTaskOnEntityLater(Plugin plugin, Entity entity, Runnable task, Runnable retriedTask, long delayTicks);
 
     /**
-     * 在指定实体的调度器上延迟一段时间后重复执行任务
-     * 当平台为非Folia时，效果等同于runTaskTimer
+     * Schedules a repeating task with the given delay and period. If the task failed to schedule because the scheduler is retired (entity removed), then returns null. Otherwise, either the task callback will be invoked after the specified delay, or the retired callback will be invoked if the scheduler is retired. Note that the retired callback is invoked in critical code, so it should not attempt to remove the entity, remove other entities, load chunks, load worlds, modify ticket levels, etc.
+     * It is guaranteed that the task and retired callback are invoked on the region which owns the entity.
+     * When the platform is not Folia, the effect is equivalent to runTaskTimer
      *
-     * @param plugin      执行的插件
-     * @param entity      执行载体
-     * @param task        执行的任务
-     * @param retriedTask 执行任务失败时, 重新尝试的任务
-     * @param delayTicks  延迟执行的时间
-     * @param periodTicks 重复执行的间隔
+     * @param plugin      the plugin that owns the task
+     * @param entity      the task's owning entity
+     * @param task        the task to be run
+     * @param retriedTask retire callback to run if the entity is retired before the run callback can be invoked, may be null.
+     * @param delayTicks  the ticks to wait before running the task
+     * @param periodTicks the ticks to wait between runs
      */
     ITaskWrapper runTaskOnEntityTimer(Plugin plugin, Entity entity, Runnable task, Runnable retriedTask, long delayTicks, long periodTicks);
 
     /**
-     * 在指定坐标的调度器上执行任务
-     * 当平台为非Folia时，效果等同于runTask
+     * Schedules a task to be executed on the region which owns the location on the next tick.
+     * When the platform is not Folia, the effect is equivalent to runTask
      *
-     * @param plugin      执行的插件
-     * @param location    执行载体
-     * @param task        执行的任务
+     * @param plugin      the plugin that owns the task
+     * @param location    used to get the region which the task belongs
+     * @param task        the task to be run
      */
     ITaskWrapper runTaskOnLocation(Plugin plugin, Location location, Runnable task);
 
 
     /**
-     * 在指定实体的调度器上延迟执行任务
-     * 当平台为非Folia时，效果等同于runTaskLater
+     * Schedules a task to be executed on the region which owns the location after the specified delay in ticks.
+     * When the platform is not Folia, the effect is equivalent to runTaskLater
      *
-     * @param plugin      执行的插件
-     * @param location    执行载体
-     * @param task        执行的任务
-     * @param delayTicks  延迟执行的时间
+     * @param plugin      the plugin that owns the task
+     * @param location    used to get the region which the task belongs
+     * @param task        the task to be run
+     * @param delayTicks  the ticks to wait before running the task
      */
     ITaskWrapper runTaskOnLocationLater(Plugin plugin, Location location, Runnable task, long delayTicks);
 
     /**
-     * 在指定实体的调度器上延迟一段时间后重复执行任务
-     * 当平台为非Folia时，效果等同于runTaskTimer
+     * Schedules a repeating task to be executed on the region which owns the location after the initial delay with the specified period.
+     * When the platform is not Folia, the effect is equivalent to runTaskTimer
      *
-     * @param plugin      执行的插件
-     * @param location    执行载体
-     * @param task        执行的任务
-     * @param delayTicks  延迟执行的时间
-     * @param periodTicks 重复执行的间隔
+     * @param plugin      the plugin that owns the task
+     * @param location    used to get the region which the task belongs
+     * @param task        the task to be run
+     * @param delayTicks  the ticks to wait before running the task
+     * @param periodTicks the ticks to wait between runs
      */
     ITaskWrapper runTaskOnLocationTimer(Plugin plugin, Location location, Runnable task, long delayTicks, long periodTicks);
 

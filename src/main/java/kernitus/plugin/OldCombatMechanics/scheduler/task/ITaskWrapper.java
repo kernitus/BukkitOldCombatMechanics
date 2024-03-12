@@ -11,31 +11,30 @@ public interface ITaskWrapper {
     void cancel();
 
     /**
-     * 获取此任务的所属插件
+     * returns the plugin that owns the task
      *
-     * @return 此任务的所属插件
+     * @return the plugin that owns the task
      */
     @NotNull
     Plugin owner();
 
     /**
-     * 获取此任务的Task Id,Folia平台不支持此方法
+     * Returns the Task ID of this task. The Folia platform does not support this method.
      *
-     * @return 此任务的Task id
+     * @return the task id of this task
      */
     Integer taskId();
 
     /**
-     * 获取此任务是否被取消
+     * Returns whether this task has been canceled
      *
-     * @return 此任务是否被取消
      */
     boolean isCancelled();
 
     /**
-     * 返回对应平台的原始Task类型
+     * Returns the original Task object corresponding to the platform
      *
-     * @return 对应平台的原始Task类型
+     * @return the original Task object corresponding to the platform
      */
     @NotNull
     Object platformTask();

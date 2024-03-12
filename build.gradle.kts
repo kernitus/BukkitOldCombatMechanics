@@ -56,7 +56,7 @@ dependencies {
     // Spigot
 //    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
     // Folia
-    compileOnly("dev.folia:folia-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
 
@@ -75,7 +75,6 @@ description = "OldCombatMechanics"
 
 java {
     toolchain {
-        // At least 17 required for MC 1.19 for ingametesting
         languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
