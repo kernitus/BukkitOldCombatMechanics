@@ -66,6 +66,12 @@ public class ModuleAttackSounds extends OCMModule {
             try {
                 final PacketContainer packetContainer = packetEvent.getPacket();
                 final Sound sound = packetContainer.getSoundEffects().read(0);
+                
+                //fix NullpointerException when sending a custom sound 
+                if (sound == null) {
+                    return;
+                }
+                
                 final String soundName = sound.toString(); // Works for both string and namespaced key
 
                 if (blockedSounds.contains(soundName)) {
