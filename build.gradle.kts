@@ -56,10 +56,17 @@ dependencies {
     // Spigot
 //    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
     // Folia
-    compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
+    compileOnly("dev.folia:folia-api:1.19.4-R0.1-20230527.192927-40@jar")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
-
+    // Guava
+    compileOnly("com.google.guava:guava:33.0.0-jre")
+    // Gson
+    compileOnly("com.google.code.gson:gson:2.10.1")
+    // Adventure
+    compileOnly("net.kyori:adventure-api:4.16.0")
+    // BungeeCord Chat
+    compileOnly("net.md-5:bungeecord-chat:1.16-R0.4")
     /* For ingametesting
     // Mojang mappings for NMS
     compileOnly("com.mojang:authlib:4.0.43")
@@ -74,9 +81,8 @@ version = "2.0.2-beta"
 description = "OldCombatMechanics"
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 sourceSets {
