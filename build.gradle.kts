@@ -37,6 +37,8 @@ repositories {
     // Spartan API
     maven("https://repo.crazycrew.us/api")
     maven("https://repo.minebench.de/")
+    // Folia API
+    maven("https://repo.papermc.io/repository/maven-public/")
     // Protocollib
     maven("https://repo.dmulloy2.net/repository/public/")
 }
@@ -52,10 +54,19 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:4.11.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
+//    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
+    // Folia
+    compileOnly("dev.folia:folia-api:1.19.4-R0.1-20230527.192927-40@jar")
     // ProtocolLib
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
-
+    // Guava
+    compileOnly("com.google.guava:guava:33.0.0-jre")
+    // Gson
+    compileOnly("com.google.code.gson:gson:2.10.1")
+    // Adventure
+    compileOnly("net.kyori:adventure-api:4.16.0")
+    // BungeeCord Chat
+    compileOnly("net.md-5:bungeecord-chat:1.16-R0.4")
     /* For ingametesting
     // Mojang mappings for NMS
     compileOnly("com.mojang:authlib:4.0.43")
@@ -70,10 +81,8 @@ version = "2.0.2-beta"
 description = "OldCombatMechanics"
 
 java {
-    toolchain {
-        // At least 17 required for MC 1.19 for ingametesting
-        languageVersion.set(JavaLanguageVersion.of(8))
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 sourceSets {

@@ -6,6 +6,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
+import kernitus.plugin.OldCombatMechanics.scheduler.task.ITaskWrapper;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -30,7 +32,7 @@ public class ModuleSwordBlocking extends OCMModule {
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here, for extra reliability
     private final Map<UUID, ItemStack> storedItems = new HashMap<>();
-    private final Map<UUID, Collection<BukkitTask>> correspondingTasks = new HashMap<>();
+    private final Map<UUID, Collection<ITaskWrapper>> correspondingTasks = new HashMap<>();
     private int restoreDelay;
 
     public ModuleSwordBlocking(OCMMain plugin) {
@@ -170,23 +172,23 @@ public class ModuleSwordBlocking extends OCMModule {
 
     private void tryCancelTask(UUID id) {
         Optional.ofNullable(correspondingTasks.remove(id))
-                .ifPresent(tasks -> tasks.forEach(BukkitTask::cancel));
+                .ifPresent(tasks -> tasks.forEach(ITaskWrapper::cancel));
     }
 
     private void scheduleRestore(Player p) {
         final UUID id = p.getUniqueId();
         tryCancelTask(id);
 
-        final BukkitTask removeItem = Bukkit.getScheduler()
+        final ITaskWrapper removeItem = SchedulerManager.INSTANCE.getScheduler()
                 .runTaskLater(plugin, () -> restore(p), restoreDelay);
 
-        final BukkitTask checkBlocking = Bukkit.getScheduler()
+        final ITaskWrapper checkBlocking = SchedulerManager.INSTANCE.getScheduler()
                 .runTaskTimer(plugin, () -> {
                 if (!isPlayerBlocking(p))
                     restore(p);
             }, 10L, 2L);
 
-        final List<BukkitTask> tasks = new ArrayList<>(2);
+        final List<ITaskWrapper> tasks = new ArrayList<>(2);
         tasks.add(removeItem);
         tasks.add(checkBlocking);
         correspondingTasks.put(p.getUniqueId(), tasks);

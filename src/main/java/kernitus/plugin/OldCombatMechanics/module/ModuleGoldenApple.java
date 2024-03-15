@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import com.google.common.collect.ImmutableSet;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -178,7 +179,7 @@ public class ModuleGoldenApple extends OCMModule {
         final Set<PotionEffectType> defaultEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ?
                 nappleEffects : gappleEffects;
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> {
             // Remove all potion effects the apple added
             player.getActivePotionEffects().stream()
                     .map(PotionEffect::getType)

@@ -13,6 +13,8 @@
 package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
+import kernitus.plugin.OldCombatMechanics.scheduler.task.ITaskWrapper;
 import org.bson.*;
 import org.bson.codecs.*;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -40,7 +42,7 @@ public class PlayerStorage {
     private static Path dataFilePath;
     private static DocumentCodec documentCodec;
     private static Document data;
-    private static final AtomicReference<BukkitTask> saveTask = new AtomicReference<>();
+    private static final AtomicReference<ITaskWrapper> saveTask = new AtomicReference<>();
     private static CodecRegistry codecRegistry;
 
     public static void initialise(OCMMain plugin) {
@@ -76,7 +78,7 @@ public class PlayerStorage {
     public static void scheduleSave() {
         // Schedule a task for later, if there isn't one already scheduled
         saveTask.compareAndSet(null,
-                Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            SchedulerManager.INSTANCE.getScheduler().runTaskLaterAsync(plugin, () -> {
                     instantSave();
                     saveTask.set(null);
                 }, 2400L) // Save after 2 minutes

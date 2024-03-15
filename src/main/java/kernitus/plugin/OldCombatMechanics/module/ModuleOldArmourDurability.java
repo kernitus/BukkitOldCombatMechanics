@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -80,7 +81,7 @@ public class ModuleOldArmourDurability extends OCMModule {
         final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
         explosionDamaged.put(uuid, armour);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> {
             explosionDamaged.remove(uuid);
             debug("Removed from explosion set!", player);
         }, 1L); // This delay seems enough for the durability events to fire

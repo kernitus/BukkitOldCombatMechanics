@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -166,6 +167,6 @@ public class ModulePlayerKnockback extends OCMModule {
         playerKnockbackHashMap.put(victimId, playerVelocity);
 
         // Sometimes PlayerVelocityEvent doesn't fire, remove data to not affect later events if that happens
-        Bukkit.getScheduler().runTaskLater(plugin, () -> playerKnockbackHashMap.remove(victimId), 1);
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> playerKnockbackHashMap.remove(victimId), 1);
     }
 }

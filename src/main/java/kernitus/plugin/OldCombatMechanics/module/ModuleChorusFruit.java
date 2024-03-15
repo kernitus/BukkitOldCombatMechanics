@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -45,7 +46,7 @@ public class ModuleChorusFruit extends OCMModule {
 
         // Run it on the next tick to reset things while not cancelling the chorus fruit eat event
         // This ensures the teleport event is fired and counts towards statistics
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerManager.INSTANCE.getScheduler().runTaskLater(plugin, () -> {
             final int newFoodLevel = Math.min(hungerValue + previousFoodLevel, 20);
             final float newSaturation = Math.min((float) (saturationValue + previousSaturation), newFoodLevel);
 

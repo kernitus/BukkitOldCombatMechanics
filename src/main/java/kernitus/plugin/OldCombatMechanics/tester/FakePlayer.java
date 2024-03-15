@@ -11,6 +11,8 @@ import com.mojang.datafixers.util.Pair;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.scheduler.SchedulerManager;
+import kernitus.plugin.OldCombatMechanics.scheduler.task.ITaskWrapper;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -69,12 +71,12 @@ public class FakePlayer {
     private final String name;
     private ServerPlayer entityPlayer;
     private Player bukkitPlayer;
-    private Integer tickTaskId;
+    private ITaskWrapper tickTask;
 
     public FakePlayer() {
         uuid = UUID.randomUUID();
         name = uuid.toString().substring(0, 16);
-        tickTaskId = null;
+        tickTask = null;
     }
 
     public UUID getUuid() {
@@ -150,12 +152,12 @@ public class FakePlayer {
         // Spawn the player for the client
         sendPacket(new ClientboundAddPlayerPacket(entityPlayer));
 
-        tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
+        tickTask = SchedulerManager.INSTANCE.getScheduler().runTaskTimer(OCMMain.getInstance(), entityPlayer::tick, 1, 1);
     }
 
     public void removePlayer() {
-        if(tickTaskId != null) Bukkit.getScheduler().cancelTask(tickTaskId);
-        tickTaskId = null;
+        if(tickTask != null) SchedulerManager.INSTANCE.getScheduler().cancelTask(tickTask);
+        tickTask = null;
 
         final MinecraftServer mcServer = ((CraftServer) Bukkit.getServer()).getServer();
 
