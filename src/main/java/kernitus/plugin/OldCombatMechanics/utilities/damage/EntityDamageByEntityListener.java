@@ -154,7 +154,7 @@ public class EntityDamageByEntityListener extends OCMModule {
                 // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable
                 // That is, the difference in damage will be dealt, but only if new attack is stronger than previous one
                 // Value before overdamage will become new "last damage"
-                checkOverdamage(((LivingEntity) damagee), event, newDamage);
+                newDamage = checkOverdamage(((LivingEntity) damagee), event, newDamage);
             }
 
             if (newDamage < 0) {
