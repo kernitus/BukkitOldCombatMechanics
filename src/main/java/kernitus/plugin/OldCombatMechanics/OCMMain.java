@@ -77,8 +77,6 @@ public class OCMMain extends JavaPlugin {
             if (getServer().getPluginManager().getPlugin("ProtocolLib") != null &&
                     getServer().getPluginManager().getPlugin("ProtocolLib").isEnabled())
                 protocolManager = ProtocolLibrary.getProtocolManager();
-            else
-                Messenger.warn("No ProtocolLib detected, some features might be disabled");
         } catch (Exception e) {
             Messenger.warn("No ProtocolLib detected, some features might be disabled");
         }
@@ -246,6 +244,8 @@ public class OCMMain extends JavaPlugin {
         if (protocolManager != null) {
             ModuleLoader.addModule(new ModuleAttackSounds(this));
             ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
+        } else {
+            Messenger.warn("No ProtocolLib detected, attack-sounds and sword-sweep-particles modules will be disabled");
         }
     }
 

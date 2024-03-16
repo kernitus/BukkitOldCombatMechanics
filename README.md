@@ -9,52 +9,59 @@
 <img src="res/ocm-banner.png" width=1000>
 </p>
 
-<hr/>
+## by kernitus and Rayzr522
+A performant Spigot plugin to configure combat-related mechanics from 1.9 onwards.
 
-# Old Combat Mechanics
-#### by kernitus and Rayzr522
-A performant Bukkit/Spigot plugin to revert combat-related mechanics to pre-1.9 and much more.
+## Modesets
+Modesets can be configured for your players to choose from. Each modeset can have any combination of the below features enabled, for example to replicate 1.9 vs 1.8 combat. Players can switch between modesets via command, choosing from the modesets allowed for the world they are in.
 
-## Features
-- Master & per-world toggle for each module
-- All modules fully customisable
-- Remove weapon cooldown
-- Setting tool damage as in pre-1.9
-- Make players regenerate like in pre-1.9 & with correct exhaustion
-- Give players a shield while they right click with a sword
-- Have armour be as strong as in pre-1.9
-- Have configurable old potion durations
-- Have configurable old potion effects (strength & weakness)
-- Disable sword sweep attack
-- Option to disable shield crafting
-- Disable off-hand (with white/blacklist)
-- Make shields block 1/2 a heart instead of reduce damage to 33%
-- Configurable general & projectile damage reduction for shields
-- Have arrows not be stopped by shields
-- Re-add snowball, egg & enderpearl knockback
-- Disable player collisions
-- Enchanted golden apple crafting
-- Customisable enchanted & golden apple potion effects
-- Fishing rods knockback and damage like in pre-1.9 (customisable)
-- Automatically add blaze powder to brewing stands
-- Automatically add lapis in enchanting tables
-- Stop usage of elytra
-- Disable random projectile trajectories
-- Disable bow boosting
-- Configure Chorus Fruit properties
-- Old armour durability mechanics
-- Old burn delay when entering fire
-- Configurable gapple & enderpearl cooldown with messages
-- Disable new attack sounds
-- Change invulnerability time in-between attack hits for both players & mobs
-- Make fishing rods go as far as they did in 1.8
-- Replicate 1.8 entity knockback
-- Replicate and configure 1.8 critical hits
-- Per-user pvp mode toggle
-- Compatible with Spartan anticheat
+## Configurable Features
+Features are grouped in `module`s as listed below and can be individually configured and disabled. Modules that are fully disabled will have no impact on server performance.
 
-## Installation
-To install OldCombatMechanics, please download the latest version from the [releases page](https://github.com/kernitus/BukkitOldCombatMechanics/releases) (or from [Bukkit](http://dev.bukkit.org/bukkit-plugins/oldcombatmechanics/) or [Spigot](https://www.spigotmc.org/resources/oldcombatmechanics.19510/)). Simply drop the JAR file in your plugins folder and restart your server.
+#### Combat
+- Attack cooldown
+- Attack frequency
+- Tool damage
+- Critical hits
+- Player regen
+- Player collisions
+
+#### Armour
+- Armour strength
+- Armour durability
+
+#### Swords & Shields
+- Sword blocking
+- Shield damage reduction
+- Sword sweep
+
+#### Knockback
+- Player knockback
+- Fishing knockback
+- Fishing rod velocity
+- Projectile knockback
+
+#### Gapples & Potions
+- Golden apple crafting & effects
+- Potion effects & duration
+- Chorus fruit
+
+#### New feature disabling
+- Item crafting
+- Offhand
+- Elytra
+- Bow boost
+- New attack sounds
+- Enderpearl cooldown
+- Brewing stand refuel
+- Enchantment table auto-lapis
+- Burn delay
+- Projectile randomness
+
+## Plugin Compatibility
+Most plugins will work fine with OCM. Some had to be explicitly supported. These include:
+- Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
+- Spartan anticheat (to avoid triggerring anticheat on regen)
 
 ## Contributions
 

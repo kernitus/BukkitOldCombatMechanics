@@ -11,13 +11,14 @@
 # ###########################################################################
 
 modesets:
-  # These modesets are lists of modules that are enabled for a player in that mode.
+  # Modesets are lists of modules that are enabled for a player in that mode.
   # Modules not listed in any modeset are assumed to always be available.
-  # You can create as many modesets as you like by adding a new key and corresponding list.
+  # You can create, remove, and rename as many modesets as you like by modifying the list below.
   # When in PvP, the modeset of the attacker is checked first.
   # If not PvP, the modeset of the defending entity is checked.
   # Of course, the module must also be enabled in its own config section.
   # Sample below has modules enabled for "old" combat modeset and disabled for "new" combat modeset
+  # PlaceholderAPI: %ocm_modeset%
   old:
       - "disable-attack-cooldown"
       - "disable-sword-sweep"
@@ -46,7 +47,9 @@ worlds:
 
 mode-messages:
   # Messages used when changing player mode
-  mode-status: '&bYour current modeset is: &7%s'
+  # To disable any message, leave the corresponding string empty (e.g., mode-status: "").
+  # This applies to all messages in the configuration.
+  mode-status: "&bYour current modeset is: &7%s"
   message-usage: "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset"
   invalid-modeset: "&cPlease specify a valid modeset!"
   invalid-player: "&cPlease specify a valid player!"
@@ -273,10 +276,12 @@ old-golden-apples:
   # Cooldown between eating the apples, in seconds
   cooldown:
     # The cooldown for normal golden apples
+    # PlaceholderAPI: %ocm_gapple_cooldown%
     normal: 0
     # Message when user tries to eat golden apple during cooldown. Leave empty to disable.
     message-normal: "&ePlease wait %seconds%s before eating another golden apple."
     # The cooldown for enchanted golden apples
+    # PlaceholderAPI: %ocm_napple_cooldown%
     enchanted: 0
     # Message when user tries to eat enchanted golden apple during cooldown. Leave empty to disable.
     message-enchanted: "&ePlease wait %seconds%s before eating another enchanted golden apple."
@@ -506,6 +511,7 @@ disable-enderpearl-cooldown:
   # Disables enderpearl cooldown
   enabled: true
   # The cooldown, in seconds
+  # PlaceholderAPI: %ocm_enderpearl_cooldown%
   cooldown: 0
   # Show the user a message if they try to use an enderpearl and the cooldown has not expired yet
   showMessage: true

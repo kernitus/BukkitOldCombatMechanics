@@ -22,8 +22,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 public class OCMCommandHandler implements CommandExecutor {
@@ -89,8 +89,10 @@ public class OCMCommandHandler implements CommandExecutor {
 
         Player player = null;
         if (args.length < 3) {
-            if (sender instanceof Player)
-                player = (Player) sender;
+            if (sender instanceof Player) {
+                if (sender.hasPermission("oldcombatmechanics.mode.own"))
+                    player = (Player) sender;
+            }
             else {
                 Messenger.send(sender,
                         Config.getConfig().getString("mode-messages.invalid-player",
@@ -108,9 +110,10 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         final UUID worldId = player.getWorld().getUID();
-        final LinkedHashSet<String> worldModesets = Config.getWorlds().get(worldId);
+        final Set<String> worldModesets = Config.getWorlds().get(worldId);
 
-        if(!worldModesets.contains(modesetName)){ // Modeset not allowed in current world
+        // If modesets null it means not configured, so all are allowed
+        if(worldModesets != null && !worldModesets.contains(modesetName)){ // Modeset not allowed in current world
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-modeset",
                             "&4ERROR: &rmode-messages.invalid-modeset string missing"));

@@ -47,16 +47,13 @@ public class ModuleAttackCooldown extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent e) {
-        final Player player = e.getPlayer();
-
-        // This is here to make uninstalling the plugin easier
-        setAttackSpeed(player, PVPMode.NEW_PVP.getBaseAttackSpeed());
+        setAttackSpeed(e.getPlayer(), PVPMode.NEW_PVP.getBaseAttackSpeed());
     }
 
     /**
      * Adjusts the attack speed to the default or configured value, depending on whether the module is enabled.
      *
-     * @param player the player to set it for
+     * @param player the player to set the attack speed for
      */
     private void adjustAttackSpeed(Player player) {
         final double attackSpeed = isEnabled(player)

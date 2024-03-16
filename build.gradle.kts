@@ -39,10 +39,6 @@ repositories {
     maven("https://repo.minebench.de/")
     // Protocollib
     maven("https://repo.dmulloy2.net/repository/public/")
-
-    // For local maven repo (mojang mappings jar)
-    // For ingametesting
-    // mavenLocal()
 }
 
 dependencies {
@@ -69,7 +65,7 @@ dependencies {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "1.13.0-beta"
+version = "2.0.2-beta"
 description = "OldCombatMechanics"
 
 java {
