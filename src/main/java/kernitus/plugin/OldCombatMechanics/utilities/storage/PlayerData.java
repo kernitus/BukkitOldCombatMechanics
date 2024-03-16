@@ -38,7 +38,7 @@ public class PlayerData {
 
     public static PlayerData fromDocument(Document doc) {
         final PlayerData playerData = new PlayerData();
-        Document modesetByWorldDoc = (Document) doc.get("modesetByWorld");
+        final Document modesetByWorldDoc = (Document) doc.get("modesetByWorld");
         if (modesetByWorldDoc != null) {
             for (Map.Entry<String, Object> entry : modesetByWorldDoc.entrySet()) {
                 UUID worldId = UUID.fromString(entry.getKey());

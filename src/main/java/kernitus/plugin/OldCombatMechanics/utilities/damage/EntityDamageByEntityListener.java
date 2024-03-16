@@ -178,7 +178,6 @@ public class EntityDamageByEntityListener extends OCMModule {
     @EventHandler(priority = EventPriority.MONITOR)
     public void afterEntityDamage(EntityDamageEvent event) {
         final Entity damagee = event.getEntity();
-        debug("monitor DAMAGE to " + damagee.getName() + " CAUSE: " + event.getCause());
 
         if (event instanceof EntityDamageByEntityEvent) {
             if (lastDamages.containsKey(damagee.getUniqueId())) {
