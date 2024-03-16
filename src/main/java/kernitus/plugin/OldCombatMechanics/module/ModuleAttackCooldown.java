@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -76,6 +77,9 @@ public class ModuleAttackCooldown extends OCMModule {
         if (attribute == null) return;
 
         final double baseValue = attribute.getBaseValue();
+
+        final String modesetName = PlayerStorage.getPlayerData(player.getUniqueId()).getModesetForWorld(player.getWorld().getUID());
+        debug(String.format("Setting attack speed to %.2f (was: %.2f) for %s in mode %s", attackSpeed, baseValue, player.getName(), modesetName));
 
         if (baseValue != attackSpeed) {
             debug(String.format("Setting attack speed to %.2f (was: %.2f)", attackSpeed, baseValue), player);
