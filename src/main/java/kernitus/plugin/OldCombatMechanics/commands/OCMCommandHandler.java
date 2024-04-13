@@ -29,7 +29,7 @@ public class OCMCommandHandler implements CommandExecutor {
 
     private final OCMMain plugin;
 
-    enum Subcommand {reload, mode}
+    enum Subcommand {reload, mode }
 
     public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;

@@ -46,13 +46,13 @@ repositories {
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
     // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.104.Final")
+    compileOnly("io.netty:netty-all:4.1.106.Final")
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.11.5")
     // Spartan API
     compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
     // For BSON file serialisation
-    implementation("org.mongodb:bson:4.11.0")
+    implementation("org.mongodb:bson:4.11.1")
     // Spigot
 //    compileOnly("org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT")
     // Folia
@@ -67,12 +67,14 @@ dependencies {
     compileOnly("net.kyori:adventure-api:4.16.0")
     // BungeeCord Chat
     compileOnly("net.md-5:bungeecord-chat:1.16-R0.4")
-    /* For ingametesting
+    
+    //For ingametesting
     // Mojang mappings for NMS
+    /*
     compileOnly("com.mojang:authlib:4.0.43")
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
     // For reflection remapping
-    implementation("xyz.jpenilla:reflection-remapper:0.1.0")
+    implementation("xyz.jpenilla:reflection-remapper:0.1.1")
      */
 }
 
@@ -113,7 +115,8 @@ tasks.named<ShadowJar>("shadowJar") {
     }
 }
 
-/* For ingametesting
+// For ingametesting
+/*
 tasks.reobfJar {
     outputJar.set(File(buildDir, "libs/${project.name}.jar"))
 }
