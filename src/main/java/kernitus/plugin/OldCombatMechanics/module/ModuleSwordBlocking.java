@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -33,8 +34,15 @@ public class ModuleSwordBlocking extends OCMModule {
     private final Map<UUID, Collection<BukkitTask>> correspondingTasks = new HashMap<>();
     private int restoreDelay;
 
+    // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
+    private Map<Location, UUID> lastInteractedBlocks;
+
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
+
+        if(!Reflector.versionIsNewerOrEqualAs(1,13,0)){
+            lastInteractedBlocks = new WeakHashMap<>();
+        }
     }
 
     @Override
@@ -44,10 +52,21 @@ public class ModuleSwordBlocking extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockCanBuildEvent e) {
-        final Player player = e.getPlayer();
+        if(e.isBuildable()) return;
+
+        Player player;
+
+        // If <1.13 get player who last interacted with block
+        if(lastInteractedBlocks != null) {
+            final Location blockLocation = e.getBlock().getLocation();
+            final UUID uuid = lastInteractedBlocks.remove(blockLocation);
+            player = Bukkit.getServer().getPlayer(uuid);
+        }
+        else player = e.getPlayer();
+
         if (player == null || !isEnabled(player)) return;
 
-        if (!e.isBuildable()) doShieldBlock(player);
+        doShieldBlock(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -57,11 +76,18 @@ public class ModuleSwordBlocking extends OCMModule {
 
         if (!isEnabled(player)) return;
 
+        debug("Action: " + action + " hand: " + e.getHand(), player);
+
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
         // If they clicked on an interactive block, the 2nd event with the offhand won't fire
         // This is also the case if the main hand item was used, e.g. a bow
+        // TODO right-clicking on a mob also only fires one hand
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
-        if (e.isBlockInHand()) return; // Handle failed block place in separate listener
+        if (e.isBlockInHand()){
+            if(lastInteractedBlocks != null)
+                lastInteractedBlocks.put(e.getClickedBlock().getLocation(), player.getUniqueId());
+            return; // Handle failed block place in separate listener
+        }
 
         doShieldBlock(player);
     }
