@@ -27,7 +27,7 @@ public class UpdateChecker {
         this.plugin = plugin;
         // We don't really want to auto update if the config is not going to be upgraded automatically
         autoDownload = Config.moduleSettingEnabled("update-checker", "auto-update") &&
-                (Reflector.versionIsNewerOrEqualAs(1, 18, 1) ||
+                (Reflector.versionIsNewerOrEqualTo(1, 18, 1) ||
                         Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
                 );
     }

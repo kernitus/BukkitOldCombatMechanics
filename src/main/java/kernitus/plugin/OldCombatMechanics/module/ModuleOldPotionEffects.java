@@ -25,6 +25,7 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -39,10 +40,8 @@ import static java.util.Objects.requireNonNull;
 public class ModuleOldPotionEffects extends OCMModule {
     private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
             // This only includes 1.9 potions, others are added later for compatibility
-            // Instant potions have no duration that can be modified
-            PotionType.INSTANT_DAMAGE, PotionType.INSTANT_HEAL,
             // Base potions without any effect
-            PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.UNCRAFTABLE, PotionType.WATER
+            PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.WATER
     );
 
     private Map<PotionType, PotionDurations> durations;
@@ -50,14 +49,29 @@ public class ModuleOldPotionEffects extends OCMModule {
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
 
-        try {
-            //Turtle Master potion has two effects and Bukkit only returns one with #getEffectType()
-            EXCLUDED_POTION_TYPES.add(PotionType.TURTLE_MASTER);
-        } catch (NoSuchFieldError e) {
-            debug("Skipping excluding a potion (probably older server version)");
-        }
+        // Turtle Master potion has two effects and Bukkit only returns one with #getEffectType()
+        tryToAddPotionType("TURTLE_MASTER");
+
+        // This type doesn't exist anymore >1.20.5
+        tryToAddPotionType("UNCRAFTABLE");
+
+        // Instant potions have no duration that can be modified
+        tryToAddPotionType("INSTANT_DAMAGE");
+        tryToAddPotionType("INSTANT_HEAL");
+
+        // New instan potion names for > 1.20.5
+        tryToAddPotionType("HARMING");
+        tryToAddPotionType("HEALING");
 
         reload();
+    }
+
+    private void tryToAddPotionType(String potionTypeName) {
+        try {
+            EXCLUDED_POTION_TYPES.add(PotionType.valueOf(potionTypeName));
+        } catch (IllegalArgumentException | NoSuchFieldError e) {
+            debug("Skipping excluding potion " + potionTypeName);
+        }
     }
 
     @Override
@@ -117,13 +131,16 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
-        final PotionData potionData = potionMeta.getBasePotionData();
-        final PotionType potionType = potionData.getType();
+        final PotionType potionType = getPotionType(potionMeta);
+        // We want the old potion type because this is how it's stored in the map
+        final PotionType oldPotionType = getOldPotionType(potionType);
 
-        if (EXCLUDED_POTION_TYPES.contains(potionType)) return;
+        if (EXCLUDED_POTION_TYPES.contains(oldPotionType)) return;
 
-        final int duration = getPotionDuration(potionData, splash);
-        int amplifier = potionData.isUpgraded() ? 1 : 0;
+        final int duration = getPotionDuration(potionMeta, splash);
+
+        int amplifier = isUpgraded(potionMeta) ? 1 : 0;
+
         if (potionType == PotionType.WEAKNESS) {
             // Set level to 0 so that it doesn't prevent the EntityDamageByEntityEvent from being called
             // due to damage being lower than 0 as some 1.9 weapons deal less damage
@@ -132,10 +149,16 @@ public class ModuleOldPotionEffects extends OCMModule {
 
         final PotionEffectType effectType = requireNonNull(potionType.getEffectType());
         potionMeta.addCustomEffect(new PotionEffect(effectType, duration, amplifier), false);
-        potionMeta.setBasePotionData(new PotionData(PotionType.WATER));
+
+        try { // For >=1.20
+            potionMeta.setBasePotionType(PotionType.WATER);
+        } catch (NoSuchMethodError e) {
+            potionMeta.setBasePotionData(new PotionData(PotionType.WATER));
+        }
 
         potionItem.setItemMeta(potionMeta);
     }
+
 
     @EventHandler(ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event) {
@@ -162,20 +185,58 @@ public class ModuleOldPotionEffects extends OCMModule {
         }
     }
 
-    private int getPotionDuration(PotionData potionData, boolean splash) {
-        final PotionType potionType = potionData.getType();
+    private int getPotionDuration(PotionMeta potionMeta, boolean splash) {
+        final PotionType potionType = getPotionType(potionMeta);
 
-        final GenericPotionDurations potionDurations = splash ? durations.get(potionType).getSplash()
-                : durations.get(potionType).getDrinkable();
+        debug("POTIONM TYPE: " + potionType);
+
+        // We want the old potion type because this is how it's stored in the map
+        final PotionType oldPotionType = getOldPotionType(potionType);
+
+        final GenericPotionDurations potionDurations = splash ? durations.get(oldPotionType).getSplash()
+                : durations.get(oldPotionType).getDrinkable();
 
         int duration;
-        if (potionData.isExtended()) duration = potionDurations.getExtendedTime();
-        else if (potionData.isUpgraded()) duration = potionDurations.getIITime();
+        if (isExtended(potionMeta)) duration = potionDurations.getExtendedTime();
+        else if (isUpgraded(potionMeta)) duration = potionDurations.getIITime();
         else duration = potionDurations.getBaseTime();
 
         duration *= 20; // Convert seconds to ticks
         debug("Potion type: " + potionType.name() + " Duration: " + duration);
 
         return duration;
+    }
+
+    private static @NotNull PotionType getOldPotionType(PotionType potionType) {
+        final PotionType oldPotionType = PotionType.valueOf(potionType.name()
+                .replace("STRONG_", "")
+                .replace("LONG_", ""));
+        return oldPotionType;
+    }
+
+    private static @NotNull PotionType getPotionType(PotionMeta potionMeta) {
+        try { // For >=1.20
+            return potionMeta.getBasePotionType();
+        } catch (NoSuchMethodError e) {
+            return potionMeta.getBasePotionData().getType();
+        }
+    }
+
+    private static @NotNull boolean isUpgraded(PotionMeta potionMeta) {
+        try { // For < 1.20
+            return potionMeta.getBasePotionData().isUpgraded();
+        } catch (NoSuchMethodError e) {
+            // >= 1.20 has separate types for upgraded potions
+            return getPotionType(potionMeta).name().startsWith("STRONG");
+        }
+    }
+
+    private static @NotNull boolean isExtended(PotionMeta potionMeta) {
+        try { // For < 1.20
+            return potionMeta.getBasePotionData().isExtended();
+        } catch (NoSuchMethodError e) {
+            // >= 1.20 has separate types for extended potions
+            return getPotionType(potionMeta).name().startsWith("LONG");
+        }
     }
 }

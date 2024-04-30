@@ -45,7 +45,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
         random = new Random();
 
         // Versions 1.14+ have different gravity than previous versions
-        hasDifferentGravity = Reflector.versionIsNewerOrEqualAs(1, 14, 0);
+        hasDifferentGravity = Reflector.versionIsNewerOrEqualTo(1, 14, 0);
     }
 
     @EventHandler (ignoreCancelled = true)

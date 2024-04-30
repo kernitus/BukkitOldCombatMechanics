@@ -28,7 +28,7 @@ public class OCMConfigHandler {
         if (backup.exists()) backup.delete();
 
         // Keeping YAML comments not available in lower versions
-        if (Reflector.versionIsNewerOrEqualAs(1, 18, 1) ||
+        if (Reflector.versionIsNewerOrEqualTo(1, 18, 1) ||
                 Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
         ) {
             plugin.getLogger().warning("Config version does not match, upgrading old config");

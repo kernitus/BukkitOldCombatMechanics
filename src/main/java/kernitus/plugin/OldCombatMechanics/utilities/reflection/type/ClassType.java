@@ -12,7 +12,7 @@ public enum ClassType {
     NMS {
         @Override
         public String qualifyClassName(String partialName){
-            if(Reflector.versionIsNewerOrEqualAs(1, 17, 0)){
+            if(Reflector.versionIsNewerOrEqualTo(1, 17, 0)){
                 return "net.minecraft." + partialName;
             }
             // FIXME: Assumes class names are upper case and trims off the preceding package name

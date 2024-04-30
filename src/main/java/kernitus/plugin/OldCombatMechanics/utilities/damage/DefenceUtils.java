@@ -56,9 +56,9 @@ public class DefenceUtils {
 
     // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly checked below
     static {
-        if (Reflector.versionIsNewerOrEqualAs(1, 11, 0))
+        if (Reflector.versionIsNewerOrEqualTo(1, 11, 0))
             ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.CRAMMING);
-        if (Reflector.versionIsNewerOrEqualAs(1, 17, 0))
+        if (Reflector.versionIsNewerOrEqualTo(1, 17, 0))
             ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
     }
 
@@ -96,7 +96,7 @@ public class DefenceUtils {
             // If the damage cause does not ignore armour
             // If the block they are in is a stalagmite, also ignore armour
             if (!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
-                    !(Reflector.versionIsNewerOrEqualAs(1, 19, 0) &&
+                    !(Reflector.versionIsNewerOrEqualTo(1, 19, 0) &&
                             damageCause == EntityDamageEvent.DamageCause.CONTACT &&
                             damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)
             ) {
@@ -254,9 +254,9 @@ public class DefenceUtils {
                     EntityDamageEvent.DamageCause.THORNS,
                     EntityDamageEvent.DamageCause.DRAGON_BREATH
             );
-            if (Reflector.versionIsNewerOrEqualAs(1, 10, 0))
+            if (Reflector.versionIsNewerOrEqualTo(1, 10, 0))
                 damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
-            if (Reflector.versionIsNewerOrEqualAs(1, 12, 0))
+            if (Reflector.versionIsNewerOrEqualTo(1, 12, 0))
                 damageCauses.add(EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK);
 
             return damageCauses;
@@ -269,7 +269,7 @@ public class DefenceUtils {
                     EntityDamageEvent.DamageCause.LAVA
             );
 
-            if (Reflector.versionIsNewerOrEqualAs(1, 10, 0)) {
+            if (Reflector.versionIsNewerOrEqualTo(1, 10, 0)) {
                 damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
             }
 

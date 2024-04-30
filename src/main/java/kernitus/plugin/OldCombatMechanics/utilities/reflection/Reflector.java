@@ -23,11 +23,13 @@ public class Reflector {
 
     static {
         try {
-            version = Bukkit.getServer().getClass().getName().split("\\.")[3];
-            final String[] splitVersion = getVersion().replaceAll("[^\\d_]", "").split("_");
+            // Split on the "-" to just get the version information
+            version = Bukkit.getServer().getBukkitVersion().split("-")[0];
+            final String[] splitVersion = version.split("\\.");
+
             majorVersion = Integer.parseInt(splitVersion[0]);
             minorVersion = Integer.parseInt(splitVersion[1]);
-            patchVersion = splitVersion.length < 3 ? 0 : Integer.parseInt(splitVersion[2]);
+            patchVersion = Integer.parseInt(splitVersion[2]);
         } catch (Exception e) {
             System.err.println("Failed to load Reflector");
             e.printStackTrace();
@@ -46,7 +48,7 @@ public class Reflector {
      * @param patch the target patch version. 0 for all
      * @return true if the server version is newer or equal to the one provided
      */
-    public static boolean versionIsNewerOrEqualAs(int major, int minor, int patch) {
+    public static boolean versionIsNewerOrEqualTo(int major, int minor, int patch) {
         if (getMajorVersion() < major) return false;
         if (getMinorVersion() < minor) return false;
         return getPatchVersion() >= patch;

@@ -45,7 +45,7 @@ public class DualVersionedMaterial implements VersionedMaterial {
     }
 
     private Supplier<ItemStack> getItemSupplier() {
-        return Reflector.versionIsNewerOrEqualAs(1, 13, 0) ? newItem : oldItem;
+        return Reflector.versionIsNewerOrEqualTo(1, 13, 0) ? newItem : oldItem;
     }
 
     @Override

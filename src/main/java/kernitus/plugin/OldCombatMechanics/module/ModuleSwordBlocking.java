@@ -40,7 +40,7 @@ public class ModuleSwordBlocking extends OCMModule {
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
 
-        if(!Reflector.versionIsNewerOrEqualAs(1,13,0)){
+        if(!Reflector.versionIsNewerOrEqualTo(1,13,0)){
             lastInteractedBlocks = new WeakHashMap<>();
         }
     }
@@ -75,8 +75,6 @@ public class ModuleSwordBlocking extends OCMModule {
         final Player player = e.getPlayer();
 
         if (!isEnabled(player)) return;
-
-        debug("Action: " + action + " hand: " + e.getHand(), player);
 
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
         // If they clicked on an interactive block, the 2nd event with the offhand won't fire
@@ -227,7 +225,7 @@ public class ModuleSwordBlocking extends OCMModule {
      */
     private boolean isPlayerBlocking(Player player) {
         return player.isBlocking() ||
-                (Reflector.versionIsNewerOrEqualAs(1, 11, 0) && player.isHandRaised()
+                (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised()
                         && hasShield(player.getInventory())
                 );
     }

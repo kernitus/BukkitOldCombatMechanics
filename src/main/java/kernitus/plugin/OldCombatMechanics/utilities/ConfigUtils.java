@@ -76,7 +76,7 @@ public class ConfigUtils {
             potionName = potionName.toUpperCase(Locale.ROOT);
 
             try {
-                final PotionType potionType = PotionType.valueOf(potionName);
+                final PotionType potionType = PotionType.valueOf(getMappedPotionName(potionName));
                 durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
 
             } catch (
@@ -87,6 +87,30 @@ public class ConfigUtils {
 
         return durationsHashMap;
     }
+
+    /**
+     * Remap potion names to pre 1.20.5 for older versions
+     *
+     * @param potionName The >=1.20.5 potion name, in upper case
+     * @return The pre 1.20.5 potion name, in upper case
+     */
+    private static String getMappedPotionName(String potionName) {
+        switch (potionName) {
+            case "INSTANT_DAMAGE":
+                return "HARMING";
+            case "INSTANT_HEAL":
+                return "HEALING";
+            case "JUMP":
+                return "LEAPING:";
+            case "REGENERATION":
+                return "REGEN";
+            case "SPEED":
+                return "SWIFTNESS";
+            default:
+                return potionName;
+        }
+    }
+
 
     private static GenericPotionDurations getGenericDurations(ConfigurationSection section) {
         return new GenericPotionDurations(section.getInt("base"), section.getInt("II"), section.getInt("extended"));
