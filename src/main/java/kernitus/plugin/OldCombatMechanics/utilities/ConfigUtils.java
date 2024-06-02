@@ -5,11 +5,9 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities;
 
-import kernitus.plugin.OldCombatMechanics.utilities.potions.GenericPotionDurations;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.potion.PotionType;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -58,61 +56,38 @@ public class ConfigUtils {
     }
 
     /**
-     * Gets potion duration values from config
+     * Gets potion duration values from config for all configured potion types.
+     * Will create map of new potion type name to durations.
      *
      * @param section The section from which to load the duration values
-     * @return HashMap of PotionType and PotionDurations
+     * @return HashMap of {@link String} and {@link PotionDurations}
      */
-    public static HashMap<PotionType, PotionDurations> loadPotionDurationsList(ConfigurationSection section) {
+    public static HashMap<String, PotionDurations> loadPotionDurationsList(ConfigurationSection section) {
         Objects.requireNonNull(section, "section cannot be null!");
-        final HashMap<PotionType, PotionDurations> durationsHashMap = new HashMap<>();
+
+        final HashMap<String, PotionDurations> durationsHashMap = new HashMap<>();
         final ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
 
-        for (String potionName : durationsSection.getKeys(false)) {
-            final ConfigurationSection potionSection = durationsSection.getConfigurationSection(potionName);
-            final ConfigurationSection drinkable = potionSection.getConfigurationSection("drinkable");
-            final ConfigurationSection splash = potionSection.getConfigurationSection("splash");
+        final ConfigurationSection drinkableSection = durationsSection.getConfigurationSection("drinkable");
+        final ConfigurationSection splashSection = durationsSection.getConfigurationSection("splash");
 
-            potionName = potionName.toUpperCase(Locale.ROOT);
+        for (String potionTypeName : drinkableSection.getKeys(false)) {
 
             try {
-                final PotionType potionType = PotionType.valueOf(getMappedPotionName(potionName));
-                durationsHashMap.put(potionType, new PotionDurations(getGenericDurations(drinkable), getGenericDurations(splash)));
+                // Get durations in seconds and convert to ticks
+                final int drinkableDuration = drinkableSection.getInt(potionTypeName) * 20;
+                final int splashDuration = splashSection.getInt(potionTypeName) * 20;
 
-            } catch (
-                    IllegalArgumentException e) { //In case the potion doesn't exist in the version running on the server
-                Messenger.debug("Skipping loading " + potionName + " potion");
+                Messenger.debug("potiontype " + potionTypeName + " DRINK: " + drinkableDuration + " splash: " + splashDuration);
+
+                durationsHashMap.put(potionTypeName.toUpperCase(Locale.ROOT), new PotionDurations(drinkableDuration, splashDuration));
+            } catch (IllegalArgumentException e) {
+                // In case the potion doesn't exist in the version running on the server
+                Messenger.debug("Skipping loading " + potionTypeName + " potion");
             }
         }
 
         return durationsHashMap;
     }
 
-    /**
-     * Remap potion names to pre 1.20.5 for older versions
-     *
-     * @param potionName The >=1.20.5 potion name, in upper case
-     * @return The pre 1.20.5 potion name, in upper case
-     */
-    private static String getMappedPotionName(String potionName) {
-        switch (potionName) {
-            case "INSTANT_DAMAGE":
-                return "HARMING";
-            case "INSTANT_HEAL":
-                return "HEALING";
-            case "JUMP":
-                return "LEAPING:";
-            case "REGENERATION":
-                return "REGEN";
-            case "SPEED":
-                return "SWIFTNESS";
-            default:
-                return potionName;
-        }
-    }
-
-
-    private static GenericPotionDurations getGenericDurations(ConfigurationSection section) {
-        return new GenericPotionDurations(section.getInt("base"), section.getInt("II"), section.getInt("extended"));
-    }
 }

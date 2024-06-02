@@ -20,18 +20,18 @@ modesets:
   # Sample below has modules enabled for "old" combat modeset and disabled for "new" combat modeset
   # PlaceholderAPI: %ocm_modeset%
   old:
-      - "disable-attack-cooldown"
-      - "disable-sword-sweep"
-      - "disable-offhand"
-      - "old-tool-damage"
-      - "sword-blocking"
-      - "shield-damage-reduction"
-      - "old-golden-apples"
-      - "old-player-knockback"
-      - "old-player-regen"
-      - "old-armour-strength"
-      - "old-potion-effects"
-      - "old-critical-hits"
+    - "disable-attack-cooldown"
+    - "disable-sword-sweep"
+    - "disable-offhand"
+    - "old-tool-damage"
+    - "sword-blocking"
+    - "shield-damage-reduction"
+    - "old-golden-apples"
+    - "old-player-knockback"
+    - "old-player-regen"
+    - "old-armour-strength"
+    - "old-potion-effects"
+    - "old-critical-hits"
   new: [ ]
 
 worlds:
@@ -39,9 +39,9 @@ worlds:
   # If player has no modeset when moving worlds they'll be assigned first mode in list,
   # unless the mode from the world they are coming from is also available in the new world.
   # Worlds not specified below will have all modesets available.
-  world: ["old", "new"]
-  world_nether: ["old", "new"]
-  world_the_end: ["old", "new"]
+  world: [ "old", "new" ]
+  world_nether: [ "old", "new" ]
+  world_the_end: [ "old", "new" ]
   # old_world: ["old"]
   # brave_new_world: ["new"]
 
@@ -304,29 +304,29 @@ old-golden-apples:
   # Enabling this makes the potion effects gained by eating golden apples
   # and enchanted golden apples the same as it was in pre-1.9
   old-potion-effects: true
-  # Potion effects golden apples should apply
-  # Duration is in ticks (20 ticks = 1 second)
-  # Amplifier is the potion level - 1, so Regeneration IV would be amplifier 3
-  gapple-effects:
+  # Potion effects for golden apples
+  # Duration is in seconds
+  # Amplifier is the potion level-1, so Regeneration IV would be amplifier 3
+  golden-apple-effects:
     regeneration:
-      duration: 100
+      duration: 5
       amplifier: 1
     absorption:
-      duration: 2400
+      duration: 120
       amplifier: 0
-  # Potion effects enchanted golden apples should apply
-  napple-effects:
+  # Potion effects for enchanted golden apples
+  enchanted-golden-apple-effects:
     regeneration:
-      duration: 600
+      duration: 30
       amplifier: 4
     resistance:
-      duration: 6000
+      duration: 300
       amplifier: 0
     fire_resistance:
-      duration: 6000
+      duration: 300
       amplifier: 0
     absorption:
-      duration: 2400
+      duration: 120
       amplifier: 0
   # Enable this if you have another plugin which adds a crafting recipe for
   # enchanted golden apples (requires server restart)
@@ -338,119 +338,96 @@ old-potion-effects:
 
   # DURATION: (in seconds)
   potion-durations:
-    regen: # Regeneration
-      drinkable:
-        base: 45
-        II: 22
-        extended: 120
-      splash:
-        base: 33
-        II: 16
-        extended: 90
+    drinkable:
+      regeneration: 45
+      strong_regeneration: 22
+      long_regeneration: 120
 
-    speed: # Swiftness
-      drinkable:
-        base: 180
-        II: 90
-        extended: 480
-      splash:
-        base: 135
-        II: 67
-        extended: 360
+      swiftness: 180
+      strong_swiftness: 90
+      long_swiftness: 480
 
-    fire_resistance:
-      drinkable:
-        base: 180
-        extended: 480
-      splash:
-        base: 135
-        extended: 360
+      fire_resistance: 180
+      long_fire_resistance: 480
 
-    poison:
-      drinkable:
-        base: 45
-        II: 22
-        extended: 120
-      splash:
-        base: 33
-        II: 16
-        extended: 90
+      poison: 45
+      strong_poison: 22
+      long_poison: 120
 
-    night_vision:
-      drinkable:
-        base: 180
-        extended: 480
-      splash:
-        base: 180
-        extended: 480
+      night_vision: 180
+      long_night_vision: 480
 
-    weakness:
-      drinkable:
-        base: 90
-        extended: 240
-      splash:
-        base: 90
-        extended: 240
+      weakness: 90
+      long_weakness: 240
 
-    strength:
-      drinkable:
-        base: 180
-        II: 90
-        extended: 480
-      splash:
-        base: 135
-        II: 67
-        extended: 360
+      strength: 180
+      strong_strength: 90
+      long_strength: 480
 
-    slowness:
-      drinkable:
-        base: 90
-        extended: 240
-      splash:
-        base: 67
-        extended: 180
+      slowness: 90
+      long_slowness: 240
 
-    jump: # Leaping
-      drinkable:
-        base: 180
-        II: 90
-        extended: 480
-      splash:
-        base: 135
-        II: 67
-        extended: 360
+      leaping: 180
+      strong_leaping: 90
+      long_leaping: 480
 
-    water_breathing:
-      drinkable:
-        base: 180
-        extended: 480
-      splash:
-        base: 135
-        extended: 360
+      water_breathing: 180
+      long_water_breathing: 480
 
-    invisibility:
-      drinkable:
-        base: 180
-        extended: 480
-      splash:
-        base: 135
-        extended: 360
+      invisibility: 180
+      long_invisibility: 480
 
-    # 1.9+ potions
-    # Turtle Master potion currently incompatible, will just work like default
-    luck:
-      drinkable:
-        base: 300
-      splash:
-        base: 300
+      # 1.9+ potions. You can add more as needed.
+      # Make sure to also add to splash section below.
+      luck: 300
 
-    slow_falling:
-      drinkable:
-        base: 90
-        extended: 240
-      splash:
-        base: 90
-        extended: 240
+      slow_falling: 90
+      long_slow_falling: 240
+
+    splash:
+      regeneration: 33
+      strong_regeneration: 16
+      long_regeneration: 90
+
+      swiftness: 135
+      strong_swiftness: 67
+      long_swiftness: 360
+
+      fire_resistance: 135
+      long_fire_resistance: 360
+
+      poison: 33
+      strong_poison: 16
+      long_poison: 90
+
+      night_vision: 180
+      long_night_vision: 480
+
+      weakness: 90
+      long_weakness: 240
+
+      strength: 135
+      strong_strength: 67
+      long_strength: 360
+
+      slowness: 67
+      long_slowness: 180
+
+      leaping: 135
+      strong_leaping: 67
+      long_leaping: 360
+
+      water_breathing: 135
+      long_water_breathing: 360
+
+      invisibility: 135
+      long_invisibility: 360
+
+      # 1.9+ potions. You can add more as needed
+      luck: 300
+
+      slow_falling: 90
+      long_slow_falling: 240
 
   # EFFECTS
   # If 'multiplier' is true value is multiplied by base tool damage. If 'addend' it is added.
@@ -603,4 +580,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 64
+config-version: 65

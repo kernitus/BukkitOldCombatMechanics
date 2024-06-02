@@ -72,8 +72,8 @@ public class ModuleGoldenApple extends OCMModule {
         );
         lastEaten = new WeakHashMap<>();
 
-        enchantedGoldenAppleEffects = getPotionEffects("napple");
-        goldenAppleEffects = getPotionEffects("gapple");
+        enchantedGoldenAppleEffects = getPotionEffects("enchanted-golden-apple-effects");
+        goldenAppleEffects = getPotionEffects("golden-apple-effects");
 
         try {
             enchantedAppleRecipe = new ShapedRecipe(
@@ -220,12 +220,12 @@ public class ModuleGoldenApple extends OCMModule {
     }
 
 
-    private List<PotionEffect> getPotionEffects(String apple) {
+    private List<PotionEffect> getPotionEffects(String path) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
 
-        final ConfigurationSection sect = module().getConfigurationSection(apple + "-effects");
+        final ConfigurationSection sect = module().getConfigurationSection(path);
         for (String key : sect.getKeys(false)) {
-            final int duration = sect.getInt(key + ".duration");
+            final int duration = sect.getInt(key + ".duration") * 20; // Convert seconds to ticks
             final int amplifier = sect.getInt(key + ".amplifier");
 
             final PotionEffectType type = PotionEffectTypeCompat.fromNewName(key);

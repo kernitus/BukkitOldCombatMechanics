@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.potions;
 
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -43,16 +44,16 @@ public enum PotionEffectTypeCompat {
     }
 
     /**
-     * Gets correct PotionEffectType for currently-running server version givenn new name.
+     * Gets correct PotionEffectType for currently-running server version given new name.
      * @param newName The PotionEffectType >=1.20.6 name
      * @return The PotionEffectType for the currently-running server version, if found
      */
-    public static PotionEffectType fromNewName(String newName) {
+    public static @Nullable PotionEffectType fromNewName(String newName) {
         try {
             // See if new name needs mapping to old
             return valueOf(newName.toUpperCase(Locale.ROOT)).get();
         } catch (IllegalArgumentException e){
-            // Otherwise just use new name directly
+            // Otherwise use new name directly
             return PotionEffectType.getByName(newName);
         }
     }
