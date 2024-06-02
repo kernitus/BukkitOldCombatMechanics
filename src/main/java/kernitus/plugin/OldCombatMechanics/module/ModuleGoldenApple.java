@@ -220,7 +220,6 @@ public class ModuleGoldenApple extends OCMModule {
     }
 
 
-
     private List<PotionEffect> getPotionEffects(String apple) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
 
@@ -248,7 +247,7 @@ public class ModuleGoldenApple extends OCMModule {
      * Get player's current golden apple cooldown
      *
      * @param playerUUID The UUID of the player to check the cooldown for.
-     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
      */
     public long getGappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
@@ -264,7 +263,7 @@ public class ModuleGoldenApple extends OCMModule {
      * Get player's current enchanted golden apple cooldown
      *
      * @param playerUUID The UUID of the player to check the cooldown for.
-     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
      */
     public long getNappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
@@ -307,17 +306,7 @@ public class ModuleGoldenApple extends OCMModule {
         }
     }
 
-    private static class Cooldown {
-        private final long normal;
-        private final long enchanted;
-        private final boolean sharedCooldown;
-
-        Cooldown(long normal, long enchanted, boolean sharedCooldown) {
-            this.normal = normal;
-            this.enchanted = enchanted;
-            this.sharedCooldown = sharedCooldown;
-        }
-
+    private record Cooldown(long normal, long enchanted, boolean sharedCooldown) {
         private long getCooldownForItem(ItemStack item) {
             return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
         }
