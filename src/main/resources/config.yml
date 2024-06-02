@@ -319,7 +319,7 @@ old-golden-apples:
     regeneration:
       duration: 600
       amplifier: 4
-    damage_resistance:
+    resistance:
       duration: 6000
       amplifier: 0
     fire_resistance:

@@ -8,6 +8,8 @@ package kernitus.plugin.OldCombatMechanics.utilities.potions;
 
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.Locale;
+
 public enum PotionEffectTypeCompat {
     RESISTANCE("DAMAGE_RESISTANCE"),
     NAUSEA("CONFUSION"),
@@ -48,7 +50,7 @@ public enum PotionEffectTypeCompat {
     public static PotionEffectType fromNewName(String newName) {
         try {
             // See if new name needs mapping to old
-            return valueOf(newName).get();
+            return valueOf(newName.toUpperCase(Locale.ROOT)).get();
         } catch (IllegalArgumentException e){
             // Otherwise just use new name directly
             return PotionEffectType.getByName(newName);
