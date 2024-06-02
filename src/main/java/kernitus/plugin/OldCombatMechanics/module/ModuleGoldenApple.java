@@ -192,22 +192,34 @@ public class ModuleGoldenApple extends OCMModule {
         }, 1L);
     }
 
-    private void applyEffects(LivingEntity target, List<PotionEffect> effects) {
-        for (PotionEffect effect : effects) {
-            final OptionalInt maxActiveAmplifier = target.getActivePotionEffects().stream()
-                    .filter(potionEffect -> potionEffect.getType() == effect.getType())
-                    .mapToInt(PotionEffect::getAmplifier)
-                    .max();
 
-            // If active effect stronger, do not apply weaker one
-            if (maxActiveAmplifier.orElse(-1) > effect.getAmplifier()) continue;
+    private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {
+        for (PotionEffect newEffect : newEffects) {
+            // Find the existing effect of the same type with the highest amplifier
+            final PotionEffect highestExistingEffect = target.getActivePotionEffects().stream()
+                    .filter(e -> e.getType() == newEffect.getType())
+                    .max(Comparator.comparingInt(PotionEffect::getAmplifier))
+                    .orElse(null);
 
-            // If active effect weaker, remove it and apply new one
-            maxActiveAmplifier.ifPresent(ignored -> target.removePotionEffect(effect.getType()));
-
-            target.addPotionEffect(effect);
+            if (highestExistingEffect != null) {
+                // If the new effect has a higher amplifier, apply it
+                if (newEffect.getAmplifier() > highestExistingEffect.getAmplifier()) {
+                    target.addPotionEffect(newEffect);
+                }
+                // If the amplifiers are the same and the new effect has a longer duration, refresh the duration
+                else if (newEffect.getAmplifier() == highestExistingEffect.getAmplifier() &&
+                        newEffect.getDuration() > highestExistingEffect.getDuration()) {
+                    target.addPotionEffect(newEffect);
+                }
+                // If the new effect has a lower amplifier or shorter/equal duration, do nothing
+            } else {
+                // If there is no existing effect of the same type, apply the new effect
+                target.addPotionEffect(newEffect);
+            }
         }
     }
+
+
 
     private List<PotionEffect> getPotionEffects(String apple) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
@@ -234,6 +246,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     /**
      * Get player's current golden apple cooldown
+     *
      * @param playerUUID The UUID of the player to check the cooldown for.
      * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
      */
@@ -249,6 +262,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     /**
      * Get player's current enchanted golden apple cooldown
+     *
      * @param playerUUID The UUID of the player to check the cooldown for.
      * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
      */
