@@ -57,7 +57,7 @@ public class ModuleOldArmourDurability extends OCMModule {
         int reduction = module().getInt("reduction");
 
         // 60 + (40 / (level + 1) ) % chance that durability is reduced (for each point of durability)
-        final int damageChance = 60 + (40 / (item.getEnchantmentLevel(Enchantment.DURABILITY) + 1));
+        final int damageChance = 60 + (40 / (item.getEnchantmentLevel(Enchantment.UNBREAKING) + 1));
         final Random random = new Random();
         final int randomInt = random.nextInt(100); // between 0 (inclusive) and 100 (exclusive)
         if (randomInt >= damageChance)

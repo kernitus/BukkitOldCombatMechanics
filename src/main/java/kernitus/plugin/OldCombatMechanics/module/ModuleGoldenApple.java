@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import com.google.common.collect.ImmutableSet;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -43,7 +44,7 @@ public class ModuleGoldenApple extends OCMModule {
             PotionEffectType.REGENERATION);
     // Napple: absorption IV, regen II, fire resistance I, resistance I
     private static final Set<PotionEffectType> nappleEffects = ImmutableSet.of(PotionEffectType.ABSORPTION,
-            PotionEffectType.REGENERATION, PotionEffectType.FIRE_RESISTANCE, PotionEffectType.DAMAGE_RESISTANCE);
+            PotionEffectType.REGENERATION, PotionEffectType.FIRE_RESISTANCE, PotionEffectTypeCompat.RESISTANCE.get());
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
 
@@ -96,7 +97,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     private void registerCrafting() {
         if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
-            if (Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).size() > 0) return;
+            if (!Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).isEmpty()) return;
             Bukkit.addRecipe(enchantedAppleRecipe);
             debug("Added napple recipe");
         }
@@ -216,7 +217,7 @@ public class ModuleGoldenApple extends OCMModule {
             final int duration = sect.getInt(key + ".duration");
             final int amplifier = sect.getInt(key + ".amplifier");
 
-            final PotionEffectType type = PotionEffectType.getByName(key);
+            final PotionEffectType type = PotionEffectTypeCompat.valueOf(key).get();
             Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
 
             final PotionEffect fx = new PotionEffect(type, duration, amplifier);

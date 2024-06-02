@@ -6,6 +6,7 @@
 
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
@@ -17,7 +18,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -111,8 +111,8 @@ public class DefenceUtils {
             // Apply resistance effect
             if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE) &&
                     damageCause != EntityDamageEvent.DamageCause.VOID &&
-                    damagedEntity.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)) {
-                final int level = damagedEntity.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
+                    damagedEntity.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())) {
+                final int level = damagedEntity.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get()).getAmplifier() + 1;
                 // Make sure we don't go over 100% protection
                 final double resistanceReductionFactor = Math.min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL);
                 final double resistanceReduction = -resistanceReductionFactor * currentDamage;
@@ -163,8 +163,8 @@ public class DefenceUtils {
         double finalDamage = baseDamage - (ARMOUR_IGNORING_CAUSES.contains(damageCause) ? 0 : (baseDamage * reductionFactor));
 
         // Calculate resistance
-        if (defender.hasPotionEffect(PotionEffectType.DAMAGE_RESISTANCE)) {
-            int resistanceLevel = defender.getPotionEffect(PotionEffectType.DAMAGE_RESISTANCE).getAmplifier() + 1;
+        if (defender.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())) {
+            int resistanceLevel = defender.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get()).getAmplifier() + 1;
             finalDamage *= 1.0 - (resistanceLevel * 0.2);
         }
 
@@ -261,7 +261,7 @@ public class DefenceUtils {
 
             return damageCauses;
         },
-                0.75, Enchantment.PROTECTION_ENVIRONMENTAL),
+                0.75, Enchantment.PROTECTION),
         FIRE_PROTECTION(() -> {
             EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
                     EntityDamageEvent.DamageCause.FIRE,
@@ -274,17 +274,17 @@ public class DefenceUtils {
             }
 
             return damageCauses;
-        }, 1.25, Enchantment.PROTECTION_FIRE),
+        }, 1.25, Enchantment.FIRE_PROTECTION),
         BLAST_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
                 EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
-        ), 1.5, Enchantment.PROTECTION_EXPLOSIONS),
+        ), 1.5, Enchantment.BLAST_PROTECTION),
         PROJECTILE_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.PROJECTILE
-        ), 1.5, Enchantment.PROTECTION_PROJECTILE),
+        ), 1.5, Enchantment.PROJECTILE_PROTECTION),
         FALL_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.FALL
-        ), 2.5, Enchantment.PROTECTION_FALL);
+        ), 2.5, Enchantment.FEATHER_FALLING);
 
         private final Set<EntityDamageEvent.DamageCause> protection;
         private final double typeModifier;

@@ -53,7 +53,7 @@ public class ModuleFishingKnockback extends OCMModule {
         final Entity hookEntity = e.getEntity();
         final World world = hookEntity.getWorld();
 
-        if (e.getEntityType() != EntityType.FISHING_HOOK) return;
+        if (e.getEntityType() != EntityType.FISHING_BOBBER) return;
         final FishHook hook = (FishHook) hookEntity;
 
         if(!(hook.getShooter() instanceof Player)) return;

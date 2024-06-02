@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -115,7 +116,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
 
         mobEnchantmentsDamage = MobDamage.getEntityEnchantmentsDamage(damageeType, weapon);
-        sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL);
+        sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.SHARPNESS);
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
         // Scale enchantment damage by attack cooldown
@@ -152,7 +153,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         }
 
         // amplifier 0 = Strength I    amplifier 1 = Strength II
-        strengthLevel = PotionEffects.get(livingDamager, PotionEffectType.INCREASE_DAMAGE)
+        strengthLevel = PotionEffects.get(livingDamager, PotionEffectTypeCompat.STRENGTH.get())
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1) + 1;
 
