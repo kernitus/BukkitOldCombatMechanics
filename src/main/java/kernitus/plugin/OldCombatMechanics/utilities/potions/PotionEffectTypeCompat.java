@@ -40,13 +40,18 @@ public enum PotionEffectTypeCompat {
         return potionEffectType;
     }
 
-    // Static method to get the custom enum from the Bukkit PotionEffectType
-    public static PotionEffectTypeCompat fromBukkit(PotionEffectType bukkitType) {
-        for (PotionEffectTypeCompat compatType : values()) {
-            if (compatType.get().equals(bukkitType)) {
-                return compatType;
-            }
+    /**
+     * Gets correct PotionEffectType for currently-running server version givenn new name.
+     * @param newName The PotionEffectType >=1.20.6 name
+     * @return The PotionEffectType for the currently-running server version, if found
+     */
+    public static PotionEffectType fromNewName(String newName) {
+        try {
+            // See if new name needs mapping to old
+            return valueOf(newName).get();
+        } catch (IllegalArgumentException e){
+            // Otherwise just use new name directly
+            return PotionEffectType.getByName(newName);
         }
-        throw new IllegalArgumentException("No matching PotionEffectTypeCompat for " + bukkitType.getName());
     }
 }

@@ -188,7 +188,7 @@ public class ModuleOldPotionEffects extends OCMModule {
     private int getPotionDuration(PotionMeta potionMeta, boolean splash) {
         final PotionType potionType = getPotionType(potionMeta);
 
-        debug("POTIONM TYPE: " + potionType);
+        debug("POTION TYPE: " + potionType);
 
         // We want the old potion type because this is how it's stored in the map
         final PotionType oldPotionType = getOldPotionType(potionType);

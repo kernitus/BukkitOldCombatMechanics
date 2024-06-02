@@ -217,7 +217,7 @@ public class ModuleGoldenApple extends OCMModule {
             final int duration = sect.getInt(key + ".duration");
             final int amplifier = sect.getInt(key + ".amplifier");
 
-            final PotionEffectType type = PotionEffectTypeCompat.valueOf(key).get();
+            final PotionEffectType type = PotionEffectTypeCompat.fromNewName(key);
             Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
 
             final PotionEffect fx = new PotionEffect(type, duration, amplifier);
