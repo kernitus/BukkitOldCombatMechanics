@@ -10,13 +10,13 @@
 </p>
 
 ## by kernitus and Rayzr522
-A performant Spigot plugin to configure combat-related mechanics from 1.9 onwards.
+A performant Spigot/Paper plugin to configure combat-related mechanics from 1.9 onwards.
 
 ## Modesets
-Modesets can be configured for your players to choose from. Each modeset can have any combination of the below features enabled, for example to replicate 1.9 vs 1.8 combat. Players can switch between modesets via command, choosing from the modesets allowed for the world they are in.
+Modesets can be configured for your players to choose from. Each modeset can have any combination of the below features enabled, with examples provided to replicate 1.9 vs 1.8 combat. Players can switch between modesets via command, choosing from the modesets allowed for the world they are in.
 
 ## Configurable Features
-Features are grouped in `module`s as listed below and can be individually configured and disabled. Modules that are fully disabled will have no impact on server performance.
+Features are grouped in `module`s as listed below, and can be individually configured and disabled. Modules that are fully disabled will have no impact on server performance.
 
 #### Combat
 - Attack cooldown
@@ -24,7 +24,6 @@ Features are grouped in `module`s as listed below and can be individually config
 - Tool damage
 - Critical hits
 - Player regen
-- Player collisions
 
 #### Armour
 - Armour strength
@@ -61,7 +60,6 @@ Features are grouped in `module`s as listed below and can be individually config
 ## Plugin Compatibility
 Most plugins will work fine with OCM. Some had to be explicitly supported. These include:
 - Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
-- Spartan anticheat (to avoid triggerring anticheat on regen)
 
 ## Contributions
 
