@@ -46,7 +46,7 @@ public enum PotionEffectTypeCompat {
     /**
      * Gets correct PotionEffectType for currently-running server version given new name.
      * @param newName The PotionEffectType >=1.20.6 name
-     * @return The PotionEffectType for the currently-running server version, if found
+     * @return The PotionEffectType for the currently-running server version, or null if not found.
      */
     public static @Nullable PotionEffectType fromNewName(String newName) {
         try {

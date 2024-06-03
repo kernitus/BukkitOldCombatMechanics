@@ -6,9 +6,9 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -48,7 +48,7 @@ public class ModuleOldArmourDurability extends OCMModule {
             final List<ItemStack> armour = explosionDamaged.get(uuid);
             // ItemStack.equals() checks material, durability and quantity to make sure nothing changed in the meantime
             // We're checking all the pieces this way just in case they're wearing two helmets or something strange
-            final List<ItemStack> matchedPieces = armour.stream().filter(piece -> piece.equals(item)).collect(Collectors.toList());
+            final List<ItemStack> matchedPieces = armour.stream().filter(piece -> piece.equals(item)).toList();
             armour.removeAll(matchedPieces);
             debug("Item matched explosion, ignoring...", player);
             if (!matchedPieces.isEmpty()) return;
@@ -57,7 +57,7 @@ public class ModuleOldArmourDurability extends OCMModule {
         int reduction = module().getInt("reduction");
 
         // 60 + (40 / (level + 1) ) % chance that durability is reduced (for each point of durability)
-        final int damageChance = 60 + (40 / (item.getEnchantmentLevel(Enchantment.UNBREAKING) + 1));
+        final int damageChance = 60 + (40 / (item.getEnchantmentLevel(EnchantmentCompat.UNBREAKING.get()) + 1));
         final Random random = new Random();
         final int randomInt = random.nextInt(100); // between 0 (inclusive) and 100 (exclusive)
         if (randomInt >= damageChance)

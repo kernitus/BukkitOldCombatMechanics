@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import com.google.common.collect.ImmutableMap;
+import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
@@ -15,31 +16,32 @@ import java.util.Map;
 public class MobDamage {
 
     private static final Map<EntityType, Enchantment> enchants;
+    private static final Enchantment SMITE = EnchantmentCompat.SMITE.get();
+    private static final Enchantment BANE_OF_ARTHROPODS = EnchantmentCompat.BANE_OF_ARTHROPODS.get();
 
     static {
         Map<String, Enchantment> allMobs = ImmutableMap.<String, Enchantment>builder()
-
                 // Undead (https://minecraft.gamepedia.com/Undead)
-                .put("SKELETON", Enchantment.SMITE)
-                .put("ZOMBIE", Enchantment.SMITE)
-                .put("WITHER", Enchantment.SMITE)
-                .put("WITHER_SKELETON", Enchantment.SMITE)
-                .put("ZOMBIFIED_PIGLIN", Enchantment.SMITE)
-                .put("SKELETON_HORSE", Enchantment.SMITE)
-                .put("STRAY", Enchantment.SMITE)
-                .put("HUSK", Enchantment.SMITE)
-                .put("PHANTOM", Enchantment.SMITE)
-                .put("DROWNED", Enchantment.SMITE)
-                .put("ZOGLIN", Enchantment.SMITE)
-                .put("ZOMBIE_HORSE", Enchantment.SMITE)
-                .put("ZOMBIE_VILLAGER", Enchantment.SMITE)
+                .put("SKELETON", SMITE)
+                .put("ZOMBIE", SMITE)
+                .put("WITHER", SMITE)
+                .put("WITHER_SKELETON", SMITE)
+                .put("ZOMBIFIED_PIGLIN", SMITE)
+                .put("SKELETON_HORSE", SMITE)
+                .put("STRAY", SMITE)
+                .put("HUSK", SMITE)
+                .put("PHANTOM", SMITE)
+                .put("DROWNED", SMITE)
+                .put("ZOGLIN", SMITE)
+                .put("ZOMBIE_HORSE", SMITE)
+                .put("ZOMBIE_VILLAGER", SMITE)
 
                 // Arthropods (https://minecraft.gamepedia.com/Arthropod)
-                .put("SPIDER", Enchantment.BANE_OF_ARTHROPODS)
-                .put("CAVE_SPIDER", Enchantment.BANE_OF_ARTHROPODS)
-                .put("BEE", Enchantment.BANE_OF_ARTHROPODS)
-                .put("SILVERFISH", Enchantment.BANE_OF_ARTHROPODS)
-                .put("ENDERMITE", Enchantment.BANE_OF_ARTHROPODS)
+                .put("SPIDER", BANE_OF_ARTHROPODS)
+                .put("CAVE_SPIDER", BANE_OF_ARTHROPODS)
+                .put("BEE", BANE_OF_ARTHROPODS)
+                .put("SILVERFISH", BANE_OF_ARTHROPODS)
+                .put("ENDERMITE", BANE_OF_ARTHROPODS)
 
                 .build();
 
@@ -67,7 +69,7 @@ public class MobDamage {
     public static double getEntityEnchantmentsDamage(EntityType entity, ItemStack item) {
         final Enchantment enchantment = enchants.get(entity);
 
-        if (enchantment == null || enchantment != Enchantment.SMITE || enchantment != Enchantment.BANE_OF_ARTHROPODS)
+        if (enchantment == null || enchantment != SMITE || enchantment != BANE_OF_ARTHROPODS)
             return 0;
 
         return 2.5 * item.getEnchantmentLevel(enchantment);

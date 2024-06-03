@@ -10,6 +10,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeComp
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
+import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -261,7 +262,7 @@ public class DefenceUtils {
 
             return damageCauses;
         },
-                0.75, Enchantment.PROTECTION),
+                0.75, EnchantmentCompat.PROTECTION.get()),
         FIRE_PROTECTION(() -> {
             EnumSet<EntityDamageEvent.DamageCause> damageCauses = EnumSet.of(
                     EntityDamageEvent.DamageCause.FIRE,
@@ -274,17 +275,17 @@ public class DefenceUtils {
             }
 
             return damageCauses;
-        }, 1.25, Enchantment.FIRE_PROTECTION),
+        }, 1.25, EnchantmentCompat.FIRE_PROTECTION.get()),
         BLAST_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
                 EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
-        ), 1.5, Enchantment.BLAST_PROTECTION),
+        ), 1.5, EnchantmentCompat.BLAST_PROTECTION.get()),
         PROJECTILE_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.PROJECTILE
-        ), 1.5, Enchantment.PROJECTILE_PROTECTION),
+        ), 1.5, EnchantmentCompat.PROJECTILE_PROTECTION.get()),
         FALL_PROTECTION(() -> EnumSet.of(
                 EntityDamageEvent.DamageCause.FALL
-        ), 2.5, Enchantment.FEATHER_FALLING);
+        ), 2.5, EnchantmentCompat.FEATHER_FALLING.get());
 
         private final Set<EntityDamageEvent.DamageCause> protection;
         private final double typeModifier;

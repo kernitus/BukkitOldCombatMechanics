@@ -7,8 +7,8 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
+import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -116,7 +116,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
 
         mobEnchantmentsDamage = MobDamage.getEntityEnchantmentsDamage(damageeType, weapon);
-        sharpnessLevel = weapon.getEnchantmentLevel(Enchantment.SHARPNESS);
+        sharpnessLevel = weapon.getEnchantmentLevel(EnchantmentCompat.SHARPNESS.get());
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
         // Scale enchantment damage by attack cooldown
