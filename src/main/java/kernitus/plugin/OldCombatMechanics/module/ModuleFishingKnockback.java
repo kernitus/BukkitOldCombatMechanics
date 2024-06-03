@@ -49,27 +49,33 @@ public class ModuleFishingKnockback extends OCMModule {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onRodLand(ProjectileHitEvent e) {
-        final Entity hookEntity = e.getEntity();
+    public void onRodLand(ProjectileHitEvent event) {
+        final Entity hookEntity = event.getEntity();
         final World world = hookEntity.getWorld();
 
-        if (e.getEntityType() != EntityType.FISHING_BOBBER) return;
+        // FISHING_HOOK -> FISHING_BOBBER in >=1.20.5
+        EntityType fishingBobberType;
+        try {
+            fishingBobberType = EntityType.FISHING_BOBBER;
+        } catch (NoSuchFieldError e) {
+            fishingBobberType = EntityType.valueOf("FISHING_HOOK");
+        }
+        if (event.getEntityType() != fishingBobberType) return;
+
         final FishHook hook = (FishHook) hookEntity;
 
-        if(!(hook.getShooter() instanceof Player)) return;
-        final Player rodder = (Player) hook.getShooter();
+        if (!(hook.getShooter() instanceof Player rodder)) return;
         if (!isEnabled(rodder)) return;
 
-        final Entity hitEntity = getHitEntityFunction.apply(e);
+        final Entity hitEntity = getHitEntityFunction.apply(event);
 
         if (hitEntity == null) return;  // If no entity was hit
-        if (!(hitEntity instanceof LivingEntity)) return;
+        if (!(hitEntity instanceof LivingEntity livingEntity)) return;
         if (!knockbackNonPlayerEntities && !(hitEntity instanceof Player)) return;
 
         // Do not move Citizens NPCs
         // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
         if (hitEntity.hasMetadata("NPC")) return;
-
 
 
         if (!knockbackNonPlayerEntities) {
@@ -81,8 +87,6 @@ public class ModuleFishingKnockback extends OCMModule {
 
             if (player.getGameMode() == GameMode.CREATIVE) return;
         }
-
-        final LivingEntity livingEntity = (LivingEntity) hitEntity;
 
         // Check if cooldown time has elapsed
         if (livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f) return;
