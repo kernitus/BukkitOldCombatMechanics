@@ -34,9 +34,6 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/")
     // Auth library from Minecraft
     maven("https://libraries.minecraft.net/")
-    // Spartan API
-    maven("https://repo.crazycrew.us/api")
-    maven("https://repo.minebench.de/")
     // Protocollib
     maven("https://repo.dmulloy2.net/repository/public/")
 }
@@ -47,8 +44,6 @@ dependencies {
     compileOnly("io.netty:netty-all:4.1.106.Final")
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.11.5")
-    // Spartan API
-    compileOnly("me.vagdedes.spartan:SpartanAPI:9.0")
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.0.1")
     // Spigot
