@@ -67,7 +67,7 @@ If you are interested in contributing, please [check this page first](.github/CO
 <hr/>
 
 <a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
-    <img src="res/papermc.png" alt="Paper" height="100">
+    <img src="res/paper.png" alt="Paper" height="100">
 </a>
 <a href="https://www.spigotmc.org/resources/19510/">
     <img src="res/spigot.png" alt="Spigot" height="100">
