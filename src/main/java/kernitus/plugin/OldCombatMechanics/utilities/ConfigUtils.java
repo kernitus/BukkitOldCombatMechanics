@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities;
 
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionTypeCompat;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -62,28 +63,26 @@ public class ConfigUtils {
      * @param section The section from which to load the duration values
      * @return HashMap of {@link String} and {@link PotionDurations}
      */
-    public static HashMap<String, PotionDurations> loadPotionDurationsList(ConfigurationSection section) {
-        Objects.requireNonNull(section, "section cannot be null!");
+    public static HashMap<PotionTypeCompat, PotionDurations> loadPotionDurationsList(ConfigurationSection section) {
+        Objects.requireNonNull(section, "potion durations section cannot be null!");
 
-        final HashMap<String, PotionDurations> durationsHashMap = new HashMap<>();
+        final HashMap<PotionTypeCompat, PotionDurations> durationsHashMap = new HashMap<>();
         final ConfigurationSection durationsSection = section.getConfigurationSection("potion-durations");
 
         final ConfigurationSection drinkableSection = durationsSection.getConfigurationSection("drinkable");
         final ConfigurationSection splashSection = durationsSection.getConfigurationSection("splash");
 
-        for (String potionTypeName : drinkableSection.getKeys(false)) {
-
+        for (String newPotionTypeName : drinkableSection.getKeys(false)) {
             try {
                 // Get durations in seconds and convert to ticks
-                final int drinkableDuration = drinkableSection.getInt(potionTypeName) * 20;
-                final int splashDuration = splashSection.getInt(potionTypeName) * 20;
+                final int drinkableDuration = drinkableSection.getInt(newPotionTypeName) * 20;
+                final int splashDuration = splashSection.getInt(newPotionTypeName) * 20;
+                final PotionTypeCompat potionTypeCompat = new PotionTypeCompat(newPotionTypeName);
 
-                Messenger.debug("potiontype " + potionTypeName + " DRINK: " + drinkableDuration + " splash: " + splashDuration);
-
-                durationsHashMap.put(potionTypeName.toUpperCase(Locale.ROOT), new PotionDurations(drinkableDuration, splashDuration));
+                durationsHashMap.put(potionTypeCompat, new PotionDurations(drinkableDuration, splashDuration));
             } catch (IllegalArgumentException e) {
                 // In case the potion doesn't exist in the version running on the server
-                Messenger.debug("Skipping loading " + potionTypeName + " potion");
+                Messenger.debug("Skipping loading " + newPotionTypeName + " potion");
             }
         }
 

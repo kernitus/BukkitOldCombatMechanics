@@ -26,7 +26,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,33 +35,27 @@ import java.util.Set;
  * Allows configurable potion effect durations.
  */
 public class ModuleOldPotionEffects extends OCMModule {
-    private static final Set<PotionType> EXCLUDED_POTION_TYPES = EnumSet.of(
-            // This only includes 1.9 potions, others are added later for compatibility
+    private static final Set<PotionTypeCompat> EXCLUDED_POTION_TYPES = Set.of(
             // Base potions without any effect
-            PotionType.AWKWARD, PotionType.MUNDANE, PotionType.THICK, PotionType.WATER
+            new PotionTypeCompat("AWKWARD"),
+            new PotionTypeCompat("MUNDANE"),
+            new PotionTypeCompat("THICK"),
+            new PotionTypeCompat("WATER"),
+            // Instant potions with no further effects
+            new PotionTypeCompat("HARMING"),
+            new PotionTypeCompat("STRONG_HARMING"),
+            new PotionTypeCompat("HEALING"),
+            new PotionTypeCompat("STRONG_HEALING"),
+            // This type doesn't exist anymore >1.20.5, is specially handled in compat class
+            new PotionTypeCompat("UNCRAFTABLE")
     );
 
-    private Map<String, PotionDurations> durations; // Map new potion type name to durations
+    private Map<PotionTypeCompat, PotionDurations> durations;
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
 
-        // This type doesn't exist anymore >1.20.5
-        tryToAddPotionType("UNCRAFTABLE");
-
-        // Instant potions have no duration that can be modified
-        EXCLUDED_POTION_TYPES.add(PotionTypeCompat.HARMING.getType());
-        EXCLUDED_POTION_TYPES.add(PotionTypeCompat.HEALING.getType());
-
         reload();
-    }
-
-    private void tryToAddPotionType(String potionTypeName) {
-        try {
-            EXCLUDED_POTION_TYPES.add(PotionType.valueOf(potionTypeName));
-        } catch (IllegalArgumentException | NoSuchFieldError e) {
-            debug("Skipping excluding potion " + potionTypeName);
-        }
     }
 
     @Override
@@ -97,7 +90,7 @@ public class ModuleOldPotionEffects extends OCMModule {
     }
 
     // We change the potion on-the-fly just as it's thrown to be able to change the effect
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPotionThrow(PlayerInteractEvent event) {
         final Player player = event.getPlayer();
         if (!isEnabled(player)) return;
@@ -122,33 +115,33 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
-        final PotionTypeCompat potionTypeCompat = PotionTypeCompat.getPotionTypeCompat(potionMeta);
-        final PotionType potionType = potionTypeCompat.getType();
+        final PotionTypeCompat potionTypeCompat = PotionTypeCompat.fromPotionMeta(potionMeta);
 
-        if (EXCLUDED_POTION_TYPES.contains(potionType)) return;
+        if (EXCLUDED_POTION_TYPES.contains(potionTypeCompat)) return;
 
         final Integer duration = getPotionDuration(potionTypeCompat, splash);
-        if(duration == null){
+        if (duration == null) {
             debug("Potion type " + potionTypeCompat.getNewName() + " not found in config, leaving as is...");
             return;
         }
 
         int amplifier = potionTypeCompat.isStrong() ? 1 : 0;
 
-        if (potionType == PotionType.WEAKNESS) {
+        if (potionTypeCompat.equals(new PotionTypeCompat("WEAKNESS"))) {
             // Set level to 0 so that it doesn't prevent the EntityDamageByEntityEvent from being called
             // due to damage being lower than 0 as some 1.9 weapons deal less damage
             amplifier = -1;
         }
 
         List<PotionEffectType> potionEffects;
+        final PotionType potionType = potionTypeCompat.getType();
         try {
             potionEffects = potionType.getPotionEffects().stream().map(PotionEffect::getType).toList();
         } catch (NoSuchMethodError e) {
             potionEffects = List.of(potionType.getEffectType());
         }
 
-        for(PotionEffectType effectType : potionEffects) {
+        for (PotionEffectType effectType : potionEffects) {
             potionMeta.addCustomEffect(new PotionEffect(effectType, duration, amplifier), false);
         }
 
@@ -188,8 +181,8 @@ public class ModuleOldPotionEffects extends OCMModule {
     }
 
     private Integer getPotionDuration(PotionTypeCompat potionTypeCompat, boolean splash) {
-        final PotionDurations potionDurations = durations.get(potionTypeCompat.getNewName());
-        if(potionDurations == null) return null;
+        final PotionDurations potionDurations = durations.get(potionTypeCompat);
+        if (potionDurations == null) return null;
         final int duration = splash ? potionDurations.splash() : potionDurations.drinkable();
 
         debug("Potion type: " + potionTypeCompat.getNewName() + " Duration: " + duration + " ticks");
