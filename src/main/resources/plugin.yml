@@ -8,7 +8,7 @@ authors: [kernitus, Rayzr522]
 description: Reverts to pre-1.9 combat mechanics
 website: https://github.com/kernitus/BukkitOldCombatMechanics
 load: POSTWORLD
-softdepend: [ProtocolLib, PlaceholderAPI, Spartan]
+softdepend: [ProtocolLib, PlaceholderAPI]
 api-version: 1.13
 
 commands:

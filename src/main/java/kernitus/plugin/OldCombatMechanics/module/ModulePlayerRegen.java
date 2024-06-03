@@ -27,7 +27,6 @@ import java.util.WeakHashMap;
 public class ModulePlayerRegen extends OCMModule {
 
     private final Map<UUID, Long> healTimes = new WeakHashMap<>();
-    private boolean spartanInstalled;
 
     public ModulePlayerRegen(OCMMain plugin) {
         super(plugin, "old-player-regen");
