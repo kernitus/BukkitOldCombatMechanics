@@ -69,6 +69,8 @@ public class Messenger {
      * @param args    The args to format the message with.
      */
     private static void sendWithPrefix(CommandSender sender, String message, String prefix, Object... args) {
+        // Prevents sending of individual empty messages, allowing for selective message disabling.
+        if (message.isEmpty()) return;
         sendNoPrefix(sender, prefix + " " + message, args);
     }
 
