@@ -29,10 +29,13 @@ public class Reflector {
 
             majorVersion = Integer.parseInt(splitVersion[0]);
             minorVersion = Integer.parseInt(splitVersion[1]);
-            patchVersion = Integer.parseInt(splitVersion[2]);
+            if(splitVersion.length > 2) {
+                patchVersion = Integer.parseInt(splitVersion[2]);
+            } else {
+                patchVersion = 0;
+            }
         } catch (Exception e) {
-            System.err.println("Failed to load Reflector");
-            e.printStackTrace();
+            System.err.println("Failed to load Reflector: " + e.getMessage());
         }
     }
 
