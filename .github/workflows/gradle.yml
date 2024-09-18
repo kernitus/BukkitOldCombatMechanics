@@ -37,6 +37,7 @@ jobs:
         path: build/libs/OldCombatMechanics.jar
 
     - name: Upload build/libs to Cloudflare R2
+      if: github.ref == 'refs/heads/master'
       uses: ryand56/r2-upload-action@latest
       with:
         r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
