@@ -45,4 +45,4 @@ jobs:
         r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         r2-bucket: ${{ secrets.R2_BUCKET }}
         source-dir: build/libs
-        destination-dir: / # Upload to the root of the R2 bucket
+        destination-dir: ./ # Upload to the root of the R2 bucket
