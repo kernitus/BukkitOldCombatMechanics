@@ -7,7 +7,7 @@ on:
   pull_request:
     branches-ignore:
       - 'ingametesting'
-      
+
 jobs:
   build:
 
@@ -35,3 +35,13 @@ jobs:
       with:
         name: OldCombatMechanics
         path: build/libs/OldCombatMechanics.jar
+
+    - name: Upload build/libs to Cloudflare R2
+      uses: ryand56/r2-upload-action@latest
+      with:
+        r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+        r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+        r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        r2-bucket: ${{ secrets.R2_BUCKET }}
+        source-dir: build/libs
+        destination-dir: / # Upload to the root of the R2 bucket
