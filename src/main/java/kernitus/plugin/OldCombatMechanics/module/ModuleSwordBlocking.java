@@ -83,6 +83,8 @@ public class ModuleSwordBlocking extends OCMModule {
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
         if (e.isBlockInHand()){
             if(lastInteractedBlocks != null)
+                if (e.getClickedBlock() == null) return;
+
                 lastInteractedBlocks.put(e.getClickedBlock().getLocation(), player.getUniqueId());
             return; // Handle failed block place in separate listener
         }
