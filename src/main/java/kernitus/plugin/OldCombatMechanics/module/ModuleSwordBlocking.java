@@ -82,10 +82,12 @@ public class ModuleSwordBlocking extends OCMModule {
         // TODO right-clicking on a mob also only fires one hand
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
         if (e.isBlockInHand()){
-            if(lastInteractedBlocks != null)
-                if (e.getClickedBlock() == null) return;
+            if(lastInteractedBlocks != null) {
+                Block targetBlock = player.getTargetBlock(null, 5);
+                if (targetBlock == null) return; 
 
-                lastInteractedBlocks.put(e.getClickedBlock().getLocation(), player.getUniqueId());
+                lastInteractedBlocks.put(targetBlock.getLocation(), player.getUniqueId());
+            }
             return; // Handle failed block place in separate listener
         }
 
