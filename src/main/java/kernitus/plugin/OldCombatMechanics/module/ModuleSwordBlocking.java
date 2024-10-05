@@ -185,9 +185,6 @@ public class ModuleSwordBlocking extends OCMModule {
         // If they are still blocking with the shield, postpone restoring
         if (!areItemsStored(id)) return;
 
-        plugin.getLogger().info("Restoring items for player " + p.getName() + ": Current offhand: " +
-                p.getInventory().getItemInOffHand() + ", Stored item: " + storedItems.get(id));
-
         if (isPlayerBlocking(p)) scheduleRestore(p);
         else p.getInventory().setItemInOffHand(storedItems.remove(id));
     }
