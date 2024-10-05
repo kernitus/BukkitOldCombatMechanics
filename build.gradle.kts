@@ -62,7 +62,7 @@ dependencies {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.0.3"
+version = "2.0.4-beta"
 description = "OldCombatMechanics"
 
 java {
