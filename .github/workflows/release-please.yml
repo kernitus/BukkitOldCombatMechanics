@@ -24,5 +24,6 @@ jobs:
           package-name: 'OldCombatMechanics'
           version-file: 'build.gradle'
           bump-minor-pre-major: true
+          first-release: true
           extraFiles: |
               build.gradle.kts
