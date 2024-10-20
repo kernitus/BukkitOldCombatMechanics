@@ -11,7 +11,7 @@
       ]
     }
   },
-    "changelog-types": [
+  "changelog-sections": [
     {"type": "feat", "section": "Features"},
     {"type": "fix", "section": "Bug Fixes"},
     {"type": "docs", "section": "Documentation"},
