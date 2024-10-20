@@ -1,0 +1,28 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: release-please
+        uses: google-github-actions/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          release-type: java
+          package-name: 'OldCombatMechanics'
+          version-file: 'build.gradle'
+          bump-minor-pre-major: true
+          extraFiles: |
+              build.gradle.kts
