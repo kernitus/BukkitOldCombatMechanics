@@ -132,7 +132,7 @@ hangarPublish {
                 val versions: List<String> = (property("gameVersion") as String)
                         .split(",")
                         .map { it.trim() }
-                platformVersions.set(gameVersions)
+                platformVersions.set(versions)
             }
         }
     }
