@@ -8,6 +8,11 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
 import java.io.ByteArrayOutputStream
 
+val paperVersion: List<String> = (property("gameVersions") as String)
+        .split(",")
+        .map { it.trim() }
+
+
 plugins {
     `java-library`
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -160,12 +165,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-
-                val versions: List<String> = (property("gameVersion") as String)
-                        .split(",")
-                        .map { it.trim() }
-
-                platformVersions.set(versions)
+                platformVersions.set(paperVersion)
             }
         }
     }
