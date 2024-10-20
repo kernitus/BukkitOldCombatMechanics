@@ -160,7 +160,7 @@ hangarPublish {
         version.set(suffixedVersion)
         channel.set(if (isRelease) "Release" else "Snapshot")
         id.set("OldCombatMechanics")
-        apiKey.set(System.getenv("HANGAR_TOKEN"))
+        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
         changelog.set(System.getenv("HANGAR_CHANGELOG") ?: changelogContent)
         platforms {
             register(Platforms.PAPER) {
