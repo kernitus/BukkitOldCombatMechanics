@@ -2,14 +2,7 @@
   "release-type": "java",
   "package-name": "OldCombatMechanics",
   "bump-minor-pre-major": true,
-  "extra-files": [
-    {
-      "path": "build.gradle.kts",
-      "updater": "regex",
-      "regex": "version = \"([^\"]+)\"",
-      "version-template": "version = \"${version}\""
-    }
-  ],
+  "extra-files": ["build.gradle.kts"],
   "changelog-path": "CHANGELOG.md",
   "include-component-in-tag": false,
   "changelog-types": [
