@@ -116,23 +116,54 @@ tasks.assemble {
     dependsOn("shadowJar")
 }
 
+// Function to execute Git commands
+fun executeGitCommand(vararg command: String): String {
+    val byteOut = ByteArrayOutputStream()
+    project.exec {
+        commandLine = listOf("git", *command)
+        standardOutput = byteOut
+    }
+    return byteOut.toString(Charsets.UTF_8.name()).trim()
+}
+
+// Function to get the latest commit message
+fun latestCommitMessage(): String {
+    return executeGitCommand("log", "-1", "--pretty=%B")
+}
+
+// Function to get the short commit hash
+fun getShortCommitHash(): String {
+    return executeGitCommand("rev-parse", "--short", "HEAD")
+}
+
+val versionString: String = project.version as String
+val isRelease: Boolean = !versionString.contains('-')
+
+val suffixedVersion: String = if (isRelease) {
+    versionString
+} else {
+    // Append the short commit hash to the version for snapshots
+    "$versionString+${getShortCommitHash()}"
+}
+
+// Use the latest commit message for the changelog
+val changelogContent: String = latestCommitMessage()
+
 hangarPublish {
     publications.register("plugin") {
-        version.set(project.version as String)
-        channel.set("Release")
+        version.set(suffixedVersion)
+        channel.set(if (isRelease) "Release" else "Snapshot")
         id.set("OldCombatMechanics")
-        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
-        changelog.set(System.getenv("HANGAR_CHANGELOG") ?: "No changelog provided")
-
+        apiKey.set(System.getenv("HANGAR_TOKEN"))
+        changelog.set(System.getenv("HANGAR_CHANGELOG") ?: changelogContent)
         platforms {
             register(Platforms.PAPER) {
-                // Use shadowJar output
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
 
-                // Set platform versions from gradle.properties file
                 val versions: List<String> = (property("gameVersion") as String)
                         .split(",")
                         .map { it.trim() }
+
                 platformVersions.set(versions)
             }
         }
