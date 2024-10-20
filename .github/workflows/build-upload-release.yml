@@ -34,6 +34,20 @@ jobs:
         else
           ./gradlew clean build
         fi
+
+    - name: Upload Artifact to GitHub Release
+      if: ${{ github.event_name == 'release' }}
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./build/libs/OldCombatMechanics.jar
+        asset_name: OldCombatMechanics-${{ github.event.release.tag_name }}.jar
+        asset_content_type: application/java-archive
+
+    - name: Read game versions from gradle.properties
+      run: |
+        GAME_VERSIONS=$(grep ^gameVersions gradle.properties | cut -d'=' -f2-)
+        echo "GAME_VERSIONS=$GAME_VERSIONS" >> $GITHUB_ENV
         
     - name: Upload to dev.bukkit.org
       if: ${{ github.event_name == 'release' }}
@@ -44,19 +58,14 @@ jobs:
         changelog: ${{ github.event.release.body }}
         changelog_type: markdown
         display_name: ${{ github.event.release.tag_name }}
-        game_versions: >
-          1.21,1.20.6,1.20.5,1.20.4,1.20.3,1.20.2,1.20.1,1.20,
-          1.19.4,1.19.3,1.19.2,1.19.1,1.19,
-          1.18.2,1.18.1,1.18,1.17,1.16,1.15,
-          1.14,1.13,1.12,1.11,1.10,1.9
+        game_versions: ${{ env.GAME_VERSIONS }}
         release_type: 'release'
         file_path: './build/libs/OldCombatMechanics.jar'
 
-    - name: Upload Artifact to GitHub Release
-      if: ${{ github.event_name == 'release' }}
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./build/libs/OldCombatMechanics.jar
-        asset_name: OldCombatMechanics-${{ github.event.release.tag_name }}.jar
-        asset_content_type: application/java-archive
+
+    - name: Publish to Hangar
+      env:
+        HANGAR_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+        HANGAR_CHANGELOG: ${{ github.event.release.body }}
+      run: ./gradlew build publishPluginPublicationToHangar --stacktrace
+

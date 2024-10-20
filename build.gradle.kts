@@ -12,6 +12,7 @@ plugins {
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
     idea
+    id("io.papermc.hangar-publish-plugin") version "0.1.2"
 }
 
 // Make sure javadocs are available to IDE
@@ -112,4 +113,27 @@ tasks.assemble {
     // For ingametesting
     //dependsOn("reobfJar")
     dependsOn("shadowJar")
+}
+
+hangarPublish {
+    publications.register("plugin") {
+        version.set(project.version as String)
+        channel.set("Release")
+        id.set("OldCombatMechanics")
+        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
+        changelog.set(System.getenv("HANGAR_CHANGELOG") ?: "No changelog provided")
+
+        platforms {
+            register(Platforms.PAPER) {
+                // Use shadowJar output
+                jar.set(tasks.shadowJar.flatMap { it.archiveFile })
+
+                // Set platform versions from gradle.properties file
+                val versions: List<String> = (property("gameVersion") as String)
+                        .split(",")
+                        .map { it.trim() }
+                platformVersions.set(gameVersions)
+            }
+        }
+    }
 }
