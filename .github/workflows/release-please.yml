@@ -20,7 +20,5 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: gradle
+          release-type: java
           config-file: .github/release-please-config.json
-          extraFiles: |
-              build.gradle.kts
