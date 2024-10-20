@@ -58,7 +58,7 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - Projectile randomness
 
 ## Plugin Compatibility
-Most plugins will work fine with OCM. Some had to be explicitly supported. These include:
+Most plugins will work fine with OCM. Some are explicitly supported, including:
 - Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
 
 ## Contributions
