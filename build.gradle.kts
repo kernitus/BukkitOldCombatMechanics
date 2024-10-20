@@ -6,6 +6,7 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
+import java.io.ByteArrayOutputStream
 
 plugins {
     `java-library`
