@@ -3,14 +3,13 @@
   "release-type": "simple",
   "include-component-in-tag": false,
   "bump-minor-pre-major": true,
-  "packages": {
-    ".": {
-      "package-name": "OldCombatMechanics",
-      "extra-files": [
-        "build.gradle.kts"
-      ]
+  "package-name": "OldCombatMechanics",
+  "extra-files": [
+    {
+      "type": "generic",
+      "path": "build.gradle.kts"
     }
-  },
+  ],
   "changelog-sections": [
     {"type": "feat", "section": "Features"},
     {"type": "fix", "section": "Bug Fixes"},
