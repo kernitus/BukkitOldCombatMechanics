@@ -4,8 +4,10 @@
   "bump-minor-pre-major": true,
   "extra-files": [
     {
-      "type": "generic",
-      "path": "build.gradle.kts"
+      "path": "build.gradle.kts",
+      "updater": "regex",
+      "regex": "version = \"([^\"]+)\"",
+      "version-template": "version = \"${version}\""
     }
   ],
   "changelog-path": "CHANGELOG.md",
