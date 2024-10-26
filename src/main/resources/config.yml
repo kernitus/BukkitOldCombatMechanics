@@ -480,10 +480,6 @@ no-lapis-enchantments:
   # Whether to only allow this for players with oldcombatmechanics.nolapis permission
   usePermission: false
 
-disable-elytra:
-  # Do not allow players to wear elytra
-  enabled: false
-
 disable-enderpearl-cooldown:
   # Disables enderpearl cooldown
   enabled: true
@@ -580,4 +576,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 65
+config-version: 66

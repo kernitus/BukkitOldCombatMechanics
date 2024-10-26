@@ -63,7 +63,6 @@ Features are grouped in `module`s as listed below, and can be individually confi
 #### New feature disabling
 - Item crafting
 - Offhand
-- Elytra
 - Bow boost
 - New attack sounds
 - Enderpearl cooldown

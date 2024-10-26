@@ -227,7 +227,6 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleDisableCrafting(this));
         ModuleLoader.addModule(new ModuleDisableOffHand(this));
         ModuleLoader.addModule(new ModuleOldBrewingStand(this));
-        ModuleLoader.addModule(new ModuleDisableElytra(this));
         ModuleLoader.addModule(new ModuleDisableProjectileRandomness(this));
         ModuleLoader.addModule(new ModuleDisableBowBoost(this));
         ModuleLoader.addModule(new ModuleProjectileKnockback(this));
