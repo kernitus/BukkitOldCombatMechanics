@@ -212,7 +212,7 @@ public class EntityDamageByEntityListener extends OCMModule {
     }
 
     private double checkOverdamage(LivingEntity livingDamagee, EntityDamageEvent event, double newDamage) {
-        final double newLastDamage = newDamage;
+        final double newLastDamage = Math.max(newDamage, 0);
 
         if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
             // Last damage was either set to correct value above in this listener, or we're using the server's value
@@ -228,7 +228,7 @@ public class EntityDamageByEntityListener extends OCMModule {
 
             debug("Overdamage: " + newDamage + " - " + lastDamage);
             // We must subtract previous damage from new weapon damage for this attack
-            newDamage -= livingDamagee.getLastDamage();
+            newDamage = Math.max(newDamage -livingDamagee.getLastDamage(), 0);
 
             debug("Last damage " + lastDamage + " new damage: " + newLastDamage + " applied: " + newDamage
                     + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
