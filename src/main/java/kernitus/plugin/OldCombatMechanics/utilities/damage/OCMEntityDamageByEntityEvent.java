@@ -157,7 +157,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1) + 1;
 
-        strengthModifier = strengthLevel * 3;
+        strengthModifier = 3;
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
@@ -167,11 +167,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         hasWeakness = weaknessAmplifier.isPresent() && (weaknessAmplifier.get() == -1 || weaknessAmplifier.get() == 0);
         weaknessLevel = weaknessAmplifier.orElse(-1) + 1;
 
-        weaknessModifier = weaknessLevel * -4;
+        weaknessModifier = -4;
 
         debug(livingDamager, "Weakness Modifier: " + weaknessModifier);
 
-        baseDamage = tempDamage + weaknessModifier - strengthModifier;
+        baseDamage = tempDamage - (weaknessModifier * weaknessLevel) - (strengthModifier * strengthLevel);
         debug(livingDamager, "Base tool damage: " + baseDamage);
     }
 

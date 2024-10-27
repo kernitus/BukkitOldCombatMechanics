@@ -164,7 +164,6 @@ public class ModuleOldPotionEffects extends OCMModule {
             event.setIsWeaknessModifierMultiplier(module().getBoolean("weakness.multiplier"));
             final double newWeaknessModifier = module().getDouble("weakness.modifier");
             event.setWeaknessModifier(newWeaknessModifier);
-            event.setWeaknessLevel(1);
             debug("Old weakness modifier: " + event.getWeaknessLevel() +
                     " New: " + newWeaknessModifier, damager);
         }
