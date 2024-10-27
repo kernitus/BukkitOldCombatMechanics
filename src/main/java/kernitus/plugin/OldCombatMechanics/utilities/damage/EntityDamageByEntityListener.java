@@ -54,14 +54,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             if (!(damagee instanceof LivingEntity)) return;
             final LivingEntity livingDamagee = ((LivingEntity) damagee);
 
-            restoreLastDamage(livingDamagee);
-
             double newDamage = event.getDamage(); // base damage, before defence calculations
-
-            // Overdamage due to immunity
-            // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable
-            // That is, the difference in damage will be dealt, but only if new attack is stronger than previous one
-            checkOverdamage(livingDamagee, event, newDamage);
 
             if (newDamage < 0) {
                 debug("Damage was " + newDamage + " setting to 0");
@@ -79,13 +72,6 @@ public class EntityDamageByEntityListener extends OCMModule {
             final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
                     (damager, damagee, event.getCause(), event.getDamage());
 
-            // Set last damage to actual value for other modules and plugins to use
-            // This will be set back to 0 in MONITOR listener on the next tick to detect all potential overdamages.
-            // If there is large delay between last time an entity was damaged and the next damage,
-            // the last damage might have been removed from the weak hash map. This is intended, as the immunity
-            // ticks tends to be a short period of time anyway and last damage is irrelevant after immunity has expired.
-            if (damagee instanceof LivingEntity)
-                restoreLastDamage((LivingEntity) damagee);
 
             // Call event for the other modules to make their modifications
             plugin.getServer().getPluginManager().callEvent(e);
@@ -149,14 +135,6 @@ public class EntityDamageByEntityListener extends OCMModule {
             newDamage += enchantmentDamage;
             debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);
 
-            if (damagee instanceof LivingEntity) {
-                // Overdamage due to immunity
-                // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable
-                // That is, the difference in damage will be dealt, but only if new attack is stronger than previous one
-                // Value before overdamage will become new "last damage"
-                newDamage = checkOverdamage(((LivingEntity) damagee), event, newDamage);
-            }
-
             if (newDamage < 0) {
                 debug("Damage was " + newDamage + " setting to 0", damager);
                 newDamage = 0;
@@ -195,51 +173,5 @@ public class EntityDamageByEntityListener extends OCMModule {
             debug("Non-entity damage, using default last damage");
         }
     }
-
-    /**
-     * Restored the correct last damage for the given entity
-     *
-     * @param damagee The living entity to try to restore the last damage for
-     */
-    private void restoreLastDamage(LivingEntity damagee) {
-        final Double lastStoredDamage = lastDamages.get(damagee.getUniqueId());
-        if (lastStoredDamage != null) {
-            final LivingEntity livingDamagee = damagee;
-            livingDamagee.setLastDamage(lastStoredDamage);
-            debug("Set last damage back to " + lastStoredDamage, livingDamagee);
-            debug("Set last damage back to " + lastStoredDamage);
-        }
-    }
-
-    private double checkOverdamage(LivingEntity livingDamagee, EntityDamageEvent event, double newDamage) {
-        final double newLastDamage = newDamage;
-
-        if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
-            // Last damage was either set to correct value above in this listener, or we're using the server's value
-            // If other plugins later modify BASE damage, they should either be taking last damage into account,
-            // or ignoring the event if it is cancelled
-            final double lastDamage = livingDamagee.getLastDamage();
-            if (newDamage <= lastDamage) {
-                event.setDamage(0);
-                event.setCancelled(true);
-                debug("Was fake overdamage, cancelling " + newDamage + " <= " + lastDamage);
-                return 0;
-            }
-
-            debug("Overdamage: " + newDamage + " - " + lastDamage);
-            // We must subtract previous damage from new weapon damage for this attack
-            newDamage -= livingDamagee.getLastDamage();
-
-            debug("Last damage " + lastDamage + " new damage: " + newLastDamage + " applied: " + newDamage
-                    + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
-            );
-        }
-        // Update the last damage done, including when it was overdamage.
-        // This means attacks must keep increasing in value during immunity period to keep dealing overdamage.
-        lastDamages.put(livingDamagee.getUniqueId(), newLastDamage);
-
-        return newDamage;
-    }
-
 
 }
