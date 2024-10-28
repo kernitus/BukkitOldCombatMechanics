@@ -10,6 +10,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -82,8 +83,11 @@ public class ModuleSwordBlocking extends OCMModule {
         // TODO right-clicking on a mob also only fires one hand
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
         if (e.isBlockInHand()){
-            if(lastInteractedBlocks != null)
-                lastInteractedBlocks.put(e.getClickedBlock().getLocation(), player.getUniqueId());
+            if(lastInteractedBlocks != null) {
+                final Block clickedBlock = e.getClickedBlock();
+                if(clickedBlock != null)
+                    lastInteractedBlocks.put(clickedBlock.getLocation(), player.getUniqueId());
+            }
             return; // Handle failed block place in separate listener
         }
 
