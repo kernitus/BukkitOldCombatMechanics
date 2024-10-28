@@ -134,17 +134,29 @@ public class Config {
         for (String worldName : worldsSection.getKeys(false)) {
             final World world = Bukkit.getWorld(worldName);
             if(world == null){
-                Messenger.warn("Configured world " + worldName + " not found, skipping...");
+                Messenger.warn("Configured world " + worldName + " not found, skipping (might be loaded later?)...");
                 continue;
             }
-
-            // Retrieve the list of modeset names for the current world
-            // Using a linkedhashset to remove duplicates but retain insertion order (important for default modeset)
-            final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>(worldsSection.getStringList(worldName));
-
-            // Add the current world and its modesets to the map
-            worlds.put(world.getUID(), modesetsSet);
+            addWorld(world, worldsSection);
         }
+    }
+
+    public static void addWorld(World world){
+        final ConfigurationSection worldsSection = config.getConfigurationSection("worlds");
+        addWorld(world, worldsSection);
+    }
+
+    public static void addWorld(World world, ConfigurationSection worldsSection) {
+        // Retrieve the list of modeset names for the current world
+        // Using a linkedhashset to remove duplicates but retain insertion order (important for default modeset)
+        final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>(worldsSection.getStringList(world.getName()));
+
+        // Add the current world and its modesets to the map
+        worlds.put(world.getUID(), modesetsSet);
+    }
+
+    public static void removeWorld(World world){
+        worlds.remove(world.getUID());
     }
 
     /**
