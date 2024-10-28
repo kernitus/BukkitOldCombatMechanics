@@ -112,6 +112,8 @@ public class ModuleSwordBlocking extends OCMModule {
             storedItems.put(id, offHandItem);
 
             inventory.setItemInOffHand(SHIELD);
+            // Force an inventory update to avoid ghost items
+            player.updateInventory();
         }
         scheduleRestore(player);
     }
