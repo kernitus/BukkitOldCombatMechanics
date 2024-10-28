@@ -70,7 +70,7 @@ dependencies {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.0.4" // x-release-please-version
+version = "2.0.5-beta" // x-release-please-version
 description = "OldCombatMechanics"
 
 java {
@@ -154,6 +154,13 @@ val suffixedVersion: String = if (isRelease) {
 
 // Use the latest commit message for the changelog
 val changelogContent: String = latestCommitMessage()
+
+tasks.register("printIsRelease") {
+    doLast {
+        val isRelease = !project.version.toString().contains('-')
+        println(if (isRelease) "true" else "false")
+    }
+}
 
 hangarPublish {
     publications.register("plugin") {

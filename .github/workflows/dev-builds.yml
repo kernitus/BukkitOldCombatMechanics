@@ -33,6 +33,12 @@ jobs:
       with:
         gradle-version: wrapper
 
+    - name: Determine if this is a release version
+      run: |
+        IS_RELEASE=$(./gradlew -q printIsRelease)
+        echo "Is release? $IS_RELEASE"
+        echo "IS_RELEASE=$IS_RELEASE" >> $GITHUB_ENV
+
     - name: Run Gradle Build
       run: |
         ./gradlew clean build
@@ -44,7 +50,7 @@ jobs:
         path: build/libs/OldCombatMechanics.jar
 
     - name: Publish Snapshot to Hangar
-      if: ${{ github.event_name == 'push' && github.event.pull_request == null }}
+      if: ${{ github.event_name == 'push' && github.event.pull_request == null && env.IS_RELEASE != 'true' }}
       env:
         HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
       run: |
