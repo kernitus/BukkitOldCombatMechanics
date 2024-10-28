@@ -57,7 +57,7 @@ jobs:
         project_id: '98233'
         changelog: ${{ github.event.release.body }}
         changelog_type: markdown
-        display_name: ${{ github.event.release.tag_name }}
+        display_name: OldCombatMechanics ${{ github.event.release.tag_name }}
         game_versions: ${{ env.GAME_VERSIONS }}
         release_type: 'release'
         file_path: './build/libs/OldCombatMechanics.jar'
