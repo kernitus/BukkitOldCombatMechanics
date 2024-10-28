@@ -22,6 +22,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -52,7 +53,7 @@ public class ModuleDisableOffHand extends OCMModule {
     }
 
     private void sendDeniedMessage(CommandSender sender) {
-        if (deniedMessage.trim().length() > 0)
+        if (!deniedMessage.trim().isEmpty())
             Messenger.send(sender, deniedMessage);
     }
 
@@ -83,8 +84,14 @@ public class ModuleDisableOffHand extends OCMModule {
         final Inventory clickedInventory = e.getClickedInventory();
         if (clickedInventory == null) return;
         final InventoryType inventoryType = clickedInventory.getType();
-        // If they're in their own inventory, and not chests etc.
-        if (inventoryType != InventoryType.PLAYER) return;
+        // Source inventory must be PLAYER
+        if(inventoryType != InventoryType.PLAYER) return;
+
+        final InventoryView view = e.getView();
+        // If neither of the inventories is CRAFTING, player cannot be moving stuff to the offhand
+        if (view.getBottomInventory().getType() != InventoryType.CRAFTING &&
+                view.getTopInventory().getType() != InventoryType.CRAFTING)
+            return;
 
         // Prevent shift-clicking a shield into the offhand item slot
         final ItemStack currentItem = e.getCurrentItem();
