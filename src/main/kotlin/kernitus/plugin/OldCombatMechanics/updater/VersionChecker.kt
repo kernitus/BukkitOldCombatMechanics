@@ -3,34 +3,30 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package kernitus.plugin.OldCombatMechanics.updater;
+package kernitus.plugin.OldCombatMechanics.updater
 
-import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.OCMMain
+import java.util.regex.Pattern
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-public class VersionChecker {
-
-    public static boolean shouldUpdate(String remoteVersion) {
-        return isUpdateOut(remoteVersion, OCMMain.getVersion());
+object VersionChecker {
+    fun shouldUpdate(remoteVersion: String): Boolean {
+        return isUpdateOut(remoteVersion, OCMMain.getVersion())
     }
 
-    private static boolean isUpdateOut(String remoteVersion, String localVersion) {
-        final int[] testVer = getVersionNumbers(remoteVersion);
-        final int[] baseVer = getVersionNumbers(localVersion);
+    private fun isUpdateOut(remoteVersion: String, localVersion: String): Boolean {
+        val testVer = getVersionNumbers(remoteVersion)
+        val baseVer = getVersionNumbers(localVersion)
 
-        for (int i = 0; i < testVer.length; i++) {
-            if (testVer[i] != baseVer[i])
-                return testVer[i] > baseVer[i];
+        for (i in testVer.indices) {
+            if (testVer[i] != baseVer[i]) return testVer[i] > baseVer[i]
         }
 
-        return false;
+        return false
     }
 
-    private static int[] getVersionNumbers(String ver) {
-        Matcher m = Pattern.compile("(\\d+)\\.(\\d+)\\.*(\\d*)(-beta(\\d*))?", Pattern.CASE_INSENSITIVE).matcher(ver);
-        if (!m.matches()) throw new IllegalArgumentException("Plugin version formatted wrong!");
+    private fun getVersionNumbers(ver: String): IntArray {
+        val m = Pattern.compile("(\\d+)\\.(\\d+)\\.*(\\d*)(-beta(\\d*))?", Pattern.CASE_INSENSITIVE).matcher(ver)
+        require(m.matches()) { "Plugin version formatted wrong!" }
 
         // Group 1 = MAJOR
         // Group 2 = MINOR
@@ -41,11 +37,11 @@ public class VersionChecker {
         //This parses it to MAJOR.MINOR.PATCH-beta_version
         //MAJOR & MINOR required, anything else is set to maximum value if omitted - necessary otherwise
         // somebody with a beta version will not see update to release version
-        return new int[]{
-                Integer.parseInt(m.group(1)),
-                Integer.parseInt(m.group(2)),
-                m.group(3).isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(m.group(3)),
-                m.group(4) == null ? Integer.MAX_VALUE : (m.group(5).isEmpty() ? 1 : Integer.parseInt(m.group(5)))
-        };
+        return intArrayOf(
+            m.group(1).toInt(),
+            m.group(2).toInt(),
+            if (m.group(3).isEmpty()) Int.MAX_VALUE else m.group(3).toInt(),
+            if (m.group(4) == null) Int.MAX_VALUE else (if (m.group(5).isEmpty()) 1 else m.group(5).toInt())
+        )
     }
 }
