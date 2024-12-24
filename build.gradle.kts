@@ -15,6 +15,7 @@ val paperVersion: List<String> = (property("gameVersions") as String)
 
 plugins {
     `java-library`
+    id("org.jetbrains.kotlin.jvm") version "1.9.10"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
@@ -47,6 +48,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.bstats:bstats-bukkit:3.0.2")
     // Shaded in by Bukkit
     compileOnly("io.netty:netty-all:4.1.106.Final")
@@ -73,6 +75,7 @@ group = "kernitus.plugin.OldCombatMechanics"
 version = "2.0.5-beta" // x-release-please-version
 description = "OldCombatMechanics"
 
+
 java {
     toolchain {
         // We can build with Java 17 but still support MC >=1.9
@@ -86,6 +89,12 @@ sourceSets {
         java {
             exclude("kernitus/plugin/OldCombatMechanics/tester/**")
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "17" // Ensure compatibility with Java 17
     }
 }
 
