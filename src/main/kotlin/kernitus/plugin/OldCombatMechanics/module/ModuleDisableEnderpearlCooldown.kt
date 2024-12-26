@@ -102,7 +102,9 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
     private fun isEnderPearl(itemStack: ItemStack?) = itemStack?.type == Material.ENDER_PEARL
 
     @EventHandler
-    fun onPlayerQuit(e: PlayerQuitEvent) = lastLaunched?.remove(e.player.uniqueId)
+    fun onPlayerQuit(e: PlayerQuitEvent) {
+        lastLaunched?.remove(e.player.uniqueId)
+    }
 
     /**
      * Get the remaining cooldown time for ender pearls for a given player.

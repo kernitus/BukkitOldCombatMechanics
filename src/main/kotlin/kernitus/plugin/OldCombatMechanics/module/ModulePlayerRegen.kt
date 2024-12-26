@@ -81,5 +81,7 @@ class ModulePlayerRegen(plugin: OCMMain) : OCMModule(plugin, "old-player-regen")
     }
 
     @EventHandler
-    fun onPlayerQuit(e: PlayerQuitEvent) = healTimes.remove(e.player.uniqueId)
+    fun onPlayerQuit(e: PlayerQuitEvent) {
+        healTimes.remove(e.player.uniqueId)
+    }
 }
