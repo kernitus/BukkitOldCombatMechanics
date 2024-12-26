@@ -26,13 +26,27 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffectType
 
 class OCMEntityDamageByEntityEvent(
-    @JvmField val damager: Entity, @JvmField val damagee: Entity, @JvmField val cause: DamageCause, rawDamage: Double
+    val damager: Entity, val damagee: Entity, val cause: DamageCause, rawDamage: Double
 ) : Event(), Cancellable {
+
     private var cancelled = false
+    override fun isCancelled() = cancelled
+    override fun setCancelled(cancelled: Boolean) {
+        this.cancelled = cancelled
+    }
+
+    companion object {
+        private val handlerList: HandlerList = HandlerList()
+
+        @JvmStatic // Make sure Java reflection can access this
+        fun getHandlerList(): HandlerList {
+            return handlerList
+        }
+    }
+
     override fun getHandlers(): HandlerList {
         return handlerList
     }
-
 
     var rawDamage: Double
         private set
@@ -40,44 +54,42 @@ class OCMEntityDamageByEntityEvent(
     var weapon: ItemStack?
         private set
 
-    @JvmField
     val sharpnessLevel: Int
-    private val hasWeakness: Boolean
+
+    /**
+     * Whether the attacker had the weakness potion effect,
+     * and the level of the effect was either 0 (used by OCM) or 1 (normal value).
+     * Values outside this range are to be ignored, as they are probably from other plugins.
+     */
+    val hasWeakness: Boolean
 
     // The levels as shown in-game, i.e. 1 or 2 corresponding to I and II
     val strengthLevel: Int
 
-    @JvmField
     var weaknessLevel: Int
 
-    @JvmField
     var baseDamage: Double = 0.0
     var mobEnchantmentsDamage: Double = 0.0
 
-    @JvmField
     var sharpnessDamage: Double = 0.0
 
-    @JvmField
     var criticalMultiplier: Double = 1.0
 
-    @JvmField
     var strengthModifier: Double = 0.0
 
-    @JvmField
     var weaknessModifier: Double = 0.0
 
     // In 1.9 strength modifier is an addend, in 1.8 it is a multiplier and addend (+130%)
-    @JvmField
     var isStrengthModifierMultiplier: Boolean = false
 
-    @JvmField
     var isStrengthModifierAddend: Boolean = true
 
-    @JvmField
     var isWeaknessModifierMultiplier: Boolean = false
 
-    private var was1_8Crit = false
-    private var wasSprinting = false
+    var was1_8Crit = false
+        private set
+    var wasSprinting = false
+        private set
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
@@ -125,8 +137,8 @@ class OCMEntityDamageByEntityEvent(
 
         val livingDamager = damager as LivingEntity
 
-        weapon = livingDamager.equipment!!.itemInMainHand
-        // Yay paper. Why do you need to return null here?
+        weapon = livingDamager.equipment?.itemInMainHand
+        // Paper can return null here
         if (weapon == null) weapon = ItemStack(Material.AIR)
 
         // Technically the weapon could be in the offhand, i.e. a bow.
@@ -136,14 +148,13 @@ class OCMEntityDamageByEntityEvent(
         Messenger.debug(livingDamager, "Raw attack damage: $rawDamage")
         Messenger.debug(livingDamager, "Without overdamage: " + this.rawDamage)
 
-
         mobEnchantmentsDamage = getEntityEnchantmentsDamage(damageeType, weapon!!)
         sharpnessLevel = weapon!!.getEnchantmentLevel(EnchantmentCompat.SHARPNESS.get())
         sharpnessDamage = getNewSharpnessDamage(sharpnessLevel)
 
         // Scale enchantment damage by attack cooldown
         if (damager is HumanEntity) {
-            val cooldown = DamageUtils.getAttackCooldown.apply(damager, 0.5f)
+            val cooldown = DamageUtils.getAttackCooldown(damager, 0.5f)
             mobEnchantmentsDamage *= cooldown.toDouble()
             sharpnessDamage *= cooldown.toDouble()
         }
@@ -172,12 +183,13 @@ class OCMEntityDamageByEntityEvent(
 
         // Un-scale the damage by the attack strength
         if (damager is HumanEntity) {
-            val cooldown = DamageUtils.getAttackCooldown.apply(damager, 0.5f)
+            val cooldown = DamageUtils.getAttackCooldown(damager, 0.5f)
             tempDamage /= (0.2f + cooldown * cooldown * 0.8f).toDouble()
         }
 
         // amplifier 0 = Strength I    amplifier 1 = Strength II
-        strengthLevel = (PotionEffects.get(livingDamager, PotionEffectTypeCompat.STRENGTH.get())?.amplifier ?: -1) + 1
+        strengthLevel =
+            (PotionEffects.get(livingDamager, PotionEffectTypeCompat.STRENGTH.potionEffectType)?.amplifier ?: -1) + 1
 
         strengthModifier = (strengthLevel * 3).toDouble()
 
@@ -199,47 +211,5 @@ class OCMEntityDamageByEntityEvent(
 
         baseDamage = tempDamage + weaknessModifier - strengthModifier
         Messenger.debug(livingDamager, "Base tool damage: $baseDamage")
-    }
-
-    /**
-     * Whether the attacker had the weakness potion effect,
-     * and the level of the effect was either 0 (used by OCM) or 1 (normal value).
-     * Values outside this range are to be ignored, as they are probably from other plugins.
-     */
-    fun hasWeakness(): Boolean {
-        return hasWeakness
-    }
-
-    override fun isCancelled(): Boolean {
-        return cancelled
-    }
-
-    override fun setCancelled(cancelled: Boolean) {
-        this.cancelled = cancelled
-    }
-
-    fun wasSprinting(): Boolean {
-        return wasSprinting
-    }
-
-    fun setWasSprinting(wasSprinting: Boolean) {
-        this.wasSprinting = wasSprinting
-    }
-
-    fun was1_8Crit(): Boolean {
-        return was1_8Crit
-    }
-
-    fun setWas1_8Crit(was1_8Crit: Boolean) {
-        this.was1_8Crit = was1_8Crit
-    }
-
-    companion object {
-        private val handlerList: HandlerList = HandlerList()
-
-        @JvmStatic // Make sure Java reflection can access this
-        fun getHandlerList(): HandlerList {
-            return handlerList
-        }
     }
 }

@@ -42,7 +42,7 @@ class ModuleSwordSweep(plugin: OCMMain) : OCMModule(plugin, "disable-sword-sweep
         // we didn't set anything up in the first place
         if (sweepDamageCause != null) return
 
-        if (task != null) task!!.cancel()
+        task?.cancel()
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, Runnable { sweepLocations.clear() }, 0, 1)
     }
@@ -94,7 +94,5 @@ class ModuleSwordSweep(plugin: OCMMain) : OCMModule(plugin, "disable-sword-sweep
         }
     }
 
-    private fun isHoldingSword(mat: Material): Boolean {
-        return mat.toString().endsWith("_SWORD")
-    }
+    private fun isHoldingSword(mat: Material) = mat.toString().endsWith("_SWORD")
 }

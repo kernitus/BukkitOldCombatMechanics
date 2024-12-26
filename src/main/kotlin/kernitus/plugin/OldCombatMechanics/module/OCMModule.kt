@@ -7,7 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module
 
 import kernitus.plugin.OldCombatMechanics.OCMMain
 import kernitus.plugin.OldCombatMechanics.utilities.Config.debugEnabled
-import kernitus.plugin.OldCombatMechanics.utilities.Config.getModesets
+import kernitus.plugin.OldCombatMechanics.utilities.Config.modesets
 import kernitus.plugin.OldCombatMechanics.utilities.Config.moduleEnabled
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.sendNoPrefix
@@ -19,7 +19,6 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.HumanEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.Listener
-import java.util.*
 
 /**
  * A module providing some specific functionality, e.g. restoring fishing rod knockback.
@@ -61,7 +60,7 @@ abstract class OCMModule protected constructor(protected var plugin: OCMMain, va
         }
 
         // Check if the modeset contains this module's name
-        val modeset = getModesets()[modesetName]
+        val modeset = modesets[modesetName]
         return modeset != null && modeset.contains(configName)
     }
 
@@ -137,16 +136,15 @@ abstract class OCMModule protected constructor(protected var plugin: OCMMain, va
     protected fun debug(text: String, sender: CommandSender) {
         if (debugEnabled()) {
             sendNoPrefix(
-                sender,
-                "&8&l[&fDEBUG&8&l][&f$moduleName&8&l]&7 $text"
+                sender, "&8&l[&fDEBUG&8&l][&f$moduleName&8&l]&7 $text"
             )
         }
     }
 
     override fun toString(): String {
-        return Arrays.stream(configName.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
-            .map { word: String -> word[0].uppercaseChar().toString() + word.substring(1).lowercase() }
-            .reduce { a: String, b: String -> "$a $b" }
-            .orElse(configName)
+        return configName.split("-").filter { it.isNotEmpty() }.takeIf { it.isNotEmpty() }?.joinToString(" ") { word ->
+            word.lowercase().replaceFirstChar { it.uppercaseChar() }
+        } ?: configName
     }
+
 }

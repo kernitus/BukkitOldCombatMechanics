@@ -26,9 +26,7 @@ class ModuleOldBrewingStand(plugin: OCMMain) : OCMModule(plugin, "old-brewing-st
         val block = location.block
         val blockState = block.state as? BrewingStand ?: return
 
-        val brewingStand = blockState
-
-        brewingStand.fuelLevel = 20
-        brewingStand.update()
+        blockState.fuelLevel = 20
+        blockState.update()
     }
 }

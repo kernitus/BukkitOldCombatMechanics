@@ -15,7 +15,6 @@ object WeaponDamages {
 
     private lateinit var plugin: OCMMain
 
-    @JvmStatic
     fun initialise(plugin: OCMMain) {
         WeaponDamages.plugin = plugin
         reload()
@@ -26,13 +25,11 @@ object WeaponDamages {
         damages = ConfigUtils.loadDoubleMap(section!!) // Should error out if damages not found
     }
 
-    @JvmStatic
     fun getDamage(mat: Material): Double {
         val name = mat.name.replace("GOLDEN", "GOLD").replace("WOODEN", "WOOD").replace("SHOVEL", "SPADE")
         return damages.getOrDefault(name, -1.0)
     }
 
-    @JvmStatic
     val materialDamages: Map<Material, Double>
         get() {
             val materialMap: MutableMap<Material, Double> =

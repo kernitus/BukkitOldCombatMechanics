@@ -10,8 +10,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionTypeCompat
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
 import java.util.*
-import java.util.function.Predicate
-import java.util.stream.Collectors
 
 /**
  * Various utilities for making it easier to work with [Configurations][org.bukkit.configuration.Configuration].
@@ -28,19 +26,9 @@ object ConfigUtils {
      * @return The map of doubles.
      */
     fun loadDoubleMap(section: ConfigurationSection): Map<String, Double> {
-        Objects.requireNonNull(section, "section cannot be null!")
-
-        return section.getKeys(false).stream()
-            .filter(Predicate { path: String -> section.isDouble(path) }.or { path: String ->
-                section.isInt(
-                    path
-                )
-            })
-            .collect(
-                Collectors.toMap(
-                    { key: String -> key },
-                    { path: String -> section.getDouble(path) })
-            )
+        return section.getKeys(false)
+            .filter { path -> section.isDouble(path) || section.isInt(path) }
+            .associateWith { path -> section.getDouble(path) }
     }
 
     /**
@@ -51,18 +39,8 @@ object ConfigUtils {
      * @param key     The key of the material list.
      * @return The loaded material list, or an empty list if there is no list at the given key.
      */
-    @JvmStatic
-    fun loadMaterialList(section: ConfigurationSection, key: String): List<Material?> {
-        Objects.requireNonNull(section, "section cannot be null!")
-        Objects.requireNonNull(key, "key cannot be null!")
-
-        if (!section.isList(key)) return ArrayList()
-
-        return section.getStringList(key).stream()
-            .map { name: String? -> Material.matchMaterial(name!!) }
-            .filter { obj: Material? -> Objects.nonNull(obj) }
-            .collect(Collectors.toList())
-    }
+    fun loadMaterialList(section: ConfigurationSection, key: String): List<Material> =
+        section.getStringList(key).mapNotNull(Material::matchMaterial)
 
     /**
      * Gets potion duration values from config for all configured potion types.
@@ -71,14 +49,15 @@ object ConfigUtils {
      * @param section The section from which to load the duration values
      * @return HashMap of [String] and [PotionDurations]
      */
-    @JvmStatic
     fun loadPotionDurationsList(section: ConfigurationSection): HashMap<PotionTypeCompat, PotionDurations> {
         Objects.requireNonNull(section, "potion durations section cannot be null!")
 
         val durationsHashMap = HashMap<PotionTypeCompat, PotionDurations>()
         val durationsSection = section.getConfigurationSection("potion-durations")
+            ?: throw IllegalArgumentException("potion-durations section missing from config.yml!")
 
-        val drinkableSection = durationsSection!!.getConfigurationSection("drinkable")
+
+        val drinkableSection = durationsSection.getConfigurationSection("drinkable")
         val splashSection = durationsSection.getConfigurationSection("splash")
 
         for (newPotionTypeName in drinkableSection!!.getKeys(false)) {

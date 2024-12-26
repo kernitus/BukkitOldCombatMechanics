@@ -27,13 +27,8 @@ enum class NewWeaponDamage(val damage: Float) {
     NETHERITE_SWORD(8f), NETHERITE_SHOVEL(6.5f), NETHERITE_PICKAXE(6f), NETHERITE_AXE(10f), NETHERITE_HOE(1f);
 
     companion object {
-        fun getDamage(mat: String?): Float {
-            return valueOf(mat!!).damage
-        }
+        fun getDamage(mat: String) = valueOf(mat).damage
 
-        @JvmStatic
-        fun getDamage(mat: Material): Float {
-            return getDamage(mat.toString())
-        }
+        fun getDamage(mat: Material) = getDamage(mat.toString())
     }
 }

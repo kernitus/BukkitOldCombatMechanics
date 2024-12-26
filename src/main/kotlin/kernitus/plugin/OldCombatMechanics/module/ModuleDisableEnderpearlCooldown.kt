@@ -32,6 +32,10 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
     private var cooldown = 0
     private var message: String? = null
 
+    companion object {
+        lateinit var instance: ModuleDisableEnderpearlCooldown
+    }
+
     init {
         instance = this
         reload()
@@ -46,11 +50,8 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
         message = if (module().getBoolean("showMessage")) module().getString("message") else null
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun onPlayerShoot(e: ProjectileLaunchEvent) {
-        if (e.isCancelled) return  // For compatibility with other plugins
-
-
         val projectile = e.entity as? EnderPearl ?: return
         val shooter = projectile.shooter as? Player ?: return
 
@@ -63,21 +64,19 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
         e.isCancelled = true
 
         // Check if the cooldown has expired yet
-        if (lastLaunched != null) {
-            val currentTime = System.currentTimeMillis() / 1000
-            if (lastLaunched!!.containsKey(uuid)) {
-                val elapsedSeconds = currentTime - lastLaunched!![uuid]!!
-                if (elapsedSeconds < cooldown) {
-                    if (message != null) send(
-                        shooter,
-                        message!!, cooldown - elapsedSeconds
-                    )
+        val currentTime = System.currentTimeMillis() / 1000
+
+        lastLaunched?.get(uuid)?.let { lastLaunchedValue ->
+            val elapsedSeconds = currentTime - lastLaunchedValue
+            if (elapsedSeconds < cooldown) {
+                message?.let {
+                    send(shooter, it, cooldown - elapsedSeconds)
                     return
                 }
             }
-
-            lastLaunched!![uuid] = currentTime
         }
+
+        lastLaunched?.let { it[uuid] = currentTime }
 
         // Make sure we ignore the event triggered by launchProjectile
         ignoredPlayers.add(uuid)
@@ -100,35 +99,26 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
         enderpearlItemStack.amount -= 1
     }
 
-    private fun isEnderPearl(itemStack: ItemStack?): Boolean {
-        return itemStack != null && itemStack.type == Material.ENDER_PEARL
-    }
+    private fun isEnderPearl(itemStack: ItemStack?) = itemStack?.type == Material.ENDER_PEARL
 
     @EventHandler
-    fun onPlayerQuit(e: PlayerQuitEvent) {
-        if (lastLaunched != null) lastLaunched!!.remove(e.player.uniqueId)
-    }
+    fun onPlayerQuit(e: PlayerQuitEvent) = lastLaunched?.remove(e.player.uniqueId)
 
     /**
      * Get the remaining cooldown time for ender pearls for a given player.
      * @param playerUUID The UUID of the player to check the cooldown for.
-     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown or it has expired.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
      */
     fun getEnderpearlCooldown(playerUUID: UUID): Long {
-        if (lastLaunched != null && lastLaunched!!.containsKey(playerUUID)) {
+        lastLaunched?.get(playerUUID)?.let { lastLaunchedValue ->
             val currentTime = System.currentTimeMillis() / 1000 // Current time in seconds
-            val lastLaunchTime = lastLaunched!![playerUUID]!! // Last launch time in seconds
+            val lastLaunchTime = lastLaunchedValue // Last launch time in seconds
             val elapsedSeconds = currentTime - lastLaunchTime
             val cooldownRemaining = cooldown - elapsedSeconds
             return max(
-                cooldownRemaining.toDouble(),
-                0.0
+                cooldownRemaining.toDouble(), 0.0
             ).toLong() // Return the remaining cooldown or 0 if it has expired
         }
         return 0
-    }
-
-    companion object {
-        lateinit var instance: ModuleDisableEnderpearlCooldown
     }
 }

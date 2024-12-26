@@ -11,7 +11,6 @@ import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
-import java.util.*
 
 class OCMConfigHandler(private val plugin: OCMMain) {
     private val CONFIG_NAME = "config.yml"
@@ -22,22 +21,20 @@ class OCMConfigHandler(private val plugin: OCMMain) {
         if (backup.exists()) backup.delete()
 
         // Keeping YAML comments not available in lower versions
-        if (Reflector.versionIsNewerOrEqualTo(1, 18, 1) ||
-            Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
+        if (Reflector.versionIsNewerOrEqualTo(1, 18, 1) || Config.getConfig()
+                .getBoolean("force-below-1-18-1-config-upgrade", false)
         ) {
             plugin.logger.warning("Config version does not match, upgrading old config")
             // Load values from old config
             val oldConfig = getConfig(CONFIG_NAME)
-            val defaultConfig = YamlConfiguration.loadConfiguration(
-                InputStreamReader(Objects.requireNonNull(plugin.getResource(CONFIG_NAME)))
-            )
+            val resource = plugin.getResource(CONFIG_NAME) ?: throw IllegalStateException("Failed to load resource")
+            val defaultConfig = YamlConfiguration.loadConfiguration(InputStreamReader(resource))
 
             // Copies value from old config if present in new config
             for (key in defaultConfig.getKeys(true)) {
                 if (key == "config-version" || !oldConfig.contains(key)) continue
 
                 if (defaultConfig.isConfigurationSection(key)) continue  // Only get leaf keys
-
 
                 defaultConfig[key] = oldConfig[key]
             }
@@ -69,15 +66,9 @@ class OCMConfigHandler(private val plugin: OCMMain) {
         }
     }
 
-    fun getConfig(fileName: String): YamlConfiguration {
-        return YamlConfiguration.loadConfiguration(getFile(fileName))
-    }
+    fun getConfig(fileName: String) = YamlConfiguration.loadConfiguration(getFile(fileName))
 
-    fun getFile(fileName: String): File {
-        return File(plugin.dataFolder, fileName.replace('/', File.separatorChar))
-    }
+    fun getFile(fileName: String) = File(plugin.dataFolder, fileName.replace('/', File.separatorChar))
 
-    fun doesConfigExist(): Boolean {
-        return getFile(CONFIG_NAME).exists()
-    }
+    fun doesConfigExist() = getFile(CONFIG_NAME).exists()
 }

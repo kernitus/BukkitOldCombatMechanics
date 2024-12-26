@@ -10,7 +10,6 @@ import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompa
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.EntityType
 import org.bukkit.inventory.ItemStack
-import java.util.function.Consumer
 
 object MobDamage {
     private val enchants: Map<EntityType, Enchantment?>
@@ -45,7 +44,7 @@ object MobDamage {
         val enchantsBuilder = ImmutableMap.builder<EntityType, Enchantment?>()
 
         // Add these individually because some may not exist in the Minecraft version we're running
-        allMobs.keys.forEach(Consumer { entityName: String ->
+        allMobs.keys.forEach { entityName: String ->
             try {
                 val entityType = EntityType.valueOf(entityName)
                 val enchantment = allMobs[entityName]
@@ -54,7 +53,7 @@ object MobDamage {
                 }
             } catch (ignored: IllegalArgumentException) {
             } // Mob not supported in this MC version
-        })
+        }
         enchants = enchantsBuilder.build()
     }
 
@@ -65,7 +64,6 @@ object MobDamage {
      * @param item   The enchanted weapon used in the attack
      * @return The damage due to the enchantments
      */
-    @JvmStatic
     fun getEntityEnchantmentsDamage(entity: EntityType, item: ItemStack): Double {
         val enchantment = enchants[entity]
 

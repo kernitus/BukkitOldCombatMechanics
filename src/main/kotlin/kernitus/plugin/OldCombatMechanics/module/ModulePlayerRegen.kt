@@ -54,7 +54,7 @@ class ModulePlayerRegen(plugin: OCMMain) : OCMModule(plugin, "old-player-regen")
         )
 
         // If we're skipping this heal, we must fix the exhaustion in the following tick
-        if (hasLastHealTime && currentTime - lastHealTime <= module()!!.getLong("interval")) {
+        if (hasLastHealTime && currentTime - lastHealTime <= module().getLong("interval")) {
             Bukkit.getScheduler().runTaskLater(plugin, Runnable { p.exhaustion = previousExhaustion }, 1L)
             return
         }
@@ -63,12 +63,12 @@ class ModulePlayerRegen(plugin: OCMMain) : OCMModule(plugin, "old-player-regen")
         val playerHealth = p.health
 
         if (playerHealth < maxHealth) {
-            p.health = clamp(playerHealth + module()!!.getInt("amount"), 0.0, maxHealth)
+            p.health = clamp(playerHealth + module().getInt("amount"), 0.0, maxHealth)
             healTimes[playerId] = currentTime
         }
 
         // Calculate new exhaustion value, must be between 0 and 4. If above, it will reduce the saturation in the following tick.
-        val exhaustionToApply = module()!!.getDouble("exhaustion").toFloat()
+        val exhaustionToApply = module().getDouble("exhaustion").toFloat()
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             // We do this in the next tick because bukkit doesn't stop the exhaustion change when cancelling the event
@@ -81,7 +81,5 @@ class ModulePlayerRegen(plugin: OCMMain) : OCMModule(plugin, "old-player-regen")
     }
 
     @EventHandler
-    fun onPlayerQuit(e: PlayerQuitEvent) {
-        healTimes.remove(e.player.uniqueId)
-    }
+    fun onPlayerQuit(e: PlayerQuitEvent) = healTimes.remove(e.player.uniqueId)
 }

@@ -83,19 +83,20 @@ object DefenceUtils {
     @Suppress("deprecation")
     fun calculateDefenceDamageReduction(
         damagedEntity: LivingEntity,
-        damageModifiers: MutableMap<DamageModifier?, Double>,
+        damageModifiers: MutableMap<DamageModifier, Double>,
         damageCause: DamageCause,
         randomness: Boolean
     ) {
-        val armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR)!!.value
+        val armourPoints = damagedEntity.getAttribute(Attribute.GENERIC_ARMOR)?.value ?: 0.0
         // Make sure we don't go over 100% protection
         val armourReductionFactor = min(1.0, armourPoints * REDUCTION_PER_ARMOUR_POINT)
 
         // applyArmorModifier() calculations from NMS
         // Apply armour damage reduction after hard hat (wearing helmet & hit by block) and blocking reduction
-        var currentDamage = damageModifiers[DamageModifier.BASE]!! +
+        var currentDamage = damageModifiers.getOrDefault(DamageModifier.BASE, 0.0) +
                 damageModifiers.getOrDefault(DamageModifier.HARD_HAT, 0.0) +
                 damageModifiers.getOrDefault(DamageModifier.BLOCKING, 0.0)
+
         if (damageModifiers.containsKey(DamageModifier.ARMOR)) {
             var armourReduction = 0.0
             // If the damage cause does not ignore armour
@@ -117,9 +118,11 @@ object DefenceUtils {
         if (damageCause != DamageCause.STARVATION) {
             // Apply resistance effect
             if (damageModifiers.containsKey(DamageModifier.RESISTANCE) && damageCause != DamageCause.VOID &&
-                damagedEntity.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())
+                damagedEntity.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.potionEffectType)
             ) {
-                val level = damagedEntity.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())!!.amplifier + 1
+                val level =
+                    (damagedEntity.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.potionEffectType)?.amplifier
+                        ?: 0) + 1
                 // Make sure we don't go over 100% protection
                 val resistanceReductionFactor = min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL)
                 val resistanceReduction = -resistanceReductionFactor * currentDamage
@@ -131,7 +134,7 @@ object DefenceUtils {
             // Don't calculate enchants if damage already 0 (like 1.8 NMS). Enchants cap at 80% reduction
             if (currentDamage > 0 && damageModifiers.containsKey(DamageModifier.MAGIC)) {
                 val enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(
-                    damagedEntity.equipment!!.armorContents, damageCause, randomness
+                    damagedEntity.equipment?.armorContents ?: emptyArray(), damageCause, randomness
                 )
                 val enchantsReduction = currentDamage * -enchantsReductionFactor
                 damageModifiers[DamageModifier.MAGIC] = enchantsReduction
@@ -140,7 +143,7 @@ object DefenceUtils {
 
             // Absorption
             if (damageModifiers.containsKey(DamageModifier.ABSORPTION)) {
-                val absorptionAmount = getAbsorptionAmount.apply(damagedEntity)
+                val absorptionAmount = getAbsorptionAmount(damagedEntity)
                 val absorptionReduction = -min(absorptionAmount, currentDamage)
                 damageModifiers[DamageModifier.ABSORPTION] = absorptionReduction
             }
@@ -184,8 +187,9 @@ object DefenceUtils {
             baseDamage - (if (ARMOUR_IGNORING_CAUSES.contains(damageCause)) 0.0 else (baseDamage * reductionFactor))
 
         // Calculate resistance
-        if (defender.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())) {
-            val resistanceLevel = defender.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())!!.amplifier + 1
+        if (defender.hasPotionEffect(PotionEffectTypeCompat.RESISTANCE.potionEffectType)) {
+            val resistanceLevel =
+                (defender.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.potionEffectType)?.amplifier ?: 0) + 1
             finalDamage *= 1.0 - (resistanceLevel * 0.2)
         }
 
@@ -296,7 +300,7 @@ object DefenceUtils {
                 )
                 damageCauses
             },
-            0.75, EnchantmentCompat.PROTECTION.get()!!
+            0.75, EnchantmentCompat.PROTECTION.get()
         ),
         FIRE_PROTECTION(Supplier {
             val damageCauses = EnumSet.of(
@@ -308,23 +312,23 @@ object DefenceUtils {
                 damageCauses.add(DamageCause.HOT_FLOOR)
             }
             damageCauses
-        }, 1.25, EnchantmentCompat.FIRE_PROTECTION.get()!!),
+        }, 1.25, EnchantmentCompat.FIRE_PROTECTION.get()),
         BLAST_PROTECTION(Supplier {
             EnumSet.of(
                 DamageCause.ENTITY_EXPLOSION,
                 DamageCause.BLOCK_EXPLOSION
             )
-        }, 1.5, EnchantmentCompat.BLAST_PROTECTION.get()!!),
+        }, 1.5, EnchantmentCompat.BLAST_PROTECTION.get()),
         PROJECTILE_PROTECTION(Supplier {
             EnumSet.of(
                 DamageCause.PROJECTILE
             )
-        }, 1.5, EnchantmentCompat.PROJECTILE_PROTECTION.get()!!),
+        }, 1.5, EnchantmentCompat.PROJECTILE_PROTECTION.get()),
         FALL_PROTECTION(Supplier {
             EnumSet.of(
                 DamageCause.FALL
             )
-        }, 2.5, EnchantmentCompat.FEATHER_FALLING.get()!!);
+        }, 2.5, EnchantmentCompat.FEATHER_FALLING.get());
 
         private val protection = protection.get()
 

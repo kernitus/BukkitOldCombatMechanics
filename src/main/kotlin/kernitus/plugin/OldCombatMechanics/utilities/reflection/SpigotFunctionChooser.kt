@@ -32,7 +32,7 @@ class SpigotFunctionChooser<T, U, R>
     private val trueBranch: (T, U) -> R,
     private val falseBranch: (T, U) -> R
 ) {
-    private var chosen: ((T, U) -> R)? = null
+    private lateinit var chosen: (T, U) -> R
 
     /**
      * Applies the stored action to the given target and chooses what branch to use on the first call.
@@ -41,15 +41,18 @@ class SpigotFunctionChooser<T, U, R>
      * @param parameters the extra parameters to pass to the function
      * @return the result of applying the function to the given target
      */
-    fun apply(target: T, parameters: U = arrayOfNulls<Any>(0) as U): R {
-        if (chosen == null) {
+    operator fun invoke(target: T, parameters: U = arrayOfNulls<Any>(0) as U): R {
+        // Check if 'chosen' is initialised
+        if (!::chosen.isInitialized) {
             synchronized(this) {
-                if (chosen == null) {
+                // Double-check locking to ensure thread safety
+                if (!::chosen.isInitialized) {
                     chosen = if (test(target, parameters)) trueBranch else falseBranch
                 }
             }
         }
-        return chosen!!.invoke(target, parameters)
+        // Now 'chosen' is guaranteed to be initialized
+        return chosen(target, parameters)
     }
 
     fun interface ExceptionalFunction<T, U, R> {
@@ -128,7 +131,7 @@ class SpigotFunctionChooser<T, U, R>
          * @return A new instance of [SpigotFunctionChooser]
          */
         fun <T, U, R> apiCompatReflectionCall(
-            apiCall: ExceptionalFunction<T, U, R>, clazz: Class<T>, name: String, vararg argTypes: String?
+            apiCall: ExceptionalFunction<T, U, R>, clazz: Class<T>, name: String, vararg argTypes: String
         ): SpigotFunctionChooser<T, U, R> {
             return onException(
                 apiCall,

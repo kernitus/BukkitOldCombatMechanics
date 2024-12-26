@@ -13,7 +13,7 @@ import org.bukkit.plugin.Plugin
  * A simple utility class to ensure that a Listener is not registered more than once.
  */
 class EventRegistry(private val plugin: Plugin) {
-    private val listeners: MutableList<Listener> = ArrayList()
+    private val listeners: MutableList<Listener> = mutableListOf()
 
     /**
      * Registers a listener and returns `true` if the listener was not already registered.

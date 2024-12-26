@@ -17,29 +17,30 @@ import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
-import java.util.function.Consumer
 
 class ModuleAttackFrequency(plugin: OCMMain) : OCMModule(plugin, "attack-frequency") {
+    companion object {
+        private const val DEFAULT_DELAY = 20
+        private var playerDelay = 0
+        private var mobDelay = 0
+    }
+
     init {
         reload()
     }
 
     override fun reload() {
-        playerDelay = module()!!.getInt("playerDelay")
-        mobDelay = module()!!.getInt("mobDelay")
+        playerDelay = module().getInt("playerDelay")
+        mobDelay = module().getInt("mobDelay")
 
-        Bukkit.getWorlds().forEach(Consumer { world: World ->
-            world.livingEntities.forEach(
-                Consumer { livingEntity: LivingEntity ->
-                    if (livingEntity is Player) livingEntity.setMaximumNoDamageTicks(
-                        if (isEnabled(
-                                livingEntity
-                            )
-                        ) playerDelay else DEFAULT_DELAY
-                    )
-                    else livingEntity.maximumNoDamageTicks = if (isEnabled(world)) mobDelay else DEFAULT_DELAY
-                })
-        })
+        Bukkit.getWorlds().forEach { world: World ->
+            world.livingEntities.forEach { livingEntity: LivingEntity ->
+                if (livingEntity is Player) livingEntity.setMaximumNoDamageTicks(
+                    if (isEnabled(livingEntity)) playerDelay else DEFAULT_DELAY
+                )
+                else livingEntity.maximumNoDamageTicks = if (isEnabled(world)) mobDelay else DEFAULT_DELAY
+            }
+        }
     }
 
     @EventHandler
@@ -49,9 +50,7 @@ class ModuleAttackFrequency(plugin: OCMMain) : OCMModule(plugin, "attack-frequen
     }
 
     @EventHandler
-    fun onPlayerLogout(e: PlayerQuitEvent) {
-        setDelay(e.player, DEFAULT_DELAY)
-    }
+    fun onPlayerLogout(e: PlayerQuitEvent) = setDelay(e.player, DEFAULT_DELAY)
 
     @EventHandler
     fun onPlayerChangeWorld(e: PlayerChangedWorldEvent) {
@@ -82,16 +81,11 @@ class ModuleAttackFrequency(plugin: OCMMain) : OCMModule(plugin, "attack-frequen
         // This event is only fired for non-player entities
         val entity = e.entity as? LivingEntity ?: return
 
-        val fromWorld = e.from.world
+        val fromWorld = e.from.world ?: return
         val toLocation = e.to ?: return
-        val toWorld = toLocation.world
-        if (fromWorld!!.uid !== toWorld!!.uid) entity.maximumNoDamageTicks =
+        val toWorld = toLocation.world ?: return
+        if (fromWorld.uid !== toWorld.uid) entity.maximumNoDamageTicks =
             if (isEnabled(toWorld)) mobDelay else DEFAULT_DELAY
     }
 
-    companion object {
-        private const val DEFAULT_DELAY = 20
-        private var playerDelay = 0
-        private var mobDelay = 0
-    }
 }

@@ -31,11 +31,9 @@ class ModuleFishingRodVelocity(plugin: OCMMain) : OCMModule(plugin, "fishing-rod
     private var hasDifferentGravity = false
 
     // In 1.12- getHook() returns a Fish which extends FishHook
-
-    private val getHook: SpigotFunctionChooser<PlayerFishEvent, Any?, FishHook?> =
+    private val getHook: SpigotFunctionChooser<PlayerFishEvent, Any?, FishHook> =
         SpigotFunctionChooser.apiCompatReflectionCall(
-            { e, _ -> e.hook },
-            PlayerFishEvent::class.java, "getHook"
+            { e, _ -> e.hook }, PlayerFishEvent::class.java, "getHook"
         )
 
     init {
@@ -51,7 +49,7 @@ class ModuleFishingRodVelocity(plugin: OCMMain) : OCMModule(plugin, "fishing-rod
 
     @EventHandler(ignoreCancelled = true)
     fun onFishEvent(event: PlayerFishEvent) {
-        val fishHook = getHook.apply(event)
+        val fishHook = getHook(event)
         val player = event.player
 
         if (!isEnabled(player) || event.state != PlayerFishEvent.State.FISHING) return
@@ -83,7 +81,7 @@ class ModuleFishingRodVelocity(plugin: OCMMain) : OCMModule(plugin, "fishing-rod
         velocityY *= oldVelocityMultiplier
         velocityZ *= oldVelocityMultiplier
 
-        fishHook!!.velocity = Vector(velocityX, velocityY, velocityZ)
+        fishHook.velocity = Vector(velocityX, velocityY, velocityZ)
 
         if (!hasDifferentGravity) return
 

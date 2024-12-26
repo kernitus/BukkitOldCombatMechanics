@@ -32,9 +32,7 @@ class ModuleAttackSounds(plugin: OCMMain) : OCMModule(plugin, "disable-attack-so
         else protocolManager!!.removePacketListener(soundListener)
     }
 
-    private fun getBlockedSounds(): Collection<String> {
-        return module()!!.getStringList("blocked-sound-names")
-    }
+    private fun getBlockedSounds() = module().getStringList("blocked-sound-names")
 
     /**
      * Disables attack sounds.
@@ -49,7 +47,6 @@ class ModuleAttackSounds(plugin: OCMMain) : OCMModule(plugin, "disable-attack-so
             try {
                 val packetContainer = packetEvent.packet
                 val sound = packetContainer.soundEffects.read(0) ?: return
-
 
                 //fix NullpointerException when sending a custom sound 
 

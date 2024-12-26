@@ -33,10 +33,12 @@ class ModuleFishingKnockback(plugin: OCMMain) : OCMModule(plugin, "old-fishing-k
             { e, _ -> e.hook }, PlayerFishEvent::class.java, "getHook"
         )
         getHitEntityFunction = SpigotFunctionChooser.apiCompatCall({ e, _ -> e.hitEntity }, { e, _ ->
-            val hookEntity: Entity = e.entity
-            val world = hookEntity.world
-            world.getNearbyEntities(hookEntity.location, 0.25, 0.25, 0.25).stream()
-                .filter { entity: Entity? -> !knockbackNonPlayerEntities && entity is Player }.findFirst().orElse(null)
+            val entities = e.entity.world.getNearbyEntities(e.entity.location, 0.25, 0.25, 0.25)
+            if (knockbackNonPlayerEntities) {
+                entities.firstOrNull()
+            } else {
+                entities.firstOrNull { it is Player }
+            }
         })
     }
 
@@ -47,7 +49,6 @@ class ModuleFishingKnockback(plugin: OCMMain) : OCMModule(plugin, "old-fishing-k
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     fun onRodLand(event: ProjectileHitEvent) {
         val hookEntity: Entity = event.entity
-        val world = hookEntity.world
 
         // FISHING_HOOK -> FISHING_BOBBER in >=1.20.5
         val fishingBobberType = try {
@@ -63,17 +64,15 @@ class ModuleFishingKnockback(plugin: OCMMain) : OCMModule(plugin, "old-fishing-k
         val rodder = hook.shooter as Player
         if (!isEnabled(rodder)) return
 
-        val hitEntity = getHitEntityFunction.apply(event) ?: return
+        val hitEntity = getHitEntityFunction(event) ?: return
 
         // If no entity was hit
-
         if (hitEntity !is LivingEntity) return
         if (!knockbackNonPlayerEntities && hitEntity !is Player) return
 
         // Do not move Citizens NPCs
         // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
         if (hitEntity.hasMetadata("NPC")) return
-
 
         if (!knockbackNonPlayerEntities) {
             val player = hitEntity as Player
@@ -92,10 +91,8 @@ class ModuleFishingKnockback(plugin: OCMMain) : OCMModule(plugin, "old-fishing-k
         if (damage < 0) damage = 0.0001
 
         hitEntity.damage(damage, rodder)
-        hitEntity.setVelocity(
-            calculateKnockbackVelocity(
-                hitEntity.getVelocity(), hitEntity.getLocation(), hook.location
-            )
+        hitEntity.velocity = calculateKnockbackVelocity(
+            hitEntity.velocity, hitEntity.location, hook.location
         )
     }
 
@@ -140,7 +137,7 @@ class ModuleFishingKnockback(plugin: OCMMain) : OCMModule(plugin, "old-fishing-k
         val cancelDraggingIn = module().getString("cancelDraggingIn", "players")!!
         val isPlayer = e.caught is HumanEntity
         if ((cancelDraggingIn == "players" && isPlayer) || cancelDraggingIn == "mobs" && !isPlayer || cancelDraggingIn == "all") {
-            getHookFunction.apply(e)!!.remove() // Remove the bobber and don't do anything else
+            getHookFunction(e)?.remove() // Remove the bobber and don't do anything else
             e.isCancelled = true
         }
     }

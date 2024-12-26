@@ -12,13 +12,9 @@ import org.bukkit.inventory.ItemStack
  * A material that tries each name in a given list until it finds a working material.
  */
 class NameListVersionedMaterial private constructor(private val finalMaterial: Material) : VersionedMaterial {
-    override fun newInstance(): ItemStack {
-        return ItemStack(finalMaterial)
-    }
+    override fun newInstance() = ItemStack(finalMaterial)
 
-    override fun isSame(other: ItemStack): Boolean {
-        return other.type == finalMaterial
-    }
+    override fun isSame(other: ItemStack) = other.type == finalMaterial
 
     companion object {
         /**
@@ -43,8 +39,7 @@ class NameListVersionedMaterial private constructor(private val finalMaterial: M
 
             throw IllegalArgumentException(
                 "Could not find any working material, tried: " + java.lang.String.join(
-                    ",",
-                    *names
+                    ",", *names
                 ) + "."
             )
         }

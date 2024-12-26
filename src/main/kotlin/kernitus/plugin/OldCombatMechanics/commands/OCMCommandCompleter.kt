@@ -12,8 +12,6 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
-import java.util.*
-import java.util.stream.Collectors
 
 /**
  * Provides tab completion for OCM commands
@@ -25,44 +23,33 @@ class OCMCommandCompleter : TabCompleter {
         label: String,
         args: Array<String>
     ): List<String> {
-        val completions: MutableList<String> = ArrayList()
-
         if (args.size < 2) {
-            completions.addAll(
-                Arrays.stream(Subcommand.entries.toTypedArray())
-                    .filter { arg: Subcommand -> arg.toString().startsWith(args[0]) }
-                    .filter { arg: Subcommand -> OCMCommandHandler.checkPermissions(sender, arg) }
-                    .map { obj: Subcommand -> obj.toString() }.collect(Collectors.toList())
-            )
-        } else if (args[0].equals(Subcommand.mode.toString(), ignoreCase = true)) {
+            return Subcommand.entries
+                .filter { it.name.startsWith(args[0], ignoreCase = true) }
+                .filter { OCMCommandHandler.checkPermissions(sender, it) }
+                .map { it.name }
+        }
+
+        if (args[0].equals(Subcommand.mode.name, ignoreCase = true)) {
             if (args.size < 3) {
-                if (sender.hasPermission("oldcombatmechanics.mode.others")
-                    || sender.hasPermission("oldcombatmechanics.mode.own")
+                if (sender.hasPermission("oldcombatmechanics.mode.others") ||
+                    sender.hasPermission("oldcombatmechanics.mode.own")
                 ) {
-                    if (sender is Player) { // Get the modesets allowed in the world player is in
-                        val world = sender.world
-                        completions.addAll(
-                            Config.worlds // If world not in config, all modesets allowed
-                                .getOrDefault(world.uid, Config.getModesets().keys)
-                                .stream()
-                                .filter { ms: String -> ms.startsWith(args[1]) }
-                                .collect(Collectors.toList()))
+                    val modesets = if (sender is Player) {
+                        // Get the modesets allowed in the world player is in
+                        Config.worlds.getOrDefault(sender.world.uid, Config.modesets.keys)
                     } else {
-                        completions.addAll(
-                            Config.getModesets().keys.stream()
-                                .filter { ms: String -> ms.startsWith(args[1]) }
-                                .collect(Collectors.toList()))
+                        Config.modesets.keys
                     }
+                    return modesets.filter { it.startsWith(args[1], ignoreCase = true) }
                 }
             } else if (sender.hasPermission("oldcombatmechanics.mode.others")) {
-                completions.addAll(
-                    Bukkit.getOnlinePlayers().stream()
-                        .map { obj: Player -> obj.name }
-                        .filter { arg: String -> arg.startsWith(args[2]) }
-                        .collect(Collectors.toList()))
+                return Bukkit.getOnlinePlayers()
+                    .map { it.name }
+                    .filter { it.startsWith(args[2], ignoreCase = true) }
             }
         }
 
-        return completions
+        return emptyList()
     }
 }

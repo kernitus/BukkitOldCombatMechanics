@@ -16,7 +16,6 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import java.util.*
-import java.util.stream.Collectors
 
 /**
  * Allows customising the shield damage reduction percentages.
@@ -33,10 +32,10 @@ class ModuleShieldDamageReduction(plugin: OCMMain) : OCMModule(plugin, "shield-d
     }
 
     override fun reload() {
-        genericDamageReductionAmount = module()!!.getInt("generalDamageReductionAmount", 1)
-        genericDamageReductionPercentage = module()!!.getInt("generalDamageReductionPercentage", 50)
-        projectileDamageReductionAmount = module()!!.getInt("projectileDamageReductionAmount", 1)
-        projectileDamageReductionPercentage = module()!!.getInt("projectileDamageReductionPercentage", 50)
+        genericDamageReductionAmount = module().getInt("generalDamageReductionAmount", 1)
+        genericDamageReductionPercentage = module().getInt("generalDamageReductionPercentage", 50)
+        projectileDamageReductionAmount = module().getInt("projectileDamageReductionAmount", 1)
+        projectileDamageReductionPercentage = module().getInt("projectileDamageReductionPercentage", 50)
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -46,15 +45,13 @@ class ModuleShieldDamageReduction(plugin: OCMMain) : OCMModule(plugin, "shield-d
         val uuid = player.uniqueId
         val item = e.item
 
-        if (fullyBlocked.containsKey(uuid)) {
-            val armour = fullyBlocked[uuid]!!
+        fullyBlocked[uuid]?.let { armour ->
             // ItemStack.equals() checks material, durability and quantity to make sure nothing changed in the meantime
             // We're checking all the pieces this way just in case they're wearing two helmets or something strange
-            val matchedPieces =
-                armour.stream().filter { piece: ItemStack -> piece == item }.collect(Collectors.toList())
+            val matchedPieces = armour.filter { it == item }
             armour.removeAll(matchedPieces)
             debug("Ignoring armour durability damage due to full block", player)
-            if (!matchedPieces.isEmpty()) {
+            if (matchedPieces.isNotEmpty()) {
                 e.isCancelled = true
             }
         }
@@ -64,9 +61,7 @@ class ModuleShieldDamageReduction(plugin: OCMMain) : OCMModule(plugin, "shield-d
     fun onHit(e: EntityDamageByEntityEvent) {
         val entity = e.entity as? Player ?: return
 
-        val player = entity
-
-        if (!isEnabled(e.damager, player)) return
+        if (!isEnabled(e.damager, entity)) return
 
         // Blocking is calculated after base and hard hat, and before armour etc.
         val baseDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT)
@@ -76,22 +71,18 @@ class ModuleShieldDamageReduction(plugin: OCMMain) : OCMModule(plugin, "shield-d
         e.setDamage(DamageModifier.BLOCKING, -damageReduction)
         val currentDamage = baseDamage - damageReduction
 
-        debug("Blocking: $baseDamage - $damageReduction = $currentDamage", player)
+        debug("Blocking: $baseDamage - $damageReduction = $currentDamage", entity)
         debug("Blocking: $baseDamage - $damageReduction = $currentDamage")
 
-        val uuid = player.uniqueId
+        val uuid = entity.uniqueId
 
         if (currentDamage <= 0) { // Make sure armour is not damaged if fully blocked
-            val armour =
-                Arrays.stream(player.inventory.armorContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }
-                    .collect(
-                        Collectors.toList()
-                    )
+            val armour = entity.inventory.armorContents.filterNotNull().toMutableList()
             fullyBlocked[uuid] = armour
 
             Bukkit.getScheduler().runTaskLater(plugin, Runnable {
                 fullyBlocked.remove(uuid)
-                debug("Removed from fully blocked set!", player)
+                debug("Removed from fully blocked set!", entity)
             }, 1L)
         }
     }

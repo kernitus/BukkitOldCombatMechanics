@@ -25,7 +25,6 @@ class ModuleProjectileKnockback(plugin: OCMMain) : OCMModule(plugin, "projectile
                 e.damage = module().getDouble("damage." + type.toString().lowercase())
                 if (e.isApplicable(DamageModifier.ABSORPTION)) e.setDamage(DamageModifier.ABSORPTION, 0.0)
             }
-
             else -> {}
         }
     }

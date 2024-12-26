@@ -19,14 +19,11 @@ enum class PotionEffectTypeCompat(oldName: String) {
     MINING_FATIGUE("SLOW_DIGGING"),
     ;
 
-    private var potionEffectType: PotionEffectType =
+    var potionEffectType: PotionEffectType =
         PotionEffectType.getByName(name)
             ?: PotionEffectType.getByName(oldName)
             ?: throw IllegalStateException("PotionEffectType not found for: $name or $oldName")
-
-    fun get(): PotionEffectType {
-        return potionEffectType
-    }
+        private set
 
     companion object {
         /**
@@ -38,8 +35,7 @@ enum class PotionEffectTypeCompat(oldName: String) {
         fun fromNewName(newName: String): PotionEffectType? {
             return try {
                 // See if new name needs mapping to old
-                valueOf(newName.uppercase())
-                    .get()
+                valueOf(newName.uppercase()).potionEffectType
             } catch (e: IllegalArgumentException) {
                 // Otherwise use new name directly
                 PotionEffectType.getByName(newName)

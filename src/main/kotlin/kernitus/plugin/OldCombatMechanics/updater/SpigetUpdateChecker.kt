@@ -21,6 +21,14 @@ import java.nio.channels.Channels
  * Checks [Spiget](https://spiget.org) for updates.
  */
 class SpigetUpdateChecker {
+    companion object {
+        private const val USER_AGENT = "OldCombatMechanics"
+        private const val VERSIONS_URL = "https://api.spiget.org/v2/resources/19510/versions?size=15000"
+        private const val UPDATES_URL = "https://api.spiget.org/v2/resources/19510/updates?size=15000"
+        private const val UPDATE_URL = "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update="
+        private const val DOWNLOAD_URL = "https://api.spiget.org/v2/resources/19510/download"
+    }
+
     /**
      * Returns the latest found version. Only populated after a call to [.isUpdateAvailable].
      *
@@ -171,11 +179,4 @@ class SpigetUpdateChecker {
         val name: String? = null, val id: String? = null
     )
 
-    companion object {
-        private const val USER_AGENT = "OldCombatMechanics"
-        private const val VERSIONS_URL = "https://api.spiget.org/v2/resources/19510/versions?size=15000"
-        private const val UPDATES_URL = "https://api.spiget.org/v2/resources/19510/updates?size=15000"
-        private const val UPDATE_URL = "https://www.spigotmc.org/resources/oldcombatmechanics.19510/update?update="
-        private const val DOWNLOAD_URL = "https://api.spiget.org/v2/resources/19510/download"
-    }
 }

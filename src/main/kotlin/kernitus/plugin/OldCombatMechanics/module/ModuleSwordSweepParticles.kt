@@ -24,8 +24,8 @@ class ModuleSwordSweepParticles(plugin: OCMMain) : OCMModule(plugin, "disable-sw
     }
 
     override fun reload() {
-        if (isEnabled()) protocolManager!!.addPacketListener(particleListener)
-        else protocolManager!!.removePacketListener(particleListener)
+        if (isEnabled()) protocolManager?.addPacketListener(particleListener)
+        else protocolManager?.removePacketListener(particleListener)
     }
 
     /**
@@ -40,7 +40,7 @@ class ModuleSwordSweepParticles(plugin: OCMMain) : OCMModule(plugin, "disable-sw
 
             try {
                 val packetContainer = packetEvent.packet
-                var particleName = try {
+                val particleName = try {
                     packetContainer.newParticles.read(0).particle.name
                 } catch (exception: Exception) {
                     packetContainer.particles.read(0).name // for pre 1.13

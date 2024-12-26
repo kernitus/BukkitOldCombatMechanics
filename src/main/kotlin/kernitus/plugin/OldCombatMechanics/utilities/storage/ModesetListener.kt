@@ -66,14 +66,11 @@ class ModesetListener(plugin: OCMMain) : OCMModule(plugin, "modeset-listener") {
 
             // Get modesets allowed in to world
             var allowedModesets = Config.worlds[worldId]
-            if (allowedModesets.isNullOrEmpty()) allowedModesets = Config.getModesets().keys
+            if (allowedModesets.isNullOrEmpty()) allowedModesets = Config.modesets.keys
 
             // If they don't have a modeset in toWorld yet
             if (modesetName == null) {
-                // Try to use modeset of world they are coming from
-                modesetName = if (modesetFromName != null && allowedModesets.contains(modesetFromName)) modesetFromName
-                else  // Otherwise, if the from modeset is not allowed, use default for to world
-                    allowedModesets.stream().findFirst().orElse(null)
+                modesetName = modesetFromName?.takeIf { allowedModesets.contains(it) } ?: allowedModesets.firstOrNull()
             }
 
             // If the modeset changed, set and save

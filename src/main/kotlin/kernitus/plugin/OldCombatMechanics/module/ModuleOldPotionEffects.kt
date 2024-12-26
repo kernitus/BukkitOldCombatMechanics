@@ -31,6 +31,20 @@ import org.bukkit.potion.PotionType
 class ModuleOldPotionEffects(plugin: OCMMain) : OCMModule(plugin, "old-potion-effects") {
     private var durations: Map<PotionTypeCompat, PotionDurations>? = null
 
+    companion object {
+        private val EXCLUDED_POTION_TYPES: Set<PotionTypeCompat> = mutableSetOf( // Base potions without any effect
+            PotionTypeCompat("AWKWARD"),
+            PotionTypeCompat("MUNDANE"),
+            PotionTypeCompat("THICK"),
+            PotionTypeCompat("WATER"),  // Instant potions with no further effects
+            PotionTypeCompat("HARMING"),
+            PotionTypeCompat("STRONG_HARMING"),
+            PotionTypeCompat("HEALING"),
+            PotionTypeCompat("STRONG_HEALING"),  // This type doesn't exist anymore >1.20.5, is specially handled in compat class
+            PotionTypeCompat("UNCRAFTABLE")
+        )
+    }
+
     init {
         reload()
     }
@@ -84,6 +98,7 @@ class ModuleOldPotionEffects(plugin: OCMMain) : OCMModule(plugin, "old-potion-ef
      *
      * @param potionItem The potion item with adjusted duration and effects
      */
+    @Suppress("DEPRECATION")
     private fun adjustPotion(potionItem: ItemStack, splash: Boolean) {
         val potionMeta = potionItem.itemMeta as PotionMeta? ?: return
 
@@ -105,13 +120,8 @@ class ModuleOldPotionEffects(plugin: OCMMain) : OCMModule(plugin, "old-potion-ef
             amplifier = -1
         }
 
-        var potionEffects: List<PotionEffectType>
         val potionType = potionTypeCompat.type
-        potionEffects = try {
-            potionType?.potionEffects?.stream()?.map { obj: PotionEffect -> obj.type }?.toList()
-        } catch (e: NoSuchMethodError) {
-            listOf(potionType!!.effectType)
-        } as List<PotionEffectType>
+        val potionEffects: List<PotionEffectType> = potionType?.getPotionEffectTypes() ?: emptyList()
 
         for (effectType in potionEffects) {
             potionMeta.addCustomEffect(PotionEffect(effectType, duration, amplifier), false)
@@ -126,13 +136,20 @@ class ModuleOldPotionEffects(plugin: OCMMain) : OCMModule(plugin, "old-potion-ef
         potionItem.setItemMeta(potionMeta)
     }
 
+    private fun PotionType.getPotionEffectTypes(): List<PotionEffectType> {
+        return try {
+            this.potionEffects.map { it.type }
+        } catch (e: NoSuchMethodError) {
+            listOf(this.effectType!!)
+        }
+    }
 
     @EventHandler(ignoreCancelled = true)
     fun onDamageByEntity(event: OCMEntityDamageByEntityEvent) {
         val damager = event.damager
         if (!isEnabled(damager, event.damagee)) return
 
-        if (event.hasWeakness()) {
+        if (event.hasWeakness) {
             event.isWeaknessModifierMultiplier = module().getBoolean("weakness.multiplier")
             val newWeaknessModifier = module().getDouble("weakness.modifier")
             event.weaknessModifier = newWeaknessModifier
@@ -163,17 +180,4 @@ class ModuleOldPotionEffects(plugin: OCMMain) : OCMModule(plugin, "old-potion-ef
         return duration
     }
 
-    companion object {
-        private val EXCLUDED_POTION_TYPES: Set<PotionTypeCompat> = mutableSetOf( // Base potions without any effect
-            PotionTypeCompat("AWKWARD"),
-            PotionTypeCompat("MUNDANE"),
-            PotionTypeCompat("THICK"),
-            PotionTypeCompat("WATER"),  // Instant potions with no further effects
-            PotionTypeCompat("HARMING"),
-            PotionTypeCompat("STRONG_HARMING"),
-            PotionTypeCompat("HEALING"),
-            PotionTypeCompat("STRONG_HEALING"),  // This type doesn't exist anymore >1.20.5, is specially handled in compat class
-            PotionTypeCompat("UNCRAFTABLE")
-        )
-    }
 }

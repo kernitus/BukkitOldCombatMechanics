@@ -14,22 +14,13 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause
  * Bring back old fire burning delay behaviour
  */
 class ModuleOldBurnDelay(plugin: OCMMain) : OCMModule(plugin, "old-burn-delay") {
-    private var fireTicks = 0
-
-    init {
-        reload()
-    }
-
-    override fun reload() {
-        fireTicks = module()!!.getInt("fire-ticks")
-    }
-
     @EventHandler
     fun onFireTick(e: EntityDamageEvent) {
         if (e.cause == DamageCause.FIRE) {
             val entity = e.entity
             if (!isEnabled(entity)) return
 
+            val fireTicks = module().getInt("fire-ticks")
             entity.fireTicks = fireTicks
             debug("Setting fire ticks to $fireTicks", entity)
         }

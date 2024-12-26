@@ -474,12 +474,6 @@ old-brewing-stand:
   # Automatically refuels brewing stands
   enabled: true
 
-no-lapis-enchantments:
-  # Automatically adds lapis to enchantment tables upon opening
-  enabled: false
-  # Whether to only allow this for players with oldcombatmechanics.nolapis permission
-  usePermission: false
-
 disable-enderpearl-cooldown:
   # Disables enderpearl cooldown
   enabled: true

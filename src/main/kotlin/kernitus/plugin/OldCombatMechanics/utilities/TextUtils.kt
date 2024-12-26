@@ -14,9 +14,7 @@ object TextUtils {
      * @param text The text to colourise.
      * @return The colourised text.
      */
-    fun colourise(text: String): String {
-        return ChatColor.translateAlternateColorCodes('&', text)
-    }
+    fun colourise(text: String) = ChatColor.translateAlternateColorCodes('&', text)
 
     /**
      * Removes all Minecraft ([ChatColor.COLOR_CHAR]) colour codes from a string.
@@ -24,7 +22,5 @@ object TextUtils {
      * @param text The text to strip colours from.
      * @return The stripped text.
      */
-    fun stripColour(text: String?): String? {
-        return ChatColor.stripColor(text)
-    }
+    fun stripColour(text: String) = ChatColor.stripColor(text)
 }

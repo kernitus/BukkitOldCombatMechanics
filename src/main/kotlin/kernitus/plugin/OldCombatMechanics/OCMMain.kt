@@ -33,24 +33,29 @@ import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.RegisteredListener
 import org.bukkit.plugin.java.JavaPlugin
-import java.util.*
-import java.util.function.Consumer
-import java.util.stream.Collectors
 
 class OCMMain : JavaPlugin() {
     private val logger = getLogger()
-    private val CH = OCMConfigHandler(this)
+    private val configHandler = OCMConfigHandler(this)
     private val disableListeners: MutableList<Runnable> = ArrayList()
     private val enableListeners: MutableList<Runnable> = ArrayList()
     private val hooks: MutableList<Hook> = ArrayList()
     var protocolManager: ProtocolManager? = null
         private set
 
+    companion object {
+        lateinit var instance: OCMMain
+            private set
+
+        val version: String
+            get() = instance.description.version
+    }
+
     override fun onEnable() {
         instance = this
 
         // Setting up config.yml
-        CH.setupConfigIfNotPresent()
+        configHandler.setupConfigIfNotPresent()
 
         // Initialise persistent player storage
         PlayerStorage.initialise(this)
@@ -65,9 +70,8 @@ class OCMMain : JavaPlugin() {
         Messenger.initialise(this)
 
         try {
-            if (server.pluginManager.getPlugin("ProtocolLib") != null &&
-                server.pluginManager.getPlugin("ProtocolLib")!!.isEnabled
-            ) protocolManager = ProtocolLibrary.getProtocolManager()
+            if (server.pluginManager.getPlugin("ProtocolLib")?.isEnabled == true)
+                protocolManager = ProtocolLibrary.getProtocolManager()
         } catch (e: Exception) {
             Messenger.warn("No ProtocolLib detected, some features might be disabled")
         }
@@ -79,7 +83,7 @@ class OCMMain : JavaPlugin() {
         registerHooks()
 
         // Initialise all the hooks
-        hooks.forEach(Consumer { hook: Hook -> hook.init(this) })
+        hooks.forEach { it.init(this) }
 
         // Set up the command handler
         getCommand("OldCombatMechanics")!!.setExecutor(OCMCommandHandler(this))
@@ -96,36 +100,31 @@ class OCMMain : JavaPlugin() {
             SimpleBarChart(
                 "enabled_modules"
             ) {
-                ModuleLoader.modules.stream()
-                    .filter { obj: OCMModule -> obj.isEnabled() }
-                    .collect(
-                        Collectors.toMap(
-                            { obj: OCMModule -> obj.toString() },
-                            { 1 })
-                    )
+                ModuleLoader.modules
+                    .filter { it.isEnabled() }
+                    .associate { it.toString() to 1 }
             }
         )
 
         // Pie chart of enabled/disabled for each module
-        ModuleLoader.modules.forEach(Consumer { module: OCMModule ->
+        ModuleLoader.modules.forEach { module: OCMModule ->
             metrics.addCustomChart(
                 SimplePie(
                     module.moduleName + "_pie"
                 ) { if (module.isEnabled()) "enabled" else "disabled" })
-        })
+        }
 
-        enableListeners.forEach(Consumer { obj: Runnable -> obj.run() })
+        enableListeners.forEach { it.run() }
 
         // Properly handle Plugman load/unload.
-        val joinListeners = Arrays.stream(PlayerJoinEvent.getHandlerList().registeredListeners)
-            .filter { registeredListener: RegisteredListener -> registeredListener.plugin == this }
-            .collect(Collectors.toList())
+        val joinListeners = PlayerJoinEvent.getHandlerList().registeredListeners
+            .filter { it.plugin == this }
 
-        Bukkit.getOnlinePlayers().forEach { player: Player? ->
-            val event = PlayerJoinEvent(player!!, "")
+        Bukkit.getOnlinePlayers().forEach { player: Player ->
+            val event = PlayerJoinEvent(player, "")
             // Trick all the modules into thinking the player just joined in case the plugin was loaded with Plugman.
             // This way attack speeds, item modifications, etc. will be applied immediately instead of after a re-log.
-            joinListeners.forEach(Consumer { registeredListener: RegisteredListener ->
+            joinListeners.forEach({ registeredListener: RegisteredListener ->
                 try {
                     registeredListener.callEvent(event)
                 } catch (e: EventException) {
@@ -158,18 +157,17 @@ class OCMMain : JavaPlugin() {
     override fun onDisable() {
         val pdfFile = this.description
 
-        disableListeners.forEach(Consumer { obj: Runnable -> obj.run() })
+        disableListeners.forEach { it.run() }
 
         // Properly handle Plugman load/unload.
-        val quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().registeredListeners)
-            .filter { registeredListener: RegisteredListener -> registeredListener.plugin == this }
-            .collect(Collectors.toList())
+        val quitListeners = PlayerQuitEvent.getHandlerList().registeredListeners
+            .filter { it.plugin == this }
 
         // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
         // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
-        Bukkit.getOnlinePlayers().forEach { player: Player? ->
-            val event = PlayerQuitEvent(player!!, "")
-            quitListeners.forEach(Consumer { registeredListener: RegisteredListener ->
+        Bukkit.getOnlinePlayers().forEach { player: Player ->
+            val event = PlayerQuitEvent(player, "")
+            quitListeners.forEach({ registeredListener: RegisteredListener ->
                 try {
                     registeredListener.callEvent(event)
                 } catch (e: EventException) {
@@ -230,7 +228,6 @@ class OCMMain : JavaPlugin() {
         addModule(ModuleDisableOffHand(this))
         addModule(ModuleOldBrewingStand(this))
         addModule(ModuleProjectileKnockback(this))
-        addModule(ModuleNoLapisEnchantments(this))
         addModule(ModuleDisableEnderpearlCooldown(this))
         addModule(ModuleChorusFruit(this))
 
@@ -251,17 +248,9 @@ class OCMMain : JavaPlugin() {
         if (server.pluginManager.isPluginEnabled("PlaceholderAPI")) hooks.add(PlaceholderAPIHook())
     }
 
-    fun upgradeConfig() = CH.upgradeConfig()
+    fun upgradeConfig() = configHandler.upgradeConfig()
 
-    fun doesConfigExist() = CH.doesConfigExist()
+    fun doesConfigExist() = configHandler.doesConfigExist()
 
     public override fun getFile() = super.getFile()
-
-    companion object {
-        var instance: OCMMain? = null
-            private set
-
-        val version: String
-            get() = instance!!.description.version
-    }
 }

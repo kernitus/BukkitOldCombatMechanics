@@ -9,17 +9,15 @@ import kernitus.plugin.OldCombatMechanics.OCMMain
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils.loadMaterialList
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.send
 import org.bukkit.Material
-import org.bukkit.entity.HumanEntity
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.inventory.PrepareItemCraftEvent
-import java.util.function.Consumer
 
 /**
  * Makes the specified materials uncraftable.
  */
 class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafting") {
-    private var denied: List<Material?>? = null
+    private lateinit var denied: List<Material>
     private var message: String? = null
 
     init {
@@ -27,8 +25,8 @@ class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafti
     }
 
     override fun reload() {
-        denied = loadMaterialList(module()!!, "denied")
-        message = if (module()!!.getBoolean("showMessage")) module()!!.getString("message") else null
+        denied = loadMaterialList(module(), "denied")
+        message = if (module().getBoolean("showMessage")) module().getString("message") else null
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -41,14 +39,11 @@ class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafti
         val inv = e.inventory
         val result = inv.result
 
-        if (result != null && denied!!.contains(result.type)) {
+        if (result != null && denied.contains(result.type)) {
             inv.result = null
-            if (message != null) viewers.forEach(Consumer { viewer: HumanEntity? ->
-                send(
-                    viewer!!,
-                    message!!
-                )
-            })
+            if (message != null) viewers.forEach {
+                send(it, message!!)
+            }
         }
     }
 }

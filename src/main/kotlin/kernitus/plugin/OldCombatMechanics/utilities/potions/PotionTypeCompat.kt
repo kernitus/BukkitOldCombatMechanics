@@ -28,23 +28,34 @@ class PotionTypeCompat {
         LONG_SWIFTNESS("SPEED")
     }
 
+    companion object {
+        /**
+         * Create an instance of [PotionTypeCompat] based on methods available in currently-running server version.
+         * @return Instance of [PotionTypeCompat], if found.
+         */
+        fun fromPotionMeta(potionMeta: PotionMeta): PotionTypeCompat {
+            try { // For >=1.20.5
+                val potionType = potionMeta.basePotionType
+                return PotionTypeCompat(potionType!!.name)
+            } catch (e: NoSuchMethodError) {
+                val potionData = potionMeta.basePotionData
+                val potionType = potionData!!.type
+                return PotionTypeCompat(potionType.name, potionData.isUpgraded, potionData.isExtended)
+            }
+        }
+    }
+
     private val oldName: String
 
-    @JvmField
     val newName: String
     val type: PotionType?
 
-    @JvmField
     val isStrong: Boolean
     val isLong: Boolean
 
-    override fun hashCode(): Int {
-        return newName.hashCode()
-    }
+    override fun hashCode() = newName.hashCode()
 
-    override fun equals(other: Any?): Boolean {
-        return other is PotionTypeCompat && newName == other.newName
-    }
+    override fun equals(other: Any?) = other is PotionTypeCompat && newName == other.newName
 
     /**
      * Get PotionType for currently-running server. Requires newName and oldName to already be set.
@@ -53,7 +64,7 @@ class PotionTypeCompat {
      * @throws IllegalArgumentException If potion type could not be found.
      */
     private fun getPotionType(): PotionType? {
-        var potionType = try {
+        val potionType = try {
             PotionType.valueOf(this.newName)
         } catch (e: IllegalArgumentException) {
             // If running >=1.20.5, UNCRAFTABLE has been turned into null type
@@ -78,7 +89,7 @@ class PotionTypeCompat {
     constructor(newName: String) {
         this.newName = newName.uppercase()
 
-        var oldName: String
+        val oldName: String
         oldName = try { // See if it's one of the potion names that changed
             PotionTypeMapper.valueOf(newName).oldName
         } catch (e: IllegalArgumentException) {
@@ -127,24 +138,5 @@ class PotionTypeCompat {
         this.type = getPotionType()
         this.isStrong = isStrong
         this.isLong = isLong
-    }
-
-
-    companion object {
-        /**
-         * Create an instance of [PotionTypeCompat] based on methods available in currently-running server version.
-         * @return Instance of [PotionTypeCompat], if found.
-         */
-        @JvmStatic
-        fun fromPotionMeta(potionMeta: PotionMeta): PotionTypeCompat {
-            try { // For >=1.20.5
-                val potionType = potionMeta.basePotionType
-                return PotionTypeCompat(potionType!!.name)
-            } catch (e: NoSuchMethodError) {
-                val potionData = potionMeta.basePotionData
-                val potionType = potionData!!.type
-                return PotionTypeCompat(potionType.name, potionData.isUpgraded, potionData.isExtended)
-            }
-        }
     }
 }

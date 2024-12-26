@@ -24,7 +24,6 @@ object PotionEffects {
      * @return the [PotionEffect] if present
      */
     fun get(entity: LivingEntity, type: PotionEffectType): PotionEffect? {
-        return getPotionEffectsFunction.apply(entity, type)
+        return getPotionEffectsFunction(entity, type)
     }
-
 }

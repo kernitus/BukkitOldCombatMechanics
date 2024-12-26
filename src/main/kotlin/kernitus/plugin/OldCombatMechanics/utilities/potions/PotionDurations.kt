@@ -8,5 +8,4 @@ package kernitus.plugin.OldCombatMechanics.utilities.potions
 /**
  * Hold information on duration of drinkable & splash version of a potion type
  */
-@JvmRecord
-data class PotionDurations(@JvmField val drinkable: Int, @JvmField val splash: Int)
+data class PotionDurations(val drinkable: Int, val splash: Int)

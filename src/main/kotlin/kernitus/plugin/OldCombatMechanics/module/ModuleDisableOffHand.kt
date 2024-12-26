@@ -21,31 +21,29 @@ import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.ItemStack
-import java.util.function.BiPredicate
 
 /**
  * Disables usage of the off-hand.
  */
+private const val OFFHAND_SLOT = 40
+
 class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand") {
-    private var materials: List<Material?>? = null
-    private var deniedMessage: String? = null
-    private var blockType: BlockType? = null
+    private lateinit var materials: List<Material>
+    private lateinit var deniedMessage: String
+    private lateinit var blockType: BlockType
 
     init {
         reload()
     }
 
     override fun reload() {
-        blockType = if (module()!!.getBoolean("whitelist")) BlockType.WHITELIST else BlockType.BLACKLIST
-        materials = loadMaterialList(module()!!, "items")
-        deniedMessage = module()!!.getString("denied-message")
+        blockType = if (module().getBoolean("whitelist")) BlockType.WHITELIST else BlockType.BLACKLIST
+        materials = loadMaterialList(module(), "items")
+        deniedMessage = module().getString("denied-message")?.trim() ?: ""
     }
 
     private fun sendDeniedMessage(sender: CommandSender) {
-        if (!deniedMessage!!.trim { it <= ' ' }.isEmpty()) send(
-            sender,
-            deniedMessage!!
-        )
+        if (deniedMessage.isNotEmpty()) send(sender, deniedMessage)
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -72,7 +70,6 @@ class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand
         } catch (ignored: NoSuchFieldError) {
         } // For versions below 1.16
 
-
         val clickedInventory = e.clickedInventory ?: return
         val inventoryType = clickedInventory.type
         // Source inventory must be PLAYER
@@ -80,22 +77,19 @@ class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand
 
         val view = e.view
         // If neither of the inventories is CRAFTING, player cannot be moving stuff to the offhand
-        if (view.bottomInventory.type != InventoryType.CRAFTING &&
-            view.topInventory.type != InventoryType.CRAFTING
-        ) return
+        if (view.bottomInventory.type != InventoryType.CRAFTING && view.topInventory.type != InventoryType.CRAFTING) return
 
         // Prevent shift-clicking a shield into the offhand item slot
         val currentItem = e.currentItem
-        if (currentItem != null && currentItem.type == Material.SHIELD && isItemBlocked(currentItem)
-            && e.slot != OFFHAND_SLOT && e.isShiftClick
-        ) {
+        if (currentItem != null && currentItem.type == Material.SHIELD && isItemBlocked(currentItem) && e.slot != OFFHAND_SLOT && e.isShiftClick) {
             e.result = Event.Result.DENY
             sendDeniedMessage(player)
         }
 
         if (e.slot == OFFHAND_SLOT &&  // Let allowed items be placed into offhand slot with number keys (hotbar swap)
-            ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.hotbarButton)))
-                    || isItemBlocked(e.cursor)) // Deny placing not allowed items into offhand slot
+            ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.hotbarButton))) || isItemBlocked(
+                e.cursor
+            )) // Deny placing not allowed items into offhand slot
         ) {
             e.result = Event.Result.DENY
             sendDeniedMessage(player)
@@ -125,7 +119,9 @@ class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand
         if (isItemBlocked(offHandItem)) {
             sendDeniedMessage(player)
             inventory.setItemInOffHand(ItemStack(Material.AIR))
-            if (!inventory.addItem(offHandItem).isEmpty()) player.world.dropItemNaturally(player.location, offHandItem)
+            if (inventory.addItem(offHandItem).isNotEmpty()) player.world.dropItemNaturally(
+                player.location, offHandItem
+            )
         }
     }
 
@@ -134,16 +130,11 @@ class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand
             return false
         }
 
-        return !blockType!!.isAllowed(materials, item.type)
+        return !blockType.isAllowed(materials, item.type)
     }
 
-    private enum class BlockType(private val filter: BiPredicate<Collection<Material?>?, Material?>) {
-        WHITELIST(BiPredicate { obj: Collection<Material?>?, o: Material? -> obj!!.contains(o) }),
-        BLACKLIST(not { obj: Collection<Material?>?, o: Material? ->
-            obj!!.contains(
-                o
-            )
-        });
+    private enum class BlockType {
+        WHITELIST, BLACKLIST;
 
         /**
          * Checks whether the given material is allowed.
@@ -152,15 +143,12 @@ class ModuleDisableOffHand(plugin: OCMMain) : OCMModule(plugin, "disable-offhand
          * @param toCheck the material to check
          * @return true if the item is allowed, based on the list and the current mode
          */
-        fun isAllowed(list: Collection<Material?>?, toCheck: Material?): Boolean {
-            return filter.test(list, toCheck)
+        fun isAllowed(list: Collection<Material>, toCheck: Material): Boolean {
+            return when (this) {
+                WHITELIST -> toCheck in list
+                BLACKLIST -> toCheck !in list
+            }
         }
     }
 
-    companion object {
-        private const val OFFHAND_SLOT = 40
-        private fun <T, U> not(predicate: BiPredicate<T, U>): BiPredicate<T, U> {
-            return predicate.negate()
-        }
-    }
 }

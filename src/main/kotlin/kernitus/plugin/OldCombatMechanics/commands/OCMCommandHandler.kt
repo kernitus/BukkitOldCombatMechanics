@@ -29,18 +29,15 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
 
         Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY.toString() + Messenger.HORIZONTAL_BAR)
         Messenger.sendNoPrefix(
-            sender,
-            "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s",
-            description.version
+            sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6${description.version}"
         )
 
+
         if (checkPermissions(sender, Subcommand.reload)) Messenger.sendNoPrefix(
-            sender,
-            "&eYou can use &c/ocm reload&e to reload the config file"
+            sender, "&eYou can use &c/ocm reload&e to reload the config file"
         )
         if (checkPermissions(sender, Subcommand.mode)) Messenger.sendNoPrefix(
-            sender,
-            Config.getConfig().getString(
+            sender, Config.getConfig().getString(
                 "mode-messages.message-usage"
             ) ?: "&4ERROR: &rmode-messages.message-usage string missing"
         )
@@ -77,7 +74,7 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
 
         val modesetName = args[1].lowercase()
 
-        if (!Config.getModesets().containsKey(modesetName)) {
+        if (!Config.modesets.containsKey(modesetName)) {
             Messenger.send(
                 sender,
                 Config.getConfig().getString("mode-messages.invalid-modeset")
@@ -182,8 +179,7 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
         fun checkPermissions(sender: CommandSender, subcommand: Subcommand, sendMessage: Boolean = false): Boolean {
             val hasPermission = sender.hasPermission("oldcombatmechanics.$subcommand")
             if (sendMessage && !hasPermission) Messenger.sendNoPrefix(
-                sender, NO_PERMISSION,
-                "oldcombatmechanics.$subcommand"
+                sender, NO_PERMISSION, "oldcombatmechanics.$subcommand"
             )
             return hasPermission
         }

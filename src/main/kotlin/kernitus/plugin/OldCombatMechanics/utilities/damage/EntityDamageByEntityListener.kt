@@ -20,6 +20,10 @@ import java.util.*
 class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-damage-listener") {
     var enabled: Boolean = false
 
+    companion object {
+        lateinit var INSTANCE: EntityDamageByEntityListener
+    }
+
     private val lastDamages: MutableMap<UUID, Double>
 
     init {
@@ -37,16 +41,15 @@ class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-
         if (event !is EntityDamageByEntityEvent) {
             // Damage immunity only applies to living entities
             if (damagee !is LivingEntity) return
-            val livingDamagee = damagee
 
-            restoreLastDamage(livingDamagee)
+            restoreLastDamage(damagee)
 
             var newDamage = event.damage // base damage, before defence calculations
 
             // Overdamage due to immunity
             // Invulnerability will cause less damage if they attack with a stronger weapon while vulnerable
             // That is, the difference in damage will be dealt, but only if new attack is stronger than previous one
-            checkOverdamage(livingDamagee, event, newDamage)
+            checkOverdamage(damagee, event, newDamage)
 
             if (newDamage < 0) {
                 debug("Damage was $newDamage setting to 0")
@@ -111,7 +114,7 @@ class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-
             // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
             // this implies 40 speed is the minimum to always have full attack strength
             if (damager is HumanEntity) {
-                val cooldown = DamageUtils.getAttackCooldown.apply(damager, 0.5f) // i.e. f2
+                val cooldown = DamageUtils.getAttackCooldown(damager, 0.5f) // i.e. f2
                 debug("Scale by attack delay: $newDamage *= 0.2 + $cooldown^2 * 0.8")
                 newDamage *= (0.2f + cooldown * cooldown * 0.8f).toDouble()
             }
@@ -124,7 +127,7 @@ class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-
             // Enchantment damage, scaled by attack cooldown
             var enchantmentDamage = e.mobEnchantmentsDamage + e.sharpnessDamage
             if (damager is HumanEntity) {
-                val cooldown = DamageUtils.getAttackCooldown.apply(damager, 0.5f)
+                val cooldown = DamageUtils.getAttackCooldown(damager, 0.5f)
                 debug("Scale enchantments by attack delay: $enchantmentDamage *= $cooldown")
                 enchantmentDamage *= cooldown.toDouble()
             }
@@ -187,11 +190,9 @@ class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-
      * @param damagee The living entity to try to restore the last damage for
      */
     private fun restoreLastDamage(damagee: LivingEntity) {
-        val lastStoredDamage = lastDamages[damagee.uniqueId]
-        if (lastStoredDamage != null) {
-            val livingDamagee = damagee
-            livingDamagee.lastDamage = lastStoredDamage
-            debug("Set last damage back to $lastStoredDamage", livingDamagee)
+        lastDamages[damagee.uniqueId]?.let { lastStoredDamage ->
+            damagee.lastDamage = lastStoredDamage
+            debug("Set last damage back to $lastStoredDamage", damagee)
             debug("Set last damage back to $lastStoredDamage")
         }
     }
@@ -226,10 +227,5 @@ class EntityDamageByEntityListener(plugin: OCMMain) : OCMModule(plugin, "entity-
         lastDamages[livingDamagee.uniqueId] = newLastDamage
 
         return newDamage
-    }
-
-
-    companion object {
-        lateinit var INSTANCE: EntityDamageByEntityListener
     }
 }

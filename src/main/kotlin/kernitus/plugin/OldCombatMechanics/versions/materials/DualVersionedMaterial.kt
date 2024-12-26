@@ -21,9 +21,27 @@ class DualVersionedMaterial
  * @param newItem the item supplier for the new version
  */(private val oldItem: Supplier<ItemStack>, private val newItem: Supplier<ItemStack>) :
     VersionedMaterial {
-    override fun newInstance(): ItemStack {
-        return itemSupplier.get()
+
+    companion object {
+        /**
+         * Returns a new [DualVersionedMaterial] based on the material names.
+         *
+         * @param nameOld the old name
+         * @param nameNew the new name
+         * @return a dual versioned material using the supplied names
+         */
+        fun ofMaterialNames(nameOld: String, nameNew: String) =
+            DualVersionedMaterial(fromMaterial(nameOld), fromMaterial(nameNew))
+
+        private fun fromMaterial(name: String): () -> ItemStack {
+            return {
+                val material = Material.matchMaterial(name) ?: throw IllegalArgumentException("Invalid material $name")
+                ItemStack(material)
+            }
+        }
     }
+
+    override fun newInstance() = itemSupplier.get()
 
     @Suppress("deprecation")
     override fun isSame(other: ItemStack): Boolean {
@@ -48,20 +66,4 @@ class DualVersionedMaterial
                 + '}')
     }
 
-    companion object {
-        /**
-         * Returns a new [DualVersionedMaterial] based on the material names.
-         *
-         * @param nameOld the old name
-         * @param nameNew the new name
-         * @return a dual versioned material using the supplied names
-         */
-        fun ofMaterialNames(nameOld: String, nameNew: String): VersionedMaterial {
-            return DualVersionedMaterial(fromMaterial(nameOld), fromMaterial(nameNew))
-        }
-
-        private fun fromMaterial(name: String): Supplier<ItemStack> {
-            return Supplier { ItemStack(Material.matchMaterial(name)!!) }
-        }
-    }
 }

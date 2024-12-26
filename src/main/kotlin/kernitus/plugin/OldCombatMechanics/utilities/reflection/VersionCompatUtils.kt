@@ -33,8 +33,8 @@ object VersionCompatUtils {
         // public float x(float a), grab by return and param type, cause name changes in each version
         if (cooldownMethod == null)  // cache this to not search for it every single time
             cooldownMethod = Reflector.getMethod(
-                getCraftHandle(he)!!.javaClass,
-                Float::class.javaPrimitiveType, "float"
+                craftHumanEntity!!.javaClass,
+                returnType = Float::class.javaPrimitiveType!!, "float"
             )
         return Reflector.invokeMethod(
             cooldownMethod!!, craftHumanEntity, 0.5f

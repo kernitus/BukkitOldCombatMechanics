@@ -14,8 +14,6 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier
-import java.util.*
-import java.util.stream.Collectors
 
 /**
  * Reverts the armour strength changes to 1.8 calculations, including enchantments.
@@ -51,14 +49,10 @@ class ModuleOldArmourStrength(plugin: OCMMain) : OCMModule(plugin, "old-armour-s
             if (!isEnabled(damager, damagedEntity)) return
         }
 
-        val damageModifiers =
-            Arrays.stream(DamageModifier.entries.toTypedArray())
-                .filter { type: DamageModifier -> e.isApplicable(type) }
-                .collect(
-                    Collectors.toMap(
-                        { m: DamageModifier -> m },
-                        { type: DamageModifier? -> e.getDamage(type!!) })
-                )
+        val damageModifiers = DamageModifier.entries
+            .filter { e.isApplicable(it) }
+            .associateWith { e.getDamage(it) }
+            .toMutableMap()
 
         calculateDefenceDamageReduction(damagedEntity, damageModifiers, e.cause, randomness)
 

@@ -18,36 +18,24 @@ class PlaceholderAPIHook : Hook {
 
     override fun init(plugin: OCMMain) {
         expansion = object : PlaceholderExpansion() {
-            override fun canRegister(): Boolean {
-                return true
-            }
+            override fun canRegister() = true
 
-            override fun persist(): Boolean {
-                return true
-            }
+            override fun persist() = true
 
-            override fun getIdentifier(): String {
-                return "ocm"
-            }
+            override fun getIdentifier() = "ocm"
 
-            override fun getAuthor(): String {
-                return java.lang.String.join(", ", plugin.description.authors)
-            }
+            override fun getAuthor() = plugin.description.authors.joinToString(", ")
 
-            override fun getVersion(): String {
-                return plugin.description.version
-            }
+            override fun getVersion() = plugin.description.version
 
             override fun onPlaceholderRequest(player: Player, identifier: String): String? {
-
-                when (identifier) {
-                    "modeset" -> return getModeset(player)
-                    "gapple_cooldown" -> return getGappleCooldown(player)
-                    "napple_cooldown" -> return getNappleCooldown(player)
-                    "enderpearl_cooldown" -> return getEnderpearlCooldown(player)
+                return when (identifier) {
+                    "modeset" -> getModeset(player)
+                    "gapple_cooldown" -> getGappleCooldown(player)
+                    "napple_cooldown" -> getNappleCooldown(player)
+                    "enderpearl_cooldown" -> getEnderpearlCooldown(player)
+                    else -> null
                 }
-
-                return null
             }
 
             fun getGappleCooldown(player: Player): String {
@@ -68,7 +56,7 @@ class PlaceholderAPIHook : Hook {
             fun getModeset(player: Player): String {
                 val playerData = PlayerStorage.getPlayerData(player.uniqueId)
                 var modeName = playerData.getModesetForWorld(player.world.uid)
-                if (modeName == null || modeName.isEmpty()) modeName = "unknown"
+                if (modeName.isNullOrEmpty()) modeName = "unknown"
                 return modeName
             }
         }
@@ -77,8 +65,6 @@ class PlaceholderAPIHook : Hook {
     }
 
     override fun deinit(plugin: OCMMain) {
-        if (expansion != null) {
-            expansion!!.unregister()
-        }
+        expansion?.unregister()
     }
 }

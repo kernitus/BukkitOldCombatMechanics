@@ -23,23 +23,17 @@ class ModuleAttackCooldown(plugin: OCMMain) : OCMModule(plugin, "disable-attack-
     private val NEW_ATTACK_SPEED = 4.0
 
     override fun reload() {
-        Bukkit.getOnlinePlayers().forEach { player: Player -> this.adjustAttackSpeed(player) }
+        Bukkit.getOnlinePlayers().forEach { adjustAttackSpeed(it) }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    fun onPlayerLogin(e: PlayerJoinEvent) {
-        adjustAttackSpeed(e.player)
-    }
+    fun onPlayerLogin(e: PlayerJoinEvent) = adjustAttackSpeed(e.player)
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    fun onWorldChange(e: PlayerChangedWorldEvent) {
-        adjustAttackSpeed(e.player)
-    }
+    fun onWorldChange(e: PlayerChangedWorldEvent) = adjustAttackSpeed(e.player)
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    fun onPlayerQuit(e: PlayerQuitEvent) {
-        setAttackSpeed(e.player, NEW_ATTACK_SPEED)
-    }
+    fun onPlayerQuit(e: PlayerQuitEvent) = setAttackSpeed(e.player, NEW_ATTACK_SPEED)
 
     /**
      * Adjusts the attack speed to the default or configured value, depending on whether the module is enabled.
@@ -48,16 +42,14 @@ class ModuleAttackCooldown(plugin: OCMMain) : OCMModule(plugin, "disable-attack-
      */
     private fun adjustAttackSpeed(player: Player) {
         val attackSpeed = if (isEnabled(player))
-            module()!!.getDouble("generic-attack-speed")
+            module().getDouble("generic-attack-speed")
         else
             NEW_ATTACK_SPEED
 
         setAttackSpeed(player, attackSpeed)
     }
 
-    override fun onModesetChange(player: Player) {
-        adjustAttackSpeed(player)
-    }
+    override fun onModesetChange(player: Player) = adjustAttackSpeed(player)
 
     /**
      * Sets the attack speed to the given value.

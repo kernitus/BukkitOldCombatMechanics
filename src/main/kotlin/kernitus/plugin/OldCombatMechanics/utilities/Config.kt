@@ -25,7 +25,7 @@ object Config {
     private const val CONFIG_NAME = "config.yml"
     private lateinit var plugin: OCMMain
     private lateinit var config: FileConfiguration
-    private val modesets: MutableMap<String, MutableSet<String>> = HashMap()
+    val modesets: MutableMap<String, MutableSet<String>> = HashMap()
     val worlds: MutableMap<UUID, Set<String>> = HashMap()
 
     fun initialise(plugin: OCMMain) {
@@ -91,12 +91,13 @@ object Config {
 
         val moduleNames = ModuleLoader.modules.map { it.configName }.toSet()
         val modesetsSection = config.getConfigurationSection("modesets")
+            ?: throw IllegalStateException("Modesets section is missing from config.yml")
 
         // A set to keep track of all the modules that are already in a modeset
         val modulesInModesets: MutableSet<String> = HashSet()
 
         // Iterate over each modeset
-        for (key in modesetsSection!!.getKeys(false)) {
+        for (key in modesetsSection.getKeys(false)) {
             // Retrieve the list of module names for the current modeset
             val moduleList = modesetsSection.getStringList(key)
             val moduleSet: MutableSet<String> = HashSet(moduleList)
@@ -120,9 +121,10 @@ object Config {
         worlds.clear()
 
         val worldsSection = config.getConfigurationSection("worlds")
+            ?: throw IllegalStateException("Worlds section is missing from config.yml!")
 
         // Iterate over each world
-        for (worldName in worldsSection!!.getKeys(false)) {
+        for (worldName in worldsSection.getKeys(false)) {
             val world = Bukkit.getWorld(worldName)
             if (world == null) {
                 Messenger.warn("Configured world $worldName not found, skipping (might be loaded later?)...")
@@ -134,7 +136,8 @@ object Config {
 
     fun addWorld(world: World) {
         val worldsSection = config.getConfigurationSection("worlds")
-        addWorld(world, worldsSection!!)
+            ?: throw IllegalStateException("Worlds section is missing from config.yml!")
+        addWorld(world, worldsSection)
     }
 
     fun addWorld(world: World, worldsSection: ConfigurationSection) {
@@ -146,9 +149,7 @@ object Config {
         worlds[world.uid] = modesetsSet
     }
 
-    fun removeWorld(world: World) {
-        worlds.remove(world.uid)
-    }
+    fun removeWorld(world: World) = worlds.remove(world.uid)
 
     /**
      * Get the default modeset for the given world.
@@ -200,13 +201,10 @@ object Config {
         return defaultModeset.contains(moduleName)
     }
 
-    fun debugEnabled(): Boolean {
-        return moduleEnabled("debug", null)
-    }
+    fun debugEnabled() = moduleEnabled("debug", null)
 
-    fun moduleSettingEnabled(moduleName: String, moduleSettingName: String): Boolean {
-        return config.getBoolean("$moduleName.$moduleSettingName")
-    }
+    fun moduleSettingEnabled(moduleName: String, moduleSettingName: String) =
+        config.getBoolean("$moduleName.$moduleSettingName")
 
     /**
      * Only use if you can't access config through plugin instance
@@ -214,8 +212,4 @@ object Config {
      * @return config.yml instance
      */
     fun getConfig(): FileConfiguration = plugin.config
-
-    @JvmStatic
-    fun getModesets(): Map<String, Set<String>> = modesets
-
 }

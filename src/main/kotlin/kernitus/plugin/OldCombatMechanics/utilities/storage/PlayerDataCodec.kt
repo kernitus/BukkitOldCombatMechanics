@@ -30,6 +30,6 @@ class PlayerDataCodec : Codec<PlayerData> {
 
     override fun decode(reader: BsonReader, decoderContext: DecoderContext): PlayerData {
         val document = DocumentCodec().decode(reader, decoderContext)
-        return PlayerData.Companion.fromDocument(document)
+        return PlayerData.fromDocument(document)
     }
 }

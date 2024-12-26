@@ -8,7 +8,6 @@ package kernitus.plugin.OldCombatMechanics.utilities
 import kernitus.plugin.OldCombatMechanics.OCMMain
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
-import java.util.*
 import java.util.logging.Level
 
 object Messenger {
@@ -32,7 +31,6 @@ object Messenger {
         plugin.logger.info(TextUtils.stripColour(String.format(message, *args)))
     }
 
-    @JvmStatic
     fun warn(e: Throwable?, message: String, vararg args: Any?) {
         plugin.logger.log(Level.WARNING, TextUtils.stripColour(String.format(message, *args)), e)
     }
@@ -50,10 +48,7 @@ object Messenger {
      * @param message The message to send.
      * @param args    The args to format the message with.
      */
-    @JvmStatic
     fun sendNoPrefix(sender: CommandSender, message: String, vararg args: Any?) {
-        Objects.requireNonNull(sender, "sender cannot be null!")
-        Objects.requireNonNull(message, "message cannot be null!")
         // Prevents sending of individual empty messages, allowing for selective message disabling.
         if (message.isEmpty()) return
         sender.sendMessage(TextUtils.colourise(String.format(message, *args)))
@@ -75,20 +70,15 @@ object Messenger {
         sendNoPrefix(sender, "$prefix $message", *args)
     }
 
-    @JvmStatic
-    fun send(sender: CommandSender, message: String, vararg args: Any) {
-        sendWithPrefix(sender, message, PREFIX, *args)
-    }
+    fun send(sender: CommandSender, message: String, vararg args: Any) = sendWithPrefix(sender, message, PREFIX, *args)
 
-    private fun sendDebugMessage(sender: CommandSender, message: String, vararg args: Any) {
+    private fun sendDebugMessage(sender: CommandSender, message: String, vararg args: Any) =
         sendWithPrefix(sender, message, "&1[Debug]&r", *args)
-    }
 
     fun debug(message: String?, throwable: Throwable?) {
         if (DEBUG_ENABLED) plugin.logger.log(Level.INFO, message, throwable)
     }
 
-    @JvmStatic
     fun debug(message: String, vararg args: Any?) {
         if (DEBUG_ENABLED) info(
             "[DEBUG] $message", *args

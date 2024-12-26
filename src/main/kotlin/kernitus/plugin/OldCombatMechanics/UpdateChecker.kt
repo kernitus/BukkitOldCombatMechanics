@@ -11,7 +11,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.Messenger
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.ChatColor
 import org.bukkit.entity.Player
-import java.util.function.Consumer
 
 class UpdateChecker(private val plugin: OCMMain) {
     private val updater = SpigetUpdateChecker()
@@ -25,11 +24,11 @@ class UpdateChecker(private val plugin: OCMMain) {
 
 
     fun performUpdate(player: Player? = null) {
-        if (player != null) update { message: String? -> player.sendMessage(message) }
+        if (player != null) update { message: String -> player.sendMessage(message) }
         else update { message: String -> Messenger.info(message) }
     }
 
-    private fun update(target: Consumer<String>) {
+    private fun update(target: (String) -> Unit) {
         val messages: MutableList<String> = ArrayList()
         if (updater.isUpdateAvailable) {
             messages.add(ChatColor.BLUE.toString() + "An update for OldCombatMechanics to version " + updater.latestVersion + " is available!")
@@ -48,7 +47,6 @@ class UpdateChecker(private val plugin: OCMMain) {
                 }
             }
         }
-
         messages.forEach(target)
     }
 }

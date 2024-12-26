@@ -32,12 +32,13 @@ import java.util.logging.Level
  * Stores data associated with players to disk, persisting across server restarts.
  */
 object PlayerStorage {
-    private var plugin: OCMMain? = null
-    private var dataFilePath: Path? = null
-    private var documentCodec: DocumentCodec? = null
-    private var data: Document? = null
+    private lateinit var plugin: OCMMain
+    private lateinit var dataFilePath: Path
+    private lateinit var documentCodec: DocumentCodec
+    private lateinit var data: Document
+    private lateinit var codecRegistry: CodecRegistry
+
     private val saveTask = AtomicReference<BukkitTask?>()
-    private var codecRegistry: CodecRegistry? = null
 
     fun initialise(plugin: OCMMain) {
         PlayerStorage.plugin = plugin
@@ -62,9 +63,9 @@ object PlayerStorage {
         try {
             val data = Files.readAllBytes(dataFilePath)
             val reader: BsonReader = BsonBinaryReader(ByteBuffer.wrap(data))
-            return documentCodec!!.decode(reader, DecoderContext.builder().build())
+            return documentCodec.decode(reader, DecoderContext.builder().build())
         } catch (e: IOException) {
-            plugin!!.logger.log(Level.SEVERE, "Error loading player data", e)
+            plugin.logger.log(Level.SEVERE, "Error loading player data", e)
         }
         return Document()
     }
@@ -83,13 +84,13 @@ object PlayerStorage {
     fun instantSave() {
         val outputBuffer = BasicOutputBuffer()
         val writer: BsonWriter = BsonBinaryWriter(outputBuffer)
-        documentCodec!!.encode(writer, data, EncoderContext.builder().isEncodingCollectibleDocument(true).build())
+        documentCodec.encode(writer, data, EncoderContext.builder().isEncodingCollectibleDocument(true).build())
         writer.flush()
 
         try {
             Files.write(dataFilePath, outputBuffer.toByteArray())
         } catch (e: IOException) {
-            plugin!!.logger.log(Level.SEVERE, "Error saving player data", e)
+            plugin.logger.log(Level.SEVERE, "Error saving player data", e)
         } finally {
             outputBuffer.close()
         }
@@ -97,7 +98,7 @@ object PlayerStorage {
 
     @JvmStatic
     fun getPlayerData(uuid: UUID): PlayerData {
-        val playerDoc = data!![uuid.toString()] as Document?
+        val playerDoc = data[uuid.toString()] as Document?
         if (playerDoc == null) {
             val playerData = PlayerData()
             setPlayerData(uuid, playerData)
@@ -105,7 +106,7 @@ object PlayerStorage {
             return playerData
         }
         val bsonDocument: BsonDocument = BsonDocumentWrapper(playerDoc, documentCodec)
-        return codecRegistry!!.get(PlayerData::class.java)
+        return codecRegistry.get(PlayerData::class.java)
             .decode(bsonDocument.asBsonReader(), DecoderContext.builder().build())
     }
 
@@ -115,7 +116,7 @@ object PlayerStorage {
         val writer = BsonDocumentWriter(BsonDocument())
 
         // Get the PlayerDataCodec from the CodecRegistry
-        val playerDataCodec = codecRegistry!!.get(PlayerData::class.java) as PlayerDataCodec
+        val playerDataCodec = codecRegistry.get(PlayerData::class.java) as PlayerDataCodec
 
         // Encode the PlayerData object to the writer
         playerDataCodec.encode(writer, playerData, EncoderContext.builder().isEncodingCollectibleDocument(true).build())
@@ -130,6 +131,6 @@ object PlayerStorage {
         }
 
         // Put the Document into your data map
-        data!![uuid.toString()] = document
+        data[uuid.toString()] = document
     }
 }

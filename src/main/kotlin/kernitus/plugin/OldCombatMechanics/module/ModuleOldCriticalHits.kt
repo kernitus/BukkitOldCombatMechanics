@@ -18,8 +18,8 @@ class ModuleOldCriticalHits(plugin: OCMMain) : OCMModule(plugin, "old-critical-h
     }
 
     override fun reload() {
-        allowSprinting = module()!!.getBoolean("allowSprinting", true)
-        multiplier = module()!!.getDouble("multiplier", 1.5)
+        allowSprinting = module().getBoolean("allowSprinting", true)
+        multiplier = module().getDouble("multiplier", 1.5)
     }
 
     @EventHandler
@@ -27,6 +27,6 @@ class ModuleOldCriticalHits(plugin: OCMMain) : OCMModule(plugin, "old-critical-h
         if (!isEnabled(e.damager, e.damagee)) return
 
         // In 1.9, a critical hit requires the player not to be sprinting
-        if (e.was1_8Crit() && (allowSprinting || !e.wasSprinting())) e.criticalMultiplier = multiplier
+        if (e.was1_8Crit && (allowSprinting || !e.wasSprinting)) e.criticalMultiplier = multiplier
     }
 }

@@ -24,40 +24,55 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
-import kotlin.math.max
 
 /**
  * Customise the golden apple effects.
  */
 class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples") {
-    private var enchantedGoldenAppleEffects: List<PotionEffect>? = null
-    private var goldenAppleEffects: List<PotionEffect>? = null
-    private var enchantedAppleRecipe: ShapedRecipe? = null
+    private lateinit var enchantedGoldenAppleEffects: List<PotionEffect>
+    private lateinit var goldenAppleEffects: List<PotionEffect>
+    private lateinit var enchantedAppleRecipe: ShapedRecipe
 
-    private var lastEaten: MutableMap<UUID, LastEaten>? = null
-    private var cooldown: Cooldown? = null
+    private val lastEaten: MutableMap<UUID, LastEaten> = WeakHashMap()
+    private lateinit var cooldown: Cooldown
 
-    private var normalCooldownMessage: String? = null
-    private var enchantedCooldownMessage: String? = null
+    private lateinit var normalCooldownMessage: String
+    private lateinit var enchantedCooldownMessage: String
+
+    companion object {
+        // Default apple effects
+        // Gapple: absorption I, regen II
+        private val gappleEffects: Set<PotionEffectType> = ImmutableSet.of(
+            PotionEffectType.ABSORPTION, PotionEffectType.REGENERATION
+        )
+
+        // Napple: absorption IV, regen II, fire resistance I, resistance I
+        private val nappleEffects: Set<PotionEffectType?> = ImmutableSet.of(
+            PotionEffectType.ABSORPTION,
+            PotionEffectType.REGENERATION,
+            PotionEffectType.FIRE_RESISTANCE,
+            PotionEffectTypeCompat.RESISTANCE.potionEffectType
+        )
+        lateinit var instance: ModuleGoldenApple
+    }
 
     init {
         instance = this
     }
 
     override fun reload() {
-        normalCooldownMessage = module().getString("cooldown.message-normal")
-        enchantedCooldownMessage = module().getString("cooldown.message-enchanted")
+        normalCooldownMessage = module().getString("cooldown.message-normal") ?: ""
+        enchantedCooldownMessage = module().getString("cooldown.message-enchanted") ?: ""
 
         cooldown = Cooldown(
             module().getLong("cooldown.normal"),
             module().getLong("cooldown.enchanted"),
             module().getBoolean("cooldown.is-shared")
         )
-        lastEaten = WeakHashMap()
+        lastEaten.clear()
 
         enchantedGoldenAppleEffects = getPotionEffects("enchanted-golden-apple-effects")
         goldenAppleEffects = getPotionEffects("golden-apple-effects")
@@ -86,8 +101,6 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
     @EventHandler(priority = EventPriority.HIGH)
     fun onPrepareItemCraft(e: PrepareItemCraftEvent) {
         val item = e.inventory.result ?: return
-        // This should never ever ever ever run. If it does then you probably screwed something up.
-
 
         if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
             val player = e.view.player
@@ -111,41 +124,29 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
 
         val uuid = player.uniqueId
 
-        // Check if the cooldown has expired yet
-        lastEaten!!.putIfAbsent(uuid, LastEaten())
+        // Ensure the lastEatenInfo exists for the player
+        val lastEatenInfo = lastEaten.computeIfAbsent(uuid) { LastEaten() }
+
+        val remainingCooldown = cooldown.getRemainingCooldown(originalItem, lastEatenInfo)
 
         // If on cooldown send appropriate cooldown message
-        if (cooldown!!.isOnCooldown(originalItem, lastEaten!![uuid]!!)) {
-            val le = lastEaten!![uuid]
-
-            val baseCooldown: Long
-            var current: Instant?
-            val message: String?
-
-            if (consumedMaterial == Material.GOLDEN_APPLE) {
-                baseCooldown = cooldown!!.normal
-                current = le!!.lastNormalEaten
-                message = normalCooldownMessage
+        if (remainingCooldown != null && remainingCooldown > 0) {
+            val message: String = if (consumedMaterial == Material.GOLDEN_APPLE) {
+                normalCooldownMessage
             } else {
-                baseCooldown = cooldown!!.enchanted
-                current = le!!.lastEnchantedEaten
-                message = enchantedCooldownMessage
+                enchantedCooldownMessage
             }
 
-            val newestEatTime = le.newestEatTime
-            if (cooldown!!.sharedCooldown && newestEatTime.isPresent) current = newestEatTime.get()
-
-            val seconds = baseCooldown - (Instant.now().epochSecond - current!!.epochSecond)
-
-            if (!message.isNullOrEmpty()) send(
-                player, message.replace("%seconds%".toRegex(), seconds.toString())
-            )
+            if (message.isNotEmpty()) {
+                send(player, message.replace("%seconds%", remainingCooldown.toString()))
+            }
 
             e.isCancelled = true
             return
         }
 
-        lastEaten!![uuid]!!.setForItem(originalItem)
+        // Update last eaten time
+        lastEatenInfo.setForItem(originalItem)
 
         if (!isSettingEnabled("old-potion-effects")) return
 
@@ -158,13 +159,13 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             // Remove all potion effects the apple added
-            player.activePotionEffects.stream().map { obj: PotionEffect -> obj.type }
-                .filter { o: PotionEffectType? -> defaultEffects.contains(o) }
-                .forEach { type: PotionEffectType? -> player.removePotionEffect(type!!) }
+            player.activePotionEffects.map { it.type }.filter { defaultEffects.contains(it) }
+                .forEach { player.removePotionEffect(it) }
+
             // Add previous potion effects from before eating the apple
             player.addPotionEffects(previousPotionEffects)
             // Add new custom effects from eating the apple
-            applyEffects(player, newEffects!!)
+            applyEffects(player, newEffects)
         }, 1L)
     }
 
@@ -173,8 +174,7 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
         for (newEffect in newEffects) {
             // Find the existing effect of the same type with the highest amplifier
             val highestExistingEffect =
-                target.activePotionEffects.stream().filter { e: PotionEffect -> e.type === newEffect.type }
-                    .max(Comparator.comparingInt { obj: PotionEffect -> obj.amplifier }).orElse(null)
+                target.activePotionEffects.filter { it.type === newEffect.type }.maxByOrNull { it.amplifier }
 
             if (highestExistingEffect != null) {
                 // If the new effect has a higher amplifier, apply it
@@ -193,26 +193,27 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
 
 
     private fun getPotionEffects(path: String): List<PotionEffect> {
-        val appleEffects: MutableList<PotionEffect> = ArrayList()
+        val appleEffects: MutableList<PotionEffect> = mutableListOf()
 
         val sect = module().getConfigurationSection(path)
-        for (key in sect!!.getKeys(false)) {
-            val duration = sect.getInt("$key.duration") * 20 // Convert seconds to ticks
-            val amplifier = sect.getInt("$key.amplifier")
+        if (sect != null) {
+            for (key in sect.getKeys(false)) {
+                val duration = sect.getInt("$key.duration") * 20 // Convert seconds to ticks
+                val amplifier = sect.getInt("$key.amplifier")
 
-            val type = fromNewName(key)
-            Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key))
+                val type = fromNewName(key)
+                Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key))
 
-            val fx = PotionEffect(type!!, duration, amplifier)
-            appleEffects.add(fx)
+                val fx = PotionEffect(type!!, duration, amplifier)
+                appleEffects.add(fx)
+            }
         }
         return appleEffects
     }
 
     @EventHandler
     fun onPlayerQuit(e: PlayerQuitEvent) {
-        val uuid = e.player.uniqueId
-        if (lastEaten != null) lastEaten!!.remove(uuid)
+        lastEaten.remove(e.player.uniqueId)
     }
 
     /**
@@ -222,13 +223,8 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
      * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
      */
     fun getGappleCooldown(playerUUID: UUID): Long {
-        val lastEatenInfo = lastEaten!![playerUUID]
-        if (lastEatenInfo?.lastNormalEaten != null) {
-            val timeElapsedSinceEaten = Duration.between(lastEatenInfo.lastNormalEaten, Instant.now()).seconds
-            val cooldownRemaining = cooldown!!.normal - timeElapsedSinceEaten
-            return max(cooldownRemaining.toDouble(), 0.0).toLong() // Return 0 if the cooldown has expired
-        }
-        return 0
+        val lastEatenInfo: LastEaten = lastEaten[playerUUID] ?: return 0
+        return cooldown.getRemainingCooldown(ItemStack(Material.GOLDEN_APPLE), lastEatenInfo) ?: 0
     }
 
     /**
@@ -238,75 +234,46 @@ class ModuleGoldenApple(plugin: OCMMain) : OCMModule(plugin, "old-golden-apples"
      * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
      */
     fun getNappleCooldown(playerUUID: UUID): Long {
-        val lastEatenInfo = lastEaten!![playerUUID]
-        if (lastEatenInfo?.lastEnchantedEaten != null) {
-            val timeElapsedSinceEaten = Duration.between(lastEatenInfo.lastEnchantedEaten, Instant.now()).seconds
-            val cooldownRemaining = cooldown!!.enchanted - timeElapsedSinceEaten
-            return max(cooldownRemaining.toDouble(), 0.0).toLong() // Return 0 if the cooldown has expired
-        }
-        return 0
+        val lastEatenInfo = lastEaten[playerUUID] ?: return 0
+        return cooldown.getRemainingCooldown(ENCHANTED_GOLDEN_APPLE.newInstance(), lastEatenInfo) ?: 0
     }
 
     private class LastEaten {
         var lastNormalEaten: Instant? = null
         var lastEnchantedEaten: Instant? = null
 
-        fun getForItem(item: ItemStack): Optional<Instant> {
-            return if (ENCHANTED_GOLDEN_APPLE.isSame(item)) Optional.ofNullable<Instant>(lastEnchantedEaten)
-            else Optional.ofNullable<Instant>(lastNormalEaten)
-        }
+        fun getForItem(item: ItemStack): Instant? =
+            if (ENCHANTED_GOLDEN_APPLE.isSame(item)) lastEnchantedEaten else lastNormalEaten
 
-        val newestEatTime: Optional<Instant>
-            get() {
-                if (lastEnchantedEaten == null) {
-                    return Optional.ofNullable(lastNormalEaten)
-                }
-                if (lastNormalEaten == null) {
-                    return Optional.of(lastEnchantedEaten!!)
-                }
-                return Optional.of(
-                    (if (lastNormalEaten!! < lastEnchantedEaten) lastEnchantedEaten else lastNormalEaten)!!
-                )
-            }
+        val newestEatTime: Instant?
+            get() = listOfNotNull(lastNormalEaten, lastEnchantedEaten).maxOrNull()
 
         fun setForItem(item: ItemStack) {
+            val now = Instant.now()
             if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
-                lastEnchantedEaten = Instant.now()
+                lastEnchantedEaten = now
             } else {
-                lastNormalEaten = Instant.now()
+                lastNormalEaten = now
             }
         }
     }
 
-    @JvmRecord
     private data class Cooldown(val normal: Long, val enchanted: Long, val sharedCooldown: Boolean) {
         fun getCooldownForItem(item: ItemStack): Long {
             return if (ENCHANTED_GOLDEN_APPLE.isSame(item)) enchanted else normal
         }
 
-        fun isOnCooldown(item: ItemStack, lastEaten: LastEaten): Boolean {
-            return (if (sharedCooldown) lastEaten.newestEatTime else lastEaten.getForItem(item)).map { it: Instant? ->
-                ChronoUnit.SECONDS.between(
-                    it, Instant.now()
-                )
-            }.map { it: Long -> it < getCooldownForItem(item) }.orElse(false)
+        /**
+         * Returns the remaining cooldown time in seconds if the player is on cooldown, or null if not on cooldown.
+         */
+        fun getRemainingCooldown(item: ItemStack, lastEaten: LastEaten): Long? {
+            val lastEatTime: Instant? = if (sharedCooldown) lastEaten.newestEatTime else lastEaten.getForItem(item)
+            val cooldownDuration = getCooldownForItem(item)
+            return lastEatTime?.let {
+                val secondsSinceEat = ChronoUnit.SECONDS.between(it, Instant.now())
+                val remaining = cooldownDuration - secondsSinceEat
+                if (remaining > 0) remaining else null
+            }
         }
-    }
-
-    companion object {
-        // Default apple effects
-        // Gapple: absorption I, regen II
-        private val gappleEffects: Set<PotionEffectType> = ImmutableSet.of(
-            PotionEffectType.ABSORPTION, PotionEffectType.REGENERATION
-        )
-
-        // Napple: absorption IV, regen II, fire resistance I, resistance I
-        private val nappleEffects: Set<PotionEffectType?> = ImmutableSet.of(
-            PotionEffectType.ABSORPTION,
-            PotionEffectType.REGENERATION,
-            PotionEffectType.FIRE_RESISTANCE,
-            PotionEffectTypeCompat.RESISTANCE.get()
-        )
-        lateinit var instance: ModuleGoldenApple
     }
 }

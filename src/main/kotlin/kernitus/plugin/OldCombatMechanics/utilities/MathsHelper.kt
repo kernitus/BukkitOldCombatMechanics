@@ -20,8 +20,5 @@ object MathsHelper {
      * @param max   The maximum value to clamp to.
      * @return The clamped value.
      */
-    @JvmStatic
-    fun clamp(value: Double, min: Double, max: Double): Double {
-        return max(min(value, max), min)
-    }
+    fun clamp(value: Double, min: Double, max: Double) = max(min(value, max), min)
 }

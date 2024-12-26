@@ -15,13 +15,15 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import org.bukkit.Material
 import org.bukkit.event.EventHandler
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
-import java.util.*
 import kotlin.math.abs
 
 /**
  * Restores old tool damage.
  */
 class ModuleOldToolDamage(plugin: OCMMain) : OCMModule(plugin, "old-tool-damage") {
+    companion object {
+        private val WEAPONS = arrayOf("sword", "axe", "pickaxe", "spade", "shovel", "hoe")
+    }
 
     @EventHandler(ignoreCancelled = true)
     fun onEntityDamaged(event: OCMEntityDamageByEntityEvent) {
@@ -69,14 +71,11 @@ class ModuleOldToolDamage(plugin: OCMMain) : OCMModule(plugin, "old-tool-damage"
     }
 
     private fun isWeapon(material: Material): Boolean {
-        return Arrays.stream(WEAPONS).anyMatch { type: String -> isOfType(material, type) }
+        return WEAPONS.any { isOfType(material, it) }
     }
 
     private fun isOfType(mat: Material, type: String): Boolean {
         return mat.toString().endsWith("_" + type.uppercase())
     }
 
-    companion object {
-        private val WEAPONS = arrayOf("sword", "axe", "pickaxe", "spade", "shovel", "hoe")
-    }
 }

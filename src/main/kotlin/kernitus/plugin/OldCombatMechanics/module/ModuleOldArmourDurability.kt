@@ -18,7 +18,6 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import java.util.*
-import java.util.stream.Collectors
 
 class ModuleOldArmourDurability(plugin: OCMMain) : OCMModule(plugin, "old-armour-durability") {
     private val explosionDamaged: MutableMap<UUID, MutableList<ItemStack>> = WeakHashMap()
@@ -32,22 +31,21 @@ class ModuleOldArmourDurability(plugin: OCMMain) : OCMModule(plugin, "old-armour
         val itemType = item.type
 
         // Check if it's a piece of armour they're currently wearing
-        if (Arrays.stream(player.inventory.armorContents)
-                .noneMatch { armourPiece: ItemStack? -> armourPiece != null && armourPiece.type == itemType && armourPiece.type != Material.ELYTRA }
+        if (player.inventory.armorContents.filterNotNull()
+                .none { it.type == itemType && it.type != Material.ELYTRA }
         ) return
 
         val uuid = player.uniqueId
-        if (explosionDamaged.containsKey(uuid)) {
-            val armour = explosionDamaged[uuid]!!
+        explosionDamaged[uuid]?.let { armour ->
             // ItemStack.equals() checks material, durability and quantity to make sure nothing changed in the meantime
             // We're checking all the pieces this way just in case they're wearing two helmets or something strange
             val matchedPieces = armour.stream().filter { piece: ItemStack -> piece == item }.toList()
             armour.removeAll(matchedPieces)
             debug("Item matched explosion, ignoring...", player)
-            if (!matchedPieces.isEmpty()) return
+            if (matchedPieces.isNotEmpty()) return
         }
 
-        var reduction = module()!!.getInt("reduction")
+        var reduction = module().getInt("reduction")
 
         // 60 + (40 / (level + 1) ) % chance that durability is reduced (for each point of durability)
         val damageChance = 60 + (40 / (item.getEnchantmentLevel(EnchantmentCompat.UNBREAKING.get()) + 1))
@@ -59,21 +57,15 @@ class ModuleOldArmourDurability(plugin: OCMMain) : OCMModule(plugin, "old-armour
         e.damage = reduction
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerExplosionDamage(e: EntityDamageEvent) {
-        if (e.isCancelled) return
         if (e.entityType != EntityType.PLAYER) return
         val cause = e.cause
-        if (cause != DamageCause.BLOCK_EXPLOSION &&
-            cause != DamageCause.ENTITY_EXPLOSION
-        ) return
+        if (cause != DamageCause.BLOCK_EXPLOSION && cause != DamageCause.ENTITY_EXPLOSION) return
 
         val player = e.entity as Player
         val uuid = player.uniqueId
-        val armour =
-            Arrays.stream(player.inventory.armorContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }.collect(
-                Collectors.toList()
-            )
+        val armour = player.inventory.armorContents.filterNotNull().toMutableList()
         explosionDamaged[uuid] = armour
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {

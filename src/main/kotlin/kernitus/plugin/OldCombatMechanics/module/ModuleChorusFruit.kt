@@ -26,13 +26,13 @@ class ModuleChorusFruit(plugin: OCMMain) : OCMModule(plugin, "chorus-fruit") {
 
         if (!isEnabled(player)) return
 
-        if (module()!!.getBoolean("prevent-eating")) {
+        if (module().getBoolean("prevent-eating")) {
             e.isCancelled = true
             return
         }
 
-        val hungerValue = module()!!.getInt("hunger-value")
-        val saturationValue = module()!!.getDouble("saturation-value")
+        val hungerValue = module().getInt("hunger-value")
+        val saturationValue = module().getDouble("saturation-value")
         val previousFoodLevel = player.foodLevel
         val previousSaturation = player.saturation
 
@@ -69,26 +69,23 @@ class ModuleChorusFruit(plugin: OCMMain) : OCMModule(plugin, "chorus-fruit") {
             return
         }
 
-        // Not sure when this can occur, but it is marked as @Nullable
         val toLocation = e.to
-
-        if (toLocation == null) {
-            debug("Teleport target is null", player)
+        val world = toLocation?.world
+        if (world == null) {
+            debug("Chorus teleportation cancelled due to null world or location", player)
             return
         }
-
-        val maxheight = toLocation.world!!.maxHeight
+        val maxHeight = world.maxHeight
 
         e.setTo(
             player.location.add(
                 ThreadLocalRandom.current().nextDouble(-distance, distance),
-                clamp(ThreadLocalRandom.current().nextDouble(-distance, distance), 0.0, (maxheight - 1).toDouble()),
+                clamp(ThreadLocalRandom.current().nextDouble(-distance, distance), 0.0, (maxHeight - 1).toDouble()),
                 ThreadLocalRandom.current().nextDouble(-distance, distance)
             )
         )
     }
 
-
     private val maxTeleportationDistance: Double
-        get() = module()!!.getDouble("max-teleportation-distance")
+        get() = module().getDouble("max-teleportation-distance")
 }
