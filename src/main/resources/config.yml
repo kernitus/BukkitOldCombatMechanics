@@ -454,8 +454,6 @@ disable-crafting:
   # List of denied items
   denied:
     - shield
-  # Show the user a message if they try to craft a blacklisted item
-  showMessage: true
   message: "&cYou cannot craft that item!"
 
 disable-offhand:
@@ -480,8 +478,6 @@ disable-enderpearl-cooldown:
   # The cooldown, in seconds
   # PlaceholderAPI: %ocm_enderpearl_cooldown%
   cooldown: 0
-  # Show the user a message if they try to use an enderpearl and the cooldown has not expired yet
-  showMessage: true
   message: "&cYou must wait &7%ds&c before using an enderpearl again!"
 
 chorus-fruit:

@@ -18,7 +18,7 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent
  */
 class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafting") {
     private lateinit var denied: List<Material>
-    private var message: String? = null
+    private var message: String = ""
 
     init {
         reload()
@@ -26,7 +26,7 @@ class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafti
 
     override fun reload() {
         denied = loadMaterialList(module(), "denied")
-        message = if (module().getBoolean("showMessage")) module().getString("message") else null
+        message = module().getString("message") ?: ""
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -41,8 +41,8 @@ class ModuleDisableCrafting(plugin: OCMMain) : OCMModule(plugin, "disable-crafti
 
         if (result != null && denied.contains(result.type)) {
             inv.result = null
-            if (message != null) viewers.forEach {
-                send(it, message!!)
+            if (message.isNotBlank()) viewers.forEach {
+                send(it, message)
             }
         }
     }

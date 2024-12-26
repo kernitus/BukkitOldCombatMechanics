@@ -30,7 +30,7 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
     private val ignoredPlayers: MutableSet<UUID> = HashSet()
     private var lastLaunched: MutableMap<UUID, Long>? = null
     private var cooldown = 0
-    private var message: String? = null
+    private var message: String = ""
 
     companion object {
         lateinit var instance: ModuleDisableEnderpearlCooldown
@@ -47,7 +47,7 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
             if (lastLaunched == null) lastLaunched = WeakHashMap()
         } else lastLaunched = null
 
-        message = if (module().getBoolean("showMessage")) module().getString("message") else null
+        message = module().getString("message") ?: ""
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -69,8 +69,8 @@ class ModuleDisableEnderpearlCooldown(plugin: OCMMain) : OCMModule(plugin, "disa
         lastLaunched?.get(uuid)?.let { lastLaunchedValue ->
             val elapsedSeconds = currentTime - lastLaunchedValue
             if (elapsedSeconds < cooldown) {
-                message?.let {
-                    send(shooter, it, cooldown - elapsedSeconds)
+                if (message.isNotBlank()) {
+                    send(shooter, message, cooldown - elapsedSeconds)
                     return
                 }
             }
