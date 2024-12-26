@@ -12,7 +12,7 @@ import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerJoinEvent
 
-class ModuleUpdateChecker(plugin: OCMMain?) : OCMModule(plugin, "update-checker") {
+class ModuleUpdateChecker(plugin: OCMMain) : OCMModule(plugin, "update-checker") {
     @EventHandler
     fun onPlayerLogin(e: PlayerJoinEvent) {
         val player = e.player

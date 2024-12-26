@@ -42,7 +42,7 @@ class OCMCommandCompleter : TabCompleter {
                     if (sender is Player) { // Get the modesets allowed in the world player is in
                         val world = sender.world
                         completions.addAll(
-                            Config.getWorlds() // If world not in config, all modesets allowed
+                            Config.worlds // If world not in config, all modesets allowed
                                 .getOrDefault(world.uid, Config.getModesets().keys)
                                 .stream()
                                 .filter { ms: String -> ms.startsWith(args[1]) }

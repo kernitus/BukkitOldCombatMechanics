@@ -41,9 +41,8 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
         if (checkPermissions(sender, Subcommand.mode)) Messenger.sendNoPrefix(
             sender,
             Config.getConfig().getString(
-                "mode-messages.message-usage",
-                "&4ERROR: &rmode-messages.message-usage string missing"
-            )
+                "mode-messages.message-usage"
+            ) ?: "&4ERROR: &rmode-messages.message-usage string missing"
         )
 
         Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY.toString() + Messenger.HORIZONTAL_BAR)
@@ -63,19 +62,15 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
 
                 Messenger.send(
                     sender,
-                    Config.getConfig().getString(
-                        "mode-messages.mode-status",
-                        "&4ERROR: &rmode-messages.mode-status string missing"
-                    ),
+                    Config.getConfig().getString("mode-messages.mode-status")
+                        ?: "&4ERROR: &rmode-messages.mode-status string missing",
                     modeName
                 )
             }
             Messenger.send(
                 sender,
-                Config.getConfig().getString(
-                    "mode-messages.message-usage",
-                    "&4ERROR: &rmode-messages.message-usage string missing"
-                )
+                Config.getConfig().getString("mode-messages.message-usage")
+                    ?: "&4ERROR: &rmode-messages.message-usage string missing"
             )
             return
         }
@@ -85,10 +80,8 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
         if (!Config.getModesets().containsKey(modesetName)) {
             Messenger.send(
                 sender,
-                Config.getConfig().getString(
-                    "mode-messages.invalid-modeset",
-                    "&4ERROR: &rmode-messages.invalid-modeset string missing"
-                )
+                Config.getConfig().getString("mode-messages.invalid-modeset")
+                    ?: "&4ERROR: &rmode-messages.invalid-modeset string missing"
             )
             return
         }
@@ -100,10 +93,8 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
             } else {
                 Messenger.send(
                     sender,
-                    Config.getConfig().getString(
-                        "mode-messages.invalid-player",
-                        "&4ERROR: &rmode-messages.invalid-player string missing"
-                    )
+                    Config.getConfig().getString("mode-messages.invalid-player")
+                        ?: "&4ERROR: &rmode-messages.invalid-player string missing"
                 )
                 return
             }
@@ -112,25 +103,21 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
         if (player == null) {
             Messenger.send(
                 sender,
-                Config.getConfig().getString(
-                    "mode-messages.invalid-player",
-                    "&4ERROR: &rmode-messages.invalid-player string missing"
-                )
+                Config.getConfig().getString("mode-messages.invalid-player")
+                    ?: "&4ERROR: &rmode-messages.invalid-player string missing"
             )
             return
         }
 
         val worldId = player.world.uid
-        val worldModesets = Config.getWorlds()[worldId]
+        val worldModesets = Config.worlds[worldId]
 
         // If modesets null it means not configured, so all are allowed
         if (worldModesets != null && !worldModesets.contains(modesetName)) { // Modeset not allowed in current world
             Messenger.send(
                 sender,
-                Config.getConfig().getString(
-                    "mode-messages.invalid-modeset",
-                    "&4ERROR: &rmode-messages.invalid-modeset string missing"
-                )
+                Config.getConfig().getString("mode-messages.invalid-modeset")
+                    ?: "&4ERROR: &rmode-messages.invalid-modeset string missing"
             )
             return
         }
@@ -142,16 +129,14 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
 
         Messenger.send(
             sender,
-            Config.getConfig().getString(
-                "mode-messages.mode-set",
-                "&4ERROR: &rmode-messages.mode-set string missing"
-            ),
+            Config.getConfig().getString("mode-messages.mode-set")
+                ?: "&4ERROR: &rmode-messages.mode-set string missing",
             modesetName
         )
 
         // Re-apply things like attack speed and collision team
         val playerCopy: Player = player
-        ModuleLoader.getModules().forEach(Consumer { module: OCMModule -> module.onModesetChange(playerCopy) })
+        ModuleLoader.modules.forEach(Consumer { module: OCMModule -> module.onModesetChange(playerCopy) })
     }
 
     /*

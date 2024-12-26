@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 
 object VersionChecker {
     fun shouldUpdate(remoteVersion: String): Boolean {
-        return isUpdateOut(remoteVersion, OCMMain.getVersion())
+        return isUpdateOut(remoteVersion, OCMMain.version)
     }
 
     private fun isUpdateOut(remoteVersion: String, localVersion: String): Boolean {

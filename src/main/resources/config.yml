@@ -516,24 +516,6 @@ old-burn-delay:
   # How long, in ticks, entities should be on fire for after not being in direct contact anymore
   fire-ticks: 120
 
-disable-projectile-randomness:
-  # This is to remove projectile randomness while firing arrows with a bow
-  # Or to remove effects of velocity when player is running and launching potions etc
-  # This is actually a very old feature and has been in the game for quite some time
-  enabled: false
-  # What projectiles are affected e.g. arrow, splash_potion, snowball, egg, fishing_hook
-  projectile-types: [ arrow ]
-  # This is the threshold between projectiles' (X,Z) values before they're considered the same and straightened
-  # This value is only useful for multishot. The default of 0.1 works at all but extremely shallow angles,
-  # where arrows end up bunched together. Set to 1 if you want multishots to all follow the same path.
-  epsilon: 0.1
-
-disable-bow-boost:
-  # This is to stop players from boosting themselves forward by hitting themselves
-  # while running with a punch II arrow from their bow
-  # This module simply stops them from hitting themselves with arrows entirely
-  enabled: false
-
 disable-attack-sounds:
   # Disables attack sounds that were added with 1.9+
   # Requires ProtocolLib
@@ -576,4 +558,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 66
+config-version: 67

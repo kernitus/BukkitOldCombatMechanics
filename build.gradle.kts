@@ -14,8 +14,7 @@ val paperVersion: List<String> = (property("gameVersions") as String)
 
 
 plugins {
-    `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.9.10"
+    id("org.jetbrains.kotlin.jvm") version "2.1.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
@@ -76,25 +75,23 @@ version = "2.0.5-beta" // x-release-please-version
 description = "OldCombatMechanics"
 
 
-java {
-    toolchain {
-        // We can build with Java 17 but still support MC >=1.9
-        // This is because MC >=1.9 server can be run with higher Java versions
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
 sourceSets {
     main {
-        java {
+        kotlin {
             exclude("kernitus/plugin/OldCombatMechanics/tester/**")
         }
     }
 }
 
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "17" // Ensure compatibility with Java 17
+        jvmTarget = "17"
     }
 }
 
@@ -104,10 +101,6 @@ tasks.named<Copy>("processResources") {
     filesMatching("plugin.yml") {
         expand("pluginVersion" to version)
     }
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
 }
 
 tasks.named<ShadowJar>("shadowJar") {
