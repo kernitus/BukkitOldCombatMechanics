@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.0.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.0.4...v3.0.0) (2024-12-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* Remove no lapis enchantments module
+* Remove disable projectile randomness & disable bow boost modules
+
+### Features
+
+* remove showMessage from enderpearl & crafting modules, relying on empty to disable ([a57bfab](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a57bfabd6b28770764b34dd119e3adabf3799b1f))
+
+
+### Documentation
+
+* grammar ([02ec0c4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/02ec0c470ea687581f9319e631c89ebf27aec6e4))
+* update list of modules in readme ([3f6c0b4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3f6c0b48c5277737c760daa2b699ca41c906de8c))
+
+
+### Refactoring
+
+* convert codebase to kotlin ([0ee22a5](https://github.com/kernitus/BukkitOldCombatMechanics/commit/0ee22a52bef970d4fdc50ef5029ee98a1cfbc2d8))
+* convert updated & commands to kotlin ([6c338fd](https://github.com/kernitus/BukkitOldCombatMechanics/commit/6c338fd3d76f1afd86cd5933fdc7971e59194f97))
+* fix onPLayerQuit return type warnings ([9bef3ef](https://github.com/kernitus/BukkitOldCombatMechanics/commit/9bef3ef129dbe4697b73d03ecd69e351fa472b73))
+* more idiomatic kotlin & null safety ([53a4e42](https://github.com/kernitus/BukkitOldCombatMechanics/commit/53a4e42ab808fea9cf60fcd042b3a412e790a217))
+
 ## [2.0.4](https://github.com/kernitus/BukkitOldCombatMechanics/compare/2.0.3...v2.0.4) (2024-10-28)
 
 
