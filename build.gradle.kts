@@ -71,7 +71,7 @@ dependencies {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "3.0.0-beta" // x-release-please-version
+version = "3.0.0" // x-release-please-version
 description = "OldCombatMechanics"
 
 
