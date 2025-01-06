@@ -19,6 +19,8 @@ out
 builds
 target
 META-INF
-/build/
+build/
 /gradle/
 /.gradle/
+/.kotlin/
+/run/

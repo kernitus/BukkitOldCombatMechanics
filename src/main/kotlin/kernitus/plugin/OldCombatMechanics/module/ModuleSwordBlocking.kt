@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module
 
 import kernitus.plugin.OldCombatMechanics.OCMMain
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -38,7 +38,7 @@ class ModuleSwordBlocking(plugin: OCMMain) : OCMModule(plugin, "sword-blocking")
     }
 
     init {
-        if (!versionIsNewerOrEqualTo(1, 13, 0)) {
+        if (!VersionCompatUtils.versionIsNewerOrEqualTo(1, 13, 0)) {
             lastInteractedBlocks = WeakHashMap()
         }
     }
@@ -197,7 +197,7 @@ class ModuleSwordBlocking(plugin: OCMMain) : OCMModule(plugin, "sword-blocking")
      * Checks whether player is blocking or they have just begun to and shield is not fully up yet.
      */
     private fun isPlayerBlocking(player: Player): Boolean {
-        return player.isBlocking || (versionIsNewerOrEqualTo(
+        return player.isBlocking || (VersionCompatUtils.versionIsNewerOrEqualTo(
             1, 11, 0
         ) && player.isHandRaised && hasShield(player.inventory))
     }

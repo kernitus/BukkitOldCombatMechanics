@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package kernitus.plugin.OldCombatMechanics.tester
+package kernitus.plugin.OldCombatMechanics
 
-import kernitus.plugin.OldCombatMechanics.OCMMain
-import kernitus.plugin.OldCombatMechanics.tester.TesterUtils.assertEquals
+import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
+import kernitus.plugin.OldCombatMechanics.tester.FakePlayer
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.send
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.sendNoPrefix
@@ -90,7 +90,7 @@ class InGameTester(private val ocm: OCMMain) {
         runQueuedTests()
     }
 
-    private fun runAttacks(armour: Array<ItemStack?>, preparations: Runnable) {
+    private fun runAttacks(armour: Array<ItemStack>, preparations: Runnable) {
         //testMelee(armour, preparations);
         testEnchantedMelee(armour, preparations)
         testOverdamage(armour, preparations)
@@ -101,47 +101,46 @@ class InGameTester(private val ocm: OCMMain) {
         val slots = arrayOf("BOOTS", "LEGGINGS", "CHESTPLATE", "HELMET")
         val random = Random(System.currentTimeMillis())
 
-        val armourContents = arrayOfNulls<ItemStack>(4)
-        for (i in slots.indices) {
+        val armourContents = Array(4) { i ->
             val slot = slots[i]
             // Pick a random material for each slot
-            val material = materials[random.nextInt(6)]
+            val material = materials[random.nextInt(materials.size)]
 
-            val itemStack = ItemStack(Material.valueOf(material + "_" + slot))
+            val itemStack = ItemStack(Material.valueOf("${material}_$slot"))
 
-            // Apply enchantment to armour piece
-            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 50)
+            // Apply enchantment to the armour piece
+            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION, 50)
 
-            armourContents[i] = itemStack
+            itemStack
         }
 
         runAttacks(armourContents) {
-            defender!!.inventory.armorContents = armourContents
+            defender!!.inventory.setArmorContents(armourContents)
             // Test status effects on defence: resistance, fire resistance, absorption
-            defender!!.addPotionEffect(PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 10, 1))
+            defender!!.addPotionEffect(PotionEffect(PotionEffectType.RESISTANCE, 10, 1))
             fakeDefender!!.doBlocking()
         }
     }
 
-    private fun testEnchantedMelee(armour: Array<ItemStack?>, preparations: Runnable) {
+    private fun testEnchantedMelee(armour: Array<ItemStack>, preparations: Runnable) {
         for (weaponType in materialDamages.keys) {
             val weapon = ItemStack(weaponType)
 
             // only axe and sword can have sharpness
             try {
-                weapon.addEnchantment(Enchantment.DAMAGE_ALL, 3)
+                weapon.addEnchantment(Enchantment.SHARPNESS, 3)
             } catch (ignored: IllegalArgumentException) {
             }
 
             val message = weaponType.name + " Sharpness 3"
-            queueAttack(OCMTest(weapon, armour, 2, message, Runnable {
+            queueAttack(OCMTest(weapon, armour, 2, message) {
                 preparations.run()
                 defender!!.maximumNoDamageTicks = 0
-                attacker!!.addPotionEffect(PotionEffect(PotionEffectType.INCREASE_DAMAGE, 10, 0, false))
+                attacker!!.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, 10, 0, false))
                 attacker!!.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false))
                 debug("TESTING WEAPON $weaponType")
                 attacker!!.fallDistance = 2f // Crit
-            }))
+            })
         }
     }
 
@@ -155,7 +154,7 @@ class InGameTester(private val ocm: OCMMain) {
         }
     }
 
-    private fun testOverdamage(armour: Array<ItemStack?>, preparations: Runnable) {
+    private fun testOverdamage(armour: Array<ItemStack>, preparations: Runnable) {
         // 1, 5, 6, 7, 3, 8 according to OCM
         // 1, 4, 5, 6, 2, 7 according to 1.9+
         val weapons = arrayOf(
@@ -192,7 +191,7 @@ class InGameTester(private val ocm: OCMMain) {
 
         // Strength effect
         // 1.8: +130% for each strength level
-        val strength = attacker!!.getPotionEffect(PotionEffectType.INCREASE_DAMAGE)
+        val strength = attacker!!.getPotionEffect(PotionEffectType.STRENGTH)
         if (strength != null) expectedDamage += (strength.amplifier + 1) * 1.3 * expectedDamage
 
         expectedDamage += weaknessAddend
@@ -207,7 +206,7 @@ class InGameTester(private val ocm: OCMMain) {
         }
 
         // Weapon Enchantments
-        var sharpnessDamage = getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.DAMAGE_ALL))
+        var sharpnessDamage = getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.SHARPNESS))
         sharpnessDamage *= attackCooldown.toDouble() // Scale by attack cooldown strength
         expectedDamage += sharpnessDamage
 
@@ -227,7 +226,7 @@ class InGameTester(private val ocm: OCMMain) {
                 rawWeaponDamage > lastDamage
     }
 
-    private fun calculateExpectedDamage(weapon: ItemStack, armourContents: Array<ItemStack?>): Float {
+    private fun calculateExpectedDamage(weapon: ItemStack, armourContents: Array<ItemStack>): Float {
         var expectedDamage = calculateAttackDamage(weapon)
 
         // Overdamage
@@ -349,7 +348,7 @@ class InGameTester(private val ocm: OCMMain) {
     }
 
     private fun beforeAll() {
-        for (player in arrayOf<Player>(attacker, defender)) {
+        for (player in listOfNotNull(attacker, defender)) {
             player.gameMode = GameMode.SURVIVAL
             player.maximumNoDamageTicks = 20
             player.noDamageTicks = 0 // remove spawn invulnerability
@@ -373,7 +372,7 @@ class InGameTester(private val ocm: OCMMain) {
     }
 
     private fun beforeEach() {
-        for (player in arrayOf<Player>(attacker, defender)) {
+        for (player in listOfNotNull(attacker, defender)) {
             player.inventory.clear()
             player.exhaustion = 0f
             player.health = 20.0
@@ -427,7 +426,7 @@ class InGameTester(private val ocm: OCMMain) {
     }
 
     private fun afterEach() {
-        for (player in arrayOf<Player>(attacker, defender)) {
+        for (player in listOfNotNull(attacker, defender)) {
             player.exhaustion = 0f
             player.health = 20.0
         }

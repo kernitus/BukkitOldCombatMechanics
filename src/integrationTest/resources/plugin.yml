@@ -1,0 +1,12 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+main: kernitus.plugin.OldCombatMechanics.OCMTestMain
+name: OldCombatMechanicsTest
+version: ${pluginVersion}
+authors: [ kernitus, Rayzr522 ]
+description: Reverts to pre-1.9 combat mechanics
+website: https://github.com/kernitus/BukkitOldCombatMechanics
+load: POSTWORLD
+softdepend: [ ProtocolLib, PlaceholderAPI ]
+api-version: 1.13

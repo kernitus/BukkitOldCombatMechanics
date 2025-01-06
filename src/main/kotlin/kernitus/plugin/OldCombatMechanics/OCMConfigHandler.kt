@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics
 
 import kernitus.plugin.OldCombatMechanics.utilities.Config
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
@@ -21,7 +21,7 @@ class OCMConfigHandler(private val plugin: OCMMain) {
         if (backup.exists()) backup.delete()
 
         // Keeping YAML comments not available in lower versions
-        if (Reflector.versionIsNewerOrEqualTo(1, 18, 1) || Config.getConfig()
+        if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 18, 1) || Config.getConfig()
                 .getBoolean("force-below-1-18-1-config-upgrade", false)
         ) {
             plugin.logger.warning("Config version does not match, upgrading old config")

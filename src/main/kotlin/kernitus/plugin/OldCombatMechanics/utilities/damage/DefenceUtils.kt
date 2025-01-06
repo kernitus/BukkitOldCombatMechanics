@@ -7,7 +7,6 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage
 
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat
@@ -54,10 +53,10 @@ object DefenceUtils {
 
     // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly checked below
     init {
-        if (Reflector.versionIsNewerOrEqualTo(1, 11, 0)) ARMOUR_IGNORING_CAUSES.add(
+        if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 11, 0)) ARMOUR_IGNORING_CAUSES.add(
             DamageCause.CRAMMING
         )
-        if (Reflector.versionIsNewerOrEqualTo(1, 17, 0)) ARMOUR_IGNORING_CAUSES.add(
+        if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 17, 0)) ARMOUR_IGNORING_CAUSES.add(
             DamageCause.FREEZE
         )
     }
@@ -102,7 +101,7 @@ object DefenceUtils {
             // If the damage cause does not ignore armour
             // If the block they are in is a stalagmite, also ignore armour
             if (!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
-                !(Reflector.versionIsNewerOrEqualTo(
+                !(VersionCompatUtils.versionIsNewerOrEqualTo(
                     1,
                     19,
                     0
@@ -163,13 +162,13 @@ object DefenceUtils {
     fun getDamageAfterArmour1_8(
         defender: LivingEntity,
         baseDamage: Double,
-        armourContents: Array<ItemStack?>,
+        armourContents: Array<ItemStack>,
         damageCause: DamageCause,
         randomness: Boolean
     ): Double {
         var armourPoints = 0.0
         for (i in armourContents.indices) {
-            val itemStack = armourContents[i] ?: continue
+            val itemStack = armourContents[i]
             val slot =
                 arrayOf(
                     EquipmentSlot.FEET,
@@ -231,13 +230,13 @@ object DefenceUtils {
 
 
     private fun calculateArmourEnchantmentReductionFactor(
-        armourContents: Array<ItemStack?>,
+        armourContents: Array<ItemStack>,
         cause: DamageCause,
         randomness: Boolean
     ): Double {
         var totalEpf = 0
         for (armourItem in armourContents) {
-            if (armourItem != null && armourItem.type != Material.AIR) {
+            if (armourItem.type != Material.AIR) {
                 for (enchantmentType in EnchantmentType.entries) {
                     if (!enchantmentType.protectsAgainst(cause)) continue
 
@@ -292,10 +291,10 @@ object DefenceUtils {
                     DamageCause.THORNS,
                     DamageCause.DRAGON_BREATH
                 )
-                if (Reflector.versionIsNewerOrEqualTo(1, 10, 0)) damageCauses.add(
+                if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 10, 0)) damageCauses.add(
                     DamageCause.HOT_FLOOR
                 )
-                if (Reflector.versionIsNewerOrEqualTo(1, 12, 0)) damageCauses.add(
+                if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 12, 0)) damageCauses.add(
                     DamageCause.ENTITY_SWEEP_ATTACK
                 )
                 damageCauses
@@ -308,7 +307,7 @@ object DefenceUtils {
                 DamageCause.FIRE_TICK,
                 DamageCause.LAVA
             )
-            if (Reflector.versionIsNewerOrEqualTo(1, 10, 0)) {
+            if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 10, 0)) {
                 damageCauses.add(DamageCause.HOT_FLOOR)
             }
             damageCauses

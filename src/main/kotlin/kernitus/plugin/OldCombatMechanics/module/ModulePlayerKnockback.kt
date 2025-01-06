@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module
 
 import kernitus.plugin.OldCombatMechanics.OCMMain
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.attribute.Attribute
@@ -53,7 +53,11 @@ class ModulePlayerKnockback(plugin: OCMMain) : OCMModule(plugin, "old-player-kno
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5)
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1)
         netheriteKnockbackResistance =
-            module().getBoolean("enable-knockback-resistance", false) && versionIsNewerOrEqualTo(1, 16, 0)
+            module().getBoolean("enable-knockback-resistance", false) && VersionCompatUtils.versionIsNewerOrEqualTo(
+                1,
+                16,
+                0
+            )
     }
 
     @EventHandler

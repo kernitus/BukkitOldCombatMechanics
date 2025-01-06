@@ -5,7 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.versions.materials
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 import java.util.function.Supplier
@@ -52,7 +52,7 @@ class DualVersionedMaterial
     }
 
     private val itemSupplier: Supplier<ItemStack>
-        get() = if (Reflector.versionIsNewerOrEqualTo(
+        get() = if (VersionCompatUtils.versionIsNewerOrEqualTo(
                 1,
                 13,
                 0

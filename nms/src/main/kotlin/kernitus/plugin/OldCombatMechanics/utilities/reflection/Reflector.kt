@@ -5,54 +5,9 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.reflection
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType
-import org.bukkit.Bukkit
 import java.lang.reflect.*
 
 object Reflector {
-    @JvmField
-    var version: String? = null
-    private var majorVersion = 0
-    private var minorVersion = 0
-    private var patchVersion = 0
-
-    init {
-        try {
-            // Split on the "-" to just get the version information
-            version =
-                Bukkit.getServer().bukkitVersion.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-            val splitVersion = version!!.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-
-            majorVersion = splitVersion[0].toInt()
-            minorVersion = splitVersion[1].toInt()
-            patchVersion = if (splitVersion.size > 2) {
-                splitVersion[2].toInt()
-            } else {
-                0
-            }
-        } catch (e: Exception) {
-            System.err.println("Failed to load Reflector: " + e.message)
-        }
-    }
-
-    /**
-     * Checks if the current server version is newer or equal to the one provided.
-     *
-     * @param major the target major version
-     * @param minor the target minor version. 0 for all
-     * @param patch the target patch version. 0 for all
-     * @return true if the server version is newer or equal to the one provided
-     */
-    fun versionIsNewerOrEqualTo(major: Int, minor: Int, patch: Int): Boolean {
-        if (majorVersion < major) return false
-        if (minorVersion < minor) return false
-        return patchVersion >= patch
-    }
-
-    fun getClass(type: ClassType, name: String): Class<*> {
-        return getClass(type.qualifyClassName(name))
-    }
-
     fun getClass(fqn: String): Class<*> {
         try {
             return Class.forName(fqn)

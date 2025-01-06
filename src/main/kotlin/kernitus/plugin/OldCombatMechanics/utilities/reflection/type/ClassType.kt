@@ -5,13 +5,12 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.reflection.type
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 
 enum class ClassType {
     NMS {
         override fun qualifyClassName(partialName: String): String {
-            if (versionIsNewerOrEqualTo(1, 17, 0)) {
+            if (VersionCompatUtils.versionIsNewerOrEqualTo(1, 17, 0)) {
                 return "net.minecraft.$partialName"
             }
             // FIXME: Assumes class names are upper case and trims off the preceding package name
@@ -20,12 +19,12 @@ enum class ClassType {
             //   Group 1   Group 2
             val className = partialName.replace("([a-z.]+)\\.([a-zA-Z.]+)".toRegex(), "$2")
 
-            return "net.minecraft.server." + Reflector.version + "." + className
+            return "net.minecraft.server." + VersionCompatUtils.version + "." + className
         }
     },
     CRAFTBUKKIT {
         override fun qualifyClassName(partialName: String): String {
-            return String.format("%s.%s.%s", "org.bukkit.craftbukkit", Reflector.version, partialName)
+            return String.format("%s.%s.%s", "org.bukkit.craftbukkit", VersionCompatUtils.version, partialName)
         }
     };
 

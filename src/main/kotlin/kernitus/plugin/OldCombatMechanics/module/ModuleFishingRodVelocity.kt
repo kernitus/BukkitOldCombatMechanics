@@ -6,8 +6,8 @@
 package kernitus.plugin.OldCombatMechanics.module
 
 import kernitus.plugin.OldCombatMechanics.OCMMain
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import org.bukkit.Material
 import org.bukkit.entity.FishHook
 import org.bukkit.event.EventHandler
@@ -44,7 +44,7 @@ class ModuleFishingRodVelocity(plugin: OCMMain) : OCMModule(plugin, "fishing-rod
         random = Random()
 
         // Versions 1.14+ have different gravity than previous versions
-        hasDifferentGravity = versionIsNewerOrEqualTo(1, 14, 0)
+        hasDifferentGravity = VersionCompatUtils.versionIsNewerOrEqualTo(1, 14, 0)
     }
 
     @EventHandler(ignoreCancelled = true)
