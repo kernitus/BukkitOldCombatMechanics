@@ -34,13 +34,14 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
+import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.*
 import java.util.function.Consumer
 import kotlin.math.max
 
-class InGameTester(private val ocm: OCMMain) {
+class InGameTester(private val plugin: JavaPlugin) {
     private var tally: Tally? = null
     private var sender: CommandSender? = null
     private var attacker: Player? = null
@@ -53,6 +54,7 @@ class InGameTester(private val ocm: OCMMain) {
      * Perform all tests using the two specified players
      */
     fun performTests(sender: CommandSender?, location: Location) {
+        println("PERFORMING TESTS")
         this.sender = sender
         fakeAttacker = FakePlayer()
         fakeAttacker!!.spawn(location.add(2.0, 0.0, 0.0))
@@ -322,7 +324,7 @@ class InGameTester(private val ocm: OCMMain) {
             }
         }
 
-        Bukkit.getServer().pluginManager.registerEvents(listener, ocm)
+        Bukkit.getServer().pluginManager.registerEvents(listener, plugin)
 
         val testCount = testQueue.size.toLong()
 
@@ -332,7 +334,7 @@ class InGameTester(private val ocm: OCMMain) {
         for (test in testQueue) {
             attackDelay += test.attackDelay
 
-            Bukkit.getScheduler().runTaskLater(ocm, Runnable {
+            Bukkit.getScheduler().runTaskLater(plugin, Runnable {
                 beforeEach()
                 test.preparations.run()
                 preparePlayer(test.weapon)
@@ -341,7 +343,7 @@ class InGameTester(private val ocm: OCMMain) {
             }, attackDelay)
         }
 
-        Bukkit.getScheduler().runTaskLater(ocm, Runnable {
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             afterAll(testCount)
             EntityDamageByEntityEvent.getHandlerList().unregister(listener)
         }, attackDelay + 1)

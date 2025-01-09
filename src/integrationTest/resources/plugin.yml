@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 main: kernitus.plugin.OldCombatMechanics.OCMTestMain
 name: OldCombatMechanicsTest
-version: ${pluginVersion}
+version: 0.0.1
 authors: [ kernitus, Rayzr522 ]
 description: Reverts to pre-1.9 combat mechanics
 website: https://github.com/kernitus/BukkitOldCombatMechanics

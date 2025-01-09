@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.plugin.java.JavaPlugin
 
 class OCMTestMain : JavaPlugin() {
@@ -32,7 +33,7 @@ class OCMTestMain : JavaPlugin() {
 
             // Run tests using TestEngineLauncher with Spec instances
             TestEngineLauncher(listener)
-                .withSpecs(InGameTesterIntegrationTest())
+                .withSpecs(InGameTesterIntegrationTest(this@OCMTestMain))
                 .launch()
 
             // After tests complete, handle the results on the main server thread
@@ -51,10 +52,12 @@ class OCMTestMain : JavaPlugin() {
     }
 }
 
-class InGameTesterIntegrationTest : StringSpec({
+class InGameTesterIntegrationTest(plugin: JavaPlugin) : StringSpec({
     "test in-game functionality" {
         // Access Bukkit API directly
         val server = Bukkit.getServer()
         // Your test logic and assertions here
+        val tester = InGameTester(plugin)
+        tester.performTests(server.consoleSender, Location(server.getWorld("world"), 0.0, 0.0, 0.0))
     }
 })
