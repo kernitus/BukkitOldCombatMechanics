@@ -229,16 +229,26 @@ tasks.register<ShadowJar>("integrationTestJar") {
 
 val integrationTestJarTask = tasks.named<Jar>("integrationTestJar")
 
+val serverRunDir = file("run")
+
+// Setup server.properties
+val writeServerProperties = tasks.register<WriteProperties>("writeProperties") {
+    encoding = "UTF-8"
+    property("online-mode", false)
+    destinationFile.set(serverRunDir.resolve("server.properties"))
+}
+
 // Configure the runServer task
 tasks.named<RunServer>("runServer") {
+    dependsOn(writeServerProperties)
+    runDirectory.set(serverRunDir)
+
     minecraftVersion("1.19.2")
     jvmArgs("-Dcom.mojang.eula.agree=true")
 
     // Use the task variables to reference the output files
     pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
     pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
-
-    // Additional configurations if needed
 }
 
 tasks.register("integrationTest") {
