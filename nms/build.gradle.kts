@@ -10,6 +10,17 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
+// Make sure we use a consistent java version
+allprojects {
+    plugins.withType<org.jetbrains.kotlin.gradle.plugin.KotlinBasePlugin> {
+        kotlin {
+            jvmToolchain {
+                languageVersion.set(JavaLanguageVersion.of(17))
+            }
+        }
+    }
+}
+
 // Configure subprojects
 subprojects {
     // Apply the Kotlin JVM plugin
@@ -32,12 +43,5 @@ subprojects {
         implementation("xyz.jpenilla:reflection-remapper:0.1.1")
         // To use reflection utils in main package
         //implementation("kernitus.plugin.OldCombatMechanics")?????
-    }
-
-    // Configure the Kotlin compiler options
-    extensions.configure<KotlinJvmProjectExtension> {
-        jvmToolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
-        }
     }
 }

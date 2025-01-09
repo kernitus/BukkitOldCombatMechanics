@@ -110,19 +110,14 @@ dependencies {
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
-    integrationTestImplementation(project(":nms:nms_v1_19_2"))
     integrationTestImplementation("io.kotest:kotest-runner-junit5:6.0.0.M1")
     integrationTestCompileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
-
     // NMS dependencies
+    integrationTestImplementation(project(":nms:nms_v1_19_2"))
+
     /*
-    val testNmsImplementation: Configuration by configurations.getting
-    val testNmsCompileOnly: Configuration by configurations.getting
-    testNmsImplementation(paperweight.paperDevBundle(nmsVersion))
-    testNmsCompileOnly("org.spigotmc:spigot-api:$nmsVersion")
     // Mojang mappings for NMS
     testNmsCompileOnly("com.mojang:authlib:4.0.43")
-    //add("v1_19CompileOnly", "io.papermc.paper:paper-api:1.19.1-R0.1-SNAPSHOT")
      */
 }
 
@@ -207,26 +202,6 @@ tasks.register("printIsRelease") {
         println(if (isRelease) "true" else "false")
     }
 }
-
-// tasks.test {
-//    useJUnitPlatform()
-//    // Ensure the test classes are recompiled when the NMS version changes
-//    inputs.property("nmsVersion", nmsVersion)
-//    systemProperty("nmsVersion", nmsVersion)
-// }
-//
-//// Register the `testNms` task to run tests from `testNms` source set
-// tasks.register<Test>("testNms") {
-//    description = "Runs the testNms tests."
-//    group = "verification"
-//
-//    testClassesDirs = sourceSets["testNms"].output.classesDirs
-//    classpath = sourceSets["testNms"].runtimeClasspath
-//
-//    useJUnitPlatform()
-//    inputs.property("nmsVersion", nmsVersion)
-//    systemProperty("nmsVersion", nmsVersion)
-// }
 
 tasks.register<ShadowJar>("integrationTestJar") {
     archiveClassifier.set("tests")
