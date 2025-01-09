@@ -6,10 +6,10 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
+import java.io.ByteArrayOutputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
-import java.io.ByteArrayOutputStream
 
 val paperVersion: List<String> = (property("gameVersions") as String).split(",").map { it.trim() }
 
@@ -19,7 +19,7 @@ val nmsVersion: String = project.findProperty("nmsVersion") as? String ?: "1.19.
 val nmsVersionShort = nmsVersion.substringBefore("-R").replace('.', '_')
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    kotlin("jvm") version "2.1.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.2"
@@ -35,7 +35,6 @@ idea {
 }
 
 repositories {
-
     mavenCentral()
     // Spigot API
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
@@ -51,29 +50,29 @@ repositories {
     maven("https://repo.dmulloy2.net/repository/public/")
 }
 
-
 sourceSets {
     val main by getting
 
-    //val testNms by creating {
+    // val testNms by creating {
     //    // Include the version-specific test code
     //    kotlin.srcDir("src/testNms/v$nmsVersionShort/kotlin")
 
     //    // Include main output
     //    compileClasspath += main.output
     //    runtimeClasspath += main.output
-    //}
+    // }
 
-    //val test by getting {
+    // val test by getting {
     //    // Include only the classes from testNms, not its dependencies
     //    compileClasspath += sourceSets["testNms"].output
     //    runtimeClasspath += sourceSets["testNms"].output
-    //}
+    // }
     val integrationTest by creating {
-        kotlin.srcDirs("src/integrationTest/java")
-        resources.srcDirs("src/integrationTest/resources")
-        compileClasspath += sourceSets["main"].output
-        runtimeClasspath += output + compileClasspath
+        kotlin.setSrcDirs(listOf("src/integrationTest/kotlin"))
+        resources.setSrcDirs(listOf("src/integrationTest/resources"))
+        // Include only the compiled classes from 'main', excluding resources
+        compileClasspath += sourceSets["main"].output.classesDirs + configurations["compileClasspath"]
+        runtimeClasspath += output + compileClasspath + configurations["runtimeClasspath"]
     }
 }
 
@@ -88,12 +87,12 @@ configurations {
 
 dependencies {
     // Main dependencies
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.0.1")
     // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.106.Final")
+    compileOnly("io.netty:netty-all:4.1.116.Final")
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.11.5")
     // ProtocolLib
@@ -107,9 +106,12 @@ dependencies {
     // Integration test dependencies
     val integrationTestImplementation: Configuration by configurations.getting
     val integrationTestCompileOnly: Configuration by configurations.getting
-    integrationTestImplementation("org.jetbrains.kotlin:kotlin-test")
+    // Kotlin dependencies
+    integrationTestImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
+    integrationTestImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
+    integrationTestImplementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
     integrationTestImplementation(project(":nms:nms_v1_19_2"))
-    integrationTestImplementation("io.kotest:kotest-runner-junit5:5.5.4")
+    integrationTestImplementation("io.kotest:kotest-runner-junit5:6.0.0.M1")
     integrationTestCompileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
 
     // NMS dependencies
@@ -130,16 +132,13 @@ version = "3.0.0-beta" // x-release-please-version
 
 description = "OldCombatMechanics"
 
-
 kotlin {
     jvmToolchain { languageVersion.set(JavaLanguageVersion.of(17)) }
     jvmToolchain(17)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
-    }
+    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
@@ -148,11 +147,12 @@ tasks.named<Copy>("processResources") {
     filesMatching("plugin.yml") { expand("pluginVersion" to version) }
 }
 
-val shadowJarTask = tasks.named<ShadowJar>("shadowJar") {
-    dependsOn("jar")
-    archiveFileName.set("${project.name}.jar")
-    dependencies { relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats") }
-}
+val shadowJarTask =
+    tasks.named<ShadowJar>("shadowJar") {
+        dependsOn("jar")
+        archiveFileName.set("${project.name}.jar")
+        dependencies { relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats") }
+    }
 
 // For ingametesting
 /*
@@ -208,15 +208,15 @@ tasks.register("printIsRelease") {
     }
 }
 
-//tasks.test {
+// tasks.test {
 //    useJUnitPlatform()
 //    // Ensure the test classes are recompiled when the NMS version changes
 //    inputs.property("nmsVersion", nmsVersion)
 //    systemProperty("nmsVersion", nmsVersion)
-//}
+// }
 //
 //// Register the `testNms` task to run tests from `testNms` source set
-//tasks.register<Test>("testNms") {
+// tasks.register<Test>("testNms") {
 //    description = "Runs the testNms tests."
 //    group = "verification"
 //
@@ -226,12 +226,13 @@ tasks.register("printIsRelease") {
 //    useJUnitPlatform()
 //    inputs.property("nmsVersion", nmsVersion)
 //    systemProperty("nmsVersion", nmsVersion)
-//}
-
+// }
 
 tasks.register<ShadowJar>("integrationTestJar") {
     archiveClassifier.set("tests")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    dependsOn("compileIntegrationTestKotlin")
 
     // Include integration test output
     from(sourceSets["integrationTest"].output)
@@ -249,12 +250,7 @@ tasks.register<ShadowJar>("integrationTestJar") {
     exclude("META-INF/*.MF")
     exclude("module-info.class")
     exclude("META-INF/versions/**/module-info.class")
-
-    // Relocate dependencies to prevent conflicts
-    relocate("io.kotest", "kernitus.plugin.OldCombatMechanics.tests.lib.io.kotest")
-    relocate("kotlinx.coroutines", "kernitus.plugin.OldCombatMechanics.tests.lib.kotlinx.coroutines")
 }
-
 
 val integrationTestJarTask = tasks.named<Jar>("integrationTestJar")
 
@@ -301,9 +297,12 @@ tasks.register("checkTestResults") {
     }
 }
 
-tasks.named("check") {
-    dependsOn("integrationTest")
+tasks.register("printGradleVersion") {
+    doLast {
+        println("Gradle version: ${gradle.gradleVersion}")
+    }
 }
+
 
 hangarPublish {
     publications.register("plugin") {
