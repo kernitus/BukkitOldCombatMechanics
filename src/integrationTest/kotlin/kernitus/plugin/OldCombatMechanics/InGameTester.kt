@@ -7,9 +7,6 @@ package kernitus.plugin.OldCombatMechanics
 
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
 import kernitus.plugin.OldCombatMechanics.tester.FakePlayer
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger.send
-import kernitus.plugin.OldCombatMechanics.utilities.Messenger.sendNoPrefix
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSharpnessDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils.getDamageAfterArmour1_8
@@ -44,40 +41,47 @@ import kotlin.math.max
 class InGameTester(private val plugin: JavaPlugin) {
     private var tally: Tally? = null
     private var sender: CommandSender? = null
-    private var attacker: Player? = null
-    private var defender: Player? = null
-    private var fakeAttacker: FakePlayer? = null
-    private var fakeDefender: FakePlayer? = null
+    private lateinit var attacker: Player
+    private lateinit var defender: Player
+    private lateinit var fakeAttacker: FakePlayer
+    private lateinit var fakeDefender: FakePlayer
     private val testQueue: Queue<OCMTest> = ArrayDeque()
 
     /**
      * Perform all tests using the two specified players
      */
     fun performTests(sender: CommandSender?, location: Location) {
-        println("PERFORMING TESTS")
+        plugin.logger.info("PERFORMING THE TESTS")
         this.sender = sender
-        fakeAttacker = FakePlayer()
-        fakeAttacker!!.spawn(location.add(2.0, 0.0, 0.0))
-        fakeDefender = FakePlayer()
+        fakeAttacker = FakePlayer(plugin)
+        plugin.logger.info("FAKE")
+        fakeAttacker.spawn(location.add(2.0, 0.0, 0.0))
+        plugin.logger.info("FAKE2")
+        fakeDefender = FakePlayer(plugin)
         val defenderLocation = location.add(0.0, 0.0, 2.0)
-        fakeDefender!!.spawn(defenderLocation)
+        fakeDefender.spawn(defenderLocation)
 
-        attacker = Bukkit.getPlayer(fakeAttacker!!.uuid)
-        defender = Bukkit.getPlayer(fakeDefender!!.uuid)
+        plugin.logger.info("AAAAA")
+        attacker = checkNotNull(Bukkit.getPlayer(fakeAttacker.uuid))
+        defender = checkNotNull(Bukkit.getPlayer(fakeDefender.uuid))
+        plugin.logger.info("BBBB")
 
         // Turn defender to face attacker
         defenderLocation.yaw = 180f
         defenderLocation.pitch = 0f
-        defender!!.teleport(defenderLocation)
+        defender.teleport(defenderLocation)
+        plugin.logger.info("CCCC")
 
         // modeset of attacker takes precedence
-        var playerData = getPlayerData(attacker!!.uniqueId)
-        playerData.setModesetForWorld(attacker!!.world.uid, "old")
-        setPlayerData(attacker!!.uniqueId, playerData)
+        var playerData = getPlayerData(attacker.uniqueId)
+        playerData.setModesetForWorld(attacker.world.uid, "old")
+        setPlayerData(attacker.uniqueId, playerData)
+        plugin.logger.info("DDD")
 
-        playerData = getPlayerData(defender!!.uniqueId)
-        playerData.setModesetForWorld(defender!!.world.uid, "new")
-        setPlayerData(defender!!.uniqueId, playerData)
+        playerData = getPlayerData(defender.uniqueId)
+        playerData.setModesetForWorld(defender.world.uid, "new")
+        setPlayerData(defender.uniqueId, playerData)
+        plugin.logger.info("EEE")
 
         beforeAll()
         tally = Tally()
@@ -140,7 +144,7 @@ class InGameTester(private val plugin: JavaPlugin) {
                 defender!!.maximumNoDamageTicks = 0
                 attacker!!.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, 10, 0, false))
                 attacker!!.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false))
-                debug("TESTING WEAPON $weaponType")
+                plugin.logger.info("TESTING WEAPON $weaponType")
                 attacker!!.fallDistance = 2f // Crit
             })
         }
@@ -231,29 +235,18 @@ class InGameTester(private val plugin: JavaPlugin) {
     private fun calculateExpectedDamage(weapon: ItemStack, armourContents: Array<ItemStack>): Float {
         var expectedDamage = calculateAttackDamage(weapon)
 
-        // Overdamage
         if (wasOverdamaged(expectedDamage)) {
             val lastDamage = defender!!.lastDamage
-            send(
-                sender!!,
-                "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage)
-            )
-            debug("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage))
+            plugin.logger.info("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage))
             expectedDamage -= lastDamage
         }
 
-        // BASE -> HARD_HAT -> BLOCKING -> ARMOUR -> RESISTANCE -> MAGIC -> ABSORPTION
-
-        // Blocking
-        //1.8 default: (damage - 1) * 50%  1.9 default: 33%   1.11 default: 100%
         if (defender!!.isBlocking) {
-            debug("DEFENDER IS BLOCKING $expectedDamage")
-            //expectedDamage = (1.0F + expectedDamage) * 0.5F;
+            plugin.logger.info("DEFENDER IS BLOCKING $expectedDamage")
             expectedDamage -= max(0.0, (expectedDamage - 1)) * 0.5
-            debug("AFTER BLOCC $expectedDamage")
+            plugin.logger.info("AFTER BLOCK $expectedDamage")
         }
 
-        // Armour, resistance, armour enchants (1.8, with OldArmourStrength module)
         expectedDamage = getDamageAfterArmour1_8(
             defender!!,
             expectedDamage,
@@ -262,28 +255,12 @@ class InGameTester(private val plugin: JavaPlugin) {
             false
         )
 
-        /* 1.8 NMS
-        float f1 = f;
-        f = Math.max(f - this.getAbsorptionHearts(), 0.0F);
-        this.setAbsorptionHearts(this.getAbsorptionHearts() - (f1 - f));
-        if (f != 0.0F) {
-            this.applyExhaustion(damagesource.getExhaustionCost());
-            float f2 = this.getHealth();
-
-            this.setHealth(this.getHealth() - f);
-            this.bs().a(damagesource, f2, f);
-            if (f < 3.4028235E37F) {
-                this.a(StatisticList.x, Math.round(f * 10.0F));
-            }
-        }
-         */
         return expectedDamage.toFloat()
     }
 
     private fun runQueuedTests() {
-        send(sender!!, "Running " + testQueue.size + " tests")
+        plugin.logger.info("Running " + testQueue.size + " tests")
 
-        // Listener gets called every time defender is damaged
         val listener: Listener = object : Listener {
             @EventHandler(priority = EventPriority.MONITOR)
             fun onEvent(e: EntityDamageByEntityEvent) {
@@ -298,21 +275,17 @@ class InGameTester(private val plugin: JavaPlugin) {
                 var expectedWeapon = test.weapon
                 var expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
 
-                while (weaponType != expectedWeapon.type) { // One of the attacks dealt no damage
+                while (weaponType != expectedWeapon.type) {
                     expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
-                    send(sender!!, "&bSKIPPED &f" + expectedWeapon.type + " &fExpected Damage: &b" + expectedDamage)
+                    plugin.logger.info("SKIPPED " + expectedWeapon.type + " Expected Damage: " + expectedDamage)
                     if (expectedDamage == 0f) tally!!.passed()
                     else tally!!.failed()
                     test = testQueue.remove()
                     expectedWeapon = test.weapon
                 }
 
-
                 if (wasFakeOverdamage(weapon) && e.isCancelled) {
-                    send(
-                        sender!!,
-                        "&aPASSED &fFake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage
-                    )
+                    plugin.logger.info("PASSED Fake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage)
                     tally!!.passed()
                 } else {
                     val weaponMessage = "E: " + expectedWeapon.type.name + " A: " + weaponType.name
@@ -328,7 +301,6 @@ class InGameTester(private val plugin: JavaPlugin) {
 
         val testCount = testQueue.size.toLong()
 
-        // Cumulative attack delay for scheduling all the tests
         var attackDelay: Long = 0
 
         for (test in testQueue) {
@@ -350,6 +322,7 @@ class InGameTester(private val plugin: JavaPlugin) {
     }
 
     private fun beforeAll() {
+        plugin.logger.info("Running before all")
         for (player in listOfNotNull(attacker, defender)) {
             player.gameMode = GameMode.SURVIVAL
             player.maximumNoDamageTicks = 20
@@ -359,18 +332,18 @@ class InGameTester(private val plugin: JavaPlugin) {
     }
 
     private fun afterAll(testCount: Long) {
-        fakeAttacker!!.removePlayer()
-        fakeDefender!!.removePlayer()
+        fakeAttacker.removePlayer()
+        fakeDefender.removePlayer()
 
         val missed = testCount - tally!!.total
-        sendNoPrefix(
-            sender!!,
-            "Passed: &a%d &rFailed: &c%d &rTotal: &7%d &rMissed: &7%d",
+        val message = String.format(
+            "Passed: %d Failed: %d Total: %d Missed: %d",
             tally!!.passed,
             tally!!.failed,
             tally!!.total,
             missed
         )
+        plugin.logger.info(message)
     }
 
     private fun beforeEach() {
@@ -396,7 +369,6 @@ class InGameTester(private val plugin: JavaPlugin) {
         attacker!!.inventory.setItemInMainHand(weapon)
         attacker!!.updateInventory()
 
-        // Update attack attribute cause it won't get done with fake players
         val ai = attacker!!.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)
         val defenderArmour = defender!!.getAttribute(Attribute.GENERIC_ARMOR)
 
@@ -406,10 +378,13 @@ class InGameTester(private val plugin: JavaPlugin) {
                 ai.addModifier(am)
             })
 
-        // Update armour attribute
         val armourContents = defender!!.inventory.armorContents
-        debug("Armour: " + Arrays.stream(armourContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }
-            .map { `is`: ItemStack -> `is`.type.name }.reduce { a: String, b: String -> "$a, $b" }.orElse("none"))
+        plugin.logger.info(
+            "Armour: " + Arrays.stream(armourContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }
+                .map { `is`: ItemStack -> `is`.type.name }
+                .reduce { a: String, b: String -> "$a, $b" }
+                .orElse("none")
+        )
         for (i in armourContents.indices) {
             val itemStack = armourContents[i] ?: continue
             val type = itemStack.type

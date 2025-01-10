@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-
 plugins {
     id("io.papermc.paperweight.userdev") version "1.7.7"
 }
@@ -15,3 +13,4 @@ dependencies {
 
 group = "kernitus.plugin.OldCombatMechanics.nms.v1_19_1"
 version = "0.0.1"
+

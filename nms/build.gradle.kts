@@ -41,7 +41,5 @@ subprojects {
         implementation(kotlin("stdlib-jdk8"))
         // For reflection remapping
         implementation("xyz.jpenilla:reflection-remapper:0.1.1")
-        // To use reflection utils in main package
-        //implementation("kernitus.plugin.OldCombatMechanics")?????
     }
 }

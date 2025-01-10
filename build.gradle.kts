@@ -6,10 +6,10 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
-import java.io.ByteArrayOutputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
+import java.io.ByteArrayOutputStream
 
 val paperVersion: List<String> = (property("gameVersions") as String).split(",").map { it.trim() }
 
@@ -149,19 +149,6 @@ val shadowJarTask =
         dependencies { relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats") }
     }
 
-// For ingametesting
-/*
-tasks.reobfJar {
-    outputJar.set(File(buildDir, "libs/${project.name}.jar"))
-}
- */
-
-tasks.assemble {
-    // For ingametesting
-    // dependsOn("reobfJar")
-    dependsOn("shadowJar")
-}
-
 // Function to execute Git commands
 fun executeGitCommand(vararg command: String): String {
     val byteOut = ByteArrayOutputStream()
@@ -203,7 +190,7 @@ tasks.register("printIsRelease") {
     }
 }
 
-tasks.register<ShadowJar>("integrationTestJar") {
+val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
     archiveClassifier.set("tests")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
@@ -226,8 +213,6 @@ tasks.register<ShadowJar>("integrationTestJar") {
     exclude("module-info.class")
     exclude("META-INF/versions/**/module-info.class")
 }
-
-val integrationTestJarTask = tasks.named<Jar>("integrationTestJar")
 
 val serverRunDir = file("run")
 
@@ -281,13 +266,6 @@ tasks.register("checkTestResults") {
         println("Integration tests passed.")
     }
 }
-
-tasks.register("printGradleVersion") {
-    doLast {
-        println("Gradle version: ${gradle.gradleVersion}")
-    }
-}
-
 
 hangarPublish {
     publications.register("plugin") {

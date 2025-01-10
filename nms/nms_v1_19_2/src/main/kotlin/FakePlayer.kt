@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket
 import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.ServerGamePacketListenerImpl
 import net.minecraft.server.players.PlayerList
@@ -33,6 +34,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.plugin.java.JavaPlugin
 import xyz.jpenilla.reflectionremapper.ReflectionRemapper
 import java.net.InetAddress
 import java.net.UnknownHostException
@@ -50,91 +52,123 @@ import java.util.*
     - NMS mappings for checking Mojang / Spigot / Obfuscated class, field, and method names
     https://mappings.cephx.dev/
  */
-class FakePlayer {
-    val uuid: java.util.UUID = java.util.UUID.randomUUID()
-    val name: String = uuid.toString().substring(0, 16)
-    var serverPlayer: ServerPlayer? = null
+class FakePlayer(private val plugin: JavaPlugin) {
+    val uuid: UUID = UUID.randomUUID()
+    private val name: String = uuid.toString().substring(0, 16)
+    lateinit var serverPlayer: ServerPlayer
         private set
     private var bukkitPlayer: Player? = null
     private var tickTaskId: Int? = null
 
     fun spawn(location: Location) {
-        val worldServer = (location.world as CraftWorld).handle
-        val mcServer: MinecraftServer = (Bukkit.getServer() as CraftServer).server
-
-        val gameProfile = GameProfile(uuid, name)
-        this.serverPlayer = ServerPlayer(mcServer, worldServer, gameProfile, null)
-
-        serverPlayer!!.connection = ServerGamePacketListenerImpl(
-            mcServer, Connection(PacketFlow.CLIENTBOUND),
-            serverPlayer
-        )
-        serverPlayer!!.connection.connection.channel = EmbeddedChannel(ChannelInboundHandlerAdapter())
-        serverPlayer!!.connection.connection.channel.close()
-
-        serverPlayer!!.setGameMode(GameType.SURVIVAL)
-
-        serverPlayer!!.setPos(location.x, location.y, location.z)
-        serverPlayer!!.xRot = 0f
-        serverPlayer!!.yRot = 0f
-
+        plugin.logger.info("Spawn: Starting")
+        plugin.logger.info("Location: $location")
+        plugin.logger.info("World: ${location.world}")
+        val craftWorld = location.world as CraftWorld
+        plugin.logger.info("CraftWorld: $craftWorld")
         try {
-            val ipAddress = InetAddress.getByName("127.0.0.1")
-            val asyncPreLoginEvent = AsyncPlayerPreLoginEvent(name, ipAddress, uuid)
-            Thread { Bukkit.getPluginManager().callEvent(asyncPreLoginEvent) }.start()
-        } catch (e: UnknownHostException) {
+            val worldServer: ServerLevel = craftWorld.getHandle()
+            plugin.logger.info("serverlevel: $worldServer")
+        } catch (e: Exception) {
+            println("DIO ")
             e.printStackTrace()
         }
 
-        // TODO playerloginevent might need to get called separately
-        //PlayerLoginEvent playerLoginEvent = new PlayerLoginEvent((Player) entityPlayer, "hostname", ipAddress, ipAddress);
-        val playerList = mcServer.playerList
-        playerList.load(serverPlayer)
-        serverPlayer!!.spawnIn(worldServer)
-        playerList.getPlayers().add(serverPlayer)
+        val worldServer: ServerLevel = craftWorld.handle
+        plugin.logger.info("Spawn: got worldServer")
+        val mcServer: MinecraftServer = (Bukkit.getServer() as CraftServer).server
+        plugin.logger.info("Spawn: got mcServer")
 
-        // Get private playerByUUID Map from PlayerList class and add player to it
-        // private final Map<UUID, EntityPlayer> playersByUUID = Maps.newHashMap();
+        val gameProfile = GameProfile(uuid, name)
+        plugin.logger.info("Spawn: created gameProfile")
+        this.serverPlayer = ServerPlayer(mcServer, worldServer, gameProfile, null)
+        plugin.logger.info("Spawn: created serverPlayer")
+
+        serverPlayer.connection = ServerGamePacketListenerImpl(
+            mcServer, Connection(PacketFlow.CLIENTBOUND),
+            serverPlayer
+        )
+        plugin.logger.info("Spawn: set serverPlayer.connection")
+        serverPlayer.connection.connection.channel = EmbeddedChannel(ChannelInboundHandlerAdapter())
+        plugin.logger.info("Spawn: set serverPlayer.connection.connection.channel")
+        serverPlayer.connection.connection.channel.close()
+        plugin.logger.info("Spawn: closed serverPlayer.connection.connection.channel")
+
+        serverPlayer.setGameMode(GameType.SURVIVAL)
+        plugin.logger.info("Spawn: setGameMode")
+
+        serverPlayer.setPos(location.x, location.y, location.z)
+        plugin.logger.info("Spawn: setPos")
+        serverPlayer.xRot = 0f
+        plugin.logger.info("Spawn: set xRot")
+        serverPlayer.yRot = 0f
+        plugin.logger.info("Spawn: set yRot")
+
+        try {
+            val ipAddress = InetAddress.getByName("127.0.0.1")
+            plugin.logger.info("Spawn: got ipAddress")
+            val asyncPreLoginEvent = AsyncPlayerPreLoginEvent(name, ipAddress, uuid)
+            plugin.logger.info("Spawn: created asyncPreLoginEvent")
+            Thread { Bukkit.getPluginManager().callEvent(asyncPreLoginEvent) }.start()
+            plugin.logger.info("Spawn: called asyncPreLoginEvent in new thread")
+        } catch (e: UnknownHostException) {
+            plugin.logger.severe("Spawn: UnknownHostException - ${e.message}")
+            e.printStackTrace()
+        }
+
+        val playerList = mcServer.playerList
+        plugin.logger.info("Spawn: got playerList")
+        playerList.load(serverPlayer)
+        plugin.logger.info("Spawn: playerList.load(serverPlayer)")
+        serverPlayer.spawnIn(worldServer)
+        plugin.logger.info("Spawn: serverPlayer.spawnIn(worldServer)")
+        playerList.players.add(serverPlayer)
+        plugin.logger.info("Spawn: added serverPlayer to playerList.getPlayers()")
+
         val playersByUUIDField = Reflector.getMapFieldWithTypes(
             PlayerList::class.java,
-            java.util.UUID::class.java,
+            UUID::class.java,
             ServerPlayer::class.java
         )
+        plugin.logger.info("Spawn: got playersByUUIDField")
         val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, ServerPlayer>
-        playerByUUID[uuid] = serverPlayer!!
+        plugin.logger.info("Spawn: got playerByUUID map")
+        playerByUUID[uuid] = serverPlayer
+        plugin.logger.info("Spawn: added serverPlayer to playerByUUID")
 
         bukkitPlayer = Bukkit.getPlayer(uuid)
+        plugin.logger.info("Spawn: got bukkitPlayer")
 
         if (bukkitPlayer == null) throw RuntimeException("Bukkit player with UUID $uuid not found!")
 
-        val joinMessage = "§e" + serverPlayer!!.displayName + " joined the game"
+        val joinMessage = "§e${serverPlayer.displayName} joined the game"
         val playerJoinEvent = PlayerJoinEvent(
             bukkitPlayer!!, net.kyori.adventure.text.Component.text(joinMessage)
         )
+        plugin.logger.info("Spawn: created playerJoinEvent")
         Bukkit.getPluginManager().callEvent(playerJoinEvent)
+        plugin.logger.info("Spawn: called playerJoinEvent")
 
-        // Let other client know player is there
+        // Let other clients know the player is there
         sendPacket(ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.ADD_PLAYER, serverPlayer))
+        plugin.logger.info("Spawn: sent ClientboundPlayerInfoPacket")
 
         worldServer.addNewPlayer(serverPlayer)
+        plugin.logger.info("Spawn: added new player to worldServer")
 
         // Send world info to player client
         playerList.sendLevelInfo(serverPlayer, worldServer)
-        serverPlayer!!.sendServerStatus(playerList.server.status)
+        plugin.logger.info("Spawn: sent level info to serverPlayer")
+        serverPlayer.sendServerStatus(playerList.server.status)
+        plugin.logger.info("Spawn: sent server status to serverPlayer")
 
         // Spawn the player for the client
         sendPacket(ClientboundAddPlayerPacket(serverPlayer))
+        plugin.logger.info("Spawn: sent ClientboundAddPlayerPacket")
 
-        //TODO reenable
-        /*
-        tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
-            OCMMain.instance,
-            { serverPlayer!!.tick() }, 1, 1
-        )
-
-         */
+        // Proceed with the rest of your code...
+        plugin.logger.info("Spawn: completed successfully")
     }
-
     fun removePlayer() {
         if (tickTaskId != null) Bukkit.getScheduler().cancelTask(tickTaskId!!)
         tickTaskId = null
@@ -142,13 +176,13 @@ class FakePlayer {
         val mcServer: MinecraftServer = (Bukkit.getServer() as CraftServer).server
 
         val quitMessage: net.kyori.adventure.text.Component =
-            net.kyori.adventure.text.Component.text("§e" + serverPlayer!!.displayName + " left the game")
+            net.kyori.adventure.text.Component.text("§e" + serverPlayer.displayName + " left the game")
         val playerQuitEvent = PlayerQuitEvent(
             bukkitPlayer!!, quitMessage, PlayerQuitEvent.QuitReason.DISCONNECTED
         )
         Bukkit.getPluginManager().callEvent(playerQuitEvent)
 
-        serverPlayer!!.bukkitEntity.disconnect(quitMessage.toString())
+        serverPlayer.bukkitEntity.disconnect(quitMessage.toString())
 
         val playerList = mcServer.playerList
         playerList.remove(serverPlayer)
