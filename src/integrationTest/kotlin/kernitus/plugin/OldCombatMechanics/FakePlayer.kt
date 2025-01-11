@@ -381,43 +381,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
         bukkitPlayer!!.attack(bukkitEntity)
     }
 
-    fun updateEquipment(slot: String, item: org.bukkit.inventory.ItemStack?) {
-        // slot: The name of the EquipmentSlot (e.g., "MAINHAND")
-
-        val equipmentSlotClass = getNMSClass("net.minecraft.world.entity.EquipmentSlot")
-        val equipmentSlotField = equipmentSlotClass.getDeclaredField(slot)
-        val equipmentSlot = equipmentSlotField.get(null)
-
-        val nmsItemStackClass = getNMSClass("net.minecraft.world.item.ItemStack")
-        val craftItemStackClass = Class.forName("org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack")
-        val asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", org.bukkit.inventory.ItemStack::class.java)
-        val nmsItemStack = asNMSCopyMethod.invoke(null, item)
-
-        val pairClass = getNMSClass("com.mojang.datafixers.util.Pair")
-        val pairConstructor = pairClass.getConstructor(Object::class.java, Object::class.java)
-        val equipmentPair = pairConstructor.newInstance(equipmentSlot, nmsItemStack)
-
-        val equipmentList = mutableListOf<Any>()
-        equipmentList.add(equipmentPair)
-
-        val clientboundSetEquipmentPacketClass =
-            getNMSClass("net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket")
-        val clientboundSetEquipmentPacketConstructor = clientboundSetEquipmentPacketClass.getConstructor(
-            Int::class.javaPrimitiveType,
-            List::class.java
-        )
-        val packet = clientboundSetEquipmentPacketConstructor.newInstance(bukkitPlayer!!.entityId, equipmentList)
-        sendPacket(packet)
-    }
-
     fun doBlocking() {
         bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.SHIELD))
 
-        //TODO dont hardcode version
-        val craftLivingEntityClass = Class.forName("org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity")
-        val handleMethodName = reflectionRemapper.remapMethodName(craftLivingEntityClass, "getHandle")
-        val handleMethod = craftLivingEntityClass.getMethod(handleMethodName)
-        val entityLiving = handleMethod.invoke(bukkitPlayer)
         val livingEntityClass = getNMSClass("net.minecraft.world.entity.LivingEntity")
 
         // Start using item (simulate blocking)
@@ -434,12 +400,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         val startUsingItemMethod =
             checkNotNull(Reflector.getMethod(livingEntityClass, startUsingItemMethodName, interactionHandClass))
-        Reflector.invokeMethod<Any>(startUsingItemMethod, entityLiving, mainHand)
+        Reflector.invokeMethod<Any>(startUsingItemMethod, serverPlayer, mainHand)
 
         // Manually set useItemRemaining field to simulate blocking
         val useItemRemainingFieldName = reflectionRemapper.remapFieldName(livingEntityClass, "useItemRemaining")
         val useItemRemainingField = livingEntityClass.getDeclaredField(useItemRemainingFieldName)
         useItemRemainingField.isAccessible = true
-        useItemRemainingField.setInt(entityLiving, 200)
+        useItemRemainingField.setInt(serverPlayer, 200)
     }
 }
