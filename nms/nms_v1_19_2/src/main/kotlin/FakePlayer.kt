@@ -82,9 +82,8 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Set the GameMode to SURVIVAL
         setPlayerGameMode("SURVIVAL", minecraftServer)
 
-        // TODO Set the player's position and rotation
-        //setPlayerPosition(location)
-        //setPlayerRotation(0f, 0f)
+        setPlayerPosition(location)
+        setPlayerRotation(0f, 0f)
 
         // Fire AsyncPlayerPreLoginEvent
         fireAsyncPlayerPreLoginEvent()
@@ -137,6 +136,22 @@ class FakePlayer(private val plugin: JavaPlugin) {
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
 
         // TODO Set embedded channel to avoid breaking server shutdown
+        /*
+        val nettyConnectionFieldName = reflectionRemapper.remapFieldName(serverGamePacketListenerImplClass, "connection")
+        println("NETTY CONNECTION CHANNEL FIELD NAME $nettyConnectionFieldName")
+        val nettyConnectionField = Reflector.getField(connection.javaClass, nettyConnectionFieldName)
+        val nettyConnection = Reflector.getFieldValue(nettyConnectionField, connection)
+        println("NETTY CONNECTION: $nettyConnection")
+
+        val nettyChannelFieldName = reflectionRemapper.remapFieldName(nettyConnection.javaClass, "channel")
+        println("NETTY CHANNEL FIELD NAME $nettyChannelFieldName")
+        val nettyChannelField = Reflector.getField(nettyConnection.javaClass, nettyChannelFieldName)
+        val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
+        nettyChannelField.set(nettyConnection, embeddedChannel)
+         */
+
+        // entityPlayer.connection.connection.channel
+        // listenerInstance.connection.channel
 
         // Close the connection's channel (simulate no network connection)
         //val channelFieldName = reflectionRemapper.remapFieldName(connectionClass, "channel")
@@ -164,32 +179,34 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     private fun setPlayerPosition(location: Location) {
+        val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
         val setPosMethodName = reflectionRemapper.remapMethodName(
-            Entity::class.java, // Belongs in superclass
+            entityClass,
             "setPos",
             Double::class.javaPrimitiveType,
             Double::class.javaPrimitiveType,
             Double::class.javaPrimitiveType
         )
-        val setPosMethod = Reflector.getMethod(
-            Entity::class.java, setPosMethodName,
-            Double::class.javaPrimitiveType!!,
-            Double::class.javaPrimitiveType!!,
-            Double::class.javaPrimitiveType!!
+        val setPosMethod = checkNotNull(
+            Reflector.getMethod(
+                entityClass,
+                setPosMethodName,
+                Double::class.javaPrimitiveType!!,
+                Double::class.javaPrimitiveType!!,
+                Double::class.javaPrimitiveType!!
+            )
         )
-        println("SET POS name $setPosMethodName val $setPosMethod")
-        setPosMethod!!.invoke(serverPlayer, location.x, location.y, location.z)
+        setPosMethod.invoke(serverPlayer, location.x, location.y, location.z)
     }
 
     private fun setPlayerRotation(xRot: Float, yRot: Float) {
-        val xRotFieldName = reflectionRemapper.remapFieldName(serverPlayer.javaClass, "xRot")
-        val xRotField = serverPlayer.javaClass.getDeclaredField(xRotFieldName)
-        xRotField.isAccessible = true
+        val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
+        val xRotFieldName = reflectionRemapper.remapFieldName(entityClass, "xRot")
+        val xRotField = Reflector.getField(entityClass, xRotFieldName)
         xRotField.setFloat(serverPlayer, xRot)
 
-        val yRotFieldName = reflectionRemapper.remapFieldName(serverPlayer.javaClass, "yRot")
-        val yRotField = serverPlayer.javaClass.getDeclaredField(yRotFieldName)
-        yRotField.isAccessible = true
+        val yRotFieldName = reflectionRemapper.remapFieldName(entityClass, "yRot")
+        val yRotField = Reflector.getField(entityClass, yRotFieldName)
         yRotField.setFloat(serverPlayer, yRot)
     }
 
