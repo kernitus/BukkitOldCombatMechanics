@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XEnchantment
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSharpnessDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
@@ -20,7 +21,6 @@ import org.bukkit.Material
 import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.command.CommandSender
-import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -114,7 +114,7 @@ class InGameTester(private val plugin: JavaPlugin) {
             val itemStack = ItemStack(Material.valueOf("${material}_$slot"))
 
             // Apply enchantment to the armour piece
-            itemStack.addUnsafeEnchantment(Enchantment.PROTECTION, 50)
+            itemStack.addUnsafeEnchantment(XEnchantment.PROTECTION.get()!!, 50)
 
             itemStack
         }
@@ -133,7 +133,7 @@ class InGameTester(private val plugin: JavaPlugin) {
 
             // only axe and sword can have sharpness
             try {
-                weapon.addEnchantment(Enchantment.SHARPNESS, 3)
+                weapon.addEnchantment(XEnchantment.SHARPNESS.get()!!, 3)
             } catch (ignored: IllegalArgumentException) {
             }
 
@@ -211,7 +211,7 @@ class InGameTester(private val plugin: JavaPlugin) {
         }
 
         // Weapon Enchantments
-        var sharpnessDamage = getOldSharpnessDamage(weapon.getEnchantmentLevel(Enchantment.SHARPNESS))
+        var sharpnessDamage = getOldSharpnessDamage(weapon.getEnchantmentLevel(XEnchantment.SHARPNESS.get()!!))
         sharpnessDamage *= attackCooldown.toDouble() // Scale by attack cooldown strength
         expectedDamage += sharpnessDamage
 

@@ -86,6 +86,8 @@ dependencies {
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
     // Spigot
     compileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
+    // For cross-version compatibility
+    implementation("com.github.cryptomorin:XSeries:13.0.0")
 
     // Integration test dependencies
     val integrationTestImplementation: Configuration by configurations.getting
@@ -101,6 +103,7 @@ dependencies {
 
     integrationTestCompileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
     integrationTestCompileOnly("com.mojang:authlib:4.0.43")
+    integrationTestCompileOnly("io.netty:netty-all:4.1.116.Final")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
@@ -128,7 +131,10 @@ val shadowJarTask =
     tasks.named<ShadowJar>("shadowJar") {
         dependsOn("jar")
         archiveFileName.set("${project.name}.jar")
-        dependencies { relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats") }
+        dependencies {
+            relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
+            relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.utils")
+        }
     }
 
 // Function to execute Git commands

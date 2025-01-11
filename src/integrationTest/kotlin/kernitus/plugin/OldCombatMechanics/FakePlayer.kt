@@ -1,9 +1,10 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.mojang.authlib.GameProfile
+import io.netty.channel.ChannelInboundHandlerAdapter
+import io.netty.channel.embedded.EmbeddedChannel
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -118,6 +119,15 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val connectionConstructor = connectionClass.getConstructor(packetFlowClass)
         val connection = connectionConstructor.newInstance(packetFlowClientbound)
 
+        // Create an EmbeddedChannel with a dummy handler
+        val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
+
+        // Set the 'channel' field of 'connection' to the EmbeddedChannel
+        val channelFieldName = reflectionRemapper.remapFieldName(connectionClass, "channel")
+        val channelField = Reflector.getField(connectionClass, channelFieldName)
+        channelField.isAccessible = true
+        channelField.set(connection, embeddedChannel)
+
         // Create a new ServerGamePacketListenerImpl instance
         val serverPlayerClass = serverPlayer.javaClass
         val minecraftServerClass = getNMSClass("net.minecraft.server.MinecraftServer")
@@ -135,33 +145,8 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val connectionField = Reflector.getField(serverPlayerClass, connectionFieldName)
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
 
-        // TODO Set embedded channel to avoid breaking server shutdown
-        /*
-        val nettyConnectionFieldName = reflectionRemapper.remapFieldName(serverGamePacketListenerImplClass, "connection")
-        println("NETTY CONNECTION CHANNEL FIELD NAME $nettyConnectionFieldName")
-        val nettyConnectionField = Reflector.getField(connection.javaClass, nettyConnectionFieldName)
-        val nettyConnection = Reflector.getFieldValue(nettyConnectionField, connection)
-        println("NETTY CONNECTION: $nettyConnection")
-
-        val nettyChannelFieldName = reflectionRemapper.remapFieldName(nettyConnection.javaClass, "channel")
-        println("NETTY CHANNEL FIELD NAME $nettyChannelFieldName")
-        val nettyChannelField = Reflector.getField(nettyConnection.javaClass, nettyChannelFieldName)
-        val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
-        nettyChannelField.set(nettyConnection, embeddedChannel)
-         */
-
-        // entityPlayer.connection.connection.channel
-        // listenerInstance.connection.channel
-
         // Close the connection's channel (simulate no network connection)
-        //val channelFieldName = reflectionRemapper.remapFieldName(connectionClass, "channel")
-        //val channelField = Reflector.getField(connectionClass, channelFieldName)
-        //println("CHANNEL FIELD name: $channelFieldName field: $channelField CONNECTION: $connection")
-        //val channel = Reflector.getFieldValue(channelField, connection)
-        //println("CHANNEL: $channel")
-        //val channelClass = Class.forName("io.netty.channel.Channel", true, channel.javaClass.classLoader)
-        //val closeMethod = channelClass.getMethod("close")
-        //closeMethod.invoke(channel)
+        embeddedChannel.close()
     }
 
     private fun setPlayerGameMode(gameModeName: String, minecraftServer: Any) {
