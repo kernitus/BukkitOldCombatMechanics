@@ -1,4 +1,4 @@
-package kernitus.plugin.OldCombatMechanics.tester
+package kernitus.plugin.OldCombatMechanics
 
 import com.mojang.authlib.GameProfile
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
@@ -261,7 +261,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
     private fun firePlayerJoinEvent() {
         val joinMessage = "$name joined the game"
-        val playerJoinEvent = PlayerJoinEvent(bukkitPlayer!!, Component.text(joinMessage).color(NamedTextColor.YELLOW))
+        val playerJoinEvent = PlayerJoinEvent(bukkitPlayer!!, joinMessage)
         Bukkit.getPluginManager().callEvent(playerJoinEvent)
     }
 
@@ -364,11 +364,11 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Fire PlayerQuitEvent
         val quitMessage = "§e$name left the game"
         val quitComponent = Component.text(quitMessage)
-        val playerQuitEvent = PlayerQuitEvent(bukkitPlayer!!, quitComponent)
+        val playerQuitEvent = PlayerQuitEvent(bukkitPlayer!!, quitMessage)
         Bukkit.getPluginManager().callEvent(playerQuitEvent)
 
         // Disconnect the player
-        bukkitPlayer!!.kick(quitComponent)
+        bukkitPlayer!!.kickPlayer(quitMessage)
     }
 
     private fun getMinecraftServer(): Any {

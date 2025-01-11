@@ -24,6 +24,7 @@ plugins {
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.2"
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    //id("io.papermc.paperweight.userdev") version "1.7.7"
 }
 
 // Make sure javadocs are available to IDE
@@ -53,26 +54,12 @@ repositories {
 sourceSets {
     val main by getting
 
-    // val testNms by creating {
-    //    // Include the version-specific test code
-    //    kotlin.srcDir("src/testNms/v$nmsVersionShort/kotlin")
-
-    //    // Include main output
-    //    compileClasspath += main.output
-    //    runtimeClasspath += main.output
-    // }
-
-    // val test by getting {
-    //    // Include only the classes from testNms, not its dependencies
-    //    compileClasspath += sourceSets["testNms"].output
-    //    runtimeClasspath += sourceSets["testNms"].output
-    // }
     val integrationTest by creating {
         kotlin.setSrcDirs(listOf("src/integrationTest/kotlin"))
         resources.setSrcDirs(listOf("src/integrationTest/resources"))
-        // Include only the compiled classes from 'main', excluding resources
-        compileClasspath += sourceSets["main"].output.classesDirs + configurations["compileClasspath"]
-        runtimeClasspath += output + compileClasspath + configurations["runtimeClasspath"]
+        // Include the main output
+        compileClasspath += main.output
+        runtimeClasspath += output + main.output
     }
 }
 
@@ -100,25 +87,20 @@ dependencies {
     // Spigot
     compileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
 
-    // Depend on the shared code in the nms parent project
-    implementation(project(":nms"))
-
     // Integration test dependencies
     val integrationTestImplementation: Configuration by configurations.getting
     val integrationTestCompileOnly: Configuration by configurations.getting
+
     // Kotlin dependencies
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
     integrationTestImplementation("io.kotest:kotest-runner-junit5:6.0.0.M1")
-    integrationTestCompileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
-    // NMS dependencies
-    integrationTestImplementation(project(":nms:nms_v1_19_2"))
+    integrationTestImplementation("net.kyori:adventure-api:4.18.0")
+    integrationTestImplementation("xyz.jpenilla:reflection-remapper:0.1.1")
 
-    /*
-    // Mojang mappings for NMS
-    testNmsCompileOnly("com.mojang:authlib:4.0.43")
-     */
+    integrationTestCompileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
+    integrationTestCompileOnly("com.mojang:authlib:4.0.43")
 }
 
 group = "kernitus.plugin.OldCombatMechanics"

@@ -6,7 +6,6 @@
 package kernitus.plugin.OldCombatMechanics
 
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
-import kernitus.plugin.OldCombatMechanics.tester.FakePlayer
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSharpnessDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils.getDamageAfterArmour1_8
@@ -121,10 +120,10 @@ class InGameTester(private val plugin: JavaPlugin) {
         }
 
         runAttacks(armourContents) {
-            defender!!.inventory.setArmorContents(armourContents)
+            defender.inventory.setArmorContents(armourContents)
             // Test status effects on defence: resistance, fire resistance, absorption
-            defender!!.addPotionEffect(PotionEffect(PotionEffectType.RESISTANCE, 10, 1))
-            fakeDefender!!.doBlocking()
+            defender.addPotionEffect(PotionEffect(PotionEffectType.RESISTANCE, 10, 1))
+            fakeDefender.doBlocking()
         }
     }
 
@@ -141,11 +140,11 @@ class InGameTester(private val plugin: JavaPlugin) {
             val message = weaponType.name + " Sharpness 3"
             queueAttack(OCMTest(weapon, armour, 2, message) {
                 preparations.run()
-                defender!!.maximumNoDamageTicks = 0
-                attacker!!.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, 10, 0, false))
-                attacker!!.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false))
+                defender.maximumNoDamageTicks = 0
+                attacker.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, 10, 0, false))
+                attacker.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false))
                 plugin.logger.info("TESTING WEAPON $weaponType")
-                attacker!!.fallDistance = 2f // Crit
+                attacker.fallDistance = 2f // Crit
             })
         }
     }
@@ -155,7 +154,7 @@ class InGameTester(private val plugin: JavaPlugin) {
             val weapon = ItemStack(weaponType)
             queueAttack(OCMTest(weapon, armour, 1, weaponType.name) {
                 preparations.run()
-                defender!!.maximumNoDamageTicks = 0
+                defender.maximumNoDamageTicks = 0
             })
         }
     }
@@ -176,7 +175,7 @@ class InGameTester(private val plugin: JavaPlugin) {
             val weapon = ItemStack(weaponType)
             queueAttack(OCMTest(weapon, armour, 3, weaponType.name, Runnable {
                 preparations.run()
-                defender!!.maximumNoDamageTicks = 30
+                defender.maximumNoDamageTicks = 30
             }))
         }
     }
