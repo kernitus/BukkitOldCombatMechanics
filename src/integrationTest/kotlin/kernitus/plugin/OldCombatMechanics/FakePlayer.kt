@@ -16,6 +16,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 import xyz.jpenilla.reflectionremapper.ReflectionRemapper
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.UnknownHostException
 import java.util.*
 
@@ -122,6 +123,10 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Create an EmbeddedChannel with a dummy handler
         val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
 
+        // Set the remote address for the channel
+        val remoteAddress = InetSocketAddress("127.0.0.1", 9999)
+        embeddedChannel.connect(remoteAddress)
+
         // Set the 'channel' field of 'connection' to the EmbeddedChannel
         val channelFieldName = reflectionRemapper.remapFieldName(connectionClass, "channel")
         val channelField = Reflector.getField(connectionClass, channelFieldName)
@@ -146,7 +151,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
 
         // Close the connection's channel (simulate no network connection)
-        embeddedChannel.close()
+        //embeddedChannel.close()
     }
 
     private fun setPlayerGameMode(gameModeName: String, minecraftServer: Any) {
@@ -408,26 +413,30 @@ class FakePlayer(private val plugin: JavaPlugin) {
     fun doBlocking() {
         bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.SHIELD))
 
+        //TODO dont hardcode version
         val craftLivingEntityClass = Class.forName("org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity")
         val handleMethodName = reflectionRemapper.remapMethodName(craftLivingEntityClass, "getHandle")
         val handleMethod = craftLivingEntityClass.getMethod(handleMethodName)
         val entityLiving = handleMethod.invoke(bukkitPlayer)
+        val livingEntityClass = getNMSClass("net.minecraft.world.entity.LivingEntity")
 
         // Start using item (simulate blocking)
         val interactionHandClass = getNMSClass("net.minecraft.world.InteractionHand")
-        val mainHandField = interactionHandClass.getDeclaredField("MAIN_HAND")
+        val mainHandFieldName = reflectionRemapper.remapFieldName(interactionHandClass, "MAIN_HAND")
+        val mainHandField = interactionHandClass.getDeclaredField(mainHandFieldName)
         val mainHand = mainHandField.get(null)
 
         val startUsingItemMethodName = reflectionRemapper.remapMethodName(
-            entityLiving.javaClass,
+            livingEntityClass,
             "startUsingItem",
             interactionHandClass
         )
-        val startUsingItemMethod = entityLiving.javaClass.getMethod(startUsingItemMethodName, interactionHandClass)
-        startUsingItemMethod.invoke(entityLiving, mainHand)
+
+        val startUsingItemMethod =
+            checkNotNull(Reflector.getMethod(livingEntityClass, startUsingItemMethodName, interactionHandClass))
+        Reflector.invokeMethod<Any>(startUsingItemMethod, entityLiving, mainHand)
 
         // Manually set useItemRemaining field to simulate blocking
-        val livingEntityClass = getNMSClass("net.minecraft.world.entity.LivingEntity")
         val useItemRemainingFieldName = reflectionRemapper.remapFieldName(livingEntityClass, "useItemRemaining")
         val useItemRemainingField = livingEntityClass.getDeclaredField(useItemRemainingFieldName)
         useItemRemainingField.isAccessible = true

@@ -60,7 +60,7 @@ class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                     plugin.logger.severe("ERROR")
                     e.printStackTrace()
                 }
-                Bukkit.shutdown()
+                //Bukkit.shutdown()
             }
         }
     }

@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.cryptomorin.xseries.XEnchantment
+import com.cryptomorin.xseries.XPotion
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSharpnessDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
@@ -32,7 +33,6 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
-import org.bukkit.potion.PotionEffectType
 import java.util.*
 import java.util.function.Consumer
 import kotlin.math.max
@@ -122,7 +122,7 @@ class InGameTester(private val plugin: JavaPlugin) {
         runAttacks(armourContents) {
             defender.inventory.setArmorContents(armourContents)
             // Test status effects on defence: resistance, fire resistance, absorption
-            defender.addPotionEffect(PotionEffect(PotionEffectType.RESISTANCE, 10, 1))
+            defender.addPotionEffect(PotionEffect(XPotion.RESISTANCE.potionEffectType!!, 10, 1))
             fakeDefender.doBlocking()
         }
     }
@@ -141,8 +141,8 @@ class InGameTester(private val plugin: JavaPlugin) {
             queueAttack(OCMTest(weapon, armour, 2, message) {
                 preparations.run()
                 defender.maximumNoDamageTicks = 0
-                attacker.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, 10, 0, false))
-                attacker.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 10, -1, false))
+                attacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 10, 0, false))
+                attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 10, -1, false))
                 plugin.logger.info("TESTING WEAPON $weaponType")
                 attacker.fallDistance = 2f // Crit
             })
@@ -192,21 +192,21 @@ class InGameTester(private val plugin: JavaPlugin) {
 
         // Weakness effect, 1.8: -0.5
         // We ignore the level as there is only one level of weakness potion
-        val weaknessAddend = if (attacker!!.hasPotionEffect(PotionEffectType.WEAKNESS)) -0.5 else 0.0
+        val weaknessAddend = if (attacker.hasPotionEffect(XPotion.WEAKNESS.get()!!)) -0.5 else 0.0
 
         // Strength effect
         // 1.8: +130% for each strength level
-        val strength = attacker!!.getPotionEffect(PotionEffectType.STRENGTH)
+        val strength = attacker.getPotionEffect(XPotion.STRENGTH.get()!!)
         if (strength != null) expectedDamage += (strength.amplifier + 1) * 1.3 * expectedDamage
 
         expectedDamage += weaknessAddend
 
         // Take into account damage reduction because of cooldown
-        val attackCooldown = defender!!.attackCooldown
+        val attackCooldown = defender.attackCooldown
         expectedDamage *= (0.2f + attackCooldown * attackCooldown * 0.8f).toDouble()
 
         // Critical hit
-        if (isCriticalHit1_8(attacker!!)) {
+        if (isCriticalHit1_8(attacker)) {
             expectedDamage *= 1.5
         }
 
@@ -220,14 +220,14 @@ class InGameTester(private val plugin: JavaPlugin) {
 
     private fun wasFakeOverdamage(weapon: ItemStack): Boolean {
         val weaponDamage = calculateAttackDamage(weapon)
-        val lastDamage = defender!!.lastDamage
-        return defender!!.noDamageTicks.toFloat() > defender!!.maximumNoDamageTicks.toFloat() / 2.0f &&
+        val lastDamage = defender.lastDamage
+        return defender.noDamageTicks.toFloat() > defender.maximumNoDamageTicks.toFloat() / 2.0f &&
                 weaponDamage <= lastDamage
     }
 
     private fun wasOverdamaged(rawWeaponDamage: Double): Boolean {
-        val lastDamage = defender!!.lastDamage
-        return defender!!.noDamageTicks.toFloat() > defender!!.maximumNoDamageTicks.toFloat() / 2.0f &&
+        val lastDamage = defender.lastDamage
+        return defender.noDamageTicks.toFloat() > defender.maximumNoDamageTicks.toFloat() / 2.0f &&
                 rawWeaponDamage > lastDamage
     }
 
@@ -235,19 +235,19 @@ class InGameTester(private val plugin: JavaPlugin) {
         var expectedDamage = calculateAttackDamage(weapon)
 
         if (wasOverdamaged(expectedDamage)) {
-            val lastDamage = defender!!.lastDamage
+            val lastDamage = defender.lastDamage
             plugin.logger.info("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage))
             expectedDamage -= lastDamage
         }
 
-        if (defender!!.isBlocking) {
+        if (defender.isBlocking) {
             plugin.logger.info("DEFENDER IS BLOCKING $expectedDamage")
             expectedDamage -= max(0.0, (expectedDamage - 1)) * 0.5
             plugin.logger.info("AFTER BLOCK $expectedDamage")
         }
 
         expectedDamage = getDamageAfterArmour1_8(
-            defender!!,
+            defender,
             expectedDamage,
             armourContents,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
@@ -264,8 +264,8 @@ class InGameTester(private val plugin: JavaPlugin) {
             @EventHandler(priority = EventPriority.MONITOR)
             fun onEvent(e: EntityDamageByEntityEvent) {
                 val damager = e.damager
-                if (damager.uniqueId !== attacker!!.uniqueId ||
-                    e.entity.uniqueId !== defender!!.uniqueId
+                if (damager.uniqueId !== attacker.uniqueId ||
+                    e.entity.uniqueId !== defender.uniqueId
                 ) return
 
                 val weapon = (damager as Player).inventory.itemInMainHand
@@ -309,7 +309,7 @@ class InGameTester(private val plugin: JavaPlugin) {
                 beforeEach()
                 test.preparations.run()
                 preparePlayer(test.weapon)
-                attacker!!.attack(defender!!)
+                attacker.attack(defender)
                 afterEach()
             }, attackDelay)
         }
@@ -365,11 +365,11 @@ class InGameTester(private val plugin: JavaPlugin) {
             )
             weapon.setItemMeta(meta)
         }
-        attacker!!.inventory.setItemInMainHand(weapon)
-        attacker!!.updateInventory()
+        attacker.inventory.setItemInMainHand(weapon)
+        attacker.updateInventory()
 
-        val ai = attacker!!.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)
-        val defenderArmour = defender!!.getAttribute(Attribute.GENERIC_ARMOR)
+        val ai = attacker.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)
+        val defenderArmour = defender.getAttribute(Attribute.GENERIC_ARMOR)
 
         weapon.type.getDefaultAttributeModifiers(EquipmentSlot.HAND)[Attribute.GENERIC_ATTACK_DAMAGE].forEach(
             Consumer { am: AttributeModifier? ->
@@ -377,7 +377,7 @@ class InGameTester(private val plugin: JavaPlugin) {
                 ai.addModifier(am)
             })
 
-        val armourContents = defender!!.inventory.armorContents
+        val armourContents = defender.inventory.armorContents
         plugin.logger.info(
             "Armour: " + Arrays.stream(armourContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }
                 .map { `is`: ItemStack -> `is`.type.name }
