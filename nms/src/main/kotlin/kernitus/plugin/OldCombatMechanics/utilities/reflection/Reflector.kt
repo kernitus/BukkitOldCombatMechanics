@@ -21,13 +21,29 @@ object Reflector {
     fun getMethod(clazz: Class<*>, name: String): Method? = clazz.methods.firstOrNull { it.name == name }
 
     fun getMethod(clazz: Class<*>, name: String, parameterCount: Int): Method? =
-        clazz.methods.firstOrNull { it.name == name && it.parameterCount == parameterCount }
+        (clazz.methods + clazz.declaredMethods).firstOrNull { it.name == name && it.parameterCount == parameterCount }
 
     fun getMethod(clazz: Class<*>, returnType: Class<*>, vararg parameterTypeSimpleNames: String): Method? {
         val typeNames = parameterTypeSimpleNames.toList()
-        return clazz.methods.firstOrNull { method ->
+        return (clazz.methods + clazz.declaredMethods).firstOrNull { method ->
             method.returnType == returnType && getParameterNames(method) == typeNames
         }
+    }
+
+    fun getMethod(clazz: Class<*>, name: String, vararg parameterTypes: Class<*>): Method? {
+        var currentClass: Class<*>? = clazz
+        while (currentClass != null) {
+            try {
+                val method = currentClass.getDeclaredMethod(name, *parameterTypes)
+                method.isAccessible = true
+                return method
+            } catch (e: NoSuchMethodException) {
+                // Method not found in this class, continue to superclass
+                currentClass = currentClass.superclass
+            }
+        }
+        // Method not found in class hierarchy
+        return null
     }
 
     fun getMethod(clazz: Class<*>, name: String, vararg parameterTypeSimpleNames: String): Method? {
