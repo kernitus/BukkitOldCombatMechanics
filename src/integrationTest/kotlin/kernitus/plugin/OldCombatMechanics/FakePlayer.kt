@@ -4,7 +4,6 @@ import com.mojang.authlib.GameProfile
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.embedded.EmbeddedChannel
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
-import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -17,6 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import xyz.jpenilla.reflectionremapper.ReflectionRemapper
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.net.UnknownHostException
 import java.util.*
 
@@ -51,12 +51,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
             ?: throw NoSuchMethodException("Cannot find getHandle method in ${craftWorldClass.name}")
         val worldServer = Reflector.invokeMethod<Any>(getHandleMethod, world)
 
-        // Get the NMS MinecraftServer from the Bukkit server
-        val server = Bukkit.getServer()
-        val craftServerClass = server.javaClass
-        val getServerMethod = Reflector.getMethod(craftServerClass, "getServer")
-            ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
-        val minecraftServer = Reflector.invokeMethod<Any>(getServerMethod, server)
+        val minecraftServer = getMinecraftServer()
 
         // Create a GameProfile for the fake player
         val gameProfile = GameProfile(uuid, name)
@@ -91,8 +86,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         fireAsyncPlayerPreLoginEvent()
 
         // Add the player to the server's player list
-        val connection = getConnection(serverPlayer)
-        addToPlayerList(minecraftServer, connection)
+        addToPlayerList(minecraftServer)
 
         // Retrieve the Bukkit Player instance
         bukkitPlayer = Bukkit.getPlayer(uuid)
@@ -102,7 +96,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         firePlayerJoinEvent()
 
         // Notify other players and spawn the fake player
-        notifyPlayersOfJoin(minecraftServer)
+        notifyPlayersOfJoin()
         spawnPlayerInWorld(worldServer, minecraftServer)
 
         plugin.logger.info("Spawn: completed successfully")
@@ -120,18 +114,28 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val connectionConstructor = connectionClass.getConstructor(packetFlowClass)
         val connection = connectionConstructor.newInstance(packetFlowClientbound)
 
-        // Create an EmbeddedChannel with a dummy handler
-        val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
-
-        // Set the remote address for the channel
+        // Create a custom EmbeddedChannel with an overridden remoteAddress()
         val remoteAddress = InetSocketAddress("127.0.0.1", 9999)
-        embeddedChannel.connect(remoteAddress)
+        val embeddedChannel = object : EmbeddedChannel(ChannelInboundHandlerAdapter()) {
+            override fun remoteAddress(): SocketAddress {
+                return remoteAddress
+            }
 
-        // Set the 'channel' field of 'connection' to the EmbeddedChannel
+            override fun localAddress(): SocketAddress {
+                return remoteAddress
+            }
+        }
+
+        // Set the 'channel' field of 'connection' to the custom EmbeddedChannel
         val channelFieldName = reflectionRemapper.remapFieldName(connectionClass, "channel")
         val channelField = Reflector.getField(connectionClass, channelFieldName)
         channelField.isAccessible = true
         channelField.set(connection, embeddedChannel)
+
+        // Set address field of connection
+        val addressFieldName = reflectionRemapper.remapFieldName(connectionClass, "address")
+        val addressField = Reflector.getField(connectionClass, addressFieldName)
+        addressField.set(connection, remoteAddress)
 
         // Create a new ServerGamePacketListenerImpl instance
         val serverPlayerClass = serverPlayer.javaClass
@@ -149,9 +153,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val connectionFieldName = reflectionRemapper.remapFieldName(serverPlayerClass, "connection")
         val connectionField = Reflector.getField(serverPlayerClass, connectionFieldName)
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
-
-        // Close the connection's channel (simulate no network connection)
-        //embeddedChannel.close()
     }
 
     private fun setPlayerGameMode(gameModeName: String, minecraftServer: Any) {
@@ -211,22 +212,11 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
     }
 
-    private fun addToPlayerList(minecraftServer: Any, connection: Any) {
-        // Get the player's 'getBukkitEntity' method
-        val getBukkitEntityMethodName =
-            reflectionRemapper.remapMethodName(serverPlayer.javaClass, "getBukkitEntity")
-        val getBukkitEntityMethod = serverPlayer.javaClass.getMethod(getBukkitEntityMethodName)
-        val bukkitEntity = getBukkitEntityMethod.invoke(serverPlayer) as Player
-
-        // Get the PlayerList from MinecraftServer
-        val playerListFieldName = reflectionRemapper.remapMethodName(minecraftServer.javaClass, "getPlayerList")
-        val playerListMethod = checkNotNull(Reflector.getMethod(minecraftServer.javaClass, playerListFieldName))
-        val playerList = Reflector.invokeMethod<Any>(playerListMethod, minecraftServer)
+    private fun addToPlayerList(minecraftServer: Any) {
+        val playerList = getPlayerList(minecraftServer)
 
         // Add the player to the PlayerList
         val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
-        val connectionClass = getNMSClass("net.minecraft.network.Connection")
-        val serverPlayerClass = getNMSClass("net.minecraft.server.level.ServerPlayer")
         val loadMethodName = reflectionRemapper.remapMethodName(
             playerListClass,
             "load",
@@ -255,7 +245,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         Bukkit.getPluginManager().callEvent(playerJoinEvent)
     }
 
-    private fun notifyPlayersOfJoin(minecraftServer: Any) {
+    private fun notifyPlayersOfJoin() {
         // Send ClientboundPlayerInfoPacket to all players
         val clientboundPlayerInfoPacketClass =
             getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket")
@@ -315,7 +305,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun sendPacket(packet: Any) {
         // Get the Packet class
         val packetClass = getNMSClass("net.minecraft.network.protocol.Packet")
-        //val connectionFieldCache = mutableMapOf<Class<*>, Field>()
 
         // Send packet to all online players
         Bukkit.getOnlinePlayers().forEach { player ->
@@ -340,41 +329,68 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun removePlayer() {
-        // Remove any scheduled tasks
-        val mcServer = getMinecraftServer()
-        val playerList = getPlayerList(mcServer)
-        val removeMethodName = reflectionRemapper.remapMethodName(
-            playerList.javaClass,
-            "remove",
-            serverPlayer.javaClass
-        )
-        val removeMethod = playerList.javaClass.getMethod(removeMethodName, serverPlayer.javaClass)
-        removeMethod.invoke(playerList, serverPlayer)
-
         // Fire PlayerQuitEvent
         val quitMessage = "§e$name left the game"
-        val quitComponent = Component.text(quitMessage)
         val playerQuitEvent = PlayerQuitEvent(bukkitPlayer!!, quitMessage)
         Bukkit.getPluginManager().callEvent(playerQuitEvent)
 
         // Disconnect the player
         bukkitPlayer!!.kickPlayer(quitMessage)
+
+        // Remove the player from the world
+        /*
+    val removeMethodName = reflectionRemapper.remapMethodName(
+        serverPlayer.javaClass,
+        "remove"
+    )
+    val removeMethod = serverPlayer.javaClass.getMethod(removeMethodName)
+    removeMethod.invoke(serverPlayer)
+         */
+
+        // Remove from playerList
+        val playerList = getPlayerList(getMinecraftServer())
+        val removePlayerMethodName = reflectionRemapper.remapMethodName(
+            playerList.javaClass,
+            "remove",
+            serverPlayer.javaClass
+        )
+        val removePlayerMethod = playerList.javaClass.getMethod(removePlayerMethodName, serverPlayer.javaClass)
+        removePlayerMethod.invoke(playerList, serverPlayer)
+
+        // Close the connection properly
+        val connection = getConnection(serverPlayer)
+        val disconnectMethodName = reflectionRemapper.remapMethodName(
+            connection.javaClass,
+            "disconnect",
+            getNMSClass("net.minecraft.network.chat.Component")
+        )
+        val disconnectMethod =
+            connection.javaClass.getMethod(disconnectMethodName, getNMSClass("net.minecraft.network.chat.Component"))
+        val quitMessageNoColour = "$name left the game"
+        val disconnectMessage = getNMSComponent(quitMessageNoColour)
+        disconnectMethod.invoke(connection, disconnectMessage)
+    }
+
+    private fun getNMSComponent(message: String): Any {
+        // Convert a String to an NMS Component
+        val componentClass = getNMSClass("net.minecraft.network.chat.Component")
+        val literalName = reflectionRemapper.remapMethodName(componentClass, "literal", String::class.java)
+        val componentMethod = checkNotNull(Reflector.getMethod(componentClass, literalName, String::class.java))
+        return componentMethod.invoke(null, message)
     }
 
     private fun getMinecraftServer(): Any {
         val server = Bukkit.getServer()
         val craftServerClass = server.javaClass
-        val getServerMethodName = reflectionRemapper.remapMethodName(craftServerClass, "getServer")
-        val getServerMethod = craftServerClass.getMethod(getServerMethodName)
-        return getServerMethod.invoke(server)
+        val getServerMethod = Reflector.getMethod(craftServerClass, "getServer")
+            ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
+        return Reflector.invokeMethod(getServerMethod, server)
     }
 
     private fun getPlayerList(minecraftServer: Any): Any {
-        val serverClass = minecraftServer.javaClass
-        val playerListFieldName = reflectionRemapper.remapFieldName(serverClass, "playerList")
-        val playerListField = serverClass.getDeclaredField(playerListFieldName)
-        playerListField.isAccessible = true
-        return playerListField.get(minecraftServer)
+        val playerListFieldName = reflectionRemapper.remapMethodName(minecraftServer.javaClass, "getPlayerList")
+        val playerListMethod = checkNotNull(Reflector.getMethod(minecraftServer.javaClass, playerListFieldName))
+        return Reflector.invokeMethod(playerListMethod, minecraftServer)
     }
 
     fun attack(bukkitEntity: Entity) {
