@@ -98,6 +98,7 @@ dependencies {
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
     integrationTestImplementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
     integrationTestImplementation("io.kotest:kotest-runner-junit5:6.0.0.M1")
+    integrationTestImplementation("io.kotest:kotest-assertions-core:6.0.0.M1")
     integrationTestImplementation("net.kyori:adventure-api:4.18.0")
     integrationTestImplementation("xyz.jpenilla:reflection-remapper:0.1.1")
 

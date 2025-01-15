@@ -50,10 +50,37 @@ class OCMTestMain : JavaPlugin() {
             var hasFailures = false
 
             val listener = object : AbstractTestEngineListener() {
-                override suspend fun engineFinished(t: List<Throwable>) {
-                    if (t.isNotEmpty()) {
-                        hasFailures = true
+                // Override testFinished to capture each test result
+                override suspend fun testFinished(testCase: TestCase, result: TestResult) {
+                    val testName = testCase.name.testName
+                    when (result) {
+                        is TestResult.Success -> println("Test '$testName' passed.")
+                        is TestResult.Failure -> {
+                            println("Test '$testName' failed with exception: ${result.errorOrNull?.message}")
+                            hasFailures = true
+                        }
+
+                        is TestResult.Ignored -> println("Test '$testName' was ignored.")
+                        is TestResult.Error -> println("ERROR")
                     }
+                }
+
+                // Optionally override testStarted if you want to log when a test starts
+                override suspend fun testStarted(testCase: TestCase) {
+                    println("Starting test '${testCase.name.testName}'")
+                }
+
+                // Override engineFinished to print a summary after all tests
+                override suspend fun engineFinished(t: List<Throwable>) {
+                    if (t.isNotEmpty() || hasFailures) {
+                        println("Test run completed with failures.")
+                        t.forEach { throwable ->
+                            println("Engine error: ${throwable.message}")
+                        }
+                    } else {
+                        println("All tests passed successfully.")
+                    }
+                    Bukkit.shutdown()
                 }
             }
 
@@ -62,4 +89,3 @@ class OCMTestMain : JavaPlugin() {
         })
     }
 }
-

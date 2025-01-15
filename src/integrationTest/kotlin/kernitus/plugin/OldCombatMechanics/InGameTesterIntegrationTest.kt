@@ -3,6 +3,9 @@ package kernitus.plugin.OldCombatMechanics
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.doubles.shouldBeExactly
+import io.kotest.matchers.doubles.shouldBeLessThan
+import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.materialDamages
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
@@ -94,8 +97,11 @@ class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
             attacker.attack(defender)
             //}
 
+            //TODO need to assert the damage received is what we calculated
+
             // Wait before the next test if necessary
             //delay(50L)
+            attacker.health shouldBeExactly attacker.maxHealth
         }
     }
 }
