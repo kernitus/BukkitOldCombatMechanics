@@ -1,11 +1,9 @@
 package kernitus.plugin.OldCombatMechanics
 
-import io.kotest.common.ExperimentalKotest
 import io.kotest.common.KotestInternal
 import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.extensions.TestCaseExtension
 import io.kotest.core.spec.IsolationMode
-import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.engine.TestEngineLauncher
@@ -13,7 +11,6 @@ import io.kotest.engine.listener.AbstractTestEngineListener
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
@@ -66,27 +63,3 @@ class OCMTestMain : JavaPlugin() {
     }
 }
 
-
-@OptIn(ExperimentalKotest::class)
-class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
-
-    // Intercept tests to make sure they run on the main Bukkit server thread
-    extension(MainThreadDispatcherExtension(plugin))
-
-    concurrency = 1
-
-    "test in-game functionality" {
-        // Access Bukkit API directly
-        val server = Bukkit.getServer()
-        // Your test logic and assertions here
-        val tester = InGameTester(plugin)
-
-        val world = server.getWorld("world")
-        try {
-            tester.performTests(server.consoleSender, Location(world, 0.0, 100.0, 0.0))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        //Bukkit.shutdown()
-    }
-})
