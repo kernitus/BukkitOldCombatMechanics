@@ -167,6 +167,8 @@ object DefenceUtils {
         randomness: Boolean
     ): Double {
         var armourPoints = 0.0
+        val nullableStack = arrayOfNulls<ItemStack?>(4)
+
         for (i in armourContents.indices) {
             val itemStack = armourContents[i]
             val slot =
@@ -177,6 +179,7 @@ object DefenceUtils {
                     EquipmentSlot.HEAD
                 )[i]
             armourPoints += getAttributeModifierSum(itemStack.type.getDefaultAttributeModifiers(slot)[Attribute.GENERIC_ARMOR])
+            nullableStack[i] = itemStack
         }
 
         val reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT
@@ -194,7 +197,7 @@ object DefenceUtils {
 
         // Don't calculate enchantment reduction if damage is already 0. NMS 1.8 does it this way.
         val enchantmentReductionFactor =
-            calculateArmourEnchantmentReductionFactor(armourContents, damageCause, randomness)
+            calculateArmourEnchantmentReductionFactor(nullableStack, damageCause, randomness)
         if (finalDamage > 0) {
             finalDamage -= finalDamage * enchantmentReductionFactor
         }
@@ -230,13 +233,13 @@ object DefenceUtils {
 
 
     private fun calculateArmourEnchantmentReductionFactor(
-        armourContents: Array<ItemStack>,
+        armourContents: Array<ItemStack?>,
         cause: DamageCause,
         randomness: Boolean
     ): Double {
         var totalEpf = 0
         for (armourItem in armourContents) {
-            if (armourItem.type != Material.AIR) {
+            if (armourItem != null && armourItem.type != Material.AIR) {
                 for (enchantmentType in EnchantmentType.entries) {
                     if (!enchantmentType.protectsAgainst(cause)) continue
 
