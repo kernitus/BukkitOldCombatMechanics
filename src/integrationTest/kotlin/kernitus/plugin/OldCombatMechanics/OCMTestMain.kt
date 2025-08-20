@@ -44,6 +44,10 @@ class OCMTestMain : JavaPlugin() {
     override fun onEnable() {
         println("Enabled OCMTest plugin")
 
+        // Initialise player data storage
+        val ocm = Bukkit.getPluginManager().getPlugin("OldCombatMechanics") as OCMMain
+        kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.initialise(ocm)
+
         // Schedule test asynchronously to avoid deadlock
         // This is because each test is run as a coroutine
         Bukkit.getScheduler().runTaskAsynchronously(this, Runnable {
@@ -69,7 +73,7 @@ class OCMTestMain : JavaPlugin() {
                 // Optionally override testStarted if you want to log when a test starts
                 override suspend fun testStarted(testCase: TestCase) {
                     println("Starting test '${testCase.name.testName}'")
-                }
+}
 
                 // Override engineFinished to print a summary after all tests
                 override suspend fun engineFinished(t: List<Throwable>) {

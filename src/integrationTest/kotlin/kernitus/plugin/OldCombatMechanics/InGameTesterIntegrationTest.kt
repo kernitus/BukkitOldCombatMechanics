@@ -3,6 +3,7 @@ package kernitus.plugin.OldCombatMechanics
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.test.TestCase
 import io.kotest.matchers.doubles.shouldBeExactly
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
@@ -21,33 +22,11 @@ import org.bukkit.plugin.java.JavaPlugin
 class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
     extension(MainThreadDispatcherExtension(plugin))
     concurrency = 1  // Run tests sequentially
-}) {
-    private lateinit var attacker: Player
-    private lateinit var defender: Player
-    private lateinit var fakeAttacker: FakePlayer
-    private lateinit var fakeDefender: FakePlayer
 
-    override suspend fun beforeSpec(spec: Spec) {
-        Bukkit.getScheduler().runTask(plugin, Runnable {
-            plugin.logger.info("Running before all")
-            preparePlayers()
-
-            for (player in listOfNotNull(attacker, defender)) {
-                player.gameMode = GameMode.SURVIVAL
-                player.maximumNoDamageTicks = 20
-                player.noDamageTicks = 0 // remove spawn invulnerability
-                player.isInvulnerable = false
-            }
-        })
-    }
-
-    override suspend fun afterSpec(spec: Spec) {
-        plugin.logger.info("Running after all")
-        Bukkit.getScheduler().runTask(plugin, Runnable {
-            fakeAttacker.removePlayer()
-            fakeDefender.removePlayer()
-        })
-    }
+    lateinit var attacker: Player
+    lateinit var defender: Player
+    lateinit var fakeAttacker: FakePlayer
+    lateinit var fakeDefender: FakePlayer
 
     fun preparePlayers() {
         println("Preparing players")
@@ -86,23 +65,44 @@ class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
         plugin.logger.info("EEE")
     }
 
+    beforeSpec {
+        plugin.logger.info("Running before all")
+        Bukkit.getScheduler().runTask(plugin, Runnable {
+            preparePlayers()
+        })
+    }
 
-    init {
-        "test melee attacks" {
-            println("Testing melee attack")
-            //for (weaponType in materialDamages.keys) {
-            val weapon = ItemStack(materialDamages.keys.first())
-            // attack delay : 1
-            defender.maximumNoDamageTicks = 0
-            attacker.attack(defender)
-            //}
-
-            //TODO need to assert the damage received is what we calculated
-
-            // Wait before the next test if necessary
-            //delay(50L)
-            attacker.health shouldBeExactly attacker.maxHealth
+    beforeTest {
+        for (player in listOfNotNull(attacker, defender)) {
+            player.gameMode = GameMode.SURVIVAL
+            player.maximumNoDamageTicks = 20
+            player.noDamageTicks = 0 // remove spawn invulnerability
+            player.isInvulnerable = false
         }
     }
-}
+
+    afterSpec {
+        plugin.logger.info("Running after all")
+        Bukkit.getScheduler().runTask(plugin, Runnable {
+            fakeAttacker.removePlayer()
+            fakeDefender.removePlayer()
+        })
+    }
+
+    "test melee attacks" {
+        println("Testing melee attack")
+        //for (weaponType in materialDamages.keys) {
+        val weapon = ItemStack(materialDamages.keys.first())
+        // attack delay : 1
+        defender.maximumNoDamageTicks = 0
+        attacker.attack(defender)
+        //}
+
+        //TODO need to assert the damage received is what we calculated
+
+        // Wait before the next test if necessary
+        //delay(50L)
+        attacker.health shouldBeExactly attacker.maxHealth
+    }
+})
 

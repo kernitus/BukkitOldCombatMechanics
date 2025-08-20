@@ -1,11 +1,14 @@
-package kernitus.plugin.OldCombatMechanics
+package kernitus.plugin.oldcombatmechanics
 
 import io.kotest.common.ExperimentalKotest
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.core.spec.style.scopes.StringSpecScope
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.core.test.TestContext
 import io.kotest.matchers.longs.shouldBeBetween
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kernitus.plugin.OldCombatMechanics.FakePlayer
+import kernitus.plugin.OldCombatMechanics.MainThreadDispatcherExtension
+import kernitus.plugin.OldCombatMechanics.OCMMain
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
 import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE
@@ -18,12 +21,14 @@ import org.bukkit.attribute.Attribute
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.inventory.CraftingInventory
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 
-class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
+@OptIn(ExperimentalKotest::class)
+class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
     lateinit var player: Player
     lateinit var fakePlayer: FakePlayer
     val ocm = plugin as OCMMain
@@ -40,7 +45,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
         player = checkNotNull(Bukkit.getPlayer(fakePlayer.uuid))
     }
 
-    suspend fun StringSpecScope.withConfig(block: suspend StringSpecScope.() -> Unit) {
+    suspend fun TestContext.withConfig(block: suspend TestContext.() -> Unit) {
         val oldPotionEffects = ocm.config.getBoolean("old-golden-apples.old-potion-effects")
         val normalCooldown = ocm.config.getLong("old-golden-apples.cooldown.normal")
         val enchantedCooldown = ocm.config.getLong("old-golden-apples.cooldown.enchanted")
@@ -62,8 +67,8 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
         }
     }
 
-    extension(MainThreadDispatcherExtension(plugin))
-    concurrency = 1  // Run tests sequentially
+    extensions(MainThreadDispatcherExtension(plugin))
+    concurrency = 1 // Run tests sequentially
 
     beforeSpec {
         Bukkit.getScheduler().runTask(plugin, Runnable {
@@ -97,35 +102,38 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
     }
 
     context("Potion Effects") {
-        "test golden apple effects" {
+        test("golden apple effects") {
             // Given
             player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
 
             // When
-            Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+            Bukkit.getPluginManager().callEvent(
+                PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
+            )
             delay(50) // Wait for task to run
 
             // Then
             val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
             val absorption = player.getPotionEffect(PotionEffectType.ABSORPTION)
 
-            regeneration shouldNotBe null
-            absorption shouldNotBe null
+            regeneration.shouldNotBe(null)
+            absorption.shouldNotBe(null)
 
-            regeneration?.duration shouldBe (5 * 20) // 5 seconds
-            regeneration?.amplifier shouldBe 1
+            regeneration?.duration.shouldBe(5 * 20) // 5 seconds
+            regeneration?.amplifier.shouldBe(1)
 
-            absorption?.duration shouldBe (120 * 20) // 120 seconds
-            absorption?.amplifier shouldBe 0
+            absorption?.duration.shouldBe(120 * 20) // 120 seconds
+            absorption?.amplifier.shouldBe(0)
         }
 
-        "test enchanted golden apple effects" {
+        test("enchanted golden apple effects") {
             // Given
             val enchantedGoldenApple = ENCHANTED_GOLDEN_APPLE.newInstance()
             player.inventory.setItemInMainHand(enchantedGoldenApple)
 
             // When
-            Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+            Bukkit.getPluginManager()
+                .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
             delay(50) // Wait for task to run
 
             // Then
@@ -134,43 +142,45 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
             val resistance = player.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.potionEffectType!!)
             val fireResistance = player.getPotionEffect(PotionEffectType.FIRE_RESISTANCE)
 
-            regeneration shouldNotBe null
-            absorption shouldNotBe null
-            resistance shouldNotBe null
-            fireResistance shouldNotBe null
+            regeneration.shouldNotBe(null)
+            absorption.shouldNotBe(null)
+            resistance.shouldNotBe(null)
+            fireResistance.shouldNotBe(null)
 
-            regeneration?.duration shouldBe (30 * 20)
-            regeneration?.amplifier shouldBe 4
-            absorption?.duration shouldBe (120 * 20)
-            absorption?.amplifier shouldBe 0
-            resistance?.duration shouldBe (300 * 20)
-            resistance?.amplifier shouldBe 0
-            fireResistance?.duration shouldBe (300 * 20)
-            fireResistance?.amplifier shouldBe 0
+            regeneration?.duration.shouldBe(30 * 20)
+            regeneration?.amplifier.shouldBe(4)
+            absorption?.duration.shouldBe(120 * 20)
+            absorption?.amplifier.shouldBe(0)
+            resistance?.duration.shouldBe(300 * 20)
+            resistance?.amplifier.shouldBe(0)
+            fireResistance?.duration.shouldBe(300 * 20)
+            fireResistance?.amplifier.shouldBe(0)
         }
 
-        "test effect application with higher amplifier" {
+        test("effect application with higher amplifier") {
             // Given
             player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 100, 0)) // Regen I
             player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE)) // Gives Regen II (amp 1)
 
             // When
-            Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+            Bukkit.getPluginManager()
+                .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
             delay(50)
 
             // Then
             val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
-            regeneration?.amplifier shouldBe 1
-            regeneration?.duration shouldBe (5 * 20)
+            regeneration?.amplifier.shouldBe(1)
+            regeneration?.duration.shouldBe(5 * 20)
         }
 
-        "test effect application with same amplifier and longer duration" {
+        test("effect application with same amplifier and longer duration") {
             // Given
             player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 50, 1)) // Regen II for 2.5s
             player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE)) // Gives Regen II for 5s
 
             // When
-            Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+            Bukkit.getPluginManager()
+                .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
             delay(50)
 
             // Then
@@ -181,7 +191,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
     }
 
     context("Cooldowns") {
-        "test golden apple cooldown" {
+        test("golden apple cooldown") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.normal", 2) // 2 seconds
@@ -190,27 +200,27 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 player.inventory.setItemInMainHand(item)
 
                 // When
-                val event1 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val event1 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(event1)
                 // Then
-                event1.isCancelled shouldBe false
+                event1.isCancelled.shouldBe(false)
 
                 // When
-                val event2 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val event2 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(event2)
                 // Then
-                event2.isCancelled shouldBe true
+                event2.isCancelled.shouldBe(true)
 
                 // When
                 delay(2100) // Wait for cooldown
-                val event3 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val event3 = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(event3)
                 // Then
-                event3.isCancelled shouldBe false
+                event3.isCancelled.shouldBe(false)
             }
         }
 
-        "test shared cooldown" {
+        test("shared cooldown") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.normal", 5)
@@ -220,19 +230,21 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
 
                 // When eat normal gapple
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
-                val consumeGappleEvent = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val consumeGappleEvent =
+                    PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeGappleEvent)
-                consumeGappleEvent.isCancelled shouldBe false
+                consumeGappleEvent.isCancelled.shouldBe(false)
 
                 // Then try to eat enchanted gapple
                 player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
-                val consumeNappleEvent = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val consumeNappleEvent =
+                    PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeNappleEvent)
-                consumeNappleEvent.isCancelled shouldBe true
+                consumeNappleEvent.isCancelled.shouldBe(true)
             }
         }
 
-        "test non-shared cooldown" {
+        test("non-shared cooldown") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.normal", 5)
@@ -242,21 +254,23 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
 
                 // When eat normal gapple
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
-                val consumeGappleEvent = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val consumeGappleEvent =
+                    PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeGappleEvent)
-                consumeGappleEvent.isCancelled shouldBe false
+                consumeGappleEvent.isCancelled.shouldBe(false)
 
                 // Then try to eat enchanted gapple
                 player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
-                val consumeNappleEvent = PlayerItemConsumeEvent(player, player.inventory.itemInMainHand)
+                val consumeNappleEvent =
+                    PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeNappleEvent)
-                consumeNappleEvent.isCancelled shouldBe false
+                consumeNappleEvent.isCancelled.shouldBe(false)
             }
         }
     }
 
     context("Configuration options") {
-        "test module disabled via modeset" {
+        test("module disabled via modeset") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.golden-apple-effects.regeneration.duration", 99)
@@ -266,17 +280,19 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 player.inventory.setItemInMainHand(item)
 
                 // When
-                Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+                Bukkit.getPluginManager()
+                Bukkit.getPluginManager()
+                    .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
                 delay(50)
 
                 // Then: vanilla effects should be applied as the module is disabled
                 val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
-                regeneration?.duration shouldBe (5 * 20) // Vanilla duration
-                regeneration?.amplifier shouldBe 1 // Vanilla amplifier
+                regeneration?.duration.shouldBe(5 * 20) // Vanilla duration
+                regeneration?.amplifier.shouldBe(1) // Vanilla amplifier
             }
         }
 
-        "test with old-potion-effects disabled" {
+        test("with old-potion-effects disabled") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.old-potion-effects", false)
@@ -286,13 +302,14 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 player.inventory.setItemInMainHand(item)
 
                 // When
-                Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+                Bukkit.getPluginManager()
+                    .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
                 delay(50)
 
                 // Then: vanilla effects should be applied as old-potion-effects is false
                 val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
-                regeneration?.duration shouldBe (5 * 20) // Vanilla duration
-                regeneration?.amplifier shouldBe 1 // Vanilla amplifier
+                regeneration?.duration.shouldBe(5 * 20) // Vanilla duration
+                regeneration?.amplifier.shouldBe(1) // Vanilla amplifier
             }
         }
     }
@@ -307,7 +324,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
             delay(50) // Allow server to process inventory update
         }
 
-        "test enchanted golden apple crafting enabled" {
+        test("enchanted golden apple crafting enabled") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.enchanted-golden-apple-crafting", true)
@@ -320,14 +337,14 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 prepareCraftingGrid(craftingInventory)
 
                 // Then
-                craftingInventory.result shouldNotBe null
-                ENCHANTED_GOLDEN_APPLE.isSame(craftingInventory.result!!) shouldBe true
+                craftingInventory.result.shouldNotBe(null)
+                ENCHANTED_GOLDEN_APPLE.isSame(craftingInventory.result!!).shouldBe(true)
 
                 player.closeInventory()
             }
         }
 
-        "test enchanted golden apple crafting disabled in config" {
+        test("enchanted golden apple crafting disabled in config") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.enchanted-golden-apple-crafting", false)
@@ -340,13 +357,13 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 prepareCraftingGrid(craftingInventory)
 
                 // Then
-                craftingInventory.result shouldBe null
+                craftingInventory.result.shouldBe(null)
 
                 player.closeInventory()
             }
         }
 
-        "test enchanted golden apple crafting disabled by modeset" {
+        test("enchanted golden apple crafting disabled by modeset") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.enchanted-golden-apple-crafting", true)
@@ -365,7 +382,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
             }
         }
 
-        "test no-conflict-mode allows crafting when module disabled for player" {
+        test("no-conflict-mode allows crafting when module disabled for player") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.enchanted-golden-apple-crafting", true)
@@ -388,7 +405,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
     }
 
     context("API methods") {
-        "test getGappleCooldown" {
+        test("getGappleCooldown") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.normal", 10)
@@ -396,7 +413,8 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
 
                 // When
-                Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+                Bukkit.getPluginManager()
+                    .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
                 delay(50)
 
                 // Then
@@ -415,11 +433,11 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
 
                 // Then
                 cooldown = module.getGappleCooldown(player.uniqueId)
-                cooldown shouldBe 0L
+                cooldown.shouldBe(0L)
             }
         }
 
-        "test getNappleCooldown" {
+        test("getNappleCooldown") {
             withConfig {
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.enchanted", 20)
@@ -427,7 +445,8 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
                 player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
 
                 // When
-                Bukkit.getPluginManager().callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand))
+                Bukkit.getPluginManager()
+                    .callEvent(PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND))
                 delay(50)
 
                 // Then
@@ -446,7 +465,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
 
                 // Then
                 cooldown = module.getNappleCooldown(player.uniqueId)
-                cooldown shouldBe 0L
+                cooldown.shouldBe(0L)
             }
         }
     }
