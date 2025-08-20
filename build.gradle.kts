@@ -54,6 +54,13 @@ repositories {
 sourceSets {
     val main by getting
 
+        val test by getting {
+        // Also index integrationTest as test sources
+        // For the kotlin lsp to pick up
+        with(kotlin) { srcDir("src/integrationTest/kotlin") }
+        resources.srcDir("src/integrationTest/resources")
+    }
+
     val integrationTest by creating {
         kotlin.setSrcDirs(listOf("src/integrationTest/kotlin"))
         resources.setSrcDirs(listOf("src/integrationTest/resources"))
