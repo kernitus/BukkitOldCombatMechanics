@@ -32,7 +32,6 @@ class OCMCommandHandler(private val plugin: OCMMain) : CommandExecutor {
             sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6${description.version}"
         )
 
-
         if (checkPermissions(sender, Subcommand.reload)) Messenger.sendNoPrefix(
             sender, "&eYou can use &c/ocm reload&e to reload the config file"
         )

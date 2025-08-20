@@ -24,3 +24,7 @@ build/
 /.gradle/
 /.kotlin/
 /run/
+
+# Kotlin LSP
+kls-classpath
+kls_database.db

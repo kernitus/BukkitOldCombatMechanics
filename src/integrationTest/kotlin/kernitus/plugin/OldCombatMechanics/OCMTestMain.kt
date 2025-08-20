@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -72,14 +73,26 @@ class OCMTestMain : JavaPlugin() {
 
                 // Override engineFinished to print a summary after all tests
                 override suspend fun engineFinished(t: List<Throwable>) {
-                    if (t.isNotEmpty() || hasFailures) {
+                    val success = t.isEmpty() && !hasFailures
+                    if (success) {
+                        println("All tests passed successfully.")
+                    } else {
                         println("Test run completed with failures.")
                         t.forEach { throwable ->
                             println("Engine error: ${throwable.message}")
                         }
-                    } else {
-                        println("All tests passed successfully.")
                     }
+
+                    // Write the result to a file for the Gradle build to check
+                    try {
+                        val resultFile = File(this@OCMTestMain.dataFolder, "test-results.txt")
+                        resultFile.parentFile.mkdirs() // Ensure the directory exists
+                        resultFile.writeText(if (success) "PASS" else "FAIL")
+                        println("Test result written to ${resultFile.absolutePath}")
+                    } catch (e: Exception) {
+                        println("Failed to write test results file: ${e.message}")
+                    }
+
                     Bukkit.shutdown()
                 }
             }
