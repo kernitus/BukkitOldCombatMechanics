@@ -42,6 +42,8 @@ class OCMMain : JavaPlugin() {
     private val hooks: MutableList<Hook> = ArrayList()
     var protocolManager: ProtocolManager? = null
         private set
+    var attackCooldownTracker: AttackCooldownTracker? = null
+        private set
 
     companion object {
         lateinit var instance: OCMMain
@@ -194,7 +196,9 @@ class OCMMain : JavaPlugin() {
 
         // If below 1.16, we need to keep track of player attack cooldown ourselves
         if (Reflector.getMethod(HumanEntity::class.java, "getAttackCooldown", 0) == null) {
-            addModule(AttackCooldownTracker(this))
+            val tracker = AttackCooldownTracker(this)
+            attackCooldownTracker = tracker
+            addModule(tracker)
         }
 
         //Listeners registered later with same priority are called later

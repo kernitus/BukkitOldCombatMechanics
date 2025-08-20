@@ -18,14 +18,7 @@ import java.util.*
 class AttackCooldownTracker(plugin: OCMMain) : OCMModule(plugin, "attack-cooldown-tracker") {
     private val lastCooldown: MutableMap<UUID, Float>
 
-    companion object {
-        private lateinit var INSTANCE: AttackCooldownTracker
-
-        fun getLastCooldown(uuid: UUID) = INSTANCE.lastCooldown[uuid]
-    }
-
     init {
-        INSTANCE = this
         lastCooldown = WeakHashMap()
 
         val cooldownTask = Runnable {
@@ -35,6 +28,8 @@ class AttackCooldownTracker(plugin: OCMMain) : OCMModule(plugin, "attack-cooldow
         }
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, cooldownTask, 0, 1L)
     }
+
+    fun getLastCooldown(uuid: UUID): Float? = lastCooldown[uuid]
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
