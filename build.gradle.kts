@@ -56,6 +56,8 @@ dependencies {
     compileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
+    // XSeries
+    implementation("com.github.cryptomorin:XSeries:13.3.3")
 
      //For ingametesting
     // Mojang mappings for NMS
@@ -104,6 +106,7 @@ tasks.named<ShadowJar>("shadowJar") {
     archiveFileName.set("${project.name}.jar")
     dependencies {
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
+        relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
     }
 }
 

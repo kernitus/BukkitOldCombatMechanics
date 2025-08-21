@@ -10,14 +10,19 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.cryptomorin.xseries.XSound;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import org.bukkit.Sound;
 import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -27,7 +32,7 @@ public class ModuleAttackSounds extends OCMModule {
 
     private final ProtocolManager protocolManager = plugin.getProtocolManager();
     private final SoundListener soundListener = new SoundListener(plugin);
-    private final Set<String> blockedSounds = new HashSet<>(getBlockedSounds());
+    private final Set<String> blockedSounds = new HashSet<>();
 
     public ModuleAttackSounds(OCMMain plugin) {
         super(plugin, "disable-attack-sounds");
@@ -47,7 +52,34 @@ public class ModuleAttackSounds extends OCMModule {
     }
 
     private Collection<String> getBlockedSounds() {
-        return module().getStringList("blocked-sound-names");
+        List<String> fromConfig = module().getStringList("blocked-sound-names");
+        Set<String> processed = new HashSet<>();
+        for (String soundName : fromConfig) {
+            Optional<XSound> xSound = XSound.matchXSound(soundName);
+            if (xSound.isPresent()) {
+                Sound sound = xSound.get().parseSound();
+                if (sound != null) {
+                    // On modern versions, we can get the namespaced key directly
+                    try {
+                        Method getKeyMethod = Sound.class.getMethod("getKey");
+                        Object key = getKeyMethod.invoke(sound);
+                        processed.add(key.toString());
+                        continue;
+                    } catch (Exception ignored) {
+                        // This server version doesn't have the getKey method, so we fall back to the legacy name
+                    }
+                }
+                // Fallback for older versions or if the sound is not in the Bukkit enum
+                String processedName = soundName.toLowerCase(Locale.ROOT).replace('_', '.');
+                if (!processedName.contains(":")) {
+                    processedName = "minecraft:" + processedName;
+                }
+                processed.add(processedName);
+            } else {
+                Messenger.warn("Invalid sound name in config: " + soundName);
+            }
+        }
+        return processed;
     }
 
     /**
@@ -80,17 +112,35 @@ public class ModuleAttackSounds extends OCMModule {
                 }
 
                 String soundName;
-                try {
-                    Method getLocationMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "getLocation");
-                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod, nmsSoundEvent);
+                Object soundEventObject = nmsSoundEvent;
+
+                // On modern versions, the packet contains a Holder<SoundEvent> which wraps the
+                // SoundEvent.
+                // We need to call Holder.value() to get the actual SoundEvent.
+                Method valueMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "value");
+                if (valueMethod != null) {
+                    Object unwrappedEvent = Reflector.invokeMethod(valueMethod, nmsSoundEvent);
+                    if (unwrappedEvent != null) {
+                        soundEventObject = unwrappedEvent;
+                    }
+                }
+
+                // On older versions, the packet contained the SoundEvent directly.
+                // In both cases, we should now have a SoundEvent object.
+                Method getLocationMethod = Reflector.getMethod(soundEventObject.getClass(), "getLocation");
+                if (getLocationMethod == null) {
+                    // The structure might have changed in a new version, let's try `location()` as
+                    // a fallback for ResourceKey
+                    getLocationMethod = Reflector.getMethod(soundEventObject.getClass(), "location");
+                }
+
+                if (getLocationMethod != null) {
+                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod, soundEventObject);
                     soundName = resourceLocation.toString();
-                } catch (RuntimeException e) {
-                    // Fallback
-                    Method valueMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "value");
-                    Object actualSoundEvent = Reflector.invokeMethod(valueMethod, nmsSoundEvent);
-                    Method getLocationMethod = Reflector.getMethod(actualSoundEvent.getClass(), "getLocation");
-                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod, actualSoundEvent);
-                    soundName = resourceLocation.toString();
+                } else {
+                    // If we still can't find it, something is very wrong.
+                    throw new IllegalStateException(
+                            "Could not find sound location method on " + soundEventObject.getClass().getName());
                 }
 
                 if (blockedSounds.contains(soundName)) {
