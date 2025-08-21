@@ -68,8 +68,7 @@ public class ModuleGoldenApple extends OCMModule {
         cooldown = new Cooldown(
                 module().getLong("cooldown.normal"),
                 module().getLong("cooldown.enchanted"),
-                module().getBoolean("cooldown.is-shared")
-        );
+                module().getBoolean("cooldown.is-shared"));
         lastEaten = new WeakHashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("enchanted-golden-apple-effects");
@@ -78,8 +77,7 @@ public class ModuleGoldenApple extends OCMModule {
         try {
             enchantedAppleRecipe = new ShapedRecipe(
                     new NamespacedKey(plugin, "MINECRAFT"),
-                    ENCHANTED_GOLDEN_APPLE.newInstance()
-            );
+                    ENCHANTED_GOLDEN_APPLE.newInstance());
         } catch (NoClassDefFoundError e) {
             enchantedAppleRecipe = new ShapedRecipe(ENCHANTED_GOLDEN_APPLE.newInstance());
         }
@@ -97,7 +95,8 @@ public class ModuleGoldenApple extends OCMModule {
 
     private void registerCrafting() {
         if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
-            if (!Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).isEmpty()) return;
+            if (!Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).isEmpty())
+                return;
             Bukkit.addRecipe(enchantedAppleRecipe);
             debug("Added napple recipe");
         }
@@ -107,12 +106,14 @@ public class ModuleGoldenApple extends OCMModule {
     public void onPrepareItemCraft(PrepareItemCraftEvent e) {
         final ItemStack item = e.getInventory().getResult();
         if (item == null)
-            return; // This should never ever ever ever run. If it does then you probably screwed something up.
+            return; // This should never ever ever ever run. If it does then you probably screwed
+                    // something up.
 
         if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
             final HumanEntity player = e.getView().getPlayer();
 
-            if (isSettingEnabled("no-conflict-mode")) return;
+            if (isSettingEnabled("no-conflict-mode"))
+                return;
 
             if (!isEnabled(player) || !isSettingEnabled("enchanted-golden-apple-crafting"))
                 e.getInventory().setResult(null);
@@ -123,13 +124,15 @@ public class ModuleGoldenApple extends OCMModule {
     public void onItemConsume(PlayerItemConsumeEvent e) {
         final Player player = e.getPlayer();
 
-        if (!isEnabled(player)) return;
+        if (!isEnabled(player))
+            return;
 
         final ItemStack originalItem = e.getItem();
         final Material consumedMaterial = originalItem.getType();
 
         if (consumedMaterial != Material.GOLDEN_APPLE &&
-                !ENCHANTED_GOLDEN_APPLE.isSame(originalItem)) return;
+                !ENCHANTED_GOLDEN_APPLE.isSame(originalItem))
+            return;
 
         final UUID uuid = player.getUniqueId();
 
@@ -169,15 +172,16 @@ public class ModuleGoldenApple extends OCMModule {
 
         lastEaten.get(uuid).setForItem(originalItem);
 
-        if (!isSettingEnabled("old-potion-effects")) return;
+        if (!isSettingEnabled("old-potion-effects"))
+            return;
 
         // Save player's current potion effects
         final Collection<PotionEffect> previousPotionEffects = player.getActivePotionEffects();
 
-        final List<PotionEffect> newEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ?
-                enchantedGoldenAppleEffects : goldenAppleEffects;
-        final Set<PotionEffectType> defaultEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ?
-                nappleEffects : gappleEffects;
+        final List<PotionEffect> newEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ? enchantedGoldenAppleEffects
+                : goldenAppleEffects;
+        final Set<PotionEffectType> defaultEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ? nappleEffects
+                : gappleEffects;
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             // Remove all potion effects the apple added
@@ -192,7 +196,6 @@ public class ModuleGoldenApple extends OCMModule {
         }, 1L);
     }
 
-
     private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {
         for (PotionEffect newEffect : newEffects) {
             // Find the existing effect of the same type with the highest amplifier
@@ -206,7 +209,8 @@ public class ModuleGoldenApple extends OCMModule {
                 if (newEffect.getAmplifier() > highestExistingEffect.getAmplifier()) {
                     target.addPotionEffect(newEffect);
                 }
-                // If the amplifiers are the same and the new effect has a longer duration, refresh the duration
+                // If the amplifiers are the same and the new effect has a longer duration,
+                // refresh the duration
                 else if (newEffect.getAmplifier() == highestExistingEffect.getAmplifier() &&
                         newEffect.getDuration() > highestExistingEffect.getDuration()) {
                     target.addPotionEffect(newEffect);
@@ -218,7 +222,6 @@ public class ModuleGoldenApple extends OCMModule {
             }
         }
     }
-
 
     private List<PotionEffect> getPotionEffects(String path) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
@@ -240,14 +243,16 @@ public class ModuleGoldenApple extends OCMModule {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         final UUID uuid = e.getPlayer().getUniqueId();
-        if (lastEaten != null) lastEaten.remove(uuid);
+        if (lastEaten != null)
+            lastEaten.remove(uuid);
     }
 
     /**
      * Get player's current golden apple cooldown
      *
      * @param playerUUID The UUID of the player to check the cooldown for.
-     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown,
+     *         or it has expired.
      */
     public long getGappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
@@ -263,7 +268,8 @@ public class ModuleGoldenApple extends OCMModule {
      * Get player's current enchanted golden apple cooldown
      *
      * @param playerUUID The UUID of the player to check the cooldown for.
-     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown, or it has expired.
+     * @return The remaining cooldown time in seconds, or 0 if there is no cooldown,
+     *         or it has expired.
      */
     public long getNappleCooldown(UUID playerUUID) {
         final LastEaten lastEatenInfo = lastEaten.get(playerUUID);
@@ -293,8 +299,7 @@ public class ModuleGoldenApple extends OCMModule {
                 return Optional.of(lastEnchantedEaten);
             }
             return Optional.of(
-                    lastNormalEaten.compareTo(lastEnchantedEaten) < 0 ? lastEnchantedEaten : lastNormalEaten
-            );
+                    lastNormalEaten.compareTo(lastEnchantedEaten) < 0 ? lastEnchantedEaten : lastNormalEaten);
         }
 
         private void setForItem(ItemStack item) {

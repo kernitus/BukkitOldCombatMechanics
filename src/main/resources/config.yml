@@ -32,7 +32,8 @@ modesets:
     - "old-armour-strength"
     - "old-potion-effects"
     - "old-critical-hits"
-  new: [ ]
+  new:
+    - "old-golden-apples"
 
 worlds:
   # These are the modesets available in each world.
