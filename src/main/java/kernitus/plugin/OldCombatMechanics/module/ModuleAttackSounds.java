@@ -12,9 +12,10 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import org.bukkit.Sound;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.plugin.Plugin;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -61,18 +62,36 @@ public class ModuleAttackSounds extends OCMModule {
 
         @Override
         public void onPacketSending(PacketEvent packetEvent) {
-            if (disabledDueToError || !isEnabled(packetEvent.getPlayer())) return;
+            if (disabledDueToError || !isEnabled(packetEvent.getPlayer()))
+                return;
 
             try {
                 final PacketContainer packetContainer = packetEvent.getPacket();
-                final Sound sound = packetContainer.getSoundEffects().read(0);
-                
-                //fix NullpointerException when sending a custom sound 
-                if (sound == null) {
+
+                // Get the sound name via reflection to avoid conversion errors for unregistered
+                // sounds.
+                // This is necessary because some server versions/plugins might send sound
+                // packets
+                // with sounds that are not in the Bukkit registry, causing
+                // packetContainer.getSoundEffects().read(0) to throw an exception.
+                Object nmsSoundEvent = packetContainer.getModifier().read(0);
+                if (nmsSoundEvent == null) {
                     return;
                 }
-                
-                final String soundName = sound.toString(); // Works for both string and namespaced key
+
+                String soundName;
+                try {
+                    Method getLocationMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "getLocation");
+                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod, nmsSoundEvent);
+                    soundName = resourceLocation.toString();
+                } catch (RuntimeException e) {
+                    // Fallback
+                    Method valueMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "value");
+                    Object actualSoundEvent = Reflector.invokeMethod(valueMethod, nmsSoundEvent);
+                    Method getLocationMethod = Reflector.getMethod(actualSoundEvent.getClass(), "getLocation");
+                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod, actualSoundEvent);
+                    soundName = resourceLocation.toString();
+                }
 
                 if (blockedSounds.contains(soundName)) {
                     packetEvent.setCancelled(true);
@@ -83,8 +102,7 @@ public class ModuleAttackSounds extends OCMModule {
                 Messenger.warn(
                         e,
                         "Error detecting sound packets. Please report it along with the following exception " +
-                                "on github."
-                );
+                                "on github.");
             }
         }
     }
