@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    # This permission is still required by the new action
     permissions:
       contents: write
 
@@ -26,7 +27,7 @@ jobs:
       with:
         gradle-version: wrapper
 
-    # Build Step
+    # Build Step - No changes needed here
     - name: Run Gradle Build
       run: |
         if [ "${{ github.event_name }}" == "release" ]; then
@@ -36,15 +37,18 @@ jobs:
         else
           ./gradlew clean build
         fi
+        
+    - name: Rename Release Asset
+      if: ${{ github.event_name == 'release' }}
+      run: mv ./build/libs/OldCombatMechanics.jar ./build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar
 
     - name: Upload Artifact to GitHub Release
       if: ${{ github.event_name == 'release' }}
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./build/libs/OldCombatMechanics.jar
-        asset_name: OldCombatMechanics-${{ github.event.release.tag_name }}.jar
-        asset_content_type: application/java-archive
+        # The 'files' input takes a path to the asset(s) you want to upload.
+        # We point it to the newly renamed JAR file.
+        files: ./build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar
 
     - name: Read game versions from gradle.properties
       run: |
@@ -61,8 +65,8 @@ jobs:
         changelog_type: markdown
         display_name: OldCombatMechanics ${{ github.event.release.tag_name }}
         game_versions: ${{ env.GAME_VERSIONS }}
-        release_type: 'release'
-        file_path: './build/libs/OldCombatMechanics.jar'
+        # IMPORTANT: Update the file_path to use the renamed JAR
+        file_path: './build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar'
 
 
     - name: Publish to Hangar
@@ -70,4 +74,3 @@ jobs:
         HANGAR_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
         HANGAR_CHANGELOG: ${{ github.event.release.body }}
       run: ./gradlew build publishPluginPublicationToHangar --stacktrace
-
