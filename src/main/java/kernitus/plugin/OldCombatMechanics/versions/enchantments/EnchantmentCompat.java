@@ -22,24 +22,31 @@ public enum EnchantmentCompat {
     BANE_OF_ARTHROPODS("DAMAGE_ARTHROPODS"),
     SHARPNESS("DAMAGE_ALL");
 
+    private final String oldName;
     private Enchantment enchantment;
 
     EnchantmentCompat(String oldName) {
-        // Try loading the new name first
-        // This only happens once per enum name
-        enchantment = Enchantment.getByName(name());
-        // If the new name doesn't exist, fall back to the old name
-        if (enchantment == null) {
-            enchantment = Enchantment.getByName(oldName);
-        }
-
-        if (enchantment == null) {
-            throw new IllegalStateException("PotionEffectType not found for: " + name() + " or " + oldName);
-        }
+        this.oldName = oldName;
     }
 
-    public Enchantment get() {
-        return enchantment;
+    public synchronized Enchantment get() {
+        if (enchantment != null) {
+            return enchantment;
+        }
+
+        // Try loading the new name first
+        // This only happens once per enum name
+        Enchantment found = Enchantment.getByName(name());
+        // If the new name doesn't exist, fall back to the old name
+        if (found == null) {
+            found = Enchantment.getByName(oldName);
+        }
+
+        if (found == null) {
+            throw new IllegalStateException("Enchantment not found for: " + name() + " or " + oldName);
+        }
+        this.enchantment = found;
+        return found;
     }
 
     /**
