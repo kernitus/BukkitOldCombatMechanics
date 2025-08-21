@@ -9,7 +9,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,8 +34,7 @@ public class ModuleFishingKnockback extends OCMModule {
                 PlayerFishEvent.class, "getHook");
         getHitEntityFunction = SpigotFunctionChooser.apiCompatCall((e, params) -> e.getHitEntity(), (e, params) -> {
             final Entity hookEntity = e.getEntity();
-            final World world = hookEntity.getWorld();
-            return world.getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
+            return hookEntity.getWorld().getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
                     .filter(entity -> !knockbackNonPlayerEntities && entity instanceof Player)
                     .findFirst()
                     .orElse(null);
@@ -51,7 +49,6 @@ public class ModuleFishingKnockback extends OCMModule {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onRodLand(ProjectileHitEvent event) {
         final Entity hookEntity = event.getEntity();
-        final World world = hookEntity.getWorld();
 
         // FISHING_HOOK -> FISHING_BOBBER in >=1.20.5
         EntityType fishingBobberType;
@@ -136,6 +133,7 @@ public class ModuleFishingKnockback extends OCMModule {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e) {
         if (e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
+        if (!isEnabled(e.getPlayer())) return;
 
         final String cancelDraggingIn = module().getString("cancelDraggingIn", "players");
         final boolean isPlayer = e.getCaught() instanceof HumanEntity;
