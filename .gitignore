@@ -22,3 +22,7 @@ META-INF
 /build/
 /gradle/
 /.gradle/
+
+kls-classpath
+kls_database.db
+/run/
