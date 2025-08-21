@@ -5,10 +5,10 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
+import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -49,7 +49,8 @@ public class ModuleAttackCooldown extends OCMModule {
     }
 
     /**
-     * Adjusts the attack speed to the default or configured value, depending on whether the module is enabled.
+     * Adjusts the attack speed to the default or configured value, depending on
+     * whether the module is enabled.
      *
      * @param player the player to set the attack speed for
      */
@@ -73,13 +74,16 @@ public class ModuleAttackCooldown extends OCMModule {
      * @param attackSpeed the attack speed to set it to
      */
     public void setAttackSpeed(Player player, double attackSpeed) {
-        final AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-        if (attribute == null) return;
+        final AttributeInstance attribute = player.getAttribute(XAttribute.ATTACK_SPEED.get());
+        if (attribute == null)
+            return;
 
         final double baseValue = attribute.getBaseValue();
 
-        final String modesetName = PlayerStorage.getPlayerData(player.getUniqueId()).getModesetForWorld(player.getWorld().getUID());
-        debug(String.format("Setting attack speed to %.2f (was: %.2f) for %s in mode %s", attackSpeed, baseValue, player.getName(), modesetName));
+        final String modesetName = PlayerStorage.getPlayerData(player.getUniqueId())
+                .getModesetForWorld(player.getWorld().getUID());
+        debug(String.format("Setting attack speed to %.2f (was: %.2f) for %s in mode %s", attackSpeed, baseValue,
+                player.getName(), modesetName));
 
         if (baseValue != attackSpeed) {
             debug(String.format("Setting attack speed to %.2f (was: %.2f)", attackSpeed, baseValue), player);

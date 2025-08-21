@@ -53,7 +53,7 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.0.1")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
     // ProtocolLib
     compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
     // XSeries

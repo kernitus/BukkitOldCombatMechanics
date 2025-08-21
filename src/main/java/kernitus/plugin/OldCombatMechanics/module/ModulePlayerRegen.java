@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
+import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
@@ -22,7 +23,8 @@ import java.util.WeakHashMap;
 
 /**
  * Establishes custom health regeneration rules.
- * Default values based on 1.8 from <a href="https://minecraft.gamepedia.com/Hunger?oldid=948685">wiki</a>
+ * Default values based on 1.8 from
+ * <a href="https://minecraft.gamepedia.com/Hunger?oldid=948685">wiki</a>
  */
 public class ModulePlayerRegen extends OCMModule {
 
@@ -39,12 +41,15 @@ public class ModulePlayerRegen extends OCMModule {
             return;
 
         final Player p = (Player) e.getEntity();
-        if (!isEnabled(p)) return;
+        if (!isEnabled(p))
+            return;
 
         final UUID playerId = p.getUniqueId();
 
-        // We cancel the regen, but saturation and exhaustion need to be adjusted separately
-        // Exhaustion is modified in the next tick, and saturation in the tick following that (if exhaustion > 4)
+        // We cancel the regen, but saturation and exhaustion need to be adjusted
+        // separately
+        // Exhaustion is modified in the next tick, and saturation in the tick following
+        // that (if exhaustion > 4)
         e.setCancelled(true);
 
         // Get exhaustion & saturation values before healing modifies them
@@ -56,7 +61,8 @@ public class ModulePlayerRegen extends OCMModule {
         final boolean hasLastHealTime = healTimes.containsKey(playerId);
         final long lastHealTime = healTimes.computeIfAbsent(playerId, id -> currentTime);
 
-        debug("Exh: " + previousExhaustion + " Sat: " + previousSaturation + " Time: " + (currentTime - lastHealTime), p);
+        debug("Exh: " + previousExhaustion + " Sat: " + previousSaturation + " Time: " + (currentTime - lastHealTime),
+                p);
 
         // If we're skipping this heal, we must fix the exhaustion in the following tick
         if (hasLastHealTime && currentTime - lastHealTime <= module().getLong("interval")) {
@@ -64,7 +70,7 @@ public class ModulePlayerRegen extends OCMModule {
             return;
         }
 
-        final double maxHealth = p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+        final double maxHealth = p.getAttribute(XAttribute.MAX_HEALTH.get()).getValue();
         final double playerHealth = p.getHealth();
 
         if (playerHealth < maxHealth) {
@@ -72,11 +78,13 @@ public class ModulePlayerRegen extends OCMModule {
             healTimes.put(playerId, currentTime);
         }
 
-        // Calculate new exhaustion value, must be between 0 and 4. If above, it will reduce the saturation in the following tick.
+        // Calculate new exhaustion value, must be between 0 and 4. If above, it will
+        // reduce the saturation in the following tick.
         final float exhaustionToApply = (float) module().getDouble("exhaustion");
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // We do this in the next tick because bukkit doesn't stop the exhaustion change when cancelling the event
+            // We do this in the next tick because bukkit doesn't stop the exhaustion change
+            // when cancelling the event
             p.setExhaustion(previousExhaustion + exhaustionToApply);
             debug("Exh before: " + previousExhaustion + " Now: " + p.getExhaustion() +
                     " Sat now: " + previousSaturation, p);

@@ -11,12 +11,12 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
+import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandSender;
@@ -359,7 +359,7 @@ public class InGameTester {
     private void preparePlayer(ItemStack weapon) {
         if (weapon.hasItemMeta()) {
             final ItemMeta meta = weapon.getItemMeta();
-            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED,
+            meta.addAttributeModifier(XAttribute.ATTACK_SPEED.getBukkitAttribute(),
                     new AttributeModifier(UUID.randomUUID(), "speed", 1000,
                             AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
             weapon.setItemMeta(meta);
@@ -368,10 +368,10 @@ public class InGameTester {
         attacker.updateInventory();
 
         // Update attack attribute cause it won't get done with fake players
-        final AttributeInstance ai = attacker.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-        final AttributeInstance defenderArmour = defender.getAttribute(Attribute.GENERIC_ARMOR);
+        final AttributeInstance ai = attacker.getAttribute(XAttribute.ATTACK_DAMAGE.getBukkitAttribute());
+        final AttributeInstance defenderArmour = defender.getAttribute(XAttribute.ARMOR.getBukkitAttribute());
 
-        weapon.getType().getDefaultAttributeModifiers(EquipmentSlot.HAND).get(Attribute.GENERIC_ATTACK_DAMAGE).forEach(am -> {
+        weapon.getType().getDefaultAttributeModifiers(EquipmentSlot.HAND).get(XAttribute.ATTACK_DAMAGE.getBukkitAttribute()).forEach(am -> {
             ai.removeModifier(am);
             ai.addModifier(am);
         });
@@ -384,7 +384,7 @@ public class InGameTester {
             if (itemStack == null) continue;
             final Material type = itemStack.getType();
             final EquipmentSlot slot = new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}[i];
-            for (AttributeModifier attributeModifier : type.getDefaultAttributeModifiers(slot).get(Attribute.GENERIC_ARMOR)) {
+            for (AttributeModifier attributeModifier : type.getDefaultAttributeModifiers(slot).get(XAttribute.ARMOR.getBukkitAttribute())) {
                 defenderArmour.removeModifier(attributeModifier);
                 defenderArmour.addModifier(attributeModifier);
             }

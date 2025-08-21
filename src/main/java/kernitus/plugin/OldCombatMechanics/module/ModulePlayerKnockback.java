@@ -5,12 +5,12 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
+import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -58,7 +58,8 @@ public class ModulePlayerKnockback extends OCMModule {
         knockbackVerticalLimit = module().getDouble("knockback-vertical-limit", 0.4);
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
-        netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false) && Reflector.versionIsNewerOrEqualTo(1, 16, 0);
+        netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false)
+                && Reflector.versionIsNewerOrEqualTo(1, 16, 0);
     }
 
     @EventHandler
@@ -67,52 +68,65 @@ public class ModulePlayerKnockback extends OCMModule {
     }
 
     // Vanilla does its own knockback, so we need to set it again.
-    // priority = lowest because we are ignoring the existing velocity, which could break other plugins
+    // priority = lowest because we are ignoring the existing velocity, which could
+    // break other plugins
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
         final UUID uuid = event.getPlayer().getUniqueId();
-        if (!playerKnockbackHashMap.containsKey(uuid)) return;
+        if (!playerKnockbackHashMap.containsKey(uuid))
+            return;
         event.setVelocity(playerKnockbackHashMap.get(uuid));
         playerKnockbackHashMap.remove(uuid);
     }
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
-        // Disable netherite kb, the knockback resistance attribute makes the velocity event not be called
+        // Disable netherite kb, the knockback resistance attribute makes the velocity
+        // event not be called
         final Entity entity = event.getEntity();
-        if (!(entity instanceof Player) || netheriteKnockbackResistance) return;
+        if (!(entity instanceof Player) || netheriteKnockbackResistance)
+            return;
         final Player damagee = (Player) entity;
 
         // This depends on the attacker's combat mode
         if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
                 && event instanceof EntityDamageByEntityEvent) {
             final Entity damager = ((EntityDamageByEntityEvent) event).getDamager();
-            if(!isEnabled(damager)) return;
+            if (!isEnabled(damager))
+                return;
         } else {
-            if(!isEnabled(damagee)) return;
+            if (!isEnabled(damagee))
+                return;
         }
 
-        final AttributeInstance attribute = damagee.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
+        final AttributeInstance attribute = damagee.getAttribute(XAttribute.KNOCKBACK_RESISTANCE.get());
         attribute.getModifiers().forEach(attribute::removeModifier);
     }
 
-    // Monitor priority because we don't modify anything here, but apply on velocity change event
+    // Monitor priority because we don't modify anything here, but apply on velocity
+    // change event
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamageEntity(EntityDamageByEntityEvent event) {
         final Entity damager = event.getDamager();
-        if (!(damager instanceof LivingEntity)) return;
+        if (!(damager instanceof LivingEntity))
+            return;
         final LivingEntity attacker = (LivingEntity) damager;
 
         final Entity damagee = event.getEntity();
-        if (!(damagee instanceof Player)) return;
+        if (!(damagee instanceof Player))
+            return;
         final Player victim = (Player) damagee;
 
-        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
-        if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) > 0) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK)
+            return;
+        if (event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) > 0)
+            return;
 
-        if(attacker instanceof HumanEntity){
-            if (!isEnabled(attacker)) return;
-        } else if(!isEnabled(victim)) return;
+        if (attacker instanceof HumanEntity) {
+            if (!isEnabled(attacker))
+                return;
+        } else if (!isEnabled(victim))
+            return;
 
         // Figure out base knockback direction
         Location attackerLocation = attacker.getLocation();
@@ -120,8 +134,8 @@ public class ModulePlayerKnockback extends OCMModule {
         double d0 = attackerLocation.getX() - victimLocation.getX();
         double d1;
 
-        for (d1 = attackerLocation.getZ() - victimLocation.getZ();
-             d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
+        for (d1 = attackerLocation.getZ() - victimLocation.getZ(); d0 * d0
+                + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
             d0 = (Math.random() - Math.random()) * 0.01D;
         }
 
@@ -138,13 +152,16 @@ public class ModulePlayerKnockback extends OCMModule {
         // Calculate bonus knockback for sprinting or knockback enchantment levels
         final EntityEquipment equipment = attacker.getEquipment();
         if (equipment != null) {
-            final ItemStack heldItem = equipment.getItemInMainHand().getType() == Material.AIR ?
-                    equipment.getItemInOffHand() : equipment.getItemInMainHand();
+            final ItemStack heldItem = equipment.getItemInMainHand().getType() == Material.AIR
+                    ? equipment.getItemInOffHand()
+                    : equipment.getItemInMainHand();
 
             int bonusKnockback = heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK);
-            if (attacker instanceof Player && ((Player) attacker).isSprinting()) ++bonusKnockback;
+            if (attacker instanceof Player && ((Player) attacker).isSprinting())
+                ++bonusKnockback;
 
-            if (playerVelocity.getY() > knockbackVerticalLimit) playerVelocity.setY(knockbackVerticalLimit);
+            if (playerVelocity.getY() > knockbackVerticalLimit)
+                playerVelocity.setY(knockbackVerticalLimit);
 
             if (bonusKnockback > 0) { // Apply bonus knockback
                 playerVelocity.add(new Vector((-Math.sin(attacker.getLocation().getYaw() * 3.1415927F / 180.0F) *
@@ -155,17 +172,20 @@ public class ModulePlayerKnockback extends OCMModule {
         }
 
         if (netheriteKnockbackResistance) {
-            // Allow netherite to affect the horizontal knockback. Each piece of armour yields 10% resistance
-            final double resistance = 1 - victim.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).getValue();
+            // Allow netherite to affect the horizontal knockback. Each piece of armour
+            // yields 10% resistance
+            final double resistance = 1 - victim.getAttribute(XAttribute.KNOCKBACK_RESISTANCE.get()).getValue();
             playerVelocity.multiply(new Vector(resistance, 1, resistance));
         }
 
         final UUID victimId = victim.getUniqueId();
 
-        // Knockback is sent immediately in 1.8+, there is no reason to send packets manually
+        // Knockback is sent immediately in 1.8+, there is no reason to send packets
+        // manually
         playerKnockbackHashMap.put(victimId, playerVelocity);
 
-        // Sometimes PlayerVelocityEvent doesn't fire, remove data to not affect later events if that happens
+        // Sometimes PlayerVelocityEvent doesn't fire, remove data to not affect later
+        // events if that happens
         Bukkit.getScheduler().runTaskLater(plugin, () -> playerKnockbackHashMap.remove(victimId), 1);
     }
 }
