@@ -1,53 +1,5 @@
 # Changelog
 
-## [2.1.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.0.4...v2.1.0) (2025-08-21)
-
-
-### Features
-
-* compat with 1.21.8 enums ([68c51ab](https://github.com/kernitus/BukkitOldCombatMechanics/commit/68c51ab8803da56f477660af247c37e5171bc581))
-* make config upgrader remove deprecated keys ([e728374](https://github.com/kernitus/BukkitOldCombatMechanics/commit/e72837462fb8c512c9971c1e7d9376c82f37e741))
-* remove deprecated modules ([da3d5f0](https://github.com/kernitus/BukkitOldCombatMechanics/commit/da3d5f0b28990d8f654b8557e68f54f41e8b5a60))
-
-
-### Bug Fixes
-
-* check fishing knockback module enabled when reeling in ([31e3877](https://github.com/kernitus/BukkitOldCombatMechanics/commit/31e3877330cdd820173a5d89e021919b153c6988)), closes [#803](https://github.com/kernitus/BukkitOldCombatMechanics/issues/803)
-* disable attack sounds not working in &gt;1.21 ([b355322](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b355322f9b3f5e1c2b1e889684d6242f08ceee92)), closes [#794](https://github.com/kernitus/BukkitOldCombatMechanics/issues/794)
-* ExceptionInInitialiserError in enchantment compat ([b2379cc](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b2379cc17e309b035c2acb396392723f15ed3ee2)), closes [#782](https://github.com/kernitus/BukkitOldCombatMechanics/issues/782)
-* improve sound packet compatibility ([4ef28fb](https://github.com/kernitus/BukkitOldCombatMechanics/commit/4ef28fb7bd63631fa4b6f0366d23dd1e159aa115)), closes [#780](https://github.com/kernitus/BukkitOldCombatMechanics/issues/780)
-* null pointer in potion compat ([b30e27d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b30e27ddb32d210371152feee8d337f27ea8f495)), closes [#791](https://github.com/kernitus/BukkitOldCombatMechanics/issues/791)
-* unmentioned worlds modesets not allowed [#792](https://github.com/kernitus/BukkitOldCombatMechanics/issues/792) ([95c9446](https://github.com/kernitus/BukkitOldCombatMechanics/commit/95c9446edbd0fe56bce0864798cf8d1c70865f8b))
-
-
-### Refactoring
-
-* improve fishing knockback cross-version compat ([d119c9f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/d119c9f35e1a89be8fb8d03573041cfc2ae2d418))
-
-## [2.1.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.0.4...v2.1.0) (2025-08-21)
-
-
-### Features
-
-* compat with 1.21.8 enums ([68c51ab](https://github.com/kernitus/BukkitOldCombatMechanics/commit/68c51ab8803da56f477660af247c37e5171bc581))
-* make config upgrader remove deprecated keys ([e728374](https://github.com/kernitus/BukkitOldCombatMechanics/commit/e72837462fb8c512c9971c1e7d9376c82f37e741))
-* remove deprecated modules ([da3d5f0](https://github.com/kernitus/BukkitOldCombatMechanics/commit/da3d5f0b28990d8f654b8557e68f54f41e8b5a60))
-
-
-### Bug Fixes
-
-* check fishing knockback module enabled when reeling in ([31e3877](https://github.com/kernitus/BukkitOldCombatMechanics/commit/31e3877330cdd820173a5d89e021919b153c6988)), closes [#803](https://github.com/kernitus/BukkitOldCombatMechanics/issues/803)
-* disable attack sounds not working in &gt;1.21 ([b355322](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b355322f9b3f5e1c2b1e889684d6242f08ceee92)), closes [#794](https://github.com/kernitus/BukkitOldCombatMechanics/issues/794)
-* ExceptionInInitialiserError in enchantment compat ([b2379cc](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b2379cc17e309b035c2acb396392723f15ed3ee2)), closes [#782](https://github.com/kernitus/BukkitOldCombatMechanics/issues/782)
-* improve sound packet compatibility ([4ef28fb](https://github.com/kernitus/BukkitOldCombatMechanics/commit/4ef28fb7bd63631fa4b6f0366d23dd1e159aa115)), closes [#780](https://github.com/kernitus/BukkitOldCombatMechanics/issues/780)
-* null pointer in potion compat ([b30e27d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b30e27ddb32d210371152feee8d337f27ea8f495)), closes [#791](https://github.com/kernitus/BukkitOldCombatMechanics/issues/791)
-* unmentioned worlds modesets not allowed [#792](https://github.com/kernitus/BukkitOldCombatMechanics/issues/792) ([95c9446](https://github.com/kernitus/BukkitOldCombatMechanics/commit/95c9446edbd0fe56bce0864798cf8d1c70865f8b))
-
-
-### Refactoring
-
-* improve fishing knockback cross-version compat ([d119c9f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/d119c9f35e1a89be8fb8d03573041cfc2ae2d418))
-
 ## [2.0.4](https://github.com/kernitus/BukkitOldCombatMechanics/compare/2.0.3...v2.0.4) (2024-10-28)
 
 
