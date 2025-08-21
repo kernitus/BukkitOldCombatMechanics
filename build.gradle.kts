@@ -42,8 +42,6 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/")
     // Auth library from Minecraft
     maven("https://libraries.minecraft.net/")
-    // Protocollib
-    maven("https://repo.dmulloy2.net/repository/public/")
 }
 
 dependencies {
@@ -57,7 +55,7 @@ dependencies {
     // Spigot
     compileOnly("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
     // ProtocolLib
-    compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
+    compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
 
      //For ingametesting
     // Mojang mappings for NMS

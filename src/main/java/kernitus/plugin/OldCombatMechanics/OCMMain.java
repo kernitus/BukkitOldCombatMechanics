@@ -106,28 +106,28 @@ public class OCMMain extends JavaPlugin {
                         "enabled_modules",
                         () -> ModuleLoader.getModules().stream()
                                 .filter(OCMModule::isEnabled)
-                                .collect(Collectors.toMap(OCMModule::toString, module -> 1))
-                )
-        );
+                                .collect(Collectors.toMap(OCMModule::toString, module -> 1))));
 
         // Pie chart of enabled/disabled for each module
         ModuleLoader.getModules().forEach(module -> metrics.addCustomChart(
                 new SimplePie(module.getModuleName() + "_pie",
-                        () -> module.isEnabled() ? "enabled" : "disabled"
-                )));
+                        () -> module.isEnabled() ? "enabled" : "disabled")));
 
         enableListeners.forEach(Runnable::run);
 
         // Properly handle Plugman load/unload.
-        final List<RegisteredListener> joinListeners = Arrays.stream(PlayerJoinEvent.getHandlerList().getRegisteredListeners())
+        final List<RegisteredListener> joinListeners = Arrays
+                .stream(PlayerJoinEvent.getHandlerList().getRegisteredListeners())
                 .filter(registeredListener -> registeredListener.getPlugin().equals(this))
                 .collect(Collectors.toList());
 
         Bukkit.getOnlinePlayers().forEach(player -> {
             final PlayerJoinEvent event = new PlayerJoinEvent(player, "");
 
-            // Trick all the modules into thinking the player just joined in case the plugin was loaded with Plugman.
-            // This way attack speeds, item modifications, etc. will be applied immediately instead of after a re-log.
+            // Trick all the modules into thinking the player just joined in case the plugin
+            // was loaded with Plugman.
+            // This way attack speeds, item modifications, etc. will be applied immediately
+            // instead of after a re-log.
             joinListeners.forEach(registeredListener -> {
                 try {
                     registeredListener.callEvent(event);
@@ -158,12 +158,15 @@ public class OCMMain extends JavaPlugin {
         disableListeners.forEach(Runnable::run);
 
         // Properly handle Plugman load/unload.
-        final List<RegisteredListener> quitListeners = Arrays.stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
+        final List<RegisteredListener> quitListeners = Arrays
+                .stream(PlayerQuitEvent.getHandlerList().getRegisteredListeners())
                 .filter(registeredListener -> registeredListener.getPlugin().equals(this))
                 .collect(Collectors.toList());
 
-        // Trick all the modules into thinking the player just quit in case the plugin was unloaded with Plugman.
-        // This way attack speeds, item modifications, etc. will be restored immediately instead of after a disconnect.
+        // Trick all the modules into thinking the player just quit in case the plugin
+        // was unloaded with Plugman.
+        // This way attack speeds, item modifications, etc. will be restored immediately
+        // instead of after a disconnect.
         Bukkit.getOnlinePlayers().forEach(player -> {
             final PlayerQuitEvent event = new PlayerQuitEvent(player, "");
 
@@ -183,7 +186,8 @@ public class OCMMain extends JavaPlugin {
     }
 
     private void registerModules() {
-        // Update Checker (also a module, so we can use the dynamic registering/unregistering)
+        // Update Checker (also a module, so we can use the dynamic
+        // registering/unregistering)
         ModuleLoader.addModule(new ModuleUpdateChecker(this));
 
         // Modeset listener, for when player joins or changes world
@@ -197,18 +201,21 @@ public class OCMMain extends JavaPlugin {
             ModuleLoader.addModule(new AttackCooldownTracker(this));
         }
 
-        //Listeners registered later with same priority are called later
+        // Listeners registered later with same priority are called later
 
-        //These four listen to OCMEntityDamageByEntityEvent:
+        // These four listen to OCMEntityDamageByEntityEvent:
         ModuleLoader.addModule(new ModuleOldToolDamage(this));
         ModuleLoader.addModule(new ModuleSwordSweep(this));
         ModuleLoader.addModule(new ModuleOldPotionEffects(this));
         ModuleLoader.addModule(new ModuleOldCriticalHits(this));
 
-        //Next block are all on LOWEST priority, so will be called in the following order:
+        // Next block are all on LOWEST priority, so will be called in the following
+        // order:
         // Damage order: base -> potion effects -> critical hit -> enchantments
-        // Defence order: overdamage -> blocking -> armour -> resistance -> armour enchs -> absorption
-        //EntityDamageByEntityListener calls OCMEntityDamageByEntityEvent, see modules above
+        // Defence order: overdamage -> blocking -> armour -> resistance -> armour enchs
+        // -> absorption
+        // EntityDamageByEntityListener calls OCMEntityDamageByEntityEvent, see modules
+        // above
         // For everything from base to overdamage
         ModuleLoader.addModule(new EntityDamageByEntityListener(this));
         // ModuleSwordBlocking to calculate blocking
@@ -227,10 +234,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleDisableCrafting(this));
         ModuleLoader.addModule(new ModuleDisableOffHand(this));
         ModuleLoader.addModule(new ModuleOldBrewingStand(this));
-        ModuleLoader.addModule(new ModuleDisableProjectileRandomness(this));
-        ModuleLoader.addModule(new ModuleDisableBowBoost(this));
         ModuleLoader.addModule(new ModuleProjectileKnockback(this));
-        ModuleLoader.addModule(new ModuleNoLapisEnchantments(this));
         ModuleLoader.addModule(new ModuleDisableEnderpearlCooldown(this));
         ModuleLoader.addModule(new ModuleChorusFruit(this));
 
