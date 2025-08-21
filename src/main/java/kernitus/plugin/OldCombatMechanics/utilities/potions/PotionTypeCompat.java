@@ -166,6 +166,8 @@ public class PotionTypeCompat {
     public static PotionTypeCompat fromPotionMeta(PotionMeta potionMeta) {
         try { // For >=1.20.5
             final PotionType potionType = potionMeta.getBasePotionType();
+            if (potionType == null)
+                return new PotionTypeCompat("UNCRAFTABLE");
             return new PotionTypeCompat(potionType.name());
         } catch (NoSuchMethodError e) {
             final var potionData = potionMeta.getBasePotionData();
