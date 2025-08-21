@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import com.cryptomorin.xseries.XEntityType;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -50,49 +51,54 @@ public class ModuleFishingKnockback extends OCMModule {
     public void onRodLand(ProjectileHitEvent event) {
         final Entity hookEntity = event.getEntity();
 
-        // FISHING_HOOK -> FISHING_BOBBER in >=1.20.5
-        EntityType fishingBobberType;
-        try {
-            fishingBobberType = EntityType.FISHING_BOBBER;
-        } catch (NoSuchFieldError e) {
-            fishingBobberType = EntityType.valueOf("FISHING_HOOK");
-        }
-        if (event.getEntityType() != fishingBobberType) return;
+        final EntityType fishingBobberType = XEntityType.FISHING_BOBBER.get();
+        if (fishingBobberType == null || event.getEntityType() != fishingBobberType)
+            return;
 
         final FishHook hook = (FishHook) hookEntity;
 
-        if (!(hook.getShooter() instanceof Player rodder)) return;
-        if (!isEnabled(rodder)) return;
+        if (!(hook.getShooter() instanceof Player rodder))
+            return;
+        if (!isEnabled(rodder))
+            return;
 
         final Entity hitEntity = getHitEntityFunction.apply(event);
 
-        if (hitEntity == null) return;  // If no entity was hit
-        if (!(hitEntity instanceof LivingEntity livingEntity)) return;
-        if (!knockbackNonPlayerEntities && !(hitEntity instanceof Player)) return;
+        if (hitEntity == null)
+            return; // If no entity was hit
+        if (!(hitEntity instanceof LivingEntity livingEntity))
+            return;
+        if (!knockbackNonPlayerEntities && !(hitEntity instanceof Player))
+            return;
 
         // Do not move Citizens NPCs
         // See https://wiki.citizensnpcs.co/API#Checking_if_an_entity_is_a_Citizens_NPC
-        if (hitEntity.hasMetadata("NPC")) return;
-
+        if (hitEntity.hasMetadata("NPC"))
+            return;
 
         if (!knockbackNonPlayerEntities) {
             final Player player = (Player) hitEntity;
 
             debug("You were hit by a fishing rod!", player);
 
-            if (player.equals(rodder)) return;
+            if (player.equals(rodder))
+                return;
 
-            if (player.getGameMode() == GameMode.CREATIVE) return;
+            if (player.getGameMode() == GameMode.CREATIVE)
+                return;
         }
 
         // Check if cooldown time has elapsed
-        if (livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f) return;
+        if (livingEntity.getNoDamageTicks() > livingEntity.getMaximumNoDamageTicks() / 2f)
+            return;
 
         double damage = module().getDouble("damage");
-        if (damage < 0) damage = 0.0001;
+        if (damage < 0)
+            damage = 0.0001;
 
         livingEntity.damage(damage, rodder);
-        livingEntity.setVelocity(calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
+        livingEntity.setVelocity(
+                calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
     }
 
     private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location hook) {
@@ -132,8 +138,10 @@ public class ModuleFishingKnockback extends OCMModule {
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     private void onReelIn(PlayerFishEvent e) {
-        if (e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
-        if (!isEnabled(e.getPlayer())) return;
+        if (e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY)
+            return;
+        if (!isEnabled(e.getPlayer()))
+            return;
 
         final String cancelDraggingIn = module().getString("cancelDraggingIn", "players");
         final boolean isPlayer = e.getCaught() instanceof HumanEntity;
