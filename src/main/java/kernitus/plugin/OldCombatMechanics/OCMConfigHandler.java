@@ -11,8 +11,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Objects;
 
 public class OCMConfigHandler {
     private final String CONFIG_NAME = "config.yml";
@@ -32,25 +30,40 @@ public class OCMConfigHandler {
                 Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
         ) {
             plugin.getLogger().warning("Config version does not match, upgrading old config");
-            // Load values from old config
-            final YamlConfiguration oldConfig = getConfig(CONFIG_NAME);
-            final YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
-                    new InputStreamReader(Objects.requireNonNull(plugin.getResource(CONFIG_NAME))));
 
-            // Copies value from old config if present in new config
-            for (String key : defaultConfig.getKeys(true)) {
-                if (key.equals("config-version") || !oldConfig.contains(key)) continue;
+            final File configFile = getFile(CONFIG_NAME);
 
-                if (defaultConfig.isConfigurationSection(key)) continue; // Only get leaf keys
-
-                defaultConfig.set(key, oldConfig.get(key));
+            // Back up the old config file
+            if (!configFile.renameTo(backup)) {
+                plugin.getLogger().severe("Could not back up old config file. Aborting config upgrade.");
+                return;
             }
+
+            // Save the new default config from the JAR to config.yml. This ensures all old keys are gone.
+            plugin.saveResource(CONFIG_NAME, true);
+
+            // Now, load the old values from the backup and the new config from the fresh file
+            final YamlConfiguration oldConfig = YamlConfiguration.loadConfiguration(backup);
+            final YamlConfiguration newConfig = YamlConfiguration.loadConfiguration(configFile);
+
+            // Copy user's values for keys that still exist
+            for (String key : newConfig.getKeys(true)) {
+                if (key.equals("config-version")) continue;
+                if (newConfig.isConfigurationSection(key)) continue;
+
+                if (oldConfig.contains(key) && !oldConfig.isConfigurationSection(key)) {
+                    newConfig.set(key, oldConfig.get(key));
+                }
+            }
+
+            // Save the final, merged config
             try {
-                // Overwrites old file if needed
-                defaultConfig.save(getFile(CONFIG_NAME));
-                plugin.getLogger().info("Config has been updated");
+                newConfig.save(configFile);
+                plugin.getLogger().info("Config has been updated. A backup of your old config is available at config-backup.yml");
             } catch (IOException e) {
-                plugin.getLogger().severe("Failed to upgrade config");
+                plugin.getLogger().severe("Failed to save upgraded config. It has been restored from backup.");
+                e.printStackTrace();
+                backup.renameTo(configFile); // Restore backup
             }
         } else {
             plugin.getLogger().warning("Config version does not match, backing up old config and creating a new one");
