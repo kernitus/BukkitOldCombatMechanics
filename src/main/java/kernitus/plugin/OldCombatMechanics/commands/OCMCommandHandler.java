@@ -29,7 +29,9 @@ public class OCMCommandHandler implements CommandExecutor {
 
     private final OCMMain plugin;
 
-    enum Subcommand {reload, mode }
+    enum Subcommand {
+        reload, mode
+    }
 
     public OCMCommandHandler(OCMMain instance) {
         this.plugin = instance;
@@ -39,7 +41,8 @@ public class OCMCommandHandler implements CommandExecutor {
         final PluginDescriptionFile description = plugin.getDescription();
 
         Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
-        Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s", description.getVersion());
+        Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s",
+                description.getVersion());
 
         if (checkPermissions(sender, Subcommand.reload))
             Messenger.sendNoPrefix(sender, "&eYou can use &c/ocm reload&e to reload the config file");
@@ -57,18 +60,19 @@ public class OCMCommandHandler implements CommandExecutor {
     }
 
     private void mode(CommandSender sender, String[] args) {
+        // If just /ocm mode
         if (args.length < 2) {
-            if(sender instanceof Player) {
+            if (sender instanceof Player) {
                 final Player player = ((Player) sender);
                 final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
                 String modeName = playerData.getModesetForWorld(player.getWorld().getUID());
-                if(modeName == null || modeName.isEmpty()) modeName = "unknown";
+                if (modeName == null || modeName.isEmpty())
+                    modeName = "unknown";
 
                 Messenger.send(sender,
                         Config.getConfig().getString("mode-messages.mode-status",
                                 "&4ERROR: &rmode-messages.mode-status string missing"),
-                                modeName
-                        );
+                        modeName);
             }
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.message-usage",
@@ -86,19 +90,27 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         Player player = null;
+        // If /ocm mode <mode>
         if (args.length < 3) {
             if (sender instanceof Player) {
-                if (sender.hasPermission("oldcombatmechanics.mode.own"))
-                    player = (Player) sender;
-            }
-            else {
+                if (!sender.hasPermission("oldcombatmechanics.mode.own")) {
+                    Messenger.sendNoPrefix(sender, NO_PERMISSION, "oldcombatmechanics.mode.own");
+                    return;
+                }
+                player = (Player) sender;
+            } else {
                 Messenger.send(sender,
                         Config.getConfig().getString("mode-messages.invalid-player",
                                 "&4ERROR: &rmode-messages.invalid-player string missing"));
                 return;
             }
-        } else if (sender.hasPermission("oldcombatmechanics.mode.others"))
+        } else { // If /ocm mode <mode> <player>
+            if (!sender.hasPermission("oldcombatmechanics.mode.others")) {
+                Messenger.sendNoPrefix(sender, NO_PERMISSION, "oldcombatmechanics.mode.others");
+                return;
+            }
             player = Bukkit.getPlayer(args[2]);
+        }
 
         if (player == null) {
             Messenger.send(sender,
@@ -111,7 +123,8 @@ public class OCMCommandHandler implements CommandExecutor {
         final Set<String> worldModesets = Config.getWorlds().get(worldId);
 
         // If modesets null or empty it means not configured, so all are allowed
-        if(worldModesets != null && !worldModesets.isEmpty() && !worldModesets.contains(modesetName)){ // Modeset not allowed in current world
+        if (worldModesets != null && !worldModesets.isEmpty() && !worldModesets.contains(modesetName)) {
+            // Modeset not allowed in current world
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-modeset",
                             "&4ERROR: &rmode-messages.invalid-modeset string missing"));
@@ -126,8 +139,7 @@ public class OCMCommandHandler implements CommandExecutor {
         Messenger.send(sender,
                 Config.getConfig().getString("mode-messages.mode-set",
                         "&4ERROR: &rmode-messages.mode-set string missing"),
-                modesetName
-        );
+                modesetName);
 
         // Re-apply things like attack speed and collision team
         final Player playerCopy = player;
@@ -135,16 +147,17 @@ public class OCMCommandHandler implements CommandExecutor {
     }
 
     /*
-    private void test(OCMMain plugin, CommandSender sender) {
-        final Location location = sender instanceof Player ?
-                ((Player) sender).getLocation() :
-                sender.getServer().getWorlds().get(0).getSpawnLocation();
-
-        new InGameTester(plugin).performTests(sender, location);
-    }
+     * private void test(OCMMain plugin, CommandSender sender) {
+     * final Location location = sender instanceof Player ?
+     * ((Player) sender).getLocation() :
+     * sender.getServer().getWorlds().get(0).getSpawnLocation();
+     * 
+     * new InGameTester(plugin).performTests(sender, location);
+     * }
      */
 
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label,
+            String[] args) {
         if (args.length < 1) {
             help(plugin, sender);
         } else {
@@ -156,11 +169,11 @@ public class OCMCommandHandler implements CommandExecutor {
                             case reload:
                                 reload(sender);
                                 break;
-                                /*
-                            case test:
-                                test(plugin, sender);
-                                break;
-                                 */
+                            /*
+                             * case test:
+                             * test(plugin, sender);
+                             * break;
+                             */
                             case mode:
                                 mode(sender, args);
                                 break;

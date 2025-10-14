@@ -12,40 +12,41 @@ softdepend: [ProtocolLib, PlaceholderAPI]
 api-version: 1.13
 
 commands:
-  OldCombatMechanics:
+  oldcombatmechanics:
    description: OldCombatMechanics's main command
    aliases: [ocm]
-   permission: OldCombatMechanics.commands
+   permission: oldcombatmechanics.commands
    
 permissions:
-  OldCombatMechanics.*:
+  oldcombatmechanics.*:
     description: Gives access to all OCM permissions
     default: op
     children:
-      OldCombatMechanics.commands: true
-      OldCombatMechanics.notify: true
-      OldCombatMechanics.mode: true
-      OldCombatMechanics.nolapis: true
-      OldCombatMechanics.swordblock: true
-  OldCombatMechanics.commands:
+      oldcombatmechanics.commands: true
+      oldcombatmechanics.notify: true
+      oldcombatmechanics.mode: true
+      oldcombatmechanics.mode.own: true
+      oldcombatmechanics.mode.others: true
+      oldcombatmechanics.swordblock: true
+  oldcombatmechanics.commands:
     description: Allows the usage of OCM commands
     default: op
-  OldCombatMechanics.notify:
+  oldcombatmechanics.notify:
     description: Notifies of new OCM updates
     default: op
-  OldCombatMechanics.mode:
-    description: Allows setting player combat mode
+  oldcombatmechanics.mode:
+    description: Allows player to use /ocm mode to check own modeset
+    default: op
+  oldcombatmechanics.mode.own:
+    description: Allows player to use /ocm mode to change own modeset
     default: op
     children:
-      OldCombatMechanics.mode.own:
-        description: Allows setting player own combat mode
-        default: op
-      OldCombatMechanics.mode.others:
-        description: Allows setting other players combat mode
-        default: op
-  OldCombatMechanics.nolapis:
-    description: Allows lapis to be auto-placed in enchantment tables
+      oldcombatmechanics.mode: true
+  oldcombatmechanics.mode.others:
+    description: Allows player to use /ocm mode to change other players' modeset
     default: op
-  OldCombatMechanics.swordblock:
-    description: Allows players to block with their sword
+    children:
+      oldcombatmechanics.mode: true
+  oldcombatmechanics.swordblock:
+    description: Allows players to block with sword
     default: op
