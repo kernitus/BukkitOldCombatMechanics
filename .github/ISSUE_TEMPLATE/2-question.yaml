@@ -1,0 +1,65 @@
+name: Question
+description: Ask a question about the plugin
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ PLEASE READ BEFORE SUBMITTING ⚠️
+        
+        1. Check the readme and wiki first: https://github.com/kernitus/BukkitOldCombatMechanics/wiki
+        2. Search existing issues to see if your question has been answered
+        3. This is a volunteer project - we have no obligation to help incomplete reports
+        4. If you've found a bug, use the Bug Report template instead
+        5. If you want a new feature, use the Feature Request template instead
+  
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have checked the wiki and readme
+          required: true
+        - label: I have searched existing issues
+          required: true
+  
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Clearly describe what you want to know
+    validations:
+      required: true
+  
+  - type: textarea
+    id: tried
+    attributes:
+      label: What I've Tried
+      description: Have you checked documentation? Tried anything? Searched for similar issues?
+    validations:
+      required: true
+  
+  - type: input
+    id: server-version
+    attributes:
+      label: Server Version
+      placeholder: e.g. Paper 1.20.4
+    validations:
+      required: true
+  
+  - type: input
+    id: ocm-version
+    attributes:
+      label: OldCombatMechanics Version
+      description: "DO NOT write 'latest' - specify the exact version number"
+      placeholder: e.g. 2.1.1
+    validations:
+      required: true
+  
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information, screenshots, config snippets, etc.
+

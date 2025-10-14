@@ -1,0 +1,116 @@
+name: Bug Report
+description: Report a bug in the plugin
+title: "[Bug]: "
+labels: ["investigate"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ PLEASE READ BEFORE SUBMITTING ⚠️
+        
+        1. Try the latest test version from https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?channel=Snapshot&platform=PAPER first
+        2. Complete ALL fields below - incomplete reports will be CLOSED
+        3. This is a volunteer project - we have no obligation to help incomplete reports
+        4. Have a question? Please use the Question template instead
+  
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have tried the latest test/snapshot version
+          required: true
+        - label: I have filled out all required fields below
+          required: true
+  
+  - type: input
+    id: server-version
+    attributes:
+      label: Server Version
+      description: Version of the server, e.g. Spigot 1.14.1 or Paper 1.19.3
+      placeholder: e.g. Paper 1.20.4
+    validations:
+      required: true
+  
+  - type: input
+    id: ocm-version
+    attributes:
+      label: OldCombatMechanics Version
+      description: "EXACT version of OldCombatMechanics, e.g. 1.7.2 or 2.1.1-beta+e2f0369. DO NOT write 'latest' - versions change often."
+      placeholder: e.g. 2.1.1-beta+e2f0369
+    validations:
+      required: true
+  
+  - type: textarea
+    id: server-log
+    attributes:
+      label: Server Log File
+      description: Console log from the server. DO NOT use an external service like pastebin, as these expire.
+      placeholder: Paste your log here
+      render: console
+    validations:
+      required: true
+  
+  - type: textarea
+    id: config
+    attributes:
+      label: OldCombatMechanics config.yml
+      description: Your config file. DO NOT use an external service like pastebin, as these expire.
+      placeholder: Paste your config.yml here
+      render: yaml
+    validations:
+      required: true
+  
+  - type: textarea
+    id: other-plugins
+    attributes:
+      label: Other Plugins
+      description: List of other plugins installed (conflicts are common)
+      placeholder: |
+        - PluginName 1.0.0
+        - AnotherPlugin 2.3.1
+    validations:
+      required: true
+  
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: A clear and concise description of what the bug is
+    validations:
+      required: true
+  
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: What you would do in order for the problem to occur
+      placeholder: |
+        1. 
+        2. 
+        3.
+    validations:
+      required: true
+  
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      description: What do you think should happen when you perform the above steps?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      description: What does happen when you perform the above steps?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or videos here
+

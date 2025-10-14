@@ -1,0 +1,66 @@
+name: Feature Request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ PLEASE READ BEFORE SUBMITTING ⚠️
+        
+        1. Search for existing enhancement requests first
+        2. Have a question? Please use the Question template instead
+        3. This plugin is about combat mechanics changes from 1.9+ - not general Minecraft features
+        4. Incomplete requests WILL be closed - this is a volunteer project
+        
+        Remember that this plugin is about changes in combat mechanics following 1.8, anything else is out of scope.
+  
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched for existing enhancement requests
+          required: true
+        - label: This relates to combat mechanics changes from 1.9+
+          required: true
+  
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the problem you are facing, as a consequence of a lack of features rather than a bug
+    validations:
+      required: true
+  
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: The solution you think best for the problem
+    validations:
+      required: true
+  
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe alternative solutions you have considered
+    validations:
+      required: false
+  
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence of Mechanic Change
+      description: If your enhancement is about a combat feature that changed between 1.8 and now, provide evidence (wiki links, videos, etc.)
+      placeholder: Links to Minecraft wiki, videos demonstrating the mechanic, etc.
+    validations:
+      required: false
+  
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context or screenshots that could be relevant
+
