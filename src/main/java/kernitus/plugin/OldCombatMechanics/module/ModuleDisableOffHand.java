@@ -91,6 +91,18 @@ public class ModuleDisableOffHand extends OCMModule {
             return;
 
         try {
+            // Use the Bukkit API directly first
+            final Inventory bottom = e.getView().getBottomInventory();
+            final Inventory top = e.getView().getTopInventory();
+            // If neither of the inventories is CRAFTING, player cannot be moving stuff to
+            // the offhand
+            if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
+                return;
+        } catch (Exception ignored) {
+            // Try reflection before giving up. May happen with older versions
+        }
+
+        try {
             // Older versions have InventoryView as class, but now it's an interface
             final Object view = Reflector.invokeMethod(Reflector.getMethod(e.getClass(), "getView"), e);
             final Inventory bottom = Reflector.invokeMethod(Reflector.getMethod(view.getClass(), "getBottomInventory"),
