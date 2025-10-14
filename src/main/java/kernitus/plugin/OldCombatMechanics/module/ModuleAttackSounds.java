@@ -66,7 +66,8 @@ public class ModuleAttackSounds extends OCMModule {
                         processed.add(key.toString());
                         continue;
                     } catch (Exception ignored) {
-                        // This server version doesn't have the getKey method, so we fall back to the legacy name
+                        // This server version doesn't have the getKey method, so we fall back to the
+                        // legacy name
                     }
                 }
                 // Fallback for older versions or if the sound is not in the Bukkit enum
@@ -111,12 +112,11 @@ public class ModuleAttackSounds extends OCMModule {
                     return;
                 }
 
-                String soundName;
+                String soundName = null;
                 Object soundEventObject = nmsSoundEvent;
 
                 // On modern versions, the packet contains a Holder<SoundEvent> which wraps the
-                // SoundEvent.
-                // We need to call Holder.value() to get the actual SoundEvent.
+                // SoundEvent. Try to call Holder.value() to get the actual SoundEvent first.
                 Method valueMethod = Reflector.getMethod(nmsSoundEvent.getClass(), "value");
                 if (valueMethod != null) {
                     Object unwrappedEvent = Reflector.invokeMethod(valueMethod, nmsSoundEvent);
@@ -125,20 +125,63 @@ public class ModuleAttackSounds extends OCMModule {
                     }
                 }
 
-                // On older versions, the packet contained the SoundEvent directly.
-                // In both cases, we should now have a SoundEvent object.
+                // Try to obtain a ResourceLocation from the unwrapped object first
                 Method getLocationMethod = Reflector.getMethod(soundEventObject.getClass(), "getLocation");
                 if (getLocationMethod == null) {
-                    // The structure might have changed in a new version, let's try `location()` as
-                    // a fallback for ResourceKey
+                    // Mojang-mapped methods often use `location()`
                     getLocationMethod = Reflector.getMethod(soundEventObject.getClass(), "location");
                 }
-
                 if (getLocationMethod != null) {
                     Object resourceLocation = Reflector.invokeMethod(getLocationMethod, soundEventObject);
-                    soundName = resourceLocation.toString();
-                } else {
-                    // If we still can't find it, something is very wrong.
+                    if (resourceLocation != null)
+                        soundName = resourceLocation.toString();
+                }
+
+                // If we still don't have a name, the object may still be a Holder instance.
+                // Newer versions can expose the key without resolving the value via
+                // unwrapKey()/key().
+                if (soundName == null) {
+                    Method unwrapKeyMethod = Reflector.getMethod(soundEventObject.getClass(), "unwrapKey");
+                    if (unwrapKeyMethod != null) {
+                        Object optionalKey = Reflector.invokeMethod(unwrapKeyMethod, soundEventObject);
+                        if (optionalKey != null) {
+                            Method isPresent = Reflector.getMethod(optionalKey.getClass(), "isPresent");
+                            Method getOpt = Reflector.getMethod(optionalKey.getClass(), "get");
+                            Boolean present = isPresent != null ? Reflector.invokeMethod(isPresent, optionalKey) : null;
+                            if (Boolean.TRUE.equals(present) && getOpt != null) {
+                                Object resourceKey = Reflector.invokeMethod(getOpt, optionalKey);
+                                if (resourceKey != null) {
+                                    Method keyLoc = Reflector.getMethod(resourceKey.getClass(), "location");
+                                    if (keyLoc != null) {
+                                        Object resourceLocation = Reflector.invokeMethod(keyLoc, resourceKey);
+                                        if (resourceLocation != null)
+                                            soundName = resourceLocation.toString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Alternative path: some versions provide key() directly on the holder
+                if (soundName == null) {
+                    Method keyMethod = Reflector.getMethod(soundEventObject.getClass(), "key");
+                    if (keyMethod != null) {
+                        Object resourceKey = Reflector.invokeMethod(keyMethod, soundEventObject);
+                        if (resourceKey != null) {
+                            Method keyLoc = Reflector.getMethod(resourceKey.getClass(), "location");
+                            if (keyLoc != null) {
+                                Object resourceLocation = Reflector.invokeMethod(keyLoc, resourceKey);
+                                if (resourceLocation != null)
+                                    soundName = resourceLocation.toString();
+                            }
+                        }
+                    }
+                }
+
+                if (soundName == null) {
+                    // If we still can't find it, something changed in the server/ProtocolLib
+                    // mapping.
                     throw new IllegalStateException(
                             "Could not find sound location method on " + soundEventObject.getClass().getName());
                 }
