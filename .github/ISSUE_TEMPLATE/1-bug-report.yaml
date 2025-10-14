@@ -8,20 +8,10 @@ body:
       value: |
         ## ⚠️ PLEASE READ BEFORE SUBMITTING ⚠️
         
-        1. Try the latest test version from https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?channel=Snapshot&platform=PAPER first
+        1. Try the [latest test version](https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?channel=Snapshot&platform=PAPER) first
         2. Complete ALL fields below - incomplete reports will be CLOSED
         3. This is a volunteer project - we have no obligation to help incomplete reports
         4. Have a question? Please use the Question template instead
-  
-  - type: checkboxes
-    id: confirmation
-    attributes:
-      label: Pre-submission checklist
-      options:
-        - label: I have tried the latest test/snapshot version
-          required: true
-        - label: I have filled out all required fields below
-          required: true
   
   - type: input
     id: server-version
@@ -67,7 +57,7 @@ body:
       label: Other Plugins
       description: List of other plugins installed (conflicts are common)
       placeholder: |
-        - PluginName 1.0.0
+        - ViaVersion 1.0.0
         - AnotherPlugin 2.3.1
     validations:
       required: true
@@ -86,9 +76,9 @@ body:
       label: Steps to Reproduce
       description: What you would do in order for the problem to occur
       placeholder: |
-        1. 
+        1. Hit a mob with a stick
         2. 
-        3.
+        3. 
     validations:
       required: true
   
@@ -113,4 +103,15 @@ body:
     attributes:
       label: Additional Context
       description: Add any other context, screenshots, or videos here
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have tried the latest test/snapshot version
+          required: true
+        - label: I have filled out all required fields below
+          required: true
+  
 
