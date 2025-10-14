@@ -22,7 +22,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryView;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -69,7 +69,8 @@ public class ModuleDisableOffHand extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
         final HumanEntity player = e.getWhoClicked();
-        if (!isEnabled(player)) return;
+        if (!isEnabled(player))
+            return;
         final ClickType clickType = e.getClick();
 
         try {
@@ -82,16 +83,27 @@ public class ModuleDisableOffHand extends OCMModule {
         } // For versions below 1.16
 
         final Inventory clickedInventory = e.getClickedInventory();
-        if (clickedInventory == null) return;
+        if (clickedInventory == null)
+            return;
         final InventoryType inventoryType = clickedInventory.getType();
         // Source inventory must be PLAYER
-        if(inventoryType != InventoryType.PLAYER) return;
-
-        final InventoryView view = e.getView();
-        // If neither of the inventories is CRAFTING, player cannot be moving stuff to the offhand
-        if (view.getBottomInventory().getType() != InventoryType.CRAFTING &&
-                view.getTopInventory().getType() != InventoryType.CRAFTING)
+        if (inventoryType != InventoryType.PLAYER)
             return;
+
+        try {
+            // Older versions have InventoryView as class, but now it's an interface
+            final Object view = Reflector.invokeMethod(Reflector.getMethod(e.getClass(), "getView"), e);
+            final Inventory bottom = Reflector.invokeMethod(Reflector.getMethod(view.getClass(), "getBottomInventory"),
+                    view);
+            final Inventory top = Reflector.invokeMethod(Reflector.getMethod(view.getClass(), "getTopInventory"), view);
+            // If neither of the inventories is CRAFTING, player cannot be moving stuff to
+            // the offhand
+            if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
+                return;
+        } catch (RuntimeException exception) {
+            // Reflection may fail, print error but don't break
+            exception.printStackTrace();
+        }
 
         // Prevent shift-clicking a shield into the offhand item slot
         final ItemStack currentItem = e.getCurrentItem();
@@ -105,7 +117,7 @@ public class ModuleDisableOffHand extends OCMModule {
         }
 
         if (e.getSlot() == OFFHAND_SLOT &&
-                // Let allowed items be placed into offhand slot with number keys (hotbar swap)
+        // Let allowed items be placed into offhand slot with number keys (hotbar swap)
                 ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.getHotbarButton())))
                         || isItemBlocked(e.getCursor())) // Deny placing not allowed items into offhand slot
         ) {
@@ -119,7 +131,8 @@ public class ModuleDisableOffHand extends OCMModule {
         final HumanEntity player = e.getWhoClicked();
         if (!isEnabled(player)
                 || e.getInventory().getType() != InventoryType.CRAFTING
-                || !e.getInventorySlots().contains(OFFHAND_SLOT)) return;
+                || !e.getInventorySlots().contains(OFFHAND_SLOT))
+            return;
 
         if (isItemBlocked(e.getOldCursor())) {
             e.setResult(Event.Result.DENY);
