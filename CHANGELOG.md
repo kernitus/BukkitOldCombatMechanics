@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.2.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.1.0...v2.2.0) (2025-10-14)
+
+
+### Features
+
+* add fallback sound reflection logic ([1592dc2](https://github.com/kernitus/BukkitOldCombatMechanics/commit/1592dc249870ad3113b924cdebd41cbc36b68ad5))
+
+
+### Bug Fixes
+
+* ocm mode permissions ([e2f0369](https://github.com/kernitus/BukkitOldCombatMechanics/commit/e2f0369f294e250e8cfc474bbd1121498ecf09fe)), closes [#818](https://github.com/kernitus/BukkitOldCombatMechanics/issues/818)
+* update checker versioning logic ([8d88a49](https://github.com/kernitus/BukkitOldCombatMechanics/commit/8d88a49d0fa1e8c7dfa7c48cf66c8399c766d6e0))
+* use reflection for inventory view ([462e536](https://github.com/kernitus/BukkitOldCombatMechanics/commit/462e536628f3df544c9cf0fe42705eff46b7d4f6)), closes [#812](https://github.com/kernitus/BukkitOldCombatMechanics/issues/812)
+
+
+### Documentation
+
+* update issue templates ([5927729](https://github.com/kernitus/BukkitOldCombatMechanics/commit/5927729ea5fcca44a6218b10f40cec3f8ce3d4a3))
+* update issue templates ([09fd3c5](https://github.com/kernitus/BukkitOldCombatMechanics/commit/09fd3c556ad02d25caa875e7dfe5854888a920cf))
+* use yaml issue forms ([fc51924](https://github.com/kernitus/BukkitOldCombatMechanics/commit/fc51924504e3718b9829f4a7deca7a8701000f9f))
+
 ## [2.1.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.0.4...v2.1.0) (2025-08-21)
 
 
