@@ -26,6 +26,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -39,6 +40,12 @@ public class ModuleDisableOffHand extends OCMModule {
     private List<Material> materials;
     private String deniedMessage;
     private BlockType blockType;
+
+    // Cache reflective methods used on older versions
+    private static volatile boolean useReflectionViewPath = false;
+    private static Method getViewMethod;
+    private static Method getBottomInventoryMethod;
+    private static Method getTopInventoryMethod;
 
     public ModuleDisableOffHand(OCMMain plugin) {
         super(plugin, "disable-offhand");
@@ -90,31 +97,41 @@ public class ModuleDisableOffHand extends OCMModule {
         if (inventoryType != InventoryType.PLAYER)
             return;
 
-        try {
-            // Use the Bukkit API directly first
-            final Inventory bottom = e.getView().getBottomInventory();
-            final Inventory top = e.getView().getTopInventory();
-            // If neither of the inventories is CRAFTING, player cannot be moving stuff to
-            // the offhand
-            if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
-                return;
-        } catch (Exception ignored) {
-            // Try reflection before giving up. May happen with older versions
+        // First try the modern Bukkit API path. If that fails once (older versions),
+        // fall back to a cached reflection path next time onwards.
+        if (!useReflectionViewPath) {
+            try {
+                final Inventory bottom = e.getView().getBottomInventory();
+                final Inventory top = e.getView().getTopInventory();
+                if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
+                    return;
+            } catch (Throwable ignored) {
+                useReflectionViewPath = true;
+            }
         }
 
-        try {
-            // Older versions have InventoryView as class, but now it's an interface
-            final Object view = Reflector.invokeMethod(Reflector.getMethod(e.getClass(), "getView"), e);
-            final Inventory bottom = Reflector.invokeMethod(Reflector.getMethod(view.getClass(), "getBottomInventory"),
-                    view);
-            final Inventory top = Reflector.invokeMethod(Reflector.getMethod(view.getClass(), "getTopInventory"), view);
-            // If neither of the inventories is CRAFTING, player cannot be moving stuff to
-            // the offhand
-            if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
-                return;
-        } catch (RuntimeException exception) {
-            // Reflection may fail, print error but don't break
-            exception.printStackTrace();
+        if (useReflectionViewPath) {
+            try {
+                if (getViewMethod == null) {
+                    getViewMethod = Reflector.getMethod(e.getClass(), "getView");
+                }
+                final Object view = Reflector.invokeMethod(getViewMethod, e);
+
+                final Class<?> viewClass = view.getClass();
+                if (getBottomInventoryMethod == null) {
+                    getBottomInventoryMethod = Reflector.getMethod(viewClass, "getBottomInventory");
+                }
+                if (getTopInventoryMethod == null) {
+                    getTopInventoryMethod = Reflector.getMethod(viewClass, "getTopInventory");
+                }
+
+                final Inventory bottom = Reflector.invokeMethod(getBottomInventoryMethod, view);
+                final Inventory top = Reflector.invokeMethod(getTopInventoryMethod, view);
+                if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
+                    return;
+            } catch (RuntimeException exception) {
+                exception.printStackTrace();
+            }
         }
 
         // Prevent shift-clicking a shield into the offhand item slot
@@ -129,10 +146,8 @@ public class ModuleDisableOffHand extends OCMModule {
         }
 
         if (e.getSlot() == OFFHAND_SLOT &&
-        // Let allowed items be placed into offhand slot with number keys (hotbar swap)
                 ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.getHotbarButton())))
-                        || isItemBlocked(e.getCursor())) // Deny placing not allowed items into offhand slot
-        ) {
+                        || isItemBlocked(e.getCursor()))) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
