@@ -91,7 +91,12 @@ public class ModuleSwordSweep extends OCMModule {
         } catch (NoSuchFieldError ignored) {
         }
 
-        final float damage = NewWeaponDamage.getDamage(weapon.getType()) * level / (level + 1) + 1;
+        final Float baseDamage = NewWeaponDamage.getDamageOrNull(weapon.getType());
+        if (baseDamage == null) {
+            debug("Unknown sword in NewWeaponDamage: " + weapon.getType() + " (passing through)", attacker);
+            return;
+        }
+        final float damage = baseDamage * level / (level + 1) + 1;
 
         if (e.getDamage() == damage) {
             // Possibly a sword-sweep attack

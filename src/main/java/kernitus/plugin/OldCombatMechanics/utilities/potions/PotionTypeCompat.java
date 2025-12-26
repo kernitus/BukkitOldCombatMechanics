@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.potions;
 
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.Nullable;
 
@@ -170,7 +171,7 @@ public class PotionTypeCompat {
                 return new PotionTypeCompat("UNCRAFTABLE");
             return new PotionTypeCompat(potionType.name());
         } catch (NoSuchMethodError e) {
-            final var potionData = potionMeta.getBasePotionData();
+            final PotionData potionData = potionMeta.getBasePotionData();
             final PotionType potionType = potionData.getType();
             return new PotionTypeCompat(potionType.name(), potionData.isUpgraded(), potionData.isExtended());
         }

@@ -91,6 +91,7 @@ old-tool-damage:
     IRON_AXE: 6
     DIAMOND_AXE: 7
     NETHERITE_AXE: 8
+    COPPER_AXE: 6
     # Shovel damages
     GOLD_SPADE: 2
     WOOD_SPADE: 2
@@ -98,6 +99,7 @@ old-tool-damage:
     IRON_SPADE: 4
     DIAMOND_SPADE: 5
     NETHERITE_SPADE: 6
+    COPPER_SPADE: 3
     # Sword damages
     GOLD_SWORD: 5
     WOOD_SWORD: 5
@@ -105,6 +107,7 @@ old-tool-damage:
     IRON_SWORD: 7
     DIAMOND_SWORD: 8
     NETHERITE_SWORD: 9
+    COPPER_SWORD: 6
     # Pickaxe damages
     GOLD_PICKAXE: 3
     WOOD_PICKAXE: 3
@@ -112,6 +115,7 @@ old-tool-damage:
     IRON_PICKAXE: 5
     DIAMOND_PICKAXE: 6
     NETHERITE_PICKAXE: 7
+    COPPER_PICKAXE: 4
     # Hoe damages
     GOLD_HOE: 1
     WOOD_HOE: 1
@@ -119,6 +123,7 @@ old-tool-damage:
     IRON_HOE: 1
     DIAMOND_HOE: 1
     NETHERITE_HOE: 1
+    COPPER_HOE: 1
 
 old-critical-hits:
   # Makes critical hits work like in 1.8
@@ -553,4 +558,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 67
+config-version: 68

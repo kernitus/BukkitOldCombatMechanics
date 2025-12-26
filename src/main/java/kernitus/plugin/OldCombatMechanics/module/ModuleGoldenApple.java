@@ -110,7 +110,9 @@ public class ModuleGoldenApple extends OCMModule {
                     // something up.
 
         if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
-            final HumanEntity player = e.getView().getPlayer();
+            final List<HumanEntity> viewers = e.getInventory().getViewers();
+            if (viewers.isEmpty()) return;
+            final HumanEntity player = viewers.get(0);
 
             if (isSettingEnabled("no-conflict-mode"))
                 return;
@@ -119,6 +121,8 @@ public class ModuleGoldenApple extends OCMModule {
                 e.getInventory().setResult(null);
         }
     }
+
+    // Intentionally avoid InventoryView#getPlayer() to prevent class/interface mismatch on 1.12.
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onItemConsume(PlayerItemConsumeEvent e) {
@@ -197,6 +201,8 @@ public class ModuleGoldenApple extends OCMModule {
     }
 
     private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {
+        final boolean forceOverride = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+                .versionIsNewerOrEqualTo(1, 13, 0);
         for (PotionEffect newEffect : newEffects) {
             // Find the existing effect of the same type with the highest amplifier
             final PotionEffect highestExistingEffect = target.getActivePotionEffects().stream()
@@ -207,13 +213,21 @@ public class ModuleGoldenApple extends OCMModule {
             if (highestExistingEffect != null) {
                 // If the new effect has a higher amplifier, apply it
                 if (newEffect.getAmplifier() > highestExistingEffect.getAmplifier()) {
-                    target.addPotionEffect(newEffect);
+                    if (forceOverride) {
+                        target.addPotionEffect(newEffect, true);
+                    } else {
+                        target.addPotionEffect(newEffect);
+                    }
                 }
                 // If the amplifiers are the same and the new effect has a longer duration,
                 // refresh the duration
                 else if (newEffect.getAmplifier() == highestExistingEffect.getAmplifier() &&
                         newEffect.getDuration() > highestExistingEffect.getDuration()) {
-                    target.addPotionEffect(newEffect);
+                    if (forceOverride) {
+                        target.addPotionEffect(newEffect, true);
+                    } else {
+                        target.addPotionEffect(newEffect);
+                    }
                 }
                 // If the new effect has a lower amplifier or shorter/equal duration, do nothing
             } else {
@@ -311,12 +325,22 @@ public class ModuleGoldenApple extends OCMModule {
         }
     }
 
-    private record Cooldown(long normal, long enchanted, boolean sharedCooldown) {
+    private static class Cooldown {
+        private final long normal;
+        private final long enchanted;
+        private final boolean sharedCooldown;
+
+        private Cooldown(long normal, long enchanted, boolean sharedCooldown) {
+            this.normal = normal;
+            this.enchanted = enchanted;
+            this.sharedCooldown = sharedCooldown;
+        }
+
         private long getCooldownForItem(ItemStack item) {
             return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
         }
 
-        boolean isOnCooldown(ItemStack item, LastEaten lastEaten) {
+        private boolean isOnCooldown(ItemStack item, LastEaten lastEaten) {
             return (sharedCooldown ? lastEaten.getNewestEatTime() : lastEaten.getForItem(item))
                     .map(it -> ChronoUnit.SECONDS.between(it, Instant.now()))
                     .map(it -> it < getCooldownForItem(item))

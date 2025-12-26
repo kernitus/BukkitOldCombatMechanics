@@ -157,15 +157,17 @@ public class ModuleSwordBlocking extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent e) {
-        if (e.getWhoClicked() instanceof Player player) {
-            if (areItemsStored(player.getUniqueId())) {
-                final ItemStack cursor = e.getCursor();
-                final ItemStack current = e.getCurrentItem();
-                if (cursor != null && cursor.getType() == Material.SHIELD ||
-                        current != null && current.getType() == Material.SHIELD) {
-                    e.setCancelled(true);
-                    restore(player, true);
-                }
+        if (!(e.getWhoClicked() instanceof Player)) {
+            return;
+        }
+        final Player player = (Player) e.getWhoClicked();
+        if (areItemsStored(player.getUniqueId())) {
+            final ItemStack cursor = e.getCursor();
+            final ItemStack current = e.getCurrentItem();
+            if (cursor != null && cursor.getType() == Material.SHIELD ||
+                    current != null && current.getType() == Material.SHIELD) {
+                e.setCancelled(true);
+                restore(player, true);
             }
         }
     }
