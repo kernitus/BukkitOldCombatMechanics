@@ -6,6 +6,9 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import xyz.jpenilla.runpaper.task.RunServer
 import java.io.ByteArrayOutputStream
 
 val paperVersion: List<String> = (property("gameVersions") as String)
@@ -15,7 +18,9 @@ val paperVersion: List<String> = (property("gameVersions") as String)
 
 plugins {
     `java-library`
+    kotlin("jvm") version "2.1.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("xyz.jpenilla.run-paper") version "2.3.1"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
     idea
@@ -44,6 +49,39 @@ repositories {
     maven("https://libraries.minecraft.net/")
 }
 
+group = "kernitus.plugin.OldCombatMechanics"
+version = "2.2.0" // x-release-please-version
+description = "OldCombatMechanics"
+
+java {
+    toolchain {
+        // We can build with Java 17 but still support MC >=1.9
+        // This is because MC >=1.9 server can be run with higher Java versions
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
+        }
+    }
+
+    val integrationTest by creating {
+        kotlin.setSrcDirs(listOf("src/integrationTest/kotlin"))
+        resources.setSrcDirs(listOf("src/integrationTest/resources"))
+        compileClasspath += main.get().output
+        runtimeClasspath += output + main.get().output
+    }
+}
+
+configurations {
+    val integrationTestImplementation by getting {
+        extendsFrom(configurations.implementation.get())
+    }
+}
+
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
     // Shaded in by Bukkit
@@ -67,26 +105,19 @@ dependencies {
     // For reflection remapping
     implementation("xyz.jpenilla:reflection-remapper:0.1.1")
      */
-}
 
-group = "kernitus.plugin.OldCombatMechanics"
-version = "2.2.0" // x-release-please-version
-description = "OldCombatMechanics"
+    // Integration test dependencies
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.1.0")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.1.0")
+    add("integrationTestImplementation", "io.kotest:kotest-runner-junit5:6.0.0.M1")
+    add("integrationTestImplementation", "io.kotest:kotest-assertions-core:6.0.0.M1")
+    add("integrationTestImplementation", "net.kyori:adventure-api:4.18.0")
+    add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.1")
 
-java {
-    toolchain {
-        // We can build with Java 17 but still support MC >=1.9
-        // This is because MC >=1.9 server can be run with higher Java versions
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
-sourceSets {
-    main {
-        java {
-            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
-        }
-    }
+    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", "com.mojang:authlib:4.0.43")
+    add("integrationTestCompileOnly", "io.netty:netty-all:4.1.106.Final")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
@@ -101,10 +132,11 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.named<ShadowJar>("shadowJar") {
+val shadowJarTask = tasks.named<ShadowJar>("shadowJar") {
     dependsOn("jar")
     archiveFileName.set("${project.name}.jar")
     dependencies {
+        exclude(dependency("org.jetbrains.kotlin:.*"))
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
         relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
     }
@@ -121,6 +153,84 @@ tasks.assemble {
     // For ingametesting
     //dependsOn("reobfJar")
     dependsOn("shadowJar")
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+}
+
+val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
+    archiveClassifier.set("tests")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    dependsOn("compileIntegrationTestKotlin")
+
+    from(sourceSets["integrationTest"].output)
+
+    project.configurations["integrationTestRuntimeClasspath"].forEach { file: File ->
+        from(if (file.isDirectory) file else zipTree(file))
+    }
+
+    exclude("META-INF/*.SF")
+    exclude("META-INF/*.DSA")
+    exclude("META-INF/*.RSA")
+    exclude("META-INF/*.EC")
+    exclude("META-INF/*.MF")
+    exclude("module-info.class")
+    exclude("META-INF/versions/**/module-info.class")
+}
+
+val serverRunDir = file("run")
+
+val writeServerProperties = tasks.register<WriteProperties>("writeProperties") {
+    encoding = "UTF-8"
+    property("online-mode", false)
+    destinationFile.set(serverRunDir.resolve("server.properties"))
+}
+
+val integrationTestMinecraftVersion =
+    (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
+
+tasks.named<RunServer>("runServer") {
+    dependsOn(writeServerProperties)
+    runDirectory.set(serverRunDir)
+
+    minecraftVersion(integrationTestMinecraftVersion)
+    jvmArgs("-Dcom.mojang.eula.agree=true")
+
+    pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
+    pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
+}
+
+tasks.register("integrationTest") {
+    group = "verification"
+    description = "Runs integration tests with a live Paper server."
+
+    dependsOn(shadowJarTask, integrationTestJarTask, tasks.named("runServer"))
+    finalizedBy("checkTestResults")
+}
+
+tasks.register("checkTestResults") {
+    doLast {
+        val resultFile = file("run/plugins/OldCombatMechanicsTest/test-results.txt")
+
+        if (!resultFile.exists()) {
+            throw GradleException("Test results file not found. Tests may not have run correctly.")
+        }
+
+        val result = resultFile.readText().trim()
+        if (result == "FAIL") {
+            throw GradleException("Integration tests failed.")
+        } else if (result != "PASS") {
+            throw GradleException("Unknown test result: $result")
+        }
+
+        println("Integration tests passed.")
+    }
 }
 
 // Function to execute Git commands
