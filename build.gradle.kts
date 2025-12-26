@@ -195,12 +195,49 @@ val writeServerProperties = tasks.register<WriteProperties>("writeProperties") {
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
+val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11")
+    .distinct()
+
+val integrationTestVersions: List<String> = (findProperty("integrationTestVersions") as String?)
+    ?.split(",")
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?.ifEmpty { defaultIntegrationTestVersions }
+    ?: defaultIntegrationTestVersions
+
+val integrationTestJavaVersionLegacy =
+    (findProperty("integrationTestJavaVersionLegacy") as String?)?.toInt() ?: 17
+val integrationTestJavaVersionModern =
+    (findProperty("integrationTestJavaVersionModern") as String?)?.toInt() ?: 25
+
+fun parseMinecraftVersion(version: String): Triple<Int, Int, Int> {
+    val parts = version.split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    return Triple(major, minor, patch)
+}
+
+fun requiresModernJava(version: String): Boolean {
+    val (major, minor, patch) = parseMinecraftVersion(version)
+    if (major > 1) return true
+    if (minor > 20) return true
+    return minor == 20 && patch >= 5
+}
+
+fun requiredJavaVersion(version: String): Int {
+    return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
+}
+
 tasks.named<RunServer>("runServer") {
     dependsOn(writeServerProperties)
     runDirectory.set(serverRunDir)
 
     minecraftVersion(integrationTestMinecraftVersion)
     jvmArgs("-Dcom.mojang.eula.agree=true")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(integrationTestMinecraftVersion)))
+    })
 
     pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
     pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
@@ -208,29 +245,82 @@ tasks.named<RunServer>("runServer") {
 
 tasks.register("integrationTest") {
     group = "verification"
-    description = "Runs integration tests with a live Paper server."
-
-    dependsOn(shadowJarTask, integrationTestJarTask, tasks.named("runServer"))
-    finalizedBy("checkTestResults")
+    description = "Runs integration tests against all configured Paper versions."
+    dependsOn("integrationTestMatrix")
 }
 
-tasks.register("checkTestResults") {
-    doLast {
-        val resultFile = file("run/plugins/OldCombatMechanicsTest/test-results.txt")
+val integrationTestMatrixTasks = mutableListOf<TaskProvider<Task>>()
+var previousMatrixTask: TaskProvider<Task>? = null
 
-        if (!resultFile.exists()) {
-            throw GradleException("Test results file not found. Tests may not have run correctly.")
-        }
+fun versionTaskSuffix(version: String): String {
+    return version.replace(Regex("[^A-Za-z0-9]"), "_")
+}
 
-        val result = resultFile.readText().trim()
-        if (result == "FAIL") {
-            throw GradleException("Integration tests failed.")
-        } else if (result != "PASS") {
-            throw GradleException("Unknown test result: $result")
-        }
+for (version in integrationTestVersions) {
+    val suffix = versionTaskSuffix(version)
+    val runDir = file("run/$version")
+    val resultFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-results.txt")
 
-        println("Integration tests passed.")
+    val writePropsTask = tasks.register<WriteProperties>("writeProperties${suffix}") {
+        encoding = "UTF-8"
+        property("online-mode", false)
+        destinationFile.set(runDir.resolve("server.properties"))
     }
+
+    val runServerTask = tasks.register<RunServer>("runServer${suffix}") {
+        dependsOn(writePropsTask)
+        runDirectory.set(runDir)
+        minecraftVersion(version)
+        jvmArgs("-Dcom.mojang.eula.agree=true")
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(version)))
+        })
+
+        pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
+        pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
+
+        doFirst {
+            if (resultFile.exists()) {
+                resultFile.delete()
+            }
+        }
+    }
+
+    val checkTask = tasks.register("checkTestResults${suffix}") {
+        doLast {
+            if (!resultFile.exists()) {
+                throw GradleException("Test results file not found for $version. Tests may not have run correctly.")
+            }
+            val result = resultFile.readText().trim()
+            if (result == "FAIL") {
+                throw GradleException("Integration tests failed for $version.")
+            } else if (result != "PASS") {
+                throw GradleException("Unknown test result for $version: $result")
+            }
+            println("Integration tests passed for $version.")
+        }
+    }
+
+    val testTask = tasks.register("integrationTest${suffix}") {
+        group = "verification"
+        description = "Runs integration tests with a live Paper server ($version)."
+        dependsOn(shadowJarTask, integrationTestJarTask, runServerTask)
+        finalizedBy(checkTask)
+    }
+
+    val priorTask = previousMatrixTask
+    if (priorTask != null) {
+        // Chain tasks to enforce order and fail fast.
+        testTask.configure { dependsOn(priorTask) }
+    }
+    previousMatrixTask = testTask
+    integrationTestMatrixTasks.add(testTask)
+}
+
+tasks.register("integrationTestMatrix") {
+    group = "verification"
+    description = "Runs integration tests against multiple Paper versions."
+    dependsOn(integrationTestMatrixTasks)
 }
 
 // Function to execute Git commands

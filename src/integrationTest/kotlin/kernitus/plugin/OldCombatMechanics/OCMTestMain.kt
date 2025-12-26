@@ -72,7 +72,10 @@ class OCMTestMain : JavaPlugin() {
                         }
 
                         is TestResult.Ignored -> println("Test '$testName' was ignored.")
-                        is TestResult.Error -> println("ERROR")
+                        is TestResult.Error -> {
+                            println("Test '$testName' errored with exception: ${result.errorOrNull?.message}")
+                            hasFailures = true
+                        }
                     }
                 }
 
