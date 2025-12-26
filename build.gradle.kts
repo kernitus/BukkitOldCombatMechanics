@@ -6,10 +6,13 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.hangarpublishplugin.model.Platforms
+import org.gradle.api.Action
+import org.gradle.api.file.FileCopyDetails
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
 import java.io.ByteArrayOutputStream
+import java.io.Serializable
 
 val paperVersion: List<String> = (property("gameVersions") as String)
         .split(",")
@@ -19,7 +22,7 @@ val paperVersion: List<String> = (property("gameVersions") as String)
 plugins {
     `java-library`
     kotlin("jvm") version "2.1.0"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.3.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
@@ -121,11 +124,17 @@ dependencies {
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
-tasks.named<Copy>("processResources") {
-    inputs.property("pluginVersion", version)
-    filesMatching("plugin.yml") {
-        expand("pluginVersion" to version)
+class ExpandPluginVersionAction(private val version: String) : Action<FileCopyDetails>, Serializable {
+    override fun execute(details: FileCopyDetails) {
+        details.expand(mapOf("pluginVersion" to version))
     }
+}
+
+val pluginVersion = project.version.toString()
+val expandPluginVersionAction = ExpandPluginVersionAction(pluginVersion)
+tasks.named<Copy>("processResources") {
+    inputs.property("pluginVersion", pluginVersion)
+    filesMatching("plugin.yml", expandPluginVersionAction)
 }
 
 tasks.withType<JavaCompile> {
@@ -230,6 +239,10 @@ tasks.register("integrationTest") {
 tasks.named<RunServer>("runServer") {
     enabled = false
     description = "Disabled. Use integrationTest/integrationTestMatrix instead."
+}
+
+tasks.withType<RunServer>().configureEach {
+    notCompatibleWithConfigurationCache("run-paper tasks access Project at execution time.")
 }
 
 val integrationTestMatrixTasks = mutableListOf<TaskProvider<Task>>()

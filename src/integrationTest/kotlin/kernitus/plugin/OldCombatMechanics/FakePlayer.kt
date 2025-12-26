@@ -32,6 +32,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private lateinit var serverPlayer: Any // NMS ServerPlayer instance
     private var bukkitPlayer: Player? = null
     private var networkConnection: Any? = null
+    private var usedPlaceNewPlayer: Boolean = false
     private val reflectionRemapper = ReflectionRemapper.forReobfMappingsInPaperJar()
 
     // Helper function to load NMS classes using the appropriate class loader and remap names
@@ -90,7 +91,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         fireAsyncPlayerPreLoginEvent()
 
         // Add the player to the server's player list
-        addToPlayerList(minecraftServer)
+        usedPlaceNewPlayer = addToPlayerList(minecraftServer)
 
         // Retrieve the Bukkit Player instance
         bukkitPlayer = Bukkit.getPlayer(uuid)
@@ -100,8 +101,10 @@ class FakePlayer(private val plugin: JavaPlugin) {
         firePlayerJoinEvent()
 
         // Notify other players and spawn the fake player
-        notifyPlayersOfJoin()
-        spawnPlayerInWorld(worldServer, minecraftServer)
+        if (!usedPlaceNewPlayer) {
+            notifyPlayersOfJoin()
+            spawnPlayerInWorld(worldServer, minecraftServer)
+        }
 
         plugin.logger.info("Spawn: completed successfully")
     }
@@ -345,7 +348,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
     }
 
-    private fun addToPlayerList(minecraftServer: Any) {
+    private fun addToPlayerList(minecraftServer: Any): Boolean {
         val playerList = getPlayerList(minecraftServer)
 
         // Add the player to the PlayerList
@@ -372,7 +375,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
             )
             val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
             playerByUUID[uuid] = serverPlayer
-            return
+            return false
         }
 
         val placeMethodName = reflectionRemapper.remapMethodName(playerListClass, "placeNewPlayer")
@@ -395,7 +398,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
             val cookieClass = placeMethodWithCookie.parameterTypes[2]
             val cookie = createCommonListenerCookie(cookieClass, serverPlayer)
             placeMethodWithCookie.invoke(playerList, connection, serverPlayer, cookie)
-            return
+            return true
         }
 
         val placeMethod = Reflector.getMethodAssignable(
@@ -412,7 +415,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         if (placeMethod != null) {
             placeMethod.invoke(playerList, connection, serverPlayer)
-            return
+            return true
         }
 
         throw NoSuchMethodException("No compatible PlayerList add method found for ${playerListClass.name}")
@@ -530,7 +533,10 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
 
         val constructor = packetClass.getConstructor(EnumSet::class.java, Collection::class.java)
-        val actions = EnumSet.of(addPlayerAction as Enum<*>)
+        val enumSetNoneOf = EnumSet::class.java.getMethod("noneOf", Class::class.java)
+        @Suppress("UNCHECKED_CAST")
+        val actions = enumSetNoneOf.invoke(null, actionClass) as MutableSet<Any>
+        actions.add(addPlayerAction)
         return constructor.newInstance(actions, listOf(serverPlayer))
     }
 
@@ -579,15 +585,19 @@ class FakePlayer(private val plugin: JavaPlugin) {
     removeMethod.invoke(serverPlayer)
          */
 
-        // Remove from playerList
-        val playerList = getPlayerList(getMinecraftServer())
-        val removePlayerMethodName = reflectionRemapper.remapMethodName(
-            playerList.javaClass,
-            "remove",
-            serverPlayer.javaClass
-        )
-        val removePlayerMethod = playerList.javaClass.getMethod(removePlayerMethodName, serverPlayer.javaClass)
-        removePlayerMethod.invoke(playerList, serverPlayer)
+        // Remove from playerList if still present and not already removed
+        runCatching {
+            val playerList = getPlayerList(getMinecraftServer())
+            if (!isEntityRemoved(serverPlayer) && isPlayerListed(playerList)) {
+                val removePlayerMethodName = reflectionRemapper.remapMethodName(
+                    playerList.javaClass,
+                    "remove",
+                    serverPlayer.javaClass
+                )
+                val removePlayerMethod = playerList.javaClass.getMethod(removePlayerMethodName, serverPlayer.javaClass)
+                removePlayerMethod.invoke(playerList, serverPlayer)
+            }
+        }
 
         // Close the connection properly
         val connection = getConnection(serverPlayer)
@@ -623,6 +633,46 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val playerListFieldName = reflectionRemapper.remapMethodName(minecraftServer.javaClass, "getPlayerList")
         val playerListMethod = checkNotNull(Reflector.getMethod(minecraftServer.javaClass, playerListFieldName))
         return Reflector.invokeMethod(playerListMethod, minecraftServer)
+    }
+
+    private fun isPlayerListed(playerList: Any): Boolean {
+        val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
+        return runCatching {
+            val playersByUUIDField = Reflector.getMapFieldWithTypes(
+                playerListClass,
+                UUID::class.java,
+                serverPlayer.javaClass
+            )
+            val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as Map<UUID, Any>
+            playerByUUID.containsKey(uuid)
+        }.getOrElse {
+            val getPlayerMethodName = reflectionRemapper.remapMethodName(playerListClass, "getPlayer", UUID::class.java)
+            val getPlayerMethod = Reflector.getMethodAssignable(
+                playerListClass,
+                getPlayerMethodName,
+                UUID::class.java
+            ) ?: Reflector.getMethodAssignable(playerListClass, "getPlayer", UUID::class.java)
+            if (getPlayerMethod != null) {
+                Reflector.invokeMethod<Any?>(getPlayerMethod, playerList, uuid) != null
+            } else {
+                true
+            }
+        }
+    }
+
+    private fun isEntityRemoved(entity: Any): Boolean {
+        val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
+        val isRemovedMethodName = reflectionRemapper.remapMethodName(entityClass, "isRemoved")
+        val isRemovedMethod = Reflector.getMethod(entityClass, isRemovedMethodName)
+            ?: Reflector.getMethod(entityClass, "isRemoved")
+        if (isRemovedMethod != null) {
+            return Reflector.invokeMethod(isRemovedMethod, entity)
+        }
+        return runCatching {
+            val removedFieldName = reflectionRemapper.remapFieldName(entityClass, "removed")
+            val removedField = Reflector.getField(entityClass, removedFieldName)
+            removedField.getBoolean(entity)
+        }.getOrDefault(false)
     }
 
     fun attack(bukkitEntity: Entity) {
