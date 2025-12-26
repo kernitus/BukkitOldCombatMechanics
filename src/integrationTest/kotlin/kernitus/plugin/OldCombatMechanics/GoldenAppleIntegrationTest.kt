@@ -18,8 +18,8 @@ import kernitus.plugin.OldCombatMechanics.MainThreadDispatcherExtension
 import kernitus.plugin.OldCombatMechanics.OCMMain
 import kernitus.plugin.OldCombatMechanics.OCMTestMain
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
-import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE
+import com.cryptomorin.xseries.XMaterial
+import com.cryptomorin.xseries.XPotion
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -137,7 +137,7 @@ class GoldenAppleIntegrationTest : FunSpec({
 
         test("enchanted golden apple effects") {
             // Given
-            val enchantedGoldenApple = ENCHANTED_GOLDEN_APPLE.newInstance()
+            val enchantedGoldenApple = requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem())
             player.inventory.setItemInMainHand(enchantedGoldenApple)
 
             // When
@@ -148,7 +148,7 @@ class GoldenAppleIntegrationTest : FunSpec({
             // Then
             val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
             val absorption = player.getPotionEffect(PotionEffectType.ABSORPTION)
-            val resistance = player.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())
+            val resistance = player.getPotionEffect(XPotion.RESISTANCE.get()!!)
             val fireResistance = player.getPotionEffect(PotionEffectType.FIRE_RESISTANCE)
 
             regeneration.shouldNotBe(null)
@@ -245,7 +245,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 consumeGappleEvent.isCancelled.shouldBe(false)
 
                 // Then try to eat enchanted gapple
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 val consumeNappleEvent =
                     PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeNappleEvent)
@@ -269,7 +269,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 consumeGappleEvent.isCancelled.shouldBe(false)
 
                 // Then try to eat enchanted gapple
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 val consumeNappleEvent =
                     PlayerItemConsumeEvent(player, player.inventory.itemInMainHand, EquipmentSlot.HAND)
                 Bukkit.getPluginManager().callEvent(consumeNappleEvent)
@@ -348,7 +348,7 @@ class GoldenAppleIntegrationTest : FunSpec({
 
                 // Then
                 craftingInventory.result.shouldNotBe(null)
-                ENCHANTED_GOLDEN_APPLE.isSame(craftingInventory.result!!).shouldBe(true)
+                XMaterial.ENCHANTED_GOLDEN_APPLE.isSimilar(craftingInventory.result!!).shouldBe(true)
 
                 player.closeInventory()
             }
@@ -410,7 +410,7 @@ class GoldenAppleIntegrationTest : FunSpec({
 
                 // Then
                 craftingInventory.result shouldNotBe null
-                ENCHANTED_GOLDEN_APPLE.isSame(craftingInventory.result!!) shouldBe true
+                XMaterial.ENCHANTED_GOLDEN_APPLE.isSimilar(craftingInventory.result!!) shouldBe true
 
                 player.closeInventory()
             }
@@ -455,7 +455,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 // Given
                 ocm.config.set("old-golden-apples.cooldown.enchanted", 20)
                 module.reload()
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
 
                 // When
                 Bukkit.getPluginManager()

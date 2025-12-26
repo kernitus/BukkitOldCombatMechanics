@@ -8,7 +8,8 @@ package kernitus.plugin.OldCombatMechanics.module;
 import com.google.common.collect.ImmutableSet;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
+import com.cryptomorin.xseries.XMaterial;
+import com.cryptomorin.xseries.XPotion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -31,7 +32,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE;
 
 /**
  * Customise the golden apple effects.
@@ -44,7 +44,8 @@ public class ModuleGoldenApple extends OCMModule {
             PotionEffectType.REGENERATION);
     // Napple: absorption IV, regen II, fire resistance I, resistance I
     private static final Set<PotionEffectType> nappleEffects = ImmutableSet.of(PotionEffectType.ABSORPTION,
-            PotionEffectType.REGENERATION, PotionEffectType.FIRE_RESISTANCE, PotionEffectTypeCompat.RESISTANCE.get());
+            PotionEffectType.REGENERATION, PotionEffectType.FIRE_RESISTANCE, XPotion.RESISTANCE.get());
+    private static final XMaterial ENCHANTED_GOLDEN_APPLE = XMaterial.ENCHANTED_GOLDEN_APPLE;
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
 
@@ -77,9 +78,9 @@ public class ModuleGoldenApple extends OCMModule {
         try {
             enchantedAppleRecipe = new ShapedRecipe(
                     new NamespacedKey(plugin, "MINECRAFT"),
-                    ENCHANTED_GOLDEN_APPLE.newInstance());
+                    createEnchantedGoldenApple());
         } catch (NoClassDefFoundError e) {
-            enchantedAppleRecipe = new ShapedRecipe(ENCHANTED_GOLDEN_APPLE.newInstance());
+            enchantedAppleRecipe = new ShapedRecipe(createEnchantedGoldenApple());
         }
         enchantedAppleRecipe
                 .shape("ggg", "gag", "ggg")
@@ -95,7 +96,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     private void registerCrafting() {
         if (isEnabled() && module().getBoolean("enchanted-golden-apple-crafting")) {
-            if (!Bukkit.getRecipesFor(ENCHANTED_GOLDEN_APPLE.newInstance()).isEmpty())
+            if (!Bukkit.getRecipesFor(createEnchantedGoldenApple()).isEmpty())
                 return;
             Bukkit.addRecipe(enchantedAppleRecipe);
             debug("Added napple recipe");
@@ -109,7 +110,7 @@ public class ModuleGoldenApple extends OCMModule {
             return; // This should never ever ever ever run. If it does then you probably screwed
                     // something up.
 
-        if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
+        if (isEnchantedGoldenApple(item)) {
             final List<HumanEntity> viewers = e.getInventory().getViewers();
             if (viewers.isEmpty()) return;
             final HumanEntity player = viewers.get(0);
@@ -135,7 +136,7 @@ public class ModuleGoldenApple extends OCMModule {
         final Material consumedMaterial = originalItem.getType();
 
         if (consumedMaterial != Material.GOLDEN_APPLE &&
-                !ENCHANTED_GOLDEN_APPLE.isSame(originalItem))
+                !isEnchantedGoldenApple(originalItem))
             return;
 
         final UUID uuid = player.getUniqueId();
@@ -182,9 +183,9 @@ public class ModuleGoldenApple extends OCMModule {
         // Save player's current potion effects
         final Collection<PotionEffect> previousPotionEffects = player.getActivePotionEffects();
 
-        final List<PotionEffect> newEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ? enchantedGoldenAppleEffects
+        final List<PotionEffect> newEffects = isEnchantedGoldenApple(originalItem) ? enchantedGoldenAppleEffects
                 : goldenAppleEffects;
-        final Set<PotionEffectType> defaultEffects = ENCHANTED_GOLDEN_APPLE.isSame(originalItem) ? nappleEffects
+        final Set<PotionEffectType> defaultEffects = isEnchantedGoldenApple(originalItem) ? nappleEffects
                 : gappleEffects;
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -237,6 +238,21 @@ public class ModuleGoldenApple extends OCMModule {
         }
     }
 
+    @SuppressWarnings("deprecation")
+    private ItemStack createEnchantedGoldenApple() {
+        final ItemStack parsed = ENCHANTED_GOLDEN_APPLE.parseItem();
+        if (parsed != null) {
+            return parsed;
+        }
+        final ItemStack legacy = new ItemStack(Material.GOLDEN_APPLE, 1);
+        legacy.setDurability((short) 1);
+        return legacy;
+    }
+
+    private boolean isEnchantedGoldenApple(ItemStack item) {
+        return item != null && ENCHANTED_GOLDEN_APPLE.isSimilar(item);
+    }
+
     private List<PotionEffect> getPotionEffects(String path) {
         final List<PotionEffect> appleEffects = new ArrayList<>();
 
@@ -245,7 +261,9 @@ public class ModuleGoldenApple extends OCMModule {
             final int duration = sect.getInt(key + ".duration") * 20; // Convert seconds to ticks
             final int amplifier = sect.getInt(key + ".amplifier");
 
-            final PotionEffectType type = PotionEffectTypeCompat.fromNewName(key);
+            final PotionEffectType type = XPotion.matchXPotion(key)
+                    .map(XPotion::get)
+                    .orElse(null);
             Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
 
             final PotionEffect fx = new PotionEffect(type, duration, amplifier);
@@ -300,7 +318,7 @@ public class ModuleGoldenApple extends OCMModule {
         private Instant lastEnchantedEaten;
 
         private Optional<Instant> getForItem(ItemStack item) {
-            return ENCHANTED_GOLDEN_APPLE.isSame(item)
+            return ENCHANTED_GOLDEN_APPLE.isSimilar(item)
                     ? Optional.ofNullable(lastEnchantedEaten)
                     : Optional.ofNullable(lastNormalEaten);
         }
@@ -317,7 +335,7 @@ public class ModuleGoldenApple extends OCMModule {
         }
 
         private void setForItem(ItemStack item) {
-            if (ENCHANTED_GOLDEN_APPLE.isSame(item)) {
+            if (ENCHANTED_GOLDEN_APPLE.isSimilar(item)) {
                 lastEnchantedEaten = Instant.now();
             } else {
                 lastNormalEaten = Instant.now();
@@ -337,7 +355,7 @@ public class ModuleGoldenApple extends OCMModule {
         }
 
         private long getCooldownForItem(ItemStack item) {
-            return ENCHANTED_GOLDEN_APPLE.isSame(item) ? enchanted : normal;
+            return ENCHANTED_GOLDEN_APPLE.isSimilar(item) ? enchanted : normal;
         }
 
         private boolean isOnCooldown(ItemStack item, LastEaten lastEaten) {

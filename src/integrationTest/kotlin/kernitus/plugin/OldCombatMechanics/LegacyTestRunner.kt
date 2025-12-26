@@ -9,10 +9,10 @@ package kernitus.plugin.OldCombatMechanics
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
+import com.cryptomorin.xseries.XMaterial
+import com.cryptomorin.xseries.XPotion
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
-import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -220,13 +220,13 @@ object LegacyTestRunner {
             schedule("napple effects setup") {
                 resetPlayerState(player)
                 applyConfig(snapshot)
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 callConsumeEvent(player, player.inventory.itemInMainHand)
             }
             schedule(2, "napple effects assert") {
                 assertPotion(player.getPotionEffect(PotionEffectType.REGENERATION), 30 * 20, 4, "Napple regen")
                 assertPotion(player.getPotionEffect(PotionEffectType.ABSORPTION), 120 * 20, 0, "Napple absorption")
-                assertPotion(player.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get()), 300 * 20, 0, "Napple resistance")
+                assertPotion(player.getPotionEffect(XPotion.RESISTANCE.get()!!), 300 * 20, 0, "Napple resistance")
                 assertPotion(player.getPotionEffect(PotionEffectType.FIRE_RESISTANCE), 300 * 20, 0, "Napple fire resistance")
             }
 
@@ -280,7 +280,7 @@ object LegacyTestRunner {
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
                 val gappleEvent = callConsumeEvent(player, player.inventory.itemInMainHand)
                 assertTrue(!gappleEvent.isCancelled, "Shared cooldown: gapple allowed")
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 val nappleEvent = callConsumeEvent(player, player.inventory.itemInMainHand)
                 assertTrue(nappleEvent.isCancelled, "Shared cooldown: napple blocked")
                 applyConfig(snapshot)
@@ -296,7 +296,7 @@ object LegacyTestRunner {
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
                 val gappleEvent = callConsumeEvent(player, player.inventory.itemInMainHand)
                 assertTrue(!gappleEvent.isCancelled, "Non-shared cooldown: gapple allowed")
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 val nappleEvent = callConsumeEvent(player, player.inventory.itemInMainHand)
                 assertTrue(!nappleEvent.isCancelled, "Non-shared cooldown: napple allowed")
                 applyConfig(snapshot)
@@ -349,7 +349,7 @@ object LegacyTestRunner {
                 if (inv == null) {
                     fail("Crafting inventory missing for enabled assert")
                 } else {
-                    assertTrue(inv.result != null && ENCHANTED_GOLDEN_APPLE.isSame(inv.result!!), "Crafting enabled")
+                    assertTrue(inv.result != null && XMaterial.ENCHANTED_GOLDEN_APPLE.isSimilar(inv.result!!), "Crafting enabled")
                 }
                 player.closeInventory()
                 craftingInventory = null
@@ -425,7 +425,7 @@ object LegacyTestRunner {
                 if (inv == null) {
                     fail("Crafting inventory missing for no-conflict assert")
                 } else {
-                    assertTrue(inv.result != null && ENCHANTED_GOLDEN_APPLE.isSame(inv.result!!), "No-conflict mode allows crafting")
+                    assertTrue(inv.result != null && XMaterial.ENCHANTED_GOLDEN_APPLE.isSimilar(inv.result!!), "No-conflict mode allows crafting")
                 }
                 player.closeInventory()
                 craftingInventory = null
@@ -460,7 +460,7 @@ object LegacyTestRunner {
                 applyConfig(snapshot)
                 ocm!!.config.set("old-golden-apples.cooldown.enchanted", 20)
                 module.reload()
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(requireNotNull(XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()))
                 callConsumeEvent(player, player.inventory.itemInMainHand)
             }
             schedule(2, "getNappleCooldown assert 1") {
@@ -602,13 +602,13 @@ object LegacyTestRunner {
         }
 
         private fun applyVanillaEffects(player: Player, item: ItemStack) {
-            val isEnchanted = ENCHANTED_GOLDEN_APPLE.isSame(item)
+            val isEnchanted = XMaterial.ENCHANTED_GOLDEN_APPLE.isSimilar(item)
             if (item.type != Material.GOLDEN_APPLE && !isEnchanted) return
 
             if (isEnchanted) {
                 player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 1))
                 player.addPotionEffect(PotionEffect(PotionEffectType.ABSORPTION, 120 * 20, 3))
-                player.addPotionEffect(PotionEffect(PotionEffectTypeCompat.RESISTANCE.get(), 300 * 20, 0))
+                player.addPotionEffect(PotionEffect(XPotion.RESISTANCE.get()!!, 300 * 20, 0))
                 player.addPotionEffect(PotionEffect(PotionEffectType.FIRE_RESISTANCE, 300 * 20, 0))
             } else {
                 player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 1))

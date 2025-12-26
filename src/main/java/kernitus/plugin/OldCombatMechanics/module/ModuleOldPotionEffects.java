@@ -9,7 +9,8 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionTypeCompat;
+import com.cryptomorin.xseries.XPotion;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionKey;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -26,12 +27,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -39,24 +37,7 @@ import java.util.stream.Collectors;
  * Allows configurable potion effect durations.
  */
 public class ModuleOldPotionEffects extends OCMModule {
-    private static final Set<PotionTypeCompat> EXCLUDED_POTION_TYPES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    // Base potions without any effect
-                    new PotionTypeCompat("AWKWARD"),
-                    new PotionTypeCompat("MUNDANE"),
-                    new PotionTypeCompat("THICK"),
-                    new PotionTypeCompat("WATER"),
-                    // Instant potions with no further effects
-                    new PotionTypeCompat("HARMING"),
-                    new PotionTypeCompat("STRONG_HARMING"),
-                    new PotionTypeCompat("HEALING"),
-                    new PotionTypeCompat("STRONG_HEALING"),
-                    // This type doesn't exist anymore >1.20.5, is specially handled in compat class
-                    new PotionTypeCompat("UNCRAFTABLE")
-            ))
-    );
-
-    private Map<PotionTypeCompat, PotionDurations> durations;
+    private Map<PotionKey, PotionDurations> durations;
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -121,26 +102,31 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
-        final PotionTypeCompat potionTypeCompat = PotionTypeCompat.fromPotionMeta(potionMeta);
+        final PotionKey potionKey = PotionKey.fromPotionMeta(potionMeta).orElse(null);
+        if (potionKey == null) return;
 
-        if (EXCLUDED_POTION_TYPES.contains(potionTypeCompat)) return;
-
-        final Integer duration = getPotionDuration(potionTypeCompat, splash);
+        final Integer duration = getPotionDuration(potionKey, splash);
         if (duration == null) {
-            debug("Potion type " + potionTypeCompat.getNewName() + " not found in config, leaving as is...");
+            debug("Potion type " + potionKey.getDebugName() + " not found in config, leaving as is...");
             return;
         }
 
-        int amplifier = potionTypeCompat.isStrong() ? 1 : 0;
+        int amplifier = potionKey.isStrong() ? 1 : 0;
 
-        if (potionTypeCompat.equals(new PotionTypeCompat("WEAKNESS"))) {
+        if (potionKey.isPotion(XPotion.WEAKNESS)) {
             // Set level to 0 so that it doesn't prevent the EntityDamageByEntityEvent from being called
             // due to damage being lower than 0 as some 1.9 weapons deal less damage
             amplifier = -1;
         }
 
         List<PotionEffectType> potionEffects;
-        final PotionType potionType = potionTypeCompat.getType();
+        PotionType potionType;
+        try {
+            potionType = potionMeta.getBasePotionType();
+            if (potionType == null) return;
+        } catch (NoSuchMethodError e) {
+            potionType = potionMeta.getBasePotionData().getType();
+        }
         try {
             potionEffects = potionType.getPotionEffects().stream()
                     .map(PotionEffect::getType)
@@ -188,12 +174,12 @@ public class ModuleOldPotionEffects extends OCMModule {
         }
     }
 
-    private Integer getPotionDuration(PotionTypeCompat potionTypeCompat, boolean splash) {
-        final PotionDurations potionDurations = durations.get(potionTypeCompat);
+    private Integer getPotionDuration(PotionKey potionKey, boolean splash) {
+        final PotionDurations potionDurations = durations.get(potionKey);
         if (potionDurations == null) return null;
         final int duration = splash ? potionDurations.splash() : potionDurations.drinkable();
 
-        debug("Potion type: " + potionTypeCompat.getNewName() + " Duration: " + duration + " ticks");
+        debug("Potion type: " + potionKey.getDebugName() + " Duration: " + duration + " ticks");
 
         return duration;
     }
