@@ -184,14 +184,6 @@ val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
     exclude("META-INF/versions/**/module-info.class")
 }
 
-val serverRunDir = file("run")
-
-val writeServerProperties = tasks.register<WriteProperties>("writeProperties") {
-    encoding = "UTF-8"
-    property("online-mode", false)
-    destinationFile.set(serverRunDir.resolve("server.properties"))
-}
-
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
@@ -229,24 +221,15 @@ fun requiredJavaVersion(version: String): Int {
     return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
 }
 
-tasks.named<RunServer>("runServer") {
-    dependsOn(writeServerProperties)
-    runDirectory.set(serverRunDir)
-
-    minecraftVersion(integrationTestMinecraftVersion)
-    jvmArgs("-Dcom.mojang.eula.agree=true")
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(integrationTestMinecraftVersion)))
-    })
-
-    pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
-    pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
-}
-
 tasks.register("integrationTest") {
     group = "verification"
     description = "Runs integration tests against all configured Paper versions."
     dependsOn("integrationTestMatrix")
+}
+
+tasks.named<RunServer>("runServer") {
+    enabled = false
+    description = "Disabled. Use integrationTest/integrationTestMatrix instead."
 }
 
 val integrationTestMatrixTasks = mutableListOf<TaskProvider<Task>>()
@@ -323,53 +306,41 @@ tasks.register("integrationTestMatrix") {
     dependsOn(integrationTestMatrixTasks)
 }
 
-// Function to execute Git commands
-fun executeGitCommand(vararg command: String): String {
-    val byteOut = ByteArrayOutputStream()
-    project.exec {
-        commandLine = listOf("git", *command)
-        standardOutput = byteOut
+val versionStringProvider = providers.provider { project.version.toString() }
+val isReleaseProvider = versionStringProvider.map { !it.contains('-') }
+
+val gitShortHashProvider = providers.exec {
+    commandLine("git", "rev-parse", "--short", "HEAD")
+}.standardOutput.asText.map { it.trim() }
+
+val gitChangelogProvider = providers.exec {
+    commandLine("git", "log", "-1", "--pretty=%B")
+}.standardOutput.asText.map { it.trim() }
+
+val suffixedVersionProvider = providers.provider {
+    val version = project.version.toString()
+    if (!version.contains('-')) {
+        version
+    } else {
+        "$version+${gitShortHashProvider.get()}"
     }
-    return byteOut.toString(Charsets.UTF_8.name()).trim()
 }
 
-// Function to get the latest commit message
-fun latestCommitMessage(): String {
-    return executeGitCommand("log", "-1", "--pretty=%B")
-}
-
-// Function to get the short commit hash
-fun getShortCommitHash(): String {
-    return executeGitCommand("rev-parse", "--short", "HEAD")
-}
-
-val versionString: String = project.version as String
-val isRelease: Boolean = !versionString.contains('-')
-
-val suffixedVersion: String = if (isRelease) {
-    versionString
-} else {
-    // Append the short commit hash to the version for snapshots
-    "$versionString+${getShortCommitHash()}"
-}
-
-// Use the latest commit message for the changelog
-val changelogContent: String = latestCommitMessage()
+val changelogProvider = providers.environmentVariable("HANGAR_CHANGELOG").orElse(gitChangelogProvider)
 
 tasks.register("printIsRelease") {
     doLast {
-        val isRelease = !project.version.toString().contains('-')
-        println(if (isRelease) "true" else "false")
+        println(if (!project.version.toString().contains('-')) "true" else "false")
     }
 }
 
 hangarPublish {
     publications.register("plugin") {
-        version.set(suffixedVersion)
-        channel.set(if (isRelease) "Release" else "Snapshot")
+        version.set(suffixedVersionProvider)
+        channel.set(isReleaseProvider.map { if (it) "Release" else "Snapshot" })
         id.set("OldCombatMechanics")
         apiKey.set(System.getenv("HANGAR_API_TOKEN"))
-        changelog.set(System.getenv("HANGAR_CHANGELOG") ?: changelogContent)
+        changelog.set(changelogProvider)
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })

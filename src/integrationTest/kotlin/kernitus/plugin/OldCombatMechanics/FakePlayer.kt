@@ -31,6 +31,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private val name: String = uuid.toString().substring(0, 16)
     private lateinit var serverPlayer: Any // NMS ServerPlayer instance
     private var bukkitPlayer: Player? = null
+    private var networkConnection: Any? = null
     private val reflectionRemapper = ReflectionRemapper.forReobfMappingsInPaperJar()
 
     // Helper function to load NMS classes using the appropriate class loader and remap names
@@ -65,17 +66,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Get the ServerPlayer class and its constructor
         val minecraftServerClass = getNMSClass("net.minecraft.server.MinecraftServer")
         val serverPlayerClass = getNMSClass("net.minecraft.server.level.ServerPlayer")
-        val profilePublicKeyClass = getNMSClass("net.minecraft.world.entity.player.ProfilePublicKey")
-        val serverPlayerConstructor = serverPlayerClass.getConstructor(
-            minecraftServerClass,
-            worldServer.javaClass,
-            GameProfile::class.java,
-            profilePublicKeyClass
-        )
 
-        // Create a new instance of ServerPlayer
-        this.serverPlayer = serverPlayerConstructor.newInstance(
-            minecraftServer, worldServer, gameProfile, null
+        // Create a new instance of ServerPlayer (constructor signature varies by version)
+        this.serverPlayer = createServerPlayer(
+            serverPlayerClass,
+            minecraftServerClass,
+            minecraftServer,
+            worldServer,
+            gameProfile
         )
         plugin.logger.info("Spawn: created serverPlayer")
 
@@ -115,10 +113,16 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Create a new Connection object
         val connectionClass = getNMSClass("net.minecraft.network.Connection")
         val packetFlowClass = getNMSClass("net.minecraft.network.protocol.PacketFlow")
-        val clientboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "CLIENTBOUND")
-        val packetFlowClientbound = packetFlowClass.getDeclaredField(clientboundFieldName).get(null)
+        val serverboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "SERVERBOUND")
+        val packetFlow = runCatching {
+            Reflector.getEnumConstant(packetFlowClass, serverboundFieldName, "SERVERBOUND")
+        }.getOrElse {
+            val clientboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "CLIENTBOUND")
+            Reflector.getEnumConstant(packetFlowClass, clientboundFieldName, "CLIENTBOUND")
+        }
         val connectionConstructor = connectionClass.getConstructor(packetFlowClass)
-        val connection = connectionConstructor.newInstance(packetFlowClientbound)
+        val connection = connectionConstructor.newInstance(packetFlow)
+        networkConnection = connection
 
         // Create a custom EmbeddedChannel with an overridden remoteAddress()
         val remoteAddress = InetSocketAddress("127.0.0.1", 9999)
@@ -143,22 +147,145 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val addressField = Reflector.getField(connectionClass, addressFieldName)
         addressField.set(connection, remoteAddress)
 
-        // Create a new ServerGamePacketListenerImpl instance
+        // Create a new ServerGamePacketListenerImpl instance (constructor signature varies by version)
         val serverPlayerClass = serverPlayer.javaClass
         val minecraftServerClass = getNMSClass("net.minecraft.server.MinecraftServer")
-        val serverGamePacketListenerImplConstructor = serverGamePacketListenerImplClass.getConstructor(
+        val listenerInstance = createServerGamePacketListener(
+            serverGamePacketListenerImplClass,
             minecraftServerClass,
             connectionClass,
-            serverPlayerClass
-        )
-        val listenerInstance = serverGamePacketListenerImplConstructor.newInstance(
-            minecraftServer, connection, serverPlayer
+            serverPlayerClass,
+            minecraftServer,
+            connection,
+            serverPlayer
         )
 
         // Set the listenerInstance to the player's 'connection' field
         val connectionFieldName = reflectionRemapper.remapFieldName(serverPlayerClass, "connection")
         val connectionField = Reflector.getField(serverPlayerClass, connectionFieldName)
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
+
+        val setListenerName = reflectionRemapper.remapMethodName(
+            connectionClass,
+            "setListener",
+            listenerInstance.javaClass
+        )
+        val setListenerMethod = Reflector.getMethodAssignable(
+            connectionClass,
+            setListenerName,
+            listenerInstance.javaClass
+        ) ?: Reflector.getMethodAssignable(connectionClass, "setListener", listenerInstance.javaClass)
+        if (setListenerMethod != null) {
+            Reflector.invokeMethod<Any>(setListenerMethod, connection, listenerInstance)
+        }
+    }
+
+    private fun createServerGamePacketListener(
+        listenerClass: Class<*>,
+        minecraftServerClass: Class<*>,
+        connectionClass: Class<*>,
+        serverPlayerClass: Class<*>,
+        minecraftServer: Any,
+        connection: Any,
+        serverPlayer: Any
+    ): Any {
+        val constructors = listenerClass.constructors.sortedBy { it.parameterCount }
+        for (ctor in constructors) {
+            val params = ctor.parameterTypes
+            if (params.size < 3) continue
+            if (!params[0].isAssignableFrom(minecraftServerClass)) continue
+            if (!params[1].isAssignableFrom(connectionClass)) continue
+            if (!params[2].isAssignableFrom(serverPlayerClass)) continue
+
+            val args = ArrayList<Any?>()
+            args.add(minecraftServer)
+            args.add(connection)
+            args.add(serverPlayer)
+
+            var supported = true
+            for (i in 3 until params.size) {
+                val param = params[i]
+                when (param.simpleName) {
+                    "CommonListenerCookie" -> args.add(createCommonListenerCookie(param, serverPlayer))
+                    else -> {
+                        supported = false
+                        break
+                    }
+                }
+            }
+
+            if (!supported) continue
+            return ctor.newInstance(*args.toTypedArray())
+        }
+
+        throw NoSuchMethodException("No compatible ServerGamePacketListenerImpl constructor found for ${listenerClass.name}")
+    }
+
+    private fun createCommonListenerCookie(cookieClass: Class<*>, serverPlayer: Any): Any {
+        val getProfileName = reflectionRemapper.remapMethodName(serverPlayer.javaClass, "getGameProfile")
+        val getProfileMethod = Reflector.getMethod(serverPlayer.javaClass, getProfileName)
+            ?: Reflector.getMethod(serverPlayer.javaClass, "getGameProfile")
+            ?: throw NoSuchMethodException("getGameProfile not found in ${serverPlayer.javaClass.name}")
+        val gameProfile = Reflector.invokeMethod<GameProfile>(getProfileMethod, serverPlayer)
+
+        val remappedName = reflectionRemapper.remapMethodName(
+            cookieClass,
+            "createInitial",
+            GameProfile::class.java,
+            Boolean::class.javaPrimitiveType
+        )
+        val method = Reflector.getMethod(cookieClass, remappedName, "GameProfile", "boolean")
+            ?: Reflector.getMethod(cookieClass, "createInitial", "GameProfile", "boolean")
+            ?: throw NoSuchMethodException("createInitial not found in ${cookieClass.name}")
+        return Reflector.invokeMethod(method, null, gameProfile, false)
+    }
+
+    private fun createServerPlayer(
+        serverPlayerClass: Class<*>,
+        minecraftServerClass: Class<*>,
+        minecraftServer: Any,
+        worldServer: Any,
+        gameProfile: GameProfile
+    ): Any {
+        val constructors = serverPlayerClass.constructors.sortedBy { it.parameterCount }
+        for (ctor in constructors) {
+            val params = ctor.parameterTypes
+            if (params.size < 3) continue
+            if (!params[0].isAssignableFrom(minecraftServerClass)) continue
+            if (!params[1].isAssignableFrom(worldServer.javaClass)) continue
+            if (params[2] != GameProfile::class.java) continue
+
+            val args = ArrayList<Any?>()
+            args.add(minecraftServer)
+            args.add(worldServer)
+            args.add(gameProfile)
+
+            var supported = true
+            for (i in 3 until params.size) {
+                val param = params[i]
+                when (param.simpleName) {
+                    "ProfilePublicKey" -> args.add(null)
+                    "ClientInformation" -> args.add(createDefaultClientInformation(param))
+                    else -> {
+                        supported = false
+                        break
+                    }
+                }
+            }
+
+            if (!supported) continue
+            return ctor.newInstance(*args.toTypedArray())
+        }
+
+        throw NoSuchMethodException("No compatible ServerPlayer constructor found for ${serverPlayerClass.name}")
+    }
+
+    private fun createDefaultClientInformation(clientInfoClass: Class<*>): Any {
+        val remappedName = reflectionRemapper.remapMethodName(clientInfoClass, "createDefault")
+        val method = Reflector.getMethod(clientInfoClass, remappedName)
+            ?: Reflector.getMethod(clientInfoClass, "createDefault")
+            ?: throw NoSuchMethodException("createDefault not found in ${clientInfoClass.name}")
+        return Reflector.invokeMethod(method, null)
     }
 
     private fun setPlayerGameMode(gameModeName: String, minecraftServer: Any) {
@@ -223,28 +350,72 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         // Add the player to the PlayerList
         val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
-        val loadMethodName = reflectionRemapper.remapMethodName(
+        val loadMethodName = reflectionRemapper.remapMethodName(playerListClass, "load", serverPlayer.javaClass)
+        val loadMethod = playerListClass.methods.firstOrNull { method ->
+            method.name == loadMethodName &&
+                method.parameterCount == 1 &&
+                method.parameterTypes[0].isAssignableFrom(serverPlayer.javaClass)
+        }
+
+        if (loadMethod != null) {
+            Reflector.invokeMethod<Any>(loadMethod, playerList, serverPlayer)
+
+            val playersFieldName = reflectionRemapper.remapFieldName(playerListClass, "players")
+            val playersField = playerListClass.getDeclaredField(playersFieldName)
+            playersField.isAccessible = true
+            val players = playersField.get(playerList) as MutableList<Any>
+            players.add(serverPlayer)
+
+            // Add player to the UUID map
+            val playersByUUIDField = Reflector.getMapFieldWithTypes(
+                playerListClass, UUID::class.java, serverPlayer.javaClass
+            )
+            val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
+            playerByUUID[uuid] = serverPlayer
+            return
+        }
+
+        val placeMethodName = reflectionRemapper.remapMethodName(playerListClass, "placeNewPlayer")
+        val connection = checkNotNull(networkConnection) { "Connection not initialised" }
+        val placeMethodWithCookie = Reflector.getMethodAssignable(
             playerListClass,
-            "load",
+            placeMethodName,
+            connection.javaClass,
+            serverPlayer.javaClass,
+            null
+        ) ?: Reflector.getMethodAssignable(
+            playerListClass,
+            "placeNewPlayer",
+            connection.javaClass,
+            serverPlayer.javaClass,
+            null
+        )
+
+        if (placeMethodWithCookie != null && placeMethodWithCookie.parameterTypes.size == 3) {
+            val cookieClass = placeMethodWithCookie.parameterTypes[2]
+            val cookie = createCommonListenerCookie(cookieClass, serverPlayer)
+            placeMethodWithCookie.invoke(playerList, connection, serverPlayer, cookie)
+            return
+        }
+
+        val placeMethod = Reflector.getMethodAssignable(
+            playerListClass,
+            placeMethodName,
+            connection.javaClass,
+            serverPlayer.javaClass
+        ) ?: Reflector.getMethodAssignable(
+            playerListClass,
+            "placeNewPlayer",
+            connection.javaClass,
             serverPlayer.javaClass
         )
-        val loadMethod = checkNotNull(
-            Reflector.getMethod(playerListClass, loadMethodName, serverPlayer.javaClass.simpleName)
-        )
-        Reflector.invokeMethod<Any>(loadMethod, playerList, serverPlayer)
 
-        val playersFieldName = reflectionRemapper.remapFieldName(playerListClass, "players")
-        val playersField = playerListClass.getDeclaredField(playersFieldName)
-        playersField.isAccessible = true
-        val players = playersField.get(playerList) as MutableList<Any>
-        players.add(serverPlayer)
+        if (placeMethod != null) {
+            placeMethod.invoke(playerList, connection, serverPlayer)
+            return
+        }
 
-        // Add player to the UUID map
-        val playersByUUIDField = Reflector.getMapFieldWithTypes(
-            playerListClass, UUID::class.java, serverPlayer.javaClass
-        )
-        val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
-        playerByUUID[uuid] = serverPlayer
+        throw NoSuchMethodException("No compatible PlayerList add method found for ${playerListClass.name}")
     }
 
     private fun firePlayerJoinEvent() {
@@ -254,22 +425,11 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     private fun notifyPlayersOfJoin() {
-        // Send ClientboundPlayerInfoPacket to all players
-        val clientboundPlayerInfoPacketClass =
-            getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket")
-        val actionClass = getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket\$Action")
-        val addPlayerFieldName = reflectionRemapper.remapFieldName(actionClass, "ADD_PLAYER")
-        val addPlayerAction = actionClass.getDeclaredField(addPlayerFieldName).get(null)
+        if (Bukkit.getOnlinePlayers().isEmpty()) return
 
-        val clientboundPlayerInfoPacketConstructor = clientboundPlayerInfoPacketClass.getConstructor(
-            actionClass,
-            Collection::class.java
-        )
-
-        val packet = clientboundPlayerInfoPacketConstructor.newInstance(
-            addPlayerAction,
-            listOf(serverPlayer)
-        )
+        val packet = runCatching { createLegacyPlayerInfoPacket() }.getOrNull()
+            ?: runCatching { createPlayerInfoUpdatePacket() }.getOrNull()
+            ?: return
         sendPacket(packet)
     }
 
@@ -281,34 +441,97 @@ class FakePlayer(private val plugin: JavaPlugin) {
             "addNewPlayer",
             serverPlayer.javaClass
         )
-        val addNewPlayerMethod = worldServerClass.getMethod(addNewPlayerMethodName, serverPlayer.javaClass)
-        addNewPlayerMethod.invoke(worldServer, serverPlayer)
+        val addNewPlayerMethod = Reflector.getMethodAssignable(
+            worldServerClass,
+            addNewPlayerMethodName,
+            serverPlayer.javaClass
+        )
+            ?: Reflector.getMethodAssignable(worldServerClass, "addNewPlayer", serverPlayer.javaClass)
+            ?: Reflector.getMethodAssignable(worldServerClass, "addPlayer", serverPlayer.javaClass)
+            ?: Reflector.getMethodAssignable(worldServerClass, "addFreshEntity", serverPlayer.javaClass)
+            ?: Reflector.getMethodAssignable(worldServerClass, "addEntity", serverPlayer.javaClass)
+        if (addNewPlayerMethod != null) {
+            addNewPlayerMethod.invoke(worldServer, serverPlayer)
+        } else {
+            plugin.logger.warning("Spawn: Could not find a world add method for ${worldServerClass.name}")
+        }
 
         // Send world info to the player
         val minecraftServerClass = getNMSClass("net.minecraft.server.MinecraftServer")
-        val getStatusMethodName = reflectionRemapper.remapMethodName(minecraftServerClass, "getStatus")
-        val getStatusMethod = Reflector.getMethod(minecraftServerClass, getStatusMethodName)
-        val status = Reflector.invokeMethod<Any>(getStatusMethod!!, minecraftServer)
+        runCatching {
+            val getStatusMethodName = reflectionRemapper.remapMethodName(minecraftServerClass, "getStatus")
+            val getStatusMethod = Reflector.getMethod(minecraftServerClass, getStatusMethodName)
+            val status = Reflector.invokeMethod<Any>(getStatusMethod!!, minecraftServer)
 
-        val sendServerStatusMethodName = reflectionRemapper.remapMethodName(
-            serverPlayer.javaClass,
-            "sendServerStatus",
-            status.javaClass
-        )
-        val sendServerStatusMethod = checkNotNull(
-            Reflector.getMethod(serverPlayer.javaClass, sendServerStatusMethodName, status.javaClass.simpleName)
-        )
-        sendServerStatusMethod.invoke(serverPlayer, status)
+            val sendServerStatusMethodName = reflectionRemapper.remapMethodName(
+                serverPlayer.javaClass,
+                "sendServerStatus",
+                status.javaClass
+            )
+            val sendServerStatusMethod = Reflector.getMethod(
+                serverPlayer.javaClass,
+                sendServerStatusMethodName,
+                status.javaClass.simpleName
+            ) ?: Reflector.getMethod(serverPlayer.javaClass, "sendServerStatus", status.javaClass.simpleName)
+            if (sendServerStatusMethod != null) {
+                sendServerStatusMethod.invoke(serverPlayer, status)
+            }
+        }
 
         // Send ClientboundAddPlayerPacket to all players
-        val clientboundAddPlayerPacketClass =
-            getNMSClass("net.minecraft.network.protocol.game.ClientboundAddPlayerPacket")
-        val playerClassName = getNMSClass("net.minecraft.world.entity.player.Player")
-        // ServerPlayer is subclass of Player
-        val clientboundAddPlayerPacketConstructor = clientboundAddPlayerPacketClass.getConstructor(playerClassName)
+        runCatching {
+            val clientboundAddPlayerPacketClass =
+                getNMSClass("net.minecraft.network.protocol.game.ClientboundAddPlayerPacket")
+            val playerClassName = getNMSClass("net.minecraft.world.entity.player.Player")
+            // ServerPlayer is subclass of Player
+            val clientboundAddPlayerPacketConstructor = clientboundAddPlayerPacketClass.getConstructor(playerClassName)
 
-        val packet = clientboundAddPlayerPacketConstructor.newInstance(serverPlayer)
-        sendPacket(packet)
+            val packet = clientboundAddPlayerPacketConstructor.newInstance(serverPlayer)
+            sendPacket(packet)
+        }
+    }
+
+    private fun createLegacyPlayerInfoPacket(): Any {
+        val clientboundPlayerInfoPacketClass =
+            getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket")
+        val actionClass = getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket\$Action")
+        val addPlayerFieldName = reflectionRemapper.remapFieldName(actionClass, "ADD_PLAYER")
+        val addPlayerAction = actionClass.getDeclaredField(addPlayerFieldName).get(null)
+
+        val clientboundPlayerInfoPacketConstructor = clientboundPlayerInfoPacketClass.getConstructor(
+            actionClass,
+            Collection::class.java
+        )
+
+        return clientboundPlayerInfoPacketConstructor.newInstance(
+            addPlayerAction,
+            listOf(serverPlayer)
+        )
+    }
+
+    private fun createPlayerInfoUpdatePacket(): Any {
+        val packetClass = getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket")
+        val actionClass = getNMSClass("net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket\$Action")
+        val addPlayerFieldName = reflectionRemapper.remapFieldName(actionClass, "ADD_PLAYER")
+        val addPlayerAction = actionClass.getDeclaredField(addPlayerFieldName).get(null)
+
+        val createInitMethodName = reflectionRemapper.remapMethodName(
+            packetClass,
+            "createPlayerInitializing",
+            serverPlayer.javaClass
+        )
+        val createInitMethod = Reflector.getMethodAssignable(
+            packetClass,
+            createInitMethodName,
+            serverPlayer.javaClass
+        ) ?: Reflector.getMethodAssignable(packetClass, "createPlayerInitializing", serverPlayer.javaClass)
+        if (createInitMethod != null) {
+            return Reflector.invokeMethod(createInitMethod, null, serverPlayer)
+        }
+
+        val constructor = packetClass.getConstructor(EnumSet::class.java, Collection::class.java)
+        val actions = EnumSet.of(addPlayerAction as Enum<*>)
+        return constructor.newInstance(actions, listOf(serverPlayer))
     }
 
     private fun sendPacket(packet: Any) {
