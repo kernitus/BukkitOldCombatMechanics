@@ -5,14 +5,19 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import groovy.json.JsonSlurper
 import io.papermc.hangarpublishplugin.model.Platforms
 import org.gradle.api.Action
+import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.FileCopyDetails
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
 import java.io.ByteArrayOutputStream
 import java.io.Serializable
+import java.net.URI
+import java.security.MessageDigest
+import java.nio.file.Files
 
 val paperVersion: List<String> = (property("gameVersions") as String)
         .split(",")
@@ -85,6 +90,13 @@ configurations {
     }
 }
 
+configurations.named("compileClasspath") {
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+}
+configurations.named("integrationTestCompileClasspath") {
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+}
+
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.1.0")
     // Shaded in by Bukkit
@@ -141,6 +153,7 @@ tasks.named<Copy>("processResources") {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
+    options.release.set(8)
 }
 
 val shadowJarTask = tasks.named<ShadowJar>("shadowJar") {
@@ -171,7 +184,7 @@ kotlin {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 }
 
 val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
@@ -198,7 +211,7 @@ val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
-val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11")
+val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11", "1.12")
     .distinct()
 
 val integrationTestVersions: List<String> = (findProperty("integrationTestVersions") as String?)
@@ -210,6 +223,8 @@ val integrationTestVersions: List<String> = (findProperty("integrationTestVersio
 
 val integrationTestJavaVersionLegacy =
     (findProperty("integrationTestJavaVersionLegacy") as String?)?.toInt() ?: 17
+val integrationTestJavaVersionLegacyPre13 =
+    (findProperty("integrationTestJavaVersionLegacyPre13") as String?)?.toInt() ?: 8
 val integrationTestJavaVersionModern =
     (findProperty("integrationTestJavaVersionModern") as String?)?.toInt() ?: 25
 
@@ -221,6 +236,11 @@ fun parseMinecraftVersion(version: String): Triple<Int, Int, Int> {
     return Triple(major, minor, patch)
 }
 
+fun needsLegacyVanillaJar(version: String): Boolean {
+    val (major, minor, _) = parseMinecraftVersion(version)
+    return major == 1 && minor <= 12
+}
+
 fun requiresModernJava(version: String): Boolean {
     val (major, minor, patch) = parseMinecraftVersion(version)
     if (major > 1) return true
@@ -229,7 +249,21 @@ fun requiresModernJava(version: String): Boolean {
 }
 
 fun requiredJavaVersion(version: String): Int {
+    if (needsLegacyVanillaJar(version)) return integrationTestJavaVersionLegacyPre13
     return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
+}
+
+fun sha1(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-1")
+    file.inputStream().use { input ->
+        val buffer = ByteArray(8192)
+        while (true) {
+            val read = input.read(buffer)
+            if (read <= 0) break
+            digest.update(buffer, 0, read)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
 }
 
 tasks.register("integrationTest") {
@@ -258,6 +292,7 @@ for (version in integrationTestVersions) {
     val suffix = versionTaskSuffix(version)
     val runDir = file("run/$version")
     val resultFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-results.txt")
+    val vanillaCacheFile = runDir.resolve("cache/mojang_${version}.jar")
 
     val writePropsTask = tasks.register<WriteProperties>("writeProperties${suffix}") {
         encoding = "UTF-8"
@@ -265,8 +300,58 @@ for (version in integrationTestVersions) {
         destinationFile.set(runDir.resolve("server.properties"))
     }
 
+    val downloadVanillaTask = if (needsLegacyVanillaJar(version)) {
+        tasks.register("downloadVanilla${suffix}") {
+            outputs.file(vanillaCacheFile)
+            notCompatibleWithConfigurationCache("Downloads vanilla server jar for legacy Paper versions.")
+            doLast {
+                val slurper = JsonSlurper()
+                val manifestText = URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+                    .toURL()
+                    .readText()
+                val manifest = slurper.parseText(manifestText) as Map<*, *>
+                val versionsList = manifest["versions"] as List<Map<*, *>>
+                val versionEntry = versionsList.firstOrNull { it["id"] == version }
+                    ?: throw GradleException("Minecraft version '$version' not found in Mojang manifest.")
+                val versionUrl = versionEntry["url"] as String
+                val versionMetaText = URI(versionUrl).toURL().readText()
+                val versionMeta = slurper.parseText(versionMetaText) as Map<*, *>
+                val downloads = versionMeta["downloads"] as Map<*, *>
+                val serverInfo = downloads["server"] as Map<*, *>
+                val serverUrl = serverInfo["url"] as String
+                val serverSha1 = serverInfo["sha1"] as String
+
+                if (vanillaCacheFile.exists()) {
+                    val existingSha1 = sha1(vanillaCacheFile)
+                    if (existingSha1.equals(serverSha1, ignoreCase = true)) {
+                        return@doLast
+                    }
+                } else {
+                    vanillaCacheFile.parentFile.mkdirs()
+                }
+
+                val tmpFile = Files.createTempFile("mc-server-${version}-", ".jar").toFile()
+                URI(serverUrl).toURL().openStream().use { input ->
+                    tmpFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                val downloadedSha1 = sha1(tmpFile)
+                if (!downloadedSha1.equals(serverSha1, ignoreCase = true)) {
+                    tmpFile.delete()
+                    throw GradleException(
+                        "Downloaded Minecraft server jar hash mismatch for $version. Expected $serverSha1, got $downloadedSha1."
+                    )
+                }
+                tmpFile.copyTo(vanillaCacheFile, overwrite = true)
+                tmpFile.delete()
+            }
+        }
+    } else {
+        null
+    }
+
     val runServerTask = tasks.register<RunServer>("runServer${suffix}") {
         dependsOn(writePropsTask)
+        downloadVanillaTask?.let { dependsOn(it) }
         runDirectory.set(runDir)
         minecraftVersion(version)
         jvmArgs("-Dcom.mojang.eula.agree=true")

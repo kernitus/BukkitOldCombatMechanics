@@ -26,28 +26,34 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
  * Allows configurable potion effect durations.
  */
 public class ModuleOldPotionEffects extends OCMModule {
-    private static final Set<PotionTypeCompat> EXCLUDED_POTION_TYPES = Set.of(
-            // Base potions without any effect
-            new PotionTypeCompat("AWKWARD"),
-            new PotionTypeCompat("MUNDANE"),
-            new PotionTypeCompat("THICK"),
-            new PotionTypeCompat("WATER"),
-            // Instant potions with no further effects
-            new PotionTypeCompat("HARMING"),
-            new PotionTypeCompat("STRONG_HARMING"),
-            new PotionTypeCompat("HEALING"),
-            new PotionTypeCompat("STRONG_HEALING"),
-            // This type doesn't exist anymore >1.20.5, is specially handled in compat class
-            new PotionTypeCompat("UNCRAFTABLE")
+    private static final Set<PotionTypeCompat> EXCLUDED_POTION_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    // Base potions without any effect
+                    new PotionTypeCompat("AWKWARD"),
+                    new PotionTypeCompat("MUNDANE"),
+                    new PotionTypeCompat("THICK"),
+                    new PotionTypeCompat("WATER"),
+                    // Instant potions with no further effects
+                    new PotionTypeCompat("HARMING"),
+                    new PotionTypeCompat("STRONG_HARMING"),
+                    new PotionTypeCompat("HEALING"),
+                    new PotionTypeCompat("STRONG_HEALING"),
+                    // This type doesn't exist anymore >1.20.5, is specially handled in compat class
+                    new PotionTypeCompat("UNCRAFTABLE")
+            ))
     );
 
     private Map<PotionTypeCompat, PotionDurations> durations;
@@ -136,9 +142,11 @@ public class ModuleOldPotionEffects extends OCMModule {
         List<PotionEffectType> potionEffects;
         final PotionType potionType = potionTypeCompat.getType();
         try {
-            potionEffects = potionType.getPotionEffects().stream().map(PotionEffect::getType).toList();
+            potionEffects = potionType.getPotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .collect(Collectors.toList());
         } catch (NoSuchMethodError e) {
-            potionEffects = List.of(potionType.getEffectType());
+            potionEffects = Collections.singletonList(potionType.getEffectType());
         }
 
         for (PotionEffectType effectType : potionEffects) {

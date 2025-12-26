@@ -11,12 +11,14 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.embedded.EmbeddedChannel
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent
 import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerPreLoginEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 import xyz.jpenilla.reflectionremapper.ReflectionRemapper
@@ -33,7 +35,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private var bukkitPlayer: Player? = null
     private var networkConnection: Any? = null
     private var usedPlaceNewPlayer: Boolean = false
-    private val reflectionRemapper = ReflectionRemapper.forReobfMappingsInPaperJar()
+    private val isLegacy = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+    private val legacyImpl: LegacyFakePlayer12? = if (isLegacy) LegacyFakePlayer12(plugin, uuid, name) else null
+    private val reflectionRemapper: ReflectionRemapper = try {
+        ReflectionRemapper.forReobfMappingsInPaperJar()
+    } catch (e: Throwable) {
+        plugin.logger.warning("Reflection mappings not found; using no-op remapper for legacy server.")
+        ReflectionRemapper.noop()
+    }
 
     // Helper function to load NMS classes using the appropriate class loader and remap names
     fun getNMSClass(name: String): Class<*> {
@@ -50,6 +59,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun spawn(location: Location) {
+        if (isLegacy) {
+            legacyImpl!!.spawn(location)
+            serverPlayer = legacyImpl.entityPlayer ?: throw IllegalStateException("Legacy entity player not created.")
+            bukkitPlayer = legacyImpl.bukkitPlayer
+            return
+        }
         plugin.logger.info("Spawn: Starting")
 
         // Get the NMS WorldServer (ServerLevel) from the Bukkit world
@@ -563,6 +578,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun getConnection(serverPlayer: Any): Any {
+        if (isLegacy) {
+            return legacyImpl!!.getConnection(serverPlayer)
+        }
         val entityPlayerClass = serverPlayer.javaClass
         val connectionFieldName = reflectionRemapper.remapFieldName(entityPlayerClass, "connection")
         val connectionField = Reflector.getField(entityPlayerClass, connectionFieldName)
@@ -570,6 +588,10 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun removePlayer() {
+        if (isLegacy) {
+            legacyImpl!!.removePlayer()
+            return
+        }
         // Fire PlayerQuitEvent
         val quitMessage = "§e$name left the game"
         val playerQuitEvent = PlayerQuitEvent(bukkitPlayer!!, quitMessage)
@@ -684,6 +706,16 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun doBlocking() {
+        if (isLegacy) {
+            // Legacy blocking: ensure sword in hand + shield in offhand, then raise offhand.
+            bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.DIAMOND_SWORD))
+            if (bukkitPlayer!!.inventory.itemInOffHand.type != Material.SHIELD) {
+                bukkitPlayer!!.inventory.setItemInOffHand(org.bukkit.inventory.ItemStack(Material.SHIELD))
+            }
+            bukkitPlayer!!.updateInventory()
+            legacyImpl?.startUsingOffhand()
+            return
+        }
         bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.SHIELD))
 
         val livingEntityClass = getNMSClass("net.minecraft.world.entity.LivingEntity")
