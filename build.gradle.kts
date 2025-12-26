@@ -21,13 +21,13 @@ val paperVersion: List<String> = (property("gameVersions") as String)
 
 plugins {
     `java-library`
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.3.0"
     id("com.gradleup.shadow") version "9.3.0"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
     // For ingametesting
     //id("io.papermc.paperweight.userdev") version "1.5.10"
     idea
-    id("io.papermc.hangar-publish-plugin") version "0.1.2"
+    id("io.papermc.hangar-publish-plugin") version "0.1.4"
 }
 
 // Make sure javadocs are available to IDE
@@ -86,41 +86,43 @@ configurations {
 }
 
 dependencies {
-    implementation("org.bstats:bstats-bukkit:3.0.2")
+    implementation("org.bstats:bstats-bukkit:3.1.0")
     // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.106.Final")
+    compileOnly("io.netty:netty-all:4.1.130.Final")
     // Placeholder API
-    compileOnly("me.clip:placeholderapi:2.11.5")
+    compileOnly("me.clip:placeholderapi:2.11.6")
     // For BSON file serialisation
-    implementation("org.mongodb:bson:5.0.1")
+    implementation("org.mongodb:bson:5.6.2")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    // JSR-305 annotations (javax.annotation.Nullable)
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     // ProtocolLib
     compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
     // XSeries
-    implementation("com.github.cryptomorin:XSeries:13.3.3")
+    implementation("com.github.cryptomorin:XSeries:13.6.0")
 
      //For ingametesting
     // Mojang mappings for NMS
     /*
-    compileOnly("com.mojang:authlib:4.0.43")
+    compileOnly("com.mojang:authlib:6.0.54")
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
     // For reflection remapping
-    implementation("xyz.jpenilla:reflection-remapper:0.1.1")
+    implementation("xyz.jpenilla:reflection-remapper:0.1.3")
      */
 
     // Integration test dependencies
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.1.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.1.0")
-    add("integrationTestImplementation", "io.kotest:kotest-runner-junit5:6.0.0.M1")
-    add("integrationTestImplementation", "io.kotest:kotest-assertions-core:6.0.0.M1")
-    add("integrationTestImplementation", "net.kyori:adventure-api:4.18.0")
-    add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.1")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.0")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.0")
+    add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:6.0.7")
+    add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:6.0.7")
+    add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
+    add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
 
-    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
-    add("integrationTestCompileOnly", "com.mojang:authlib:4.0.43")
-    add("integrationTestCompileOnly", "io.netty:netty-all:4.1.106.Final")
+    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
+    add("integrationTestCompileOnly", "io.netty:netty-all:4.1.130.Final")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above

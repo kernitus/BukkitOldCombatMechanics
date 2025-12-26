@@ -7,9 +7,8 @@
 package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
-import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.core.test.TestCase
+import io.kotest.engine.concurrency.TestExecutionMode
 import io.kotest.matchers.doubles.shouldBeExactly
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
@@ -24,9 +23,10 @@ import org.bukkit.plugin.java.JavaPlugin
 
 
 @OptIn(ExperimentalKotest::class)
-class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
+class InGameTesterIntegrationTest : StringSpec({
+    val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
     extension(MainThreadDispatcherExtension(plugin))
-    concurrency = 1  // Run tests sequentially
+    testExecutionMode = TestExecutionMode.Sequential
 
     lateinit var attacker: Player
     lateinit var defender: Player

@@ -11,9 +11,11 @@ import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.extensions.TestCaseExtension
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.test.TestCase
-import io.kotest.core.test.TestResult
 import io.kotest.engine.TestEngineLauncher
+import io.kotest.engine.concurrency.SpecExecutionMode
+import io.kotest.engine.concurrency.TestExecutionMode
 import io.kotest.engine.listener.AbstractTestEngineListener
+import io.kotest.engine.test.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
@@ -23,8 +25,9 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 object KotestProjectConfig : AbstractProjectConfig() {
-    override val parallelism = 1
     override val isolationMode = IsolationMode.SingleInstance
+    override val specExecutionMode = SpecExecutionMode.Sequential
+    override val testExecutionMode = TestExecutionMode.Sequential
 }
 
 
@@ -63,17 +66,13 @@ class OCMTestMain : JavaPlugin() {
             val listener = object : AbstractTestEngineListener() {
                 // Override testFinished to capture each test result
                 override suspend fun testFinished(testCase: TestCase, result: TestResult) {
-                    val testName = testCase.name.testName
-                    when (result) {
-                        is TestResult.Success -> println("Test '$testName' passed.")
-                        is TestResult.Failure -> {
-                            println("Test '$testName' failed with exception: ${result.errorOrNull?.message}")
-                            hasFailures = true
-                        }
-
-                        is TestResult.Ignored -> println("Test '$testName' was ignored.")
-                        is TestResult.Error -> {
-                            println("Test '$testName' errored with exception: ${result.errorOrNull?.message}")
+                    val testName = testCase.name.name
+                    when {
+                        result.isSuccess -> println("Test '$testName' passed.")
+                        result.isIgnored -> println("Test '$testName' was ignored.")
+                        result.isFailure || result.isError -> {
+                            val message = result.errorOrNull?.message ?: result.reasonOrNull ?: "Unknown failure"
+                            println("Test '$testName' failed with exception: $message")
                             hasFailures = true
                         }
                     }
@@ -81,8 +80,8 @@ class OCMTestMain : JavaPlugin() {
 
                 // Optionally override testStarted if you want to log when a test starts
                 override suspend fun testStarted(testCase: TestCase) {
-                    println("Starting test '${testCase.name.testName}'")
-}
+                    println("Starting test '${testCase.name.name}'")
+                }
 
                 // Override engineFinished to print a summary after all tests
                 override suspend fun engineFinished(t: List<Throwable>) {
@@ -111,7 +110,11 @@ class OCMTestMain : JavaPlugin() {
             }
 
             // Run tests using TestEngineLauncher with Spec instances
-            TestEngineLauncher(listener).withSpecs(InGameTesterIntegrationTest(this@OCMTestMain)).launch()
+            TestEngineLauncher()
+                .withListener(listener)
+                .withProjectConfig(KotestProjectConfig)
+                .withClasses(InGameTesterIntegrationTest::class)
+                .launch()
         })
     }
 }

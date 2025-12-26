@@ -8,13 +8,15 @@ package kernitus.plugin.oldcombatmechanics
 
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.core.test.TestContext
+import io.kotest.core.test.TestScope
+import io.kotest.engine.concurrency.TestExecutionMode
 import io.kotest.matchers.longs.shouldBeBetween
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.FakePlayer
 import kernitus.plugin.OldCombatMechanics.MainThreadDispatcherExtension
 import kernitus.plugin.OldCombatMechanics.OCMMain
+import kernitus.plugin.OldCombatMechanics.OCMTestMain
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
 import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE
@@ -34,7 +36,8 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 
 @OptIn(ExperimentalKotest::class)
-class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
+class GoldenAppleIntegrationTest : FunSpec({
+    val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
     lateinit var player: Player
     lateinit var fakePlayer: FakePlayer
     val ocm = plugin as OCMMain
@@ -51,7 +54,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
         player = checkNotNull(Bukkit.getPlayer(fakePlayer.uuid))
     }
 
-    suspend fun TestContext.withConfig(block: suspend TestContext.() -> Unit) {
+    suspend fun TestScope.withConfig(block: suspend TestScope.() -> Unit) {
         val oldPotionEffects = ocm.config.getBoolean("old-golden-apples.old-potion-effects")
         val normalCooldown = ocm.config.getLong("old-golden-apples.cooldown.normal")
         val enchantedCooldown = ocm.config.getLong("old-golden-apples.cooldown.enchanted")
@@ -74,7 +77,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
     }
 
     extensions(MainThreadDispatcherExtension(plugin))
-    concurrency = 1 // Run tests sequentially
+    testExecutionMode = TestExecutionMode.Sequential
 
     beforeSpec {
         Bukkit.getScheduler().runTask(plugin, Runnable {
