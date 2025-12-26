@@ -10,7 +10,7 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
 import io.kotest.engine.concurrency.TestExecutionMode
-import io.kotest.matchers.longs.shouldBeBetween
+import io.kotest.matchers.comparables.shouldBeBetween
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.FakePlayer
@@ -37,10 +37,10 @@ import org.bukkit.potion.PotionEffectType
 
 @OptIn(ExperimentalKotest::class)
 class GoldenAppleIntegrationTest : FunSpec({
-    val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+    val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+    val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
     lateinit var player: Player
     lateinit var fakePlayer: FakePlayer
-    val ocm = plugin as OCMMain
     val module = ModuleGoldenApple.getInstance()
 
     fun preparePlayer() {
@@ -48,7 +48,7 @@ class GoldenAppleIntegrationTest : FunSpec({
         val world = Bukkit.getServer().getWorld("world")
         val location = Location(world, 0.0, 100.0, 0.0)
 
-        fakePlayer = FakePlayer(plugin)
+        fakePlayer = FakePlayer(testPlugin)
         fakePlayer.spawn(location)
 
         player = checkNotNull(Bukkit.getPlayer(fakePlayer.uuid))
@@ -76,12 +76,12 @@ class GoldenAppleIntegrationTest : FunSpec({
         }
     }
 
-    extensions(MainThreadDispatcherExtension(plugin))
+    extensions(MainThreadDispatcherExtension(testPlugin))
     testExecutionMode = TestExecutionMode.Sequential
 
     beforeSpec {
-        Bukkit.getScheduler().runTask(plugin, Runnable {
-            plugin.logger.info("Running before all GoldenAppleIntegrationTest")
+        Bukkit.getScheduler().runTask(testPlugin, Runnable {
+            testPlugin.logger.info("Running before all GoldenAppleIntegrationTest")
             preparePlayer()
 
             player.gameMode = GameMode.SURVIVAL
@@ -93,15 +93,15 @@ class GoldenAppleIntegrationTest : FunSpec({
     }
 
     afterSpec {
-        plugin.logger.info("Running after all GoldenAppleIntegrationTest")
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        testPlugin.logger.info("Running after all GoldenAppleIntegrationTest")
+        Bukkit.getScheduler().runTask(testPlugin, Runnable {
             fakePlayer.removePlayer()
         })
     }
 
     beforeTest {
         // Reset player state before each test
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        Bukkit.getScheduler().runTask(testPlugin, Runnable {
             player.inventory.clear()
             player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
             player.health = player.getAttribute(Attribute.MAX_HEALTH)!!.value
