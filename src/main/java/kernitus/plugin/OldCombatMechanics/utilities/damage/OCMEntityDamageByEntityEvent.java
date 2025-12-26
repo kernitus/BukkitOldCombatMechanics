@@ -17,8 +17,11 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.enchantments.Enchantment;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
 
@@ -56,6 +59,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private boolean was1_8Crit = false;
     private boolean wasSprinting = false;
+    private static final Set<String> warnedUnknownWeaponEnchants = new HashSet<>();
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
@@ -110,6 +114,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         // However, we are only concerned with melee weapons here, which will always be in the main hand.
 
         final EntityType damageeType = damagee.getType();
+
+        warnOnUnknownWeaponEnchantments(weapon);
 
         debug(livingDamager, "Raw attack damage: " + rawDamage);
         debug(livingDamager, "Without overdamage: " + this.rawDamage);
@@ -173,6 +179,26 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         baseDamage = tempDamage + weaknessModifier - strengthModifier;
         debug(livingDamager, "Base tool damage: " + baseDamage);
+    }
+
+    private static void warnOnUnknownWeaponEnchantments(ItemStack weapon) {
+        if (weapon == null || weapon.getEnchantments().isEmpty()) {
+            return;
+        }
+        final Enchantment sharpness = XEnchantment.SHARPNESS.getEnchant();
+        final Enchantment smite = XEnchantment.SMITE.getEnchant();
+        final Enchantment bane = XEnchantment.BANE_OF_ARTHROPODS.getEnchant();
+        for (Enchantment enchantment : weapon.getEnchantments().keySet()) {
+            if (enchantment == null || enchantment.equals(sharpness) || enchantment.equals(smite) || enchantment.equals(bane)) {
+                continue;
+            }
+            final String name = enchantment.getName();
+            if (warnedUnknownWeaponEnchants.add(name)) {
+                kernitus.plugin.OldCombatMechanics.utilities.Messenger.warn(
+                        "Weapon enchantment '%s' is not modelled by OCM damage calculations; results may differ",
+                        name);
+            }
+        }
     }
 
     public Entity getDamager() {

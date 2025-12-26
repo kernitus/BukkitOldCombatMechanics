@@ -12,7 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.enchantments.Enchantment;
+import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -156,9 +156,15 @@ public class ModulePlayerKnockback extends OCMModule {
                     ? equipment.getItemInOffHand()
                     : equipment.getItemInMainHand();
 
-            int bonusKnockback = heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK);
-            if (attacker instanceof Player && ((Player) attacker).isSprinting())
-                ++bonusKnockback;
+            int bonusKnockback;
+            if (XEnchantment.KNOCKBACK.getEnchant() == null) {
+                bonusKnockback = 0;
+            } else {
+                bonusKnockback = heldItem.getEnchantmentLevel(XEnchantment.KNOCKBACK.getEnchant());
+            }
+            if (attacker instanceof Player && ((Player) attacker).isSprinting()) {
+                bonusKnockback++;
+            }
 
             if (playerVelocity.getY() > knockbackVerticalLimit)
                 playerVelocity.setY(knockbackVerticalLimit);

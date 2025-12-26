@@ -5,6 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities;
 
+import com.cryptomorin.xseries.XMaterial;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionKey;
 import org.bukkit.Material;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
  * @see org.bukkit.configuration.ConfigurationSection
  */
 public class ConfigUtils {
+    private static final Set<String> warnedUnknownPotionDurationKeys = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> warnedUnknownMaterialListKeys = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Safely loads all doubles from a configuration section, reading both double and integer values.
@@ -50,10 +53,32 @@ public class ConfigUtils {
 
         if (!section.isList(key)) return new ArrayList<>();
 
+        final String basePath = section.getCurrentPath();
+        final String fullKey = basePath == null || basePath.isEmpty() ? key : basePath + "." + key;
+
         return section.getStringList(key).stream()
-                .map(Material::matchMaterial)
+                .map(String::trim)
+                .map(name -> {
+                    Optional<XMaterial> match = XMaterial.matchXMaterial(name);
+                    if (!match.isPresent()) {
+                        warnUnknownMaterial(fullKey, name);
+                        return null;
+                    }
+                    Material material = match.get().parseMaterial();
+                    if (material == null) {
+                        warnUnknownMaterial(fullKey, name);
+                    }
+                    return material;
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    private static void warnUnknownMaterial(String fullKey, String name) {
+        final String warnKey = fullKey + ":" + name.toUpperCase(Locale.ROOT);
+        if (warnedUnknownMaterialListKeys.add(warnKey)) {
+            Messenger.warn("Unknown material '%s' in config list '%s'; skipping", name, fullKey);
+        }
     }
 
     /**
@@ -80,8 +105,8 @@ public class ConfigUtils {
             Optional<PotionKey> potionKey = PotionKey.fromConfigKey(newPotionTypeName);
             if (potionKey.isPresent()) {
                 durationsHashMap.put(potionKey.get(), new PotionDurations(drinkableDuration, splashDuration));
-            } else {
-                Messenger.debug("Skipping loading " + newPotionTypeName + " potion");
+            } else if (warnedUnknownPotionDurationKeys.add(newPotionTypeName)) {
+                Messenger.warn("Unknown potion type '%s' in old-potion-effects.potion-durations; skipping", newPotionTypeName);
             }
         }
 

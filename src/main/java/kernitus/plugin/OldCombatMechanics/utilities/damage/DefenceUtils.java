@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,6 +56,7 @@ public class DefenceUtils {
             EntityDamageEvent.DamageCause.DRAGON_BREATH
     // In 1.19 FIRE bypasses armour, but it doesn't in 1.8 so we don't add it here
     );
+    private static final Set<String> warnedUnknownArmourEnchants = new HashSet<>();
 
     // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly
     // checked below
@@ -229,6 +231,7 @@ public class DefenceUtils {
         int totalEpf = 0;
         for (ItemStack armourItem : armourContents) {
             if (armourItem != null && armourItem.getType() != Material.AIR) {
+                warnOnUnknownArmourEnchantments(armourItem);
                 for (EnchantmentType enchantmentType : EnchantmentType.values()) {
                     if (!enchantmentType.protectsAgainst(cause))
                         continue;
@@ -253,6 +256,32 @@ public class DefenceUtils {
         totalEpf = Math.min(20, totalEpf);
 
         return REDUCTION_PER_ARMOUR_POINT * totalEpf;
+    }
+
+    private static void warnOnUnknownArmourEnchantments(ItemStack armourItem) {
+        if (armourItem.getEnchantments().isEmpty()) {
+            return;
+        }
+        for (Enchantment enchantment : armourItem.getEnchantments().keySet()) {
+            if (enchantment == null || isModelledArmourEnchantment(enchantment)) {
+                continue;
+            }
+            final String name = enchantment.getName();
+            if (warnedUnknownArmourEnchants.add(name)) {
+                kernitus.plugin.OldCombatMechanics.utilities.Messenger.warn(
+                        "Armour enchantment '%s' is not modelled by OCM damage reduction; results may differ",
+                        name);
+            }
+        }
+    }
+
+    private static boolean isModelledArmourEnchantment(Enchantment enchantment) {
+        for (EnchantmentType enchantmentType : EnchantmentType.values()) {
+            if (enchantmentType.getEnchantment().equals(enchantment)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private enum EnchantmentType {

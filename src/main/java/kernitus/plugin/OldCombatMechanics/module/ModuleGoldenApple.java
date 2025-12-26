@@ -48,6 +48,7 @@ public class ModuleGoldenApple extends OCMModule {
     private static final XMaterial ENCHANTED_GOLDEN_APPLE = XMaterial.ENCHANTED_GOLDEN_APPLE;
     private List<PotionEffect> enchantedGoldenAppleEffects, goldenAppleEffects;
     private ShapedRecipe enchantedAppleRecipe;
+    private final Set<String> warnedUnknownEffectTypes = new HashSet<>();
 
     private Map<UUID, LastEaten> lastEaten;
     private Cooldown cooldown;
@@ -264,7 +265,12 @@ public class ModuleGoldenApple extends OCMModule {
             final PotionEffectType type = XPotion.matchXPotion(key)
                     .map(XPotion::get)
                     .orElse(null);
-            Objects.requireNonNull(type, String.format("Invalid potion effect type '%s'!", key));
+            if (type == null) {
+                if (warnedUnknownEffectTypes.add(key)) {
+                    Messenger.warn("[%s] Unknown potion effect '%s' in %s; skipping", getModuleName(), key, path);
+                }
+                continue;
+            }
 
             final PotionEffect fx = new PotionEffect(type, duration, amplifier);
             appleEffects.add(fx);

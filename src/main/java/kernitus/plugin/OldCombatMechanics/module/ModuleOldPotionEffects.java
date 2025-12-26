@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import com.cryptomorin.xseries.XPotion;
@@ -27,9 +28,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -37,7 +41,24 @@ import java.util.stream.Collectors;
  * Allows configurable potion effect durations.
  */
 public class ModuleOldPotionEffects extends OCMModule {
+    private static final Set<String> NON_EFFECT_POTION_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    "AWKWARD",
+                    "MUNDANE",
+                    "THICK",
+                    "WATER",
+                    "UNCRAFTABLE",
+                    "HARMING",
+                    "STRONG_HARMING",
+                    "HEALING",
+                    "STRONG_HEALING",
+                    "INSTANT_DAMAGE",
+                    "INSTANT_HEAL",
+                    "INSTANT_HEALTH"
+            )));
+
     private Map<PotionKey, PotionDurations> durations;
+    private final Set<String> warnedUnknownPotionTypes = new HashSet<>();
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -102,8 +123,25 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionMeta potionMeta = (PotionMeta) potionItem.getItemMeta();
         if (potionMeta == null) return;
 
+        PotionType potionType;
+        String potionTypeName;
+        try {
+            potionType = potionMeta.getBasePotionType();
+            if (potionType == null) return;
+            potionTypeName = potionType.name();
+        } catch (NoSuchMethodError e) {
+            potionType = potionMeta.getBasePotionData().getType();
+            potionTypeName = potionType.name();
+        }
+
         final PotionKey potionKey = PotionKey.fromPotionMeta(potionMeta).orElse(null);
-        if (potionKey == null) return;
+        if (potionKey == null) {
+            if (!NON_EFFECT_POTION_TYPES.contains(potionTypeName) && warnedUnknownPotionTypes.add(potionTypeName)) {
+                Messenger.warn("[%s] Unknown potion type '%s' encountered; old-potion-effects will not adjust it",
+                        getModuleName(), potionTypeName);
+            }
+            return;
+        }
 
         final Integer duration = getPotionDuration(potionKey, splash);
         if (duration == null) {
@@ -120,13 +158,6 @@ public class ModuleOldPotionEffects extends OCMModule {
         }
 
         List<PotionEffectType> potionEffects;
-        PotionType potionType;
-        try {
-            potionType = potionMeta.getBasePotionType();
-            if (potionType == null) return;
-        } catch (NoSuchMethodError e) {
-            potionType = potionMeta.getBasePotionData().getType();
-        }
         try {
             potionEffects = potionType.getPotionEffects().stream()
                     .map(PotionEffect::getType)
