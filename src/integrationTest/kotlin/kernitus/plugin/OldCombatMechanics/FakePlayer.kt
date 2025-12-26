@@ -340,6 +340,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun fireAsyncPlayerPreLoginEvent() {
         try {
             val ipAddress = InetAddress.getByName("127.0.0.1")
+            @Suppress("DEPRECATION") // Legacy constructor kept for older server compatibility in tests.
             val asyncPreLoginEvent = AsyncPlayerPreLoginEvent(name, ipAddress, uuid)
             Thread { Bukkit.getPluginManager().callEvent(asyncPreLoginEvent) }.start()
         } catch (e: UnknownHostException) {
@@ -366,6 +367,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
             val playersFieldName = reflectionRemapper.remapFieldName(playerListClass, "players")
             val playersField = playerListClass.getDeclaredField(playersFieldName)
             playersField.isAccessible = true
+            @Suppress("UNCHECKED_CAST") // Reflection into NMS collection; types vary by version.
             val players = playersField.get(playerList) as MutableList<Any>
             players.add(serverPlayer)
 
@@ -373,6 +375,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
             val playersByUUIDField = Reflector.getMapFieldWithTypes(
                 playerListClass, UUID::class.java, serverPlayer.javaClass
             )
+            @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
             val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
             playerByUUID[uuid] = serverPlayer
             return false
@@ -643,6 +646,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
                 UUID::class.java,
                 serverPlayer.javaClass
             )
+            @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
             val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as Map<UUID, Any>
             playerByUUID.containsKey(uuid)
         }.getOrElse {

@@ -107,6 +107,7 @@ class InGameTesterIntegrationTest(private val plugin: JavaPlugin) : StringSpec({
 
         // Wait before the next test if necessary
         //delay(50L)
+        @Suppress("DEPRECATION") // Deprecated API kept for older server compatibility in tests.
         attacker.health shouldBeExactly attacker.maxHealth
     }
 })

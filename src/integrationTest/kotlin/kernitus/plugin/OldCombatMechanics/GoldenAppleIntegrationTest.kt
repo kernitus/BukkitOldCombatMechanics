@@ -338,6 +338,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
                 player.performCommand("ocm mode old")
 
                 // When
+                @Suppress("DEPRECATION") // Legacy API used for older server compatibility in tests.
                 val inventoryView = player.openWorkbench(null, true)!!
                 val craftingInventory = inventoryView.topInventory as CraftingInventory
                 prepareCraftingGrid(craftingInventory)
@@ -358,6 +359,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
                 player.performCommand("ocm mode old")
 
                 // When
+                @Suppress("DEPRECATION") // Legacy API used for older server compatibility in tests.
                 val inventoryView = player.openWorkbench(null, true)!!
                 val craftingInventory = inventoryView.topInventory as CraftingInventory
                 prepareCraftingGrid(craftingInventory)
@@ -377,6 +379,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
                 player.performCommand("ocm mode new") // disable module for player
 
                 // When
+                @Suppress("DEPRECATION") // Legacy API used for older server compatibility in tests.
                 val inventoryView = player.openWorkbench(null, true)!!
                 val craftingInventory = inventoryView.topInventory as CraftingInventory
                 prepareCraftingGrid(craftingInventory)
@@ -397,6 +400,7 @@ class GoldenAppleIntegrationTest(private val plugin: JavaPlugin) : FunSpec({
                 player.performCommand("ocm mode new") // disable module for player
 
                 // When
+                @Suppress("DEPRECATION") // Legacy API used for older server compatibility in tests.
                 val inventoryView = player.openWorkbench(null, true)!!
                 val craftingInventory = inventoryView.topInventory as CraftingInventory
                 prepareCraftingGrid(craftingInventory)

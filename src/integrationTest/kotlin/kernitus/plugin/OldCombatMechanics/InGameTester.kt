@@ -361,13 +361,12 @@ class InGameTester(private val plugin: JavaPlugin) {
     private fun preparePlayer(weapon: ItemStack) {
         if (weapon.hasItemMeta()) {
             val meta = weapon.itemMeta
-            meta!!.addAttributeModifier(
-                Attribute.ATTACK_SPEED,
-                AttributeModifier(
-                    UUID.randomUUID(), "speed", 1000.0,
-                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND
-                )
+            @Suppress("DEPRECATION") // Deprecated constructor kept for older server compatibility in tests.
+            val speedModifier = AttributeModifier(
+                UUID.randomUUID(), "speed", 1000.0,
+                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND
             )
+            meta!!.addAttributeModifier(Attribute.ATTACK_SPEED, speedModifier)
             weapon.setItemMeta(meta)
         }
         attacker.inventory.setItemInMainHand(weapon)
