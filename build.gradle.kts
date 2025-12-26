@@ -355,6 +355,10 @@ for (version in integrationTestVersions) {
         runDirectory.set(runDir)
         minecraftVersion(version)
         jvmArgs("-Dcom.mojang.eula.agree=true")
+        if (needsLegacyVanillaJar(version)) {
+            // Skip the legacy Paper "outdated build" startup sleep.
+            jvmArgs("-DIReallyKnowWhatIAmDoingISwear=true")
+        }
         javaLauncher.set(javaToolchains.launcherFor {
             languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(version)))
         })

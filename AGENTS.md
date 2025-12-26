@@ -79,3 +79,10 @@ This file captures repo-specific context discovered while working on this branch
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
 - 1.9 integration tests are currently on hold per user request.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
+
+## TDAID reminders (this repo)
+- Plan → Red → Green → Refactor → Validate.
+- Red phase: only touch tests. Do not modify production code.
+- Green phase: only touch production code. Do not modify tests.
+- Refactor phase: cleanups only; keep behavior unchanged and tests green.
+- Validate phase: rerun tests and do a human sanity check before declaring done.
