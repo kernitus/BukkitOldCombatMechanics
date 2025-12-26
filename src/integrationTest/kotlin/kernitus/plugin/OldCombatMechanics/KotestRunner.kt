@@ -92,7 +92,10 @@ object KotestRunner {
                 TestEngineLauncher()
                     .withListener(listener)
                     .withProjectConfig(KotestProjectConfig)
-                    .withClasses(InGameTesterIntegrationTest::class)
+                    .withClasses(
+                        InGameTesterIntegrationTest::class,
+                        CopperToolsIntegrationTest::class
+                    )
                     .launch()
             } catch (e: Throwable) {
                 plugin.logger.severe("Failed to execute Kotest runner: ${e.message}")

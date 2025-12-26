@@ -51,19 +51,23 @@ public class ModuleOldToolDamage extends OCMModule {
 
         if (!isWeapon(weaponMaterial)) return;
 
-        // If damage was not what we expected, ignore it because it's probably a custom weapon or from another plugin
-        final double oldBaseDamage = event.getBaseDamage();
-        final double expectedBaseDamage = NewWeaponDamage.getDamage(weaponMaterial);
-        // We check difference as calculation inaccuracies can make it not match
-        if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
-            debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
-            return;
-        }
-
         final double newWeaponBaseDamage = WeaponDamages.getDamage(weaponMaterial);
         if (newWeaponBaseDamage <= 0) {
             debug("Unknown tool type: " + weaponMaterial, damager);
             return;
+        }
+
+        // If damage was not what we expected, ignore it because it's probably a custom weapon or from another plugin
+        final double oldBaseDamage = event.getBaseDamage();
+        final Float expectedBaseDamage = NewWeaponDamage.getDamageOrNull(weaponMaterial);
+        if (expectedBaseDamage != null) {
+            // We check difference as calculation inaccuracies can make it not match
+            if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
+                debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
+                return;
+            }
+        } else {
+            debug("No baseline damage for " + weaponMaterial + ", applying configured damage.", damager);
         }
 
         event.setBaseDamage(newWeaponBaseDamage);

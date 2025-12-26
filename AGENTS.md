@@ -79,6 +79,8 @@ This file captures repo-specific context discovered while working on this branch
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
 - 1.9 integration tests are currently on hold per user request.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
+- Use British English spelling and phraseology at all times.
+- DO NOT use American English spelling or phraseology under any circumstances.
 
 ## TDAID reminders (this repo)
 - Plan → Red → Green → Refactor → Validate.

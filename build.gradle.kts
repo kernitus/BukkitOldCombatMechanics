@@ -370,6 +370,10 @@ for (version in integrationTestVersions) {
             if (resultFile.exists()) {
                 resultFile.delete()
             }
+            val ocmConfigFile = runDir.resolve("plugins/OldCombatMechanics/config.yml")
+            if (ocmConfigFile.exists()) {
+                ocmConfigFile.delete()
+            }
         }
     }
 
