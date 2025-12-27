@@ -17,14 +17,24 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
+import com.cryptomorin.xseries.XAttribute
+import com.cryptomorin.xseries.XMaterial
 import com.cryptomorin.xseries.XPotion
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.attribute.Attribute
+import org.bukkit.attribute.AttributeModifier
 import org.bukkit.block.BlockFace
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockDispenseEvent
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemConsumeEvent
@@ -37,6 +47,8 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.potion.PotionType
 import org.bukkit.util.Vector
+import kotlinx.coroutines.delay
+import java.util.UUID
 import java.util.concurrent.Callable
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
@@ -94,6 +106,22 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             isStrong -> "STRONG_$baseName"
             isExtended -> "LONG_$baseName"
             else -> baseName
+        }
+    }
+
+    suspend fun waitForAttackReady(attacker: Player) {
+        val cooldownMethod = attacker.javaClass.methods.firstOrNull { method ->
+            method.name == "getAttackCooldown" && method.parameterTypes.isEmpty()
+        }
+        if (cooldownMethod == null) {
+            delay(700)
+            return
+        }
+
+        repeat(40) {
+            val value = (cooldownMethod.invoke(attacker) as? Float) ?: 1.0f
+            if (value >= 0.99f) return
+            delay(50)
         }
     }
 
@@ -418,6 +446,159 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             val applied = player.getPotionEffect(PotionEffectType.WEAKNESS)
             applied.shouldNotBe(null)
             applied!!.amplifier.shouldBeExactly(-1)
+        }
+    }
+
+    context("Weakness damage event diagnostic") {
+        test("vanilla damage event for weakness + low damage + no-damage window") {
+            lateinit var attacker: Player
+            lateinit var victim: LivingEntity
+            var attackerFake: FakePlayer? = null
+            val events = mutableListOf<EntityDamageByEntityEvent>()
+
+            val listener = object : Listener {
+                @EventHandler
+                fun onDamage(event: EntityDamageByEntityEvent) {
+                    if (event.entity.uniqueId == victim.uniqueId &&
+                        event.damager.uniqueId == attacker.uniqueId
+                    ) {
+                        events.add(event)
+                    }
+                }
+            }
+
+            try {
+                runSync {
+                    val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                    val attackerLocation = Location(world, 0.0, 100.0, 0.0).apply { yaw = 0f; pitch = 0f }
+                    val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                    attackerFake = FakePlayer(testPlugin)
+                    attackerFake!!.spawn(attackerLocation)
+                    attacker = checkNotNull(Bukkit.getPlayer(attackerFake!!.uuid))
+                    attacker.isOp = true
+                    attacker.inventory.clear()
+                    attacker.activePotionEffects.forEach { attacker.removePotionEffect(it.type) }
+                    attacker.gameMode = GameMode.SURVIVAL
+
+                    val attackerData = getPlayerData(attacker.uniqueId)
+                    attackerData.setModesetForWorld(attacker.world.uid, "old")
+                    setPlayerData(attacker.uniqueId, attackerData)
+
+                    victim = world.spawn(victimLocation, org.bukkit.entity.Cow::class.java)
+                    victim.maximumNoDamageTicks = 20
+                    victim.noDamageTicks = 0
+                    victim.isInvulnerable = false
+                    victim.health = victim.maxHealth
+
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                }
+                delay(200)
+
+                fun attackDamage(): Double {
+                    val attribute = XAttribute.ATTACK_DAMAGE.get()
+                        ?: error("Attack damage attribute not available")
+                    return attacker.getAttribute(attribute)?.value ?: 0.0
+                }
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION") // Deprecated constructor kept for older server compatibility in tests.
+                    val speedModifier = AttributeModifier(
+                        UUID.randomUUID(),
+                        "speed",
+                        1000.0,
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlot.HAND
+                    )
+                    meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackAttribute = attacker.getAttribute(Attribute.ATTACK_DAMAGE) ?: return
+                    val modifiers = item.type.getDefaultAttributeModifiers(EquipmentSlot.HAND)[Attribute.ATTACK_DAMAGE]
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun record(label: String, expectedDamage: Double, action: () -> Unit): Boolean {
+                    val before = events.size
+                    runSync {
+                        Bukkit.getScheduler().runTask(testPlugin, Runnable { action() })
+                    }
+                    delay(150)
+                    val fired = events.size > before
+                    testPlugin.logger.info(
+                        "Weakness diagnostic [$label] fired=$fired " +
+                            "noDamageTicks=${victim.noDamageTicks} lastDamage=${victim.lastDamage} " +
+                            "eventType=${events.lastOrNull()?.javaClass?.simpleName} " +
+                            "cause=${events.lastOrNull()?.cause} " +
+                            "eventDamage=${events.lastOrNull()?.damage} " +
+                            "finalDamage=${events.lastOrNull()?.finalDamage} " +
+                            "damagerType=${events.lastOrNull()?.damager?.javaClass?.simpleName} " +
+                            "damagerId=${events.lastOrNull()?.damager?.uniqueId} " +
+                            "inputDamage=$expectedDamage"
+                    )
+                    return fired
+                }
+
+                runSync {
+                    val weapon = ItemStack(Material.DIAMOND_SWORD)
+                    prepareWeapon(weapon)
+                    attacker.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    attacker.updateInventory()
+                    attacker.isInvulnerable = false
+                    attacker.health = attacker.maxHealth
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                }
+                delay(100)
+                val baselineDamage = attackDamage()
+                waitForAttackReady(attacker)
+                record("baseline", baselineDamage) {
+                    attacker.attack(victim)
+                }
+
+                runSync {
+                    attacker.activePotionEffects.forEach { attacker.removePotionEffect(it.type) }
+                    attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 200, 0))
+                    val lowItem = ItemStack(Material.STONE_SWORD)
+                    prepareWeapon(lowItem)
+                    attacker.inventory.setItemInMainHand(lowItem)
+                    applyAttackDamageModifiers(lowItem)
+                    attacker.updateInventory()
+                    attacker.isInvulnerable = false
+                    attacker.health = attacker.maxHealth
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                }
+                delay(100)
+                val weakDamage = attackDamage()
+                waitForAttackReady(attacker)
+                record("weakness-no-invuln", weakDamage) {
+                    attacker.attack(victim)
+                }
+
+                runSync {
+                    victim.noDamageTicks = victim.maximumNoDamageTicks
+                    victim.lastDamage = 20.0
+                }
+                delay(100)
+                waitForAttackReady(attacker)
+                record("weakness-invuln", weakDamage) {
+                    attacker.attack(victim)
+                }
+            } finally {
+                HandlerList.unregisterAll(listener)
+                runSync {
+                    attackerFake?.removePlayer()
+                    victim.remove()
+                }
+            }
         }
     }
 
