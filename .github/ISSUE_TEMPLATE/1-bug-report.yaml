@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a bug in the plugin
-title: "[Bug]: "
-labels: ["investigate"]
+title: ""
+labels: ["bug", "investigate"]
 body:
   - type: markdown
     attributes:
