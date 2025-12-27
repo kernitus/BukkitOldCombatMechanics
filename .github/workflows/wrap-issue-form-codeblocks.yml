@@ -20,6 +20,12 @@ jobs:
             const issue = context.payload.issue;
             if (!issue || !issue.body) return;
 
+            // On edits, bail unless the body actually changed
+            if (context.payload.action === "edited") {
+              const changed = context.payload.changes && context.payload.changes.body;
+              if (!changed) return;
+            }
+
             function escapeRegExp(s) {
               return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             }
