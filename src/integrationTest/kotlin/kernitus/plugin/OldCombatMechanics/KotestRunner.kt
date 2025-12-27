@@ -6,16 +6,16 @@
 
 package kernitus.plugin.OldCombatMechanics
 
+import io.kotest.common.ExperimentalKotest
 import io.kotest.common.KotestInternal
 import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.extensions.TestCaseExtension
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.test.TestCase
+import io.kotest.core.test.TestCaseOrder
+import io.kotest.core.test.TestResult
 import io.kotest.engine.TestEngineLauncher
-import io.kotest.engine.concurrency.SpecExecutionMode
-import io.kotest.engine.concurrency.TestExecutionMode
 import io.kotest.engine.listener.AbstractTestEngineListener
-import io.kotest.engine.test.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
@@ -23,10 +23,12 @@ import org.bukkit.plugin.java.JavaPlugin
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
+@OptIn(ExperimentalKotest::class)
 object KotestProjectConfig : AbstractProjectConfig() {
     override val isolationMode = IsolationMode.SingleInstance
-    override val specExecutionMode = SpecExecutionMode.Sequential
-    override val testExecutionMode = TestExecutionMode.Sequential
+    override val concurrentSpecs = 1
+    override val concurrentTests = 1
+    override val testCaseOrder = TestCaseOrder.Sequential
 }
 
 class BukkitMainThreadDispatcher(private val plugin: JavaPlugin) : CoroutineDispatcher() {
@@ -56,7 +58,7 @@ object KotestRunner {
 
                 val listener = object : AbstractTestEngineListener() {
                     override suspend fun testFinished(testCase: TestCase, result: TestResult) {
-                        val testName = testCase.name.name
+                        val testName = testCase.name.testName
                         when {
                             result.isSuccess -> plugin.logger.info("Test '$testName' passed.")
                             result.isIgnored -> plugin.logger.info("Test '$testName' was ignored.")
@@ -71,7 +73,7 @@ object KotestRunner {
                     }
 
                     override suspend fun testStarted(testCase: TestCase) {
-                        plugin.logger.info("Starting test '${testCase.name.name}'")
+                        plugin.logger.info("Starting test '${testCase.name.testName}'")
                     }
 
                     override suspend fun engineFinished(t: List<Throwable>) {
@@ -94,7 +96,12 @@ object KotestRunner {
                     .withProjectConfig(KotestProjectConfig)
                     .withClasses(
                         InGameTesterIntegrationTest::class,
-                        CopperToolsIntegrationTest::class
+                        CopperToolsIntegrationTest::class,
+                        OldPotionEffectsIntegrationTest::class,
+                        GoldenAppleIntegrationTest::class,
+                        OldArmourDurabilityIntegrationTest::class,
+                        PlayerKnockbackIntegrationTest::class,
+                        SwordSweepIntegrationTest::class
                     )
                     .launch()
             } catch (e: Throwable) {

@@ -1,0 +1,63 @@
+name: Wrap issue form code blocks
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  wrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            // Avoid loops: when this workflow updates the issue, it triggers "edited" again.
+            if (context.actor === "github-actions[bot]") return;
+
+            const issue = context.payload.issue;
+            if (!issue || !issue.body) return;
+
+            // On edits, bail unless the body actually changed
+            if (context.payload.action === "edited") {
+              const changed = context.payload.changes && context.payload.changes.body;
+              if (!changed) return;
+            }
+
+            function escapeRegExp(s) {
+              return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            }
+
+            function wrapFirstCodeBlockAfterHeading(body, headingText, summaryText) {
+              const re = new RegExp(
+                `(^###\\s+${escapeRegExp(headingText)}\\s*\\n+)(\`\`\`[\\s\\S]*?\\n\`\`\`)(?=\\n|$)`,
+                "m"
+              );
+
+              return body.replace(re, (_m, heading, codeblock) => {
+                return (
+                  `${heading}` +
+                  `<details>\n` +
+                  `<summary>${summaryText}</summary>\n\n` +
+                  `${codeblock}\n\n` +
+                  `</details>`
+                );
+              });
+            }
+
+            let body = issue.body;
+
+            body = wrapFirstCodeBlockAfterHeading(body, "Server Log File", "Server log");
+            body = wrapFirstCodeBlockAfterHeading(body, "OldCombatMechanics config.yml", "config.yml");
+
+            if (body === issue.body) return;
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body
+            });
+
