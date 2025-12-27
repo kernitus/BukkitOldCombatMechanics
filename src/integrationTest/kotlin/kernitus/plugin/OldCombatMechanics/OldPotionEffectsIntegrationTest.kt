@@ -12,7 +12,9 @@ import io.kotest.core.test.TestScope
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
@@ -230,11 +232,7 @@ class OldPotionEffectsIntegrationTest : FunSpec({
     }
 
     fun expectedAmplifier(baseName: String, isStrong: Boolean): Int {
-        return when {
-            baseName == "WEAKNESS" -> -1
-            isStrong -> 1
-            else -> 0
-        }
+        return if (isStrong) 1 else 0
     }
 
     fun assertAdjusted(item: ItemStack, baseName: String, isStrong: Boolean, potion: XPotion, expectedTicks: Int) {
@@ -248,7 +246,11 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             val effect = meta.customEffects.firstOrNull { it.type == effectType }
             effect.shouldNotBe(null)
             effect!!.duration.shouldBeExactly(expectedTicks)
-            effect.amplifier.shouldBeExactly(expectedAmp)
+            if (baseName == "WEAKNESS") {
+                effect.amplifier.shouldBeLessThanOrEqual(0)
+            } else {
+                effect.amplifier.shouldBeExactly(expectedAmp)
+            }
         }
 
         val baseSnapshot = snapshotBase(meta)
@@ -422,30 +424,53 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         }
     }
 
-    context("Weakness amplifier") {
-        test("weakness stays at -1 on item and player") {
+    context("Weakness neutralisation") {
+        test("weakness potion does not reduce attack damage") {
             val weaknessCase = loadPotionCases().firstOrNull { it.baseName == "WEAKNESS" }
                 ?: return@test
             val item = createPotionItem(Material.POTION, weaknessCase)
             val adjusted = callConsume(item)
-
             val meta = adjusted.itemMeta as PotionMeta
             val effect = meta.customEffects.firstOrNull { it.type == PotionEffectType.WEAKNESS }
                 ?: error("Weakness effect missing from potion meta")
-            effect.amplifier.shouldBeExactly(-1)
 
-            player.addPotionEffect(effect)
-            val applied = player.getPotionEffect(PotionEffectType.WEAKNESS)
-            applied.shouldNotBe(null)
-            applied!!.amplifier.shouldBeExactly(-1)
+            val attackAttribute = XAttribute.ATTACK_DAMAGE.get()
+                ?: error("Attack damage attribute not available")
+            var baseDamage = 0.0
+            runSync {
+                player.inventory.setItemInMainHand(ItemStack(Material.AIR))
+                player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                baseDamage = player.getAttribute(attackAttribute)?.value
+                    ?: error("Attack damage attribute missing on player")
+                player.addPotionEffect(effect, true)
+            }
+            delay(50)
+            var afterDamage = 0.0
+            runSync {
+                afterDamage = player.getAttribute(attackAttribute)?.value
+                    ?: error("Attack damage attribute missing on player")
+            }
+            afterDamage.shouldBe(baseDamage.plusOrMinus(0.0001))
         }
 
-        test("direct weakness effect stays at -1 on player") {
-            val direct = PotionEffect(PotionEffectType.WEAKNESS, 200, -1)
-            player.addPotionEffect(direct, true)
-            val applied = player.getPotionEffect(PotionEffectType.WEAKNESS)
-            applied.shouldNotBe(null)
-            applied!!.amplifier.shouldBeExactly(-1)
+        test("direct weakness effect does not reduce attack damage") {
+            val attackAttribute = XAttribute.ATTACK_DAMAGE.get()
+                ?: error("Attack damage attribute not available")
+            var baseDamage = 0.0
+            runSync {
+                player.inventory.setItemInMainHand(ItemStack(Material.AIR))
+                player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                baseDamage = player.getAttribute(attackAttribute)?.value
+                    ?: error("Attack damage attribute missing on player")
+                player.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 200, -1), true)
+            }
+            delay(50)
+            var afterDamage = 0.0
+            runSync {
+                afterDamage = player.getAttribute(attackAttribute)?.value
+                    ?: error("Attack damage attribute missing on player")
+            }
+            afterDamage.shouldBe(baseDamage.plusOrMinus(0.0001))
         }
     }
 
@@ -744,6 +769,33 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 event.isStrengthModifierAddend.shouldBeTrue()
                 event.weaknessModifier.shouldBe(weaknessModifier)
                 event.isWeaknessModifierMultiplier.shouldBeTrue()
+                event.weaknessLevel.shouldBe(1)
+            }
+        }
+
+        test("weakness II is capped to level one for old modifier logic") {
+            withConfig {
+                val weaknessModifier = -0.5
+                ocm.config.set("old-potion-effects.weakness.modifier", weaknessModifier)
+                ocm.config.set("old-potion-effects.weakness.multiplier", false)
+                module.reload()
+
+                val weakness = XPotion.WEAKNESS.get() ?: error("Weakness potion missing")
+                runSync {
+                    player.addPotionEffect(PotionEffect(weakness, 200, 1), true)
+                }
+
+                val event = OCMEntityDamageByEntityEvent(
+                    player,
+                    player,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    4.0
+                )
+                Bukkit.getPluginManager().callEvent(event)
+
+                event.hasWeakness().shouldBeTrue()
+                event.weaknessModifier.shouldBe(weaknessModifier)
+                event.isWeaknessModifierMultiplier.shouldBeFalse()
                 event.weaknessLevel.shouldBe(1)
             }
         }

@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 import com.cryptomorin.xseries.XEnchantment;
 import com.cryptomorin.xseries.XPotion;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.Cancellable;
@@ -177,7 +178,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         debug(livingDamager, "Weakness Modifier: " + weaknessModifier);
 
-        baseDamage = tempDamage + weaknessModifier - strengthModifier;
+        final boolean weaknessCompensated = WeaknessCompensation.hasModifier(livingDamager);
+        final double weaknessForBase = weaknessCompensated ? 0 : weaknessModifier;
+        if (weaknessCompensated) {
+            debug(livingDamager, "Weakness compensated; skipping base weakness modifier");
+        }
+
+        baseDamage = tempDamage + weaknessForBase - strengthModifier;
         debug(livingDamager, "Base tool damage: " + baseDamage);
     }
 

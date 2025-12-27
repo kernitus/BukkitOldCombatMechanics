@@ -12,13 +12,18 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEnti
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations;
 import com.cryptomorin.xseries.XPotion;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionKey;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -59,6 +64,7 @@ public class ModuleOldPotionEffects extends OCMModule {
 
     private Map<PotionKey, PotionDurations> durations;
     private final Set<String> warnedUnknownPotionTypes = new HashSet<>();
+    private boolean weaknessAmplifierClamped;
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -69,6 +75,8 @@ public class ModuleOldPotionEffects extends OCMModule {
     @Override
     public void reload() {
         durations = ConfigUtils.loadPotionDurationsList(module());
+        weaknessAmplifierClamped = detectWeaknessAmplifierClamp();
+        syncWeaknessCompensation();
     }
 
     /**
@@ -112,6 +120,42 @@ public class ModuleOldPotionEffects extends OCMModule {
         final Material material = item.getType();
         if (material == Material.SPLASH_POTION || material == Material.LINGERING_POTION)
             adjustPotion(item, true);
+    }
+
+    @Override
+    public void onModesetChange(Player player) {
+        if (!weaknessAmplifierClamped) {
+            WeaknessCompensation.remove(player);
+            return;
+        }
+        applyWeaknessCompensation(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityPotionEffect(EntityPotionEffectEvent event) {
+        if (!weaknessAmplifierClamped) return;
+
+        final Entity entity = event.getEntity();
+        if (!(entity instanceof LivingEntity)) return;
+        final LivingEntity livingEntity = (LivingEntity) entity;
+
+        if (!isEnabled(livingEntity)) {
+            WeaknessCompensation.remove(livingEntity);
+            return;
+        }
+
+        final PotionEffect newEffect = event.getNewEffect();
+        final PotionEffect oldEffect = event.getOldEffect();
+        final PotionEffectType type = newEffect != null ? newEffect.getType() :
+                (oldEffect != null ? oldEffect.getType() : null);
+        final PotionEffectType weakness = XPotion.WEAKNESS.get();
+        if (type == null || weakness == null || !type.equals(weakness)) return;
+
+        if (newEffect != null && newEffect.getAmplifier() == 0) {
+            WeaknessCompensation.apply(livingEntity);
+        } else {
+            WeaknessCompensation.remove(livingEntity);
+        }
     }
 
     /**
@@ -213,5 +257,62 @@ public class ModuleOldPotionEffects extends OCMModule {
         debug("Potion type: " + potionKey.getDebugName() + " Duration: " + duration + " ticks");
 
         return duration;
+    }
+
+    private boolean detectWeaknessAmplifierClamp() {
+        try {
+            final PotionEffectType weakness = XPotion.WEAKNESS.get();
+            if (weakness == null) return false;
+            final ItemStack item = new ItemStack(Material.POTION);
+            final PotionMeta meta = (PotionMeta) item.getItemMeta();
+            if (meta == null) return false;
+            meta.addCustomEffect(new PotionEffect(weakness, 20, -1), true);
+            item.setItemMeta(meta);
+            final PotionMeta updated = (PotionMeta) item.getItemMeta();
+            if (updated == null) return false;
+            final PotionEffect effect = updated.getCustomEffects().stream()
+                    .filter(potionEffect -> potionEffect.getType().equals(weakness))
+                    .findFirst()
+                    .orElse(null);
+            return effect != null && effect.getAmplifier() != -1;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void syncWeaknessCompensation() {
+        if (!weaknessAmplifierClamped) {
+            removeWeaknessCompensation();
+            return;
+        }
+
+        for (World world : plugin.getServer().getWorlds()) {
+            for (LivingEntity entity : world.getLivingEntities()) {
+                applyWeaknessCompensation(entity);
+            }
+        }
+    }
+
+    private void removeWeaknessCompensation() {
+        for (World world : plugin.getServer().getWorlds()) {
+            for (LivingEntity entity : world.getLivingEntities()) {
+                WeaknessCompensation.remove(entity);
+            }
+        }
+    }
+
+    private void applyWeaknessCompensation(LivingEntity entity) {
+        if (!isEnabled(entity)) {
+            WeaknessCompensation.remove(entity);
+            return;
+        }
+        final PotionEffectType weakness = XPotion.WEAKNESS.get();
+        if (weakness == null) return;
+        final PotionEffect effect = PotionEffects.getOrNull(entity, weakness);
+        if (effect != null && effect.getAmplifier() == 0) {
+            WeaknessCompensation.apply(entity);
+        } else {
+            WeaknessCompensation.remove(entity);
+        }
     }
 }
