@@ -9,8 +9,7 @@ package kernitus.plugin.oldcombatmechanics
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
-import io.kotest.engine.concurrency.TestExecutionMode
-import io.kotest.matchers.comparables.shouldBeBetween
+import io.kotest.matchers.longs.shouldBeBetween
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.FakePlayer
@@ -77,8 +76,6 @@ class GoldenAppleIntegrationTest : FunSpec({
     }
 
     extensions(MainThreadDispatcherExtension(testPlugin))
-    testExecutionMode = TestExecutionMode.Sequential
-
     beforeSpec {
         Bukkit.getScheduler().runTask(testPlugin, Runnable {
             testPlugin.logger.info("Running before all GoldenAppleIntegrationTest")

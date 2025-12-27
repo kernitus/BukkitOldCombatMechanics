@@ -65,27 +65,22 @@ class InGameTester(private val plugin: JavaPlugin) {
         val defenderLocation = location.add(0.0, 0.0, 2.0)
         fakeDefender.spawn(defenderLocation)
 
-        plugin.logger.info("AAAAA")
         attacker = checkNotNull(Bukkit.getPlayer(fakeAttacker.uuid))
         defender = checkNotNull(Bukkit.getPlayer(fakeDefender.uuid))
-        plugin.logger.info("BBBB")
 
         // Turn defender to face attacker
         defenderLocation.yaw = 180f
         defenderLocation.pitch = 0f
         defender.teleport(defenderLocation)
-        plugin.logger.info("CCCC")
 
         // modeset of attacker takes precedence
         var playerData = getPlayerData(attacker.uniqueId)
         playerData.setModesetForWorld(attacker.world.uid, "old")
         setPlayerData(attacker.uniqueId, playerData)
-        plugin.logger.info("DDD")
 
         playerData = getPlayerData(defender.uniqueId)
         playerData.setModesetForWorld(defender.world.uid, "new")
         setPlayerData(defender.uniqueId, playerData)
-        plugin.logger.info("EEE")
 
         beforeAll()
         tally = Tally()

@@ -23,11 +23,8 @@ class OCMTestMain : JavaPlugin() {
         val javaVersion = detectJavaVersion()
         logger.info("Detected Java $javaVersion for integration tests")
 
-        if (javaVersion >= 11) {
-            runKotest()
-        } else {
-            LegacyTestRunner.run(this)
-        }
+        System.setProperty("kotest.framework.classpath.scanning.autoscan.disable", "true")
+        runKotest()
     }
 
     private fun runKotest() {

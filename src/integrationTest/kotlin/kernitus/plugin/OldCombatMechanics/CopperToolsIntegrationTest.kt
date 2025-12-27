@@ -9,7 +9,6 @@ package kernitus.plugin.OldCombatMechanics
 import com.cryptomorin.xseries.XMaterial
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.engine.concurrency.TestExecutionMode
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import org.bukkit.Material
 import org.bukkit.plugin.java.JavaPlugin
@@ -18,8 +17,6 @@ import org.bukkit.plugin.java.JavaPlugin
 class CopperToolsIntegrationTest : StringSpec({
     val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
     extension(MainThreadDispatcherExtension(plugin))
-    testExecutionMode = TestExecutionMode.Sequential
-
     val copperMaterials = listOf(
         XMaterial.COPPER_SWORD,
         XMaterial.COPPER_AXE,

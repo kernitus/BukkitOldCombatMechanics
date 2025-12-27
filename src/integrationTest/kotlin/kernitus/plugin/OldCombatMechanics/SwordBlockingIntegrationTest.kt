@@ -8,7 +8,6 @@ package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.engine.concurrency.TestExecutionMode
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -26,8 +25,6 @@ import io.kotest.matchers.shouldBe
 class SwordBlockingIntegrationTest : StringSpec({
     val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
     extension(MainThreadDispatcherExtension(plugin))
-    testExecutionMode = TestExecutionMode.Sequential
-
     lateinit var player: Player
     lateinit var fakePlayer: FakePlayer
 
