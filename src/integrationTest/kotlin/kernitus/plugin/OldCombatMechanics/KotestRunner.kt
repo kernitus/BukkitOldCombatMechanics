@@ -96,7 +96,12 @@ object KotestRunner {
                     .withProjectConfig(KotestProjectConfig)
                     .withClasses(
                         InGameTesterIntegrationTest::class,
-                        CopperToolsIntegrationTest::class
+                        CopperToolsIntegrationTest::class,
+                        OldPotionEffectsIntegrationTest::class,
+                        GoldenAppleIntegrationTest::class,
+                        OldArmourDurabilityIntegrationTest::class,
+                        PlayerKnockbackIntegrationTest::class,
+                        SwordSweepIntegrationTest::class
                     )
                     .launch()
             } catch (e: Throwable) {
