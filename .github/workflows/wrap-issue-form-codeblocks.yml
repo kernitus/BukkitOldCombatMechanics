@@ -25,14 +25,8 @@ jobs:
             }
 
             function wrapFirstCodeBlockAfterHeading(body, headingText, summaryText) {
-              // Matches:
-              // ### Heading
-              //
-              // ```lang
-              // ...
-              // ```
               const re = new RegExp(
-                `(^###\\s+${escapeRegExp(headingText)}\\s*\\n+)(```[\\s\\S]*?\\n```)(?=\\n|$)`,
+                `(^###\\s+${escapeRegExp(headingText)}\\s*\\n+)(\`\`\`[\\s\\S]*?\\n\`\`\`)(?=\\n|$)`,
                 "m"
               );
 
