@@ -17,9 +17,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionDurations
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionTypeCompat
+import com.cryptomorin.xseries.XPotion
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -62,12 +60,18 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         "STRONG_HARMING",
         "HEALING",
         "STRONG_HEALING",
+        "INSTANT_DAMAGE",
+        "INSTANT_HEAL",
+        "INSTANT_HEALTH",
         "UNCRAFTABLE"
     )
 
     data class PotionCase(
         val key: String,
-        val typeCompat: PotionTypeCompat,
+        val baseName: String,
+        val isStrong: Boolean,
+        val isExtended: Boolean,
+        val potion: XPotion,
         val drinkableTicks: Int,
         val splashTicks: Int
     )
@@ -78,12 +82,55 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         val isExtended: Boolean
     )
 
-    fun potionSupports(typeCompat: PotionTypeCompat): Boolean {
-        val potionType = typeCompat.type ?: return false
-        return runCatching {
-            PotionData(potionType, typeCompat.isLong, typeCompat.isStrong)
-            true
-        }.getOrElse { false }
+    data class ParsedPotionKey(
+        val baseName: String,
+        val isStrong: Boolean,
+        val isExtended: Boolean,
+        val debugName: String
+    )
+
+    fun debugName(baseName: String, isStrong: Boolean, isExtended: Boolean): String {
+        return when {
+            isStrong -> "STRONG_$baseName"
+            isExtended -> "LONG_$baseName"
+            else -> baseName
+        }
+    }
+
+    fun resolveBasePotionType(baseName: String, potion: XPotion): PotionType? {
+        return runCatching { PotionType.valueOf(baseName) }.getOrNull()
+            ?: potion.potionType
+    }
+
+    fun parsePotionKey(key: String): ParsedPotionKey {
+        var name = key.uppercase()
+        var isStrong = false
+        var isExtended = false
+        if (name.startsWith("STRONG_")) {
+            isStrong = true
+            name = name.removePrefix("STRONG_")
+        } else if (name.startsWith("LONG_")) {
+            isExtended = true
+            name = name.removePrefix("LONG_")
+        }
+        val debugName = debugName(name, isStrong, isExtended)
+        return ParsedPotionKey(name, isStrong, isExtended, debugName)
+    }
+
+    val hasBasePotionType = runCatching { PotionMeta::class.java.getMethod("getBasePotionType") }.isSuccess
+
+    fun potionSupports(baseName: String, isStrong: Boolean, isExtended: Boolean, potion: XPotion): Boolean {
+        val potionType = resolveBasePotionType(baseName, potion) ?: return false
+        return if (hasBasePotionType) {
+            val resolvedName = when {
+                isStrong -> "STRONG_${potionType.name}"
+                isExtended -> "LONG_${potionType.name}"
+                else -> potionType.name
+            }
+            runCatching { PotionType.valueOf(resolvedName) }.isSuccess
+        } else {
+            runCatching { PotionData(potionType, isExtended, isStrong) }.isSuccess
+        }
     }
 
     fun loadPotionCases(): List<PotionCase> {
@@ -94,12 +141,16 @@ class OldPotionEffectsIntegrationTest : FunSpec({
 
         return drinkable.getKeys(false).mapNotNull { key ->
             if (!splash.isInt(key)) return@mapNotNull null
-            val typeCompat = runCatching { PotionTypeCompat(key.uppercase()) }.getOrNull() ?: return@mapNotNull null
-            if (excludedPotionTypes.contains(typeCompat.newName)) return@mapNotNull null
-            if (!potionSupports(typeCompat)) return@mapNotNull null
+            val parsed = parsePotionKey(key)
+            val potion = XPotion.of(parsed.baseName).orElse(null) ?: return@mapNotNull null
+            if (excludedPotionTypes.contains(parsed.debugName)) return@mapNotNull null
+            if (!potionSupports(parsed.baseName, parsed.isStrong, parsed.isExtended, potion)) return@mapNotNull null
             PotionCase(
                 key = key,
-                typeCompat = typeCompat,
+                baseName = parsed.baseName,
+                isStrong = parsed.isStrong,
+                isExtended = parsed.isExtended,
+                potion = potion,
                 drinkableTicks = drinkable.getInt(key) * 20,
                 splashTicks = splash.getInt(key) * 20
             )
@@ -109,14 +160,20 @@ class OldPotionEffectsIntegrationTest : FunSpec({
     fun createPotionItem(material: Material, potionCase: PotionCase): ItemStack {
         val item = ItemStack(material)
         val meta = item.itemMeta as PotionMeta
-        val potionType = potionCase.typeCompat.type ?: return item
-        try {
+        val baseType = resolveBasePotionType(potionCase.baseName, potionCase.potion) ?: return item
+        if (hasBasePotionType) {
+            val resolvedName = when {
+                potionCase.isStrong -> "STRONG_${baseType.name}"
+                potionCase.isExtended -> "LONG_${baseType.name}"
+                else -> baseType.name
+            }
+            val potionType = runCatching { PotionType.valueOf(resolvedName) }.getOrElse { baseType }
             meta.basePotionType = potionType
-        } catch (e: NoSuchMethodError) {
+        } else {
             meta.basePotionData = PotionData(
-                potionType,
-                potionCase.typeCompat.isLong,
-                potionCase.typeCompat.isStrong
+                baseType,
+                potionCase.isExtended,
+                potionCase.isStrong
             )
         }
         item.itemMeta = meta
@@ -144,19 +201,19 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         }
     }
 
-    fun expectedAmplifier(typeCompat: PotionTypeCompat): Int {
+    fun expectedAmplifier(baseName: String, isStrong: Boolean): Int {
         return when {
-            typeCompat.newName == "WEAKNESS" -> -1
-            typeCompat.isStrong -> 1
+            baseName == "WEAKNESS" -> -1
+            isStrong -> 1
             else -> 0
         }
     }
 
-    fun assertAdjusted(item: ItemStack, typeCompat: PotionTypeCompat, expectedTicks: Int) {
+    fun assertAdjusted(item: ItemStack, baseName: String, isStrong: Boolean, potion: XPotion, expectedTicks: Int) {
         val meta = item.itemMeta as PotionMeta
-        val potionType = typeCompat.type ?: error("Potion type missing for ${typeCompat.newName}")
+        val potionType = resolveBasePotionType(baseName, potion) ?: error("Potion type missing for $baseName")
         val expectedTypes = expectedEffectTypes(potionType)
-        val expectedAmp = expectedAmplifier(typeCompat)
+        val expectedAmp = expectedAmplifier(baseName, isStrong)
 
         meta.customEffects.shouldHaveSize(expectedTypes.size)
         expectedTypes.forEach { effectType ->
@@ -181,18 +238,6 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         newBase.isExtended.shouldBe(originalBase.isExtended)
     }
 
-    fun currentDurations(): Map<PotionTypeCompat, PotionDurations> {
-        val field = ModuleOldPotionEffects::class.java.getDeclaredField("durations")
-        field.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        return field.get(module) as? Map<PotionTypeCompat, PotionDurations> ?: emptyMap()
-    }
-
-    fun configuredDuration(typeCompat: PotionTypeCompat, splash: Boolean): Int? {
-        val durations = currentDurations()
-        val potionDurations = durations[typeCompat] ?: return null
-        return if (splash) potionDurations.splash() else potionDurations.drinkable()
-    }
 
     fun callConsume(item: ItemStack): ItemStack {
         val ctor = PlayerItemConsumeEvent::class.java.constructors.firstOrNull { constructor ->
@@ -242,21 +287,20 @@ class OldPotionEffectsIntegrationTest : FunSpec({
 
     fun assertAdjustedOrUnchanged(
         adjusted: ItemStack,
-        baseType: PotionTypeCompat,
+        potionCase: PotionCase,
         originalBase: PotionBaseSnapshot,
         splash: Boolean
     ) {
-        val expectedTicks = configuredDuration(baseType, splash)
-        if (expectedTicks == null || excludedPotionTypes.contains(baseType.newName)) {
+        val expectedTicks = if (splash) potionCase.splashTicks else potionCase.drinkableTicks
+        if (excludedPotionTypes.contains(debugName(potionCase.baseName, potionCase.isStrong, potionCase.isExtended))) {
             assertUnchanged(adjusted, originalBase)
         } else {
-            assertAdjusted(adjusted, baseType, expectedTicks)
+            assertAdjusted(adjusted, potionCase.baseName, potionCase.isStrong, potionCase.potion, expectedTicks)
         }
     }
 
     fun findSamplePotionCase(): PotionCase {
-        val durations = currentDurations()
-        return loadPotionCases().firstOrNull { durations.containsKey(it.typeCompat) }
+        return loadPotionCases().firstOrNull()
             ?: error("No configured potions available for this server version.")
     }
 
@@ -343,17 +387,16 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             cases.forEach { potionCase ->
                 val item = createPotionItem(Material.POTION, potionCase)
                 val meta = item.itemMeta as PotionMeta
-                val baseType = PotionTypeCompat.fromPotionMeta(meta)
                 val originalBase = snapshotBase(meta)
                 val adjusted = callConsume(item)
-                assertAdjustedOrUnchanged(adjusted, baseType, originalBase, splash = false)
+                assertAdjustedOrUnchanged(adjusted, potionCase, originalBase, splash = false)
             }
         }
     }
 
     context("Weakness amplifier") {
         test("weakness stays at -1 on item and player") {
-            val weaknessCase = loadPotionCases().firstOrNull { it.typeCompat.newName == "WEAKNESS" }
+            val weaknessCase = loadPotionCases().firstOrNull { it.baseName == "WEAKNESS" }
                 ?: return@test
             val item = createPotionItem(Material.POTION, weaknessCase)
             val adjusted = callConsume(item)
@@ -368,6 +411,14 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             applied.shouldNotBe(null)
             applied!!.amplifier.shouldBeExactly(-1)
         }
+
+        test("direct weakness effect stays at -1 on player") {
+            val direct = PotionEffect(PotionEffectType.WEAKNESS, 200, -1)
+            player.addPotionEffect(direct, true)
+            val applied = player.getPotionEffect(PotionEffectType.WEAKNESS)
+            applied.shouldNotBe(null)
+            applied!!.amplifier.shouldBeExactly(-1)
+        }
     }
 
     context("Splash potions") {
@@ -376,10 +427,9 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             cases.forEach { potionCase ->
                 val item = createPotionItem(Material.SPLASH_POTION, potionCase)
                 val meta = item.itemMeta as PotionMeta
-                val baseType = PotionTypeCompat.fromPotionMeta(meta)
                 val originalBase = snapshotBase(meta)
                 val adjusted = callThrow(item)
-                assertAdjustedOrUnchanged(adjusted, baseType, originalBase, splash = true)
+                assertAdjustedOrUnchanged(adjusted, potionCase, originalBase, splash = true)
             }
         }
 
@@ -401,10 +451,9 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             cases.forEach { potionCase ->
                 val item = createPotionItem(Material.LINGERING_POTION, potionCase)
                 val meta = item.itemMeta as PotionMeta
-                val baseType = PotionTypeCompat.fromPotionMeta(meta)
                 val originalBase = snapshotBase(meta)
                 val adjusted = callThrow(item)
-                assertAdjustedOrUnchanged(adjusted, baseType, originalBase, splash = true)
+                assertAdjustedOrUnchanged(adjusted, potionCase, originalBase, splash = true)
             }
         }
 
@@ -423,15 +472,14 @@ class OldPotionEffectsIntegrationTest : FunSpec({
     context("Excluded potions") {
         test("excluded potion types are not modified") {
             excludedPotionTypes.forEach { name ->
-                val typeCompat = runCatching { PotionTypeCompat(name) }.getOrNull() ?: return@forEach
-                val potionType = typeCompat.type ?: return@forEach
+                val potionType = runCatching { PotionType.valueOf(name) }.getOrNull() ?: return@forEach
                 val item = ItemStack(Material.POTION)
                 val meta = item.itemMeta as PotionMeta
                 val originalBase = runCatching {
                     try {
                         meta.basePotionType = potionType
                     } catch (e: NoSuchMethodError) {
-                        meta.basePotionData = PotionData(potionType, typeCompat.isLong, typeCompat.isStrong)
+                        meta.basePotionData = PotionData(potionType, false, false)
                     }
                     snapshotBase(meta)
                 }.getOrElse { return@forEach }
@@ -498,8 +546,8 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 ocm.config.set("old-potion-effects.weakness.multiplier", true)
                 module.reload()
 
-                player.addPotionEffect(PotionEffect(PotionEffectTypeCompat.STRENGTH.get(), 200, 0))
-                player.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 200, 0))
+                player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0))
+                player.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 200, 0))
                 val defender = player
 
                 val event = OCMEntityDamageByEntityEvent(

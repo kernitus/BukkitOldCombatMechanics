@@ -7,6 +7,8 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.cryptomorin.xseries.XAttribute
+import com.cryptomorin.xseries.XMaterial
+import com.cryptomorin.xseries.XPotion
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
@@ -16,8 +18,6 @@ import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat
-import kernitus.plugin.OldCombatMechanics.versions.materials.MaterialRegistry.ENCHANTED_GOLDEN_APPLE
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -135,6 +135,11 @@ class GoldenAppleIntegrationTest : FunSpec({
         return XAttribute.MAX_HEALTH.get() ?: error("Max health attribute not available")
     }
 
+    fun enchantedAppleItem(): ItemStack {
+        return XMaterial.ENCHANTED_GOLDEN_APPLE.parseItem()
+            ?: error("Enchanted golden apple item not available")
+    }
+
     beforeSpec {
         runSync {
             val world = Bukkit.getServer().getWorld("world")
@@ -186,13 +191,13 @@ class GoldenAppleIntegrationTest : FunSpec({
         }
 
         test("enchanted golden apple applies configured effects") {
-            player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+            player.inventory.setItemInMainHand(enchantedAppleItem())
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
             val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
             val absorption = player.getPotionEffect(PotionEffectType.ABSORPTION)
-            val resistance = player.getPotionEffect(PotionEffectTypeCompat.RESISTANCE.get())
+            val resistance = player.getPotionEffect(XPotion.RESISTANCE.get()!!)
             val fireResistance = player.getPotionEffect(PotionEffectType.FIRE_RESISTANCE)
 
             assertDuration(regeneration, 30 * 20)
@@ -284,7 +289,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
                 callConsume(player.inventory.itemInMainHand)
 
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(enchantedAppleItem())
                 val enchantedEvent = callConsume(player.inventory.itemInMainHand)
                 enchantedEvent.isCancelled shouldBe true
             }
@@ -300,7 +305,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 player.inventory.setItemInMainHand(ItemStack(Material.GOLDEN_APPLE))
                 callConsume(player.inventory.itemInMainHand)
 
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(enchantedAppleItem())
                 val enchantedEvent = callConsume(player.inventory.itemInMainHand)
                 enchantedEvent.isCancelled shouldBe false
             }
@@ -317,7 +322,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 callConsume(player.inventory.itemInMainHand)
                 module.getGappleCooldown(player.uniqueId).shouldBeBetween(1, 5)
 
-                player.inventory.setItemInMainHand(ENCHANTED_GOLDEN_APPLE.newInstance())
+                player.inventory.setItemInMainHand(enchantedAppleItem())
                 callConsume(player.inventory.itemInMainHand)
                 module.getNappleCooldown(player.uniqueId).shouldBeBetween(1, 5)
             }
@@ -331,7 +336,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 ocm.config.set("old-golden-apples.no-conflict-mode", false)
                 module.reload()
 
-                val event = prepareCraftResult(ENCHANTED_GOLDEN_APPLE.newInstance())
+                val event = prepareCraftResult(enchantedAppleItem())
                 Bukkit.getPluginManager().callEvent(event)
                 event.inventory.result.shouldBe(null)
                 player.closeInventory()
@@ -344,7 +349,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 ocm.config.set("old-golden-apples.no-conflict-mode", true)
                 module.reload()
 
-                val event = prepareCraftResult(ENCHANTED_GOLDEN_APPLE.newInstance())
+                val event = prepareCraftResult(enchantedAppleItem())
                 Bukkit.getPluginManager().callEvent(event)
                 event.inventory.result.shouldNotBe(null)
                 player.closeInventory()
@@ -358,7 +363,7 @@ class GoldenAppleIntegrationTest : FunSpec({
                 module.reload()
                 setModeset("missing")
 
-                val event = prepareCraftResult(ENCHANTED_GOLDEN_APPLE.newInstance())
+                val event = prepareCraftResult(enchantedAppleItem())
                 Bukkit.getPluginManager().callEvent(event)
                 event.inventory.result.shouldBe(null)
                 player.closeInventory()
