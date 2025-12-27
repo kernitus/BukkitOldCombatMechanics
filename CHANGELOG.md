@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.3.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.2.0...v2.3.0) (2025-12-27)
+
+
+### Features
+
+* copper tools support [#822](https://github.com/kernitus/BukkitOldCombatMechanics/issues/822) [#823](https://github.com/kernitus/BukkitOldCombatMechanics/issues/823) ([47ffa96](https://github.com/kernitus/BukkitOldCombatMechanics/commit/47ffa963ecc8619f064b98054d35df81f89a682d))
+* kotlin integration tests ([c63c940](https://github.com/kernitus/BukkitOldCombatMechanics/commit/c63c940fcc292d4db3a27185a613a01e7c5c04f0))
+
+
+### Tests
+
+* 1.12 integration tests ([3e4b6ce](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3e4b6ce9e171530b9fd9254c26c11fb65842b7c1))
+* downgrade kotest to 5.x to use java 8 ([977f118](https://github.com/kernitus/BukkitOldCombatMechanics/commit/977f118475f596ecd4689fccf4c0d48d17f0fd0d))
+* fix double add & remove players ([46d8858](https://github.com/kernitus/BukkitOldCombatMechanics/commit/46d88581d87ac0a1e6d88399f04f66f9920f3188))
+* gapple & potions & knockback & durability & sweep ([a46d54b](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a46d54b41ac0c91a2c7f1b29efbead0fbfc4d843))
+* paper version matrix ([d1527d3](https://github.com/kernitus/BukkitOldCombatMechanics/commit/d1527d3dc036696b95c85d8467feeb04c0480549))
+* skip old version sleep ([b8f0d29](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b8f0d2900f4c3d128f4fd0ad2919f24c55f02508))
+* suppress silly warnings ([63447dc](https://github.com/kernitus/BukkitOldCombatMechanics/commit/63447dc044c0e0f8947c62f9ee9b7f17f0038152))
+* undeprecate ([edbfef4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/edbfef4e6601fc48a76a8aaf34fb0aec25e49e68))
+
 ## [2.2.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.1.0...v2.2.0) (2025-10-14)
 
 
