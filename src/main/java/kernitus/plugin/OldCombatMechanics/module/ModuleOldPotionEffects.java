@@ -19,11 +19,14 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockDispenseEvent;
-import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -38,6 +41,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,6 +69,13 @@ public class ModuleOldPotionEffects extends OCMModule {
     private Map<PotionKey, PotionDurations> durations;
     private final Set<String> warnedUnknownPotionTypes = new HashSet<>();
     private boolean weaknessAmplifierClamped;
+    private boolean potionEffectListenerAttempted;
+    private boolean potionEffectListenerBroken;
+    private Listener potionEffectListener;
+    private Method potionEffectGetEntity;
+    private Method potionEffectGetNewEffect;
+    private Method potionEffectGetOldEffect;
+    private static final String ENTITY_POTION_EFFECT_EVENT = "org.bukkit.event.entity.EntityPotionEffectEvent";
 
     public ModuleOldPotionEffects(OCMMain plugin) {
         super(plugin, "old-potion-effects");
@@ -77,6 +88,7 @@ public class ModuleOldPotionEffects extends OCMModule {
         durations = ConfigUtils.loadPotionDurationsList(module());
         weaknessAmplifierClamped = detectWeaknessAmplifierClamp();
         syncWeaknessCompensation();
+        updatePotionEffectListener();
     }
 
     /**
@@ -131,11 +143,80 @@ public class ModuleOldPotionEffects extends OCMModule {
         applyWeaknessCompensation(player);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityPotionEffect(EntityPotionEffectEvent event) {
-        if (!weaknessAmplifierClamped) return;
+    private void updatePotionEffectListener() {
+        if (!weaknessAmplifierClamped) {
+            unregisterPotionEffectListener();
+            return;
+        }
 
-        final Entity entity = event.getEntity();
+        ensurePotionEffectListener();
+    }
+
+    private void ensurePotionEffectListener() {
+        if (potionEffectListenerAttempted || potionEffectListenerBroken) return;
+        // EntityPotionEffectEvent exists from 1.13 onwards, and from ~1.20 NMS clamps
+        // Weakness amplifiers to non-negative values which breaks old-damage detection.
+        // Use feature detection (class presence + behaviour checks) rather than version
+        // numbers because some servers backport these APIs/behaviours.
+        potionEffectListenerAttempted = true;
+        final Class<?> eventClass = resolveEntityPotionEffectEvent();
+        if (eventClass == null) {
+            potionEffectListenerAttempted = false;
+            return;
+        }
+
+        try {
+            potionEffectGetEntity = eventClass.getMethod("getEntity");
+            potionEffectGetNewEffect = eventClass.getMethod("getNewEffect");
+            potionEffectGetOldEffect = eventClass.getMethod("getOldEffect");
+        } catch (NoSuchMethodException e) {
+            Messenger.warn("[%s] Unable to resolve EntityPotionEffectEvent accessors; weakness compensation is disabled.",
+                    getModuleName());
+            potionEffectListenerBroken = true;
+            return;
+        }
+
+        potionEffectListener = new Listener() {};
+        @SuppressWarnings("unchecked")
+        final Class<? extends Event> typedEvent = (Class<? extends Event>) eventClass;
+        plugin.getServer().getPluginManager().registerEvent(
+                typedEvent,
+                potionEffectListener,
+                EventPriority.MONITOR,
+                new EventExecutor() {
+                    @Override
+                    public void execute(Listener listener, Event event) {
+                        handleEntityPotionEffectEvent(event);
+                    }
+                },
+                plugin,
+                true
+        );
+    }
+
+    private void unregisterPotionEffectListener() {
+        if (potionEffectListener == null) return;
+        HandlerList.unregisterAll(potionEffectListener);
+        potionEffectListener = null;
+        potionEffectListenerAttempted = false;
+        potionEffectListenerBroken = false;
+        potionEffectGetEntity = null;
+        potionEffectGetNewEffect = null;
+        potionEffectGetOldEffect = null;
+    }
+
+    private Class<?> resolveEntityPotionEffectEvent() {
+        try {
+            return Class.forName(ENTITY_POTION_EFFECT_EVENT, false, ModuleOldPotionEffects.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private void handleEntityPotionEffectEvent(Event event) {
+        if (potionEffectListenerBroken || !weaknessAmplifierClamped) return;
+
+        final Entity entity = extractEntity(event);
         if (!(entity instanceof LivingEntity)) return;
         final LivingEntity livingEntity = (LivingEntity) entity;
 
@@ -144,8 +225,8 @@ public class ModuleOldPotionEffects extends OCMModule {
             return;
         }
 
-        final PotionEffect newEffect = event.getNewEffect();
-        final PotionEffect oldEffect = event.getOldEffect();
+        final PotionEffect newEffect = extractPotionEffect(event, potionEffectGetNewEffect);
+        final PotionEffect oldEffect = extractPotionEffect(event, potionEffectGetOldEffect);
         final PotionEffectType type = newEffect != null ? newEffect.getType() :
                 (oldEffect != null ? oldEffect.getType() : null);
         final PotionEffectType weakness = XPotion.WEAKNESS.get();
@@ -155,6 +236,30 @@ public class ModuleOldPotionEffects extends OCMModule {
             WeaknessCompensation.apply(livingEntity);
         } else {
             WeaknessCompensation.remove(livingEntity);
+        }
+    }
+
+    private Entity extractEntity(Event event) {
+        if (potionEffectListenerBroken || potionEffectGetEntity == null) return null;
+        try {
+            return (Entity) potionEffectGetEntity.invoke(event);
+        } catch (ReflectiveOperationException e) {
+            potionEffectListenerBroken = true;
+            Messenger.warn("[%s] Failed to read EntityPotionEffectEvent entity; weakness compensation is disabled.",
+                    getModuleName());
+            return null;
+        }
+    }
+
+    private PotionEffect extractPotionEffect(Event event, Method accessor) {
+        if (potionEffectListenerBroken || accessor == null) return null;
+        try {
+            return (PotionEffect) accessor.invoke(event);
+        } catch (ReflectiveOperationException e) {
+            potionEffectListenerBroken = true;
+            Messenger.warn("[%s] Failed to read EntityPotionEffectEvent effect; weakness compensation is disabled.",
+                    getModuleName());
+            return null;
         }
     }
 
