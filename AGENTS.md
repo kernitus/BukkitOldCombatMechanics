@@ -80,6 +80,7 @@ This file captures repo-specific context discovered while working on this branch
 - Paper 1.12 sometimes fails to download legacy vanilla jar from old Mojang endpoint. The custom `downloadVanilla` task fixes that by using the v2 manifest.
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
 - 1.9 integration tests are currently on hold per user request.
+- Kotest filters (`kotest.filter.specs`, `kotest.filter.tests`) are now passed through Gradle into the run-paper JVM args for integration tests.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
