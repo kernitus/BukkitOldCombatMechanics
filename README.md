@@ -69,7 +69,8 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - Brewing stand refuel
 - Burn delay
 
-## 🔌 Plugin Compatibility
+## 🔌 Compatibility & Testing
+OCM targets Spigot 1.9+ and runs on Java 8 and up. It is backed by comprehensive integration tests that exercise the modules on live servers across multiple versions, so compatibility and behaviour are automatically verified with each release in real environments.
 Most plugins will work fine with OCM. Some are explicitly supported, including:
 - Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
 
