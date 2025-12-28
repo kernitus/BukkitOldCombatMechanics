@@ -92,7 +92,7 @@ class InGameTesterIntegrationTest : StringSpec({
         // attack delay : 1
         defender.maximumNoDamageTicks = 0
         try {
-            attacker.attack(defender)
+        attackCompat(attacker, defender)
         } catch (e: NoSuchMethodError) {
             defender.damage(1.0, attacker)
         }

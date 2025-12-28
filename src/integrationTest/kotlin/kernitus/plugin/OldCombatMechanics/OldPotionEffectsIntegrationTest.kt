@@ -26,7 +26,6 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.block.BlockFace
 import org.bukkit.entity.LivingEntity
@@ -50,7 +49,6 @@ import org.bukkit.potion.PotionEffectType
 import org.bukkit.potion.PotionType
 import org.bukkit.util.Vector
 import kotlinx.coroutines.delay
-import java.util.UUID
 import java.util.concurrent.Callable
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
@@ -529,20 +527,21 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 fun prepareWeapon(item: ItemStack) {
                     val meta = item.itemMeta ?: return
                     @Suppress("DEPRECATION") // Deprecated constructor kept for older server compatibility in tests.
-                    val speedModifier = AttributeModifier(
-                        UUID.randomUUID(),
-                        "speed",
-                        1000.0,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlot.HAND
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
                     )
-                    meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedModifier)
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
                     item.itemMeta = meta
                 }
 
                 fun applyAttackDamageModifiers(item: ItemStack) {
-                    val attackAttribute = attacker.getAttribute(Attribute.ATTACK_DAMAGE) ?: return
-                    val modifiers = item.type.getDefaultAttributeModifiers(EquipmentSlot.HAND)[Attribute.ATTACK_DAMAGE]
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = attacker.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
                     modifiers.forEach { modifier ->
                         attackAttribute.removeModifier(modifier)
                         attackAttribute.addModifier(modifier)
@@ -585,7 +584,7 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 val baselineDamage = attackDamage()
                 waitForAttackReady(attacker)
                 record("baseline", baselineDamage) {
-                    attacker.attack(victim)
+                    attackCompat(attacker, victim)
                 }
 
                 runSync {
@@ -605,7 +604,7 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 val weakDamage = attackDamage()
                 waitForAttackReady(attacker)
                 record("weakness-no-invuln", weakDamage) {
-                    attacker.attack(victim)
+                    attackCompat(attacker, victim)
                 }
 
                 runSync {
@@ -615,7 +614,7 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 delay(100)
                 waitForAttackReady(attacker)
                 record("weakness-invuln", weakDamage) {
-                    attacker.attack(victim)
+                    attackCompat(attacker, victim)
                 }
             } finally {
                 HandlerList.unregisterAll(listener)

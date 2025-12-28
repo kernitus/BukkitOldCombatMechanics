@@ -11,6 +11,7 @@
  */
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XAttribute
 import com.cryptomorin.xseries.XEnchantment
 import com.cryptomorin.xseries.XPotion
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
@@ -24,7 +25,6 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.LivingEntity
@@ -309,7 +309,7 @@ class InGameTester(private val plugin: JavaPlugin) {
                 beforeEach()
                 test.preparations.run()
                 preparePlayer(test.weapon)
-                attacker.attack(defender)
+                attackCompat(attacker, defender)
                 afterEach()
             }, attackDelay)
         }
@@ -356,25 +356,33 @@ class InGameTester(private val plugin: JavaPlugin) {
     private fun preparePlayer(weapon: ItemStack) {
         if (weapon.hasItemMeta()) {
             val meta = weapon.itemMeta
-            @Suppress("DEPRECATION") // Deprecated constructor kept for older server compatibility in tests.
-            val speedModifier = AttributeModifier(
-                UUID.randomUUID(), "speed", 1000.0,
-                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND
+            val speedModifier = createAttributeModifier(
+                name = "speed",
+                amount = 1000.0,
+                operation = AttributeModifier.Operation.ADD_NUMBER,
+                slot = EquipmentSlot.HAND
             )
-            meta!!.addAttributeModifier(Attribute.ATTACK_SPEED, speedModifier)
+            val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get()
+            if (attackSpeedAttribute != null) {
+                addAttributeModifierCompat(meta!!, attackSpeedAttribute, speedModifier)
+            }
             weapon.setItemMeta(meta)
         }
         attacker.inventory.setItemInMainHand(weapon)
         attacker.updateInventory()
 
-        val ai = attacker.getAttribute(Attribute.ATTACK_DAMAGE)
-        val defenderArmour = defender.getAttribute(Attribute.ARMOR)
+        val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get()
+        val armourAttribute = XAttribute.ARMOR.get()
+        val ai = attackDamageAttribute?.let { attacker.getAttribute(it) }
+        val defenderArmour = armourAttribute?.let { defender.getAttribute(it) }
 
-        weapon.type.getDefaultAttributeModifiers(EquipmentSlot.HAND)[Attribute.ATTACK_DAMAGE].forEach(
-            Consumer { am: AttributeModifier? ->
-                ai!!.removeModifier(am!!)
-                ai.addModifier(am)
-            })
+        if (attackDamageAttribute != null && ai != null) {
+            getDefaultAttributeModifiersCompat(weapon, EquipmentSlot.HAND, attackDamageAttribute).forEach(
+                Consumer { am: AttributeModifier? ->
+                    ai.removeModifier(am!!)
+                    ai.addModifier(am)
+                })
+        }
 
         val armourContents = defender.inventory.armorContents
         plugin.logger.info(
@@ -393,9 +401,11 @@ class InGameTester(private val plugin: JavaPlugin) {
                     EquipmentSlot.CHEST,
                     EquipmentSlot.HEAD
                 )[i]
-            for (attributeModifier in type.getDefaultAttributeModifiers(slot)[Attribute.ARMOR]) {
-                defenderArmour!!.removeModifier(attributeModifier)
-                defenderArmour.addModifier(attributeModifier)
+            if (armourAttribute != null && defenderArmour != null) {
+                for (attributeModifier in getDefaultAttributeModifiersCompat(itemStack, slot, armourAttribute)) {
+                    defenderArmour.removeModifier(attributeModifier)
+                    defenderArmour.addModifier(attributeModifier)
+                }
             }
         }
     }
