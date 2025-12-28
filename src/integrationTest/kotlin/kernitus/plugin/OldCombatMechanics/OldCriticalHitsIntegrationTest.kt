@@ -17,6 +17,7 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -31,7 +32,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.util.Vector
 import java.util.concurrent.Callable
+import java.util.UUID
 import kotlin.math.abs
 
 @OptIn(ExperimentalKotest::class)
@@ -50,6 +53,8 @@ class OldCriticalHitsIntegrationTest : FunSpec({
 
     extensions(MainThreadDispatcherExtension(testPlugin))
 
+    val isLegacy = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+    val legacySpeedModifierId = UUID.fromString("c1f6010f-4d2e-4b2e-9a2f-3f0d0f1b2e3c")
     fun runSync(action: () -> Unit) {
         if (Bukkit.isPrimaryThread()) {
             action()
@@ -79,6 +84,22 @@ class OldCriticalHitsIntegrationTest : FunSpec({
     }
 
     fun applyAttackDamageModifiers(player: Player, item: ItemStack) {
+        if (isLegacy) {
+            val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+            val speedAttribute = player.getAttribute(attackSpeedAttribute) ?: return
+            speedAttribute.modifiers
+                .filter { it.uniqueId == legacySpeedModifierId }
+                .forEach { speedAttribute.removeModifier(it) }
+            val speedModifier = createAttributeModifier(
+                name = "ocm-legacy-speed",
+                amount = 1000.0,
+                operation = AttributeModifier.Operation.ADD_NUMBER,
+                slot = EquipmentSlot.HAND,
+                uuid = legacySpeedModifierId
+            )
+            speedAttribute.addModifier(speedModifier)
+            return
+        }
         val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
         val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
         val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
@@ -160,8 +181,21 @@ class OldCriticalHitsIntegrationTest : FunSpec({
                 Bukkit.getPluginManager().registerEvents(listener, testPlugin)
 
                 equip(attacker, weapon)
+            }
+            delayTicks(5)
+            runSync {
                 attacker.isSprinting = critical
                 attacker.fallDistance = if (critical) 2f else 0f
+                if (critical) {
+                    attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
+                    attacker.velocity = Vector(0.0, -0.1, 0.0)
+                }
+            }
+            if (critical) {
+                delayTicks(1)
+            }
+            runSync {
+                attacker.updateInventory()
                 attackCompat(attacker, victim)
             }
             delayTicks(2)
