@@ -87,6 +87,7 @@ object KotestRunner {
                         CopperToolsIntegrationTest::class,
                         OldPotionEffectsIntegrationTest::class,
                         InvulnerabilityDamageIntegrationTest::class,
+                        OldCriticalHitsIntegrationTest::class,
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,
