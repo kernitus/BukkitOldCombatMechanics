@@ -6,6 +6,8 @@
 
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XAttribute
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.attribute.Attribute
@@ -69,7 +71,7 @@ fun getDefaultAttributeModifiersCompat(
         // Fall back to older Material APIs if present.
     }
 
-    return try {
+    val modifiers = try {
         val method = item.type.javaClass.getMethod("getAttributeModifiers", EquipmentSlot::class.java)
         @Suppress("UNCHECKED_CAST")
         val multimap = method.invoke(item.type, slot) as Multimap<Attribute, AttributeModifier>
@@ -77,4 +79,23 @@ fun getDefaultAttributeModifiersCompat(
     } catch (e: Exception) {
         emptySet()
     }
+
+    if (modifiers.isNotEmpty()) {
+        return modifiers
+    }
+
+    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get()
+    if (attackDamageAttribute != null && attribute == attackDamageAttribute && slot == EquipmentSlot.HAND) {
+        val fallbackDamage = NewWeaponDamage.getDamageOrNull(item.type) ?: return emptySet()
+        val amount = fallbackDamage.toDouble() - 1.0
+        val fallbackModifier = createAttributeModifier(
+            name = "ocm-fallback-damage",
+            amount = amount,
+            operation = AttributeModifier.Operation.ADD_NUMBER,
+            slot = slot
+        )
+        return setOf(fallbackModifier)
+    }
+
+    return emptySet()
 }

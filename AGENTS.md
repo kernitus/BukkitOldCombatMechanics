@@ -1,5 +1,7 @@
 # AGENTS.md
 
+**Prime directive:** If you are reading this file, it is your responsibility as an agent to keep it up to date with any changes you make in this repository.
+
 This file captures repo-specific context discovered while working on this branch.
 
 ## Repo overview
@@ -80,6 +82,7 @@ This file captures repo-specific context discovered while working on this branch
 - 1.9 integration tests are currently on hold per user request.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
+- For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
 
