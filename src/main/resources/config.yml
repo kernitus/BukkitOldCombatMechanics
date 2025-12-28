@@ -467,7 +467,7 @@ disable-crafting:
 disable-offhand:
   # Disable the usage of the offhand
   # Won't affect sword-blocking module
-  enabled: true
+  enabled: false
   # Whether the following list allows items or blocks them
   whitelist: true
   # List of items that should be allowed/blocked
