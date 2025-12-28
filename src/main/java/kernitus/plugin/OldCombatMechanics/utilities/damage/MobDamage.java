@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import com.google.common.collect.ImmutableMap;
-import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
+import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
@@ -16,8 +16,8 @@ import java.util.Map;
 public class MobDamage {
 
     private static final Map<EntityType, Enchantment> enchants;
-    private static final Enchantment SMITE = EnchantmentCompat.SMITE.get();
-    private static final Enchantment BANE_OF_ARTHROPODS = EnchantmentCompat.BANE_OF_ARTHROPODS.get();
+    private static final Enchantment SMITE = XEnchantment.SMITE.getEnchant();
+    private static final Enchantment BANE_OF_ARTHROPODS = XEnchantment.BANE_OF_ARTHROPODS.getEnchant();
 
     static {
         Map<String, Enchantment> allMobs = ImmutableMap.<String, Enchantment>builder()

@@ -22,6 +22,7 @@ META-INF
 /build/
 /gradle/
 /.gradle/
+.gradle-user/
 
 kls-classpath
 kls_database.db

@@ -16,10 +16,13 @@ import io.kotest.core.test.TestCaseOrder
 import io.kotest.core.test.TestResult
 import io.kotest.engine.TestEngineLauncher
 import io.kotest.engine.listener.AbstractTestEngineListener
+import io.kotest.engine.listener.CompositeTestEngineListener
+import io.kotest.engine.listener.EnhancedConsoleTestEngineListener
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
+import com.github.ajalt.mordant.TermColors
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -58,46 +61,32 @@ object KotestRunner {
 
                 val listener = object : AbstractTestEngineListener() {
                     override suspend fun testFinished(testCase: TestCase, result: TestResult) {
-                        val testName = testCase.name.testName
-                        when {
-                            result.isSuccess -> plugin.logger.info("Test '$testName' passed.")
-                            result.isIgnored -> plugin.logger.info("Test '$testName' was ignored.")
-                            result.isFailure || result.isError -> {
-                                val message = result.errorOrNull?.message
-                                    ?: result.reasonOrNull
-                                    ?: "Unknown failure"
-                                plugin.logger.warning("Test '$testName' failed with exception: $message")
-                                hasFailures = true
-                            }
+                        if (result.isFailure || result.isError) {
+                            hasFailures = true
                         }
-                    }
-
-                    override suspend fun testStarted(testCase: TestCase) {
-                        plugin.logger.info("Starting test '${testCase.name.testName}'")
                     }
 
                     override suspend fun engineFinished(t: List<Throwable>) {
                         val success = t.isEmpty() && !hasFailures
-                        if (success) {
-                            plugin.logger.info("All tests passed successfully.")
-                        } else {
-                            plugin.logger.warning("Test run completed with failures.")
-                            t.forEach { throwable ->
-                                plugin.logger.warning("Engine error: ${throwable.message}")
-                            }
-                        }
-
                         TestResultWriter.writeAndShutdown(plugin, success)
                     }
                 }
 
+                val compositeListener = CompositeTestEngineListener(
+                    listOf(
+                        EnhancedConsoleTestEngineListener(TermColors()),
+                        listener
+                    )
+                )
+
                 TestEngineLauncher()
-                    .withListener(listener)
+                    .withListener(compositeListener)
                     .withProjectConfig(KotestProjectConfig)
                     .withClasses(
                         InGameTesterIntegrationTest::class,
                         CopperToolsIntegrationTest::class,
                         OldPotionEffectsIntegrationTest::class,
+                        InvulnerabilityDamageIntegrationTest::class,
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,

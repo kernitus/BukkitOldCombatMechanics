@@ -702,7 +702,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun attack(bukkitEntity: Entity) {
-        bukkitPlayer!!.attack(bukkitEntity)
+        attackCompat(checkNotNull(bukkitPlayer), bukkitEntity)
     }
 
     fun doBlocking() {

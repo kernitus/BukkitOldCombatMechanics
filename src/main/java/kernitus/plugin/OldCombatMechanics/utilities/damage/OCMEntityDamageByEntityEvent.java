@@ -5,9 +5,10 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
-import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffectTypeCompat;
+import com.cryptomorin.xseries.XEnchantment;
+import com.cryptomorin.xseries.XPotion;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
-import kernitus.plugin.OldCombatMechanics.versions.enchantments.EnchantmentCompat;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.Cancellable;
@@ -17,8 +18,11 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.enchantments.Enchantment;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static kernitus.plugin.OldCombatMechanics.utilities.Messenger.debug;
 
@@ -56,6 +60,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private boolean was1_8Crit = false;
     private boolean wasSprinting = false;
+    private static final Set<String> warnedUnknownWeaponEnchants = new HashSet<>();
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
@@ -111,12 +116,14 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         final EntityType damageeType = damagee.getType();
 
+        warnOnUnknownWeaponEnchantments(weapon);
+
         debug(livingDamager, "Raw attack damage: " + rawDamage);
         debug(livingDamager, "Without overdamage: " + this.rawDamage);
 
 
         mobEnchantmentsDamage = MobDamage.getEntityEnchantmentsDamage(damageeType, weapon);
-        sharpnessLevel = weapon.getEnchantmentLevel(EnchantmentCompat.SHARPNESS.get());
+        sharpnessLevel = weapon.getEnchantmentLevel(XEnchantment.SHARPNESS.getEnchant());
         sharpnessDamage = DamageUtils.getNewSharpnessDamage(sharpnessLevel);
 
         // Scale enchantment damage by attack cooldown
@@ -153,7 +160,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         }
 
         // amplifier 0 = Strength I    amplifier 1 = Strength II
-        strengthLevel = PotionEffects.get(livingDamager, PotionEffectTypeCompat.STRENGTH.get())
+        strengthLevel = PotionEffects.get(livingDamager, XPotion.STRENGTH.get())
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1) + 1;
 
@@ -161,18 +168,53 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
-        // Don't set has weakness if amplifier is > 0 or < -1, which is outside normal range and probably set by plugin
+        // Don't set has weakness if amplifier is < -1, which is outside normal range and probably set by a plugin
         // We use an amplifier of -1 (Level 0) to have no effect so weaker attacks will register
-        final Optional<Integer> weaknessAmplifier = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS).map(PotionEffect::getAmplifier);
-        hasWeakness = weaknessAmplifier.isPresent() && (weaknessAmplifier.get() == -1 || weaknessAmplifier.get() == 0);
-        weaknessLevel = weaknessAmplifier.orElse(-1) + 1;
+        // Any positive amplifier is treated as "weakness present" for old-combat behaviour
+        final Optional<Integer> weaknessAmplifier = PotionEffects.get(livingDamager, PotionEffectType.WEAKNESS)
+                .map(PotionEffect::getAmplifier);
+        final int weaknessValue = weaknessAmplifier.orElse(-1);
+        if (weaknessAmplifier.isPresent() && weaknessValue >= -1) {
+            hasWeakness = true;
+            final int rawWeaknessLevel = weaknessValue + 1;
+            weaknessLevel = Math.min(rawWeaknessLevel, 1);
+        } else {
+            hasWeakness = false;
+            weaknessLevel = 0;
+        }
 
         weaknessModifier = weaknessLevel * -4;
 
         debug(livingDamager, "Weakness Modifier: " + weaknessModifier);
 
-        baseDamage = tempDamage + weaknessModifier - strengthModifier;
+        final boolean weaknessCompensated = WeaknessCompensation.hasModifier(livingDamager);
+        final double weaknessForBase = weaknessCompensated ? 0 : weaknessModifier;
+        if (weaknessCompensated) {
+            debug(livingDamager, "Weakness compensated; skipping base weakness modifier");
+        }
+
+        baseDamage = tempDamage + weaknessForBase - strengthModifier;
         debug(livingDamager, "Base tool damage: " + baseDamage);
+    }
+
+    private static void warnOnUnknownWeaponEnchantments(ItemStack weapon) {
+        if (weapon == null || weapon.getEnchantments().isEmpty()) {
+            return;
+        }
+        final Enchantment sharpness = XEnchantment.SHARPNESS.getEnchant();
+        final Enchantment smite = XEnchantment.SMITE.getEnchant();
+        final Enchantment bane = XEnchantment.BANE_OF_ARTHROPODS.getEnchant();
+        for (Enchantment enchantment : weapon.getEnchantments().keySet()) {
+            if (enchantment == null || enchantment.equals(sharpness) || enchantment.equals(smite) || enchantment.equals(bane)) {
+                continue;
+            }
+            final String name = enchantment.getName();
+            if (warnedUnknownWeaponEnchants.add(name)) {
+                kernitus.plugin.OldCombatMechanics.utilities.Messenger.warn(
+                        "Weapon enchantment '%s' is not modelled by OCM damage calculations; results may differ",
+                        name);
+            }
+        }
     }
 
     public Entity getDamager() {

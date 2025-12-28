@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import com.cryptomorin.xseries.XEnchantment;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -86,9 +87,9 @@ public class ModuleSwordSweep extends OCMModule {
 
         int level = 0;
 
-        try { //In a try catch for servers that haven't updated
-            level = weapon.getEnchantmentLevel(Enchantment.SWEEPING_EDGE);
-        } catch (NoSuchFieldError ignored) {
+        final Enchantment sweepingEdge = XEnchantment.SWEEPING_EDGE.getEnchant();
+        if (sweepingEdge != null) {
+            level = weapon.getEnchantmentLevel(sweepingEdge);
         }
 
         final Float baseDamage = NewWeaponDamage.getDamageOrNull(weapon.getType());
