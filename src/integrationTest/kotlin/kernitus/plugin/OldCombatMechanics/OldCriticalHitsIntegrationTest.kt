@@ -16,6 +16,7 @@ import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
+import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -182,6 +183,13 @@ class OldCriticalHitsIntegrationTest : FunSpec({
         val damagesSection = ocm.config.getConfigurationSection("old-tool-damage.damages")
         val damagesSnapshot = damagesSection?.getKeys(false)?.associateWith { damagesSection.get(it) } ?: emptyMap()
 
+        fun reloadDamageModules() {
+            WeaponDamages.initialise(ocm)
+            criticalModule.reload()
+            toolDamageModule.reload()
+            ModuleLoader.toggleModules()
+        }
+
         try {
             block()
         } finally {
@@ -192,9 +200,7 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             damagesSnapshot.forEach { (key, value) ->
                 ocm.config.set("old-tool-damage.damages.$key", value)
             }
-            criticalModule.reload()
-            toolDamageModule.reload()
-            ModuleLoader.toggleModules()
+            reloadDamageModules()
         }
     }
 
@@ -229,6 +235,7 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.allow-sprinting", true)
             ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.STONE_SWORD", 10)
+            WeaponDamages.initialise(ocm)
             criticalModule.reload()
             toolDamageModule.reload()
             ModuleLoader.toggleModules()
@@ -248,6 +255,7 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.allow-sprinting", true)
             ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.IRON_SWORD", 6)
+            WeaponDamages.initialise(ocm)
             criticalModule.reload()
             toolDamageModule.reload()
             ModuleLoader.toggleModules()
@@ -267,6 +275,7 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.allow-sprinting", true)
             ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.IRON_AXE", 6)
+            WeaponDamages.initialise(ocm)
             criticalModule.reload()
             toolDamageModule.reload()
             ModuleLoader.toggleModules()
@@ -276,6 +285,27 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             val normalDamage = hitAndCaptureDamage(ironAxe, critical = false)
             val criticalDamage = hitAndCaptureDamage(ironAxe, critical = true)
             (criticalDamage / normalDamage) shouldBe (1.5 plusOrMinus 0.05)
+        }
+    }
+
+    test("critical hit multiplies configured iron axe damage") {
+        withConfig {
+            ocm.config.set("old-critical-hits.enabled", true)
+            ocm.config.set("old-critical-hits.multiplier", 1.25)
+            ocm.config.set("old-critical-hits.allow-sprinting", true)
+            ocm.config.set("old-tool-damage.enabled", true)
+            ocm.config.set("old-tool-damage.damages.IRON_AXE", 4.5)
+            WeaponDamages.initialise(ocm)
+            criticalModule.reload()
+            toolDamageModule.reload()
+            ModuleLoader.toggleModules()
+
+            val ironAxe = XMaterial.IRON_AXE.parseItem()
+                ?: error("IRON_AXE material not available")
+            val normalDamage = hitAndCaptureDamage(ironAxe, critical = false)
+            val criticalDamage = hitAndCaptureDamage(ironAxe, critical = true)
+            normalDamage shouldBe (4.5 plusOrMinus 0.05)
+            criticalDamage shouldBe (5.625 plusOrMinus 0.05)
         }
     }
 })
