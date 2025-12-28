@@ -86,6 +86,20 @@ This file captures repo-specific context discovered while working on this branch
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
 
+## Test harness shortcuts (known non-realistic paths)
+- Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
+  - `GoldenAppleIntegrationTest` (manual `PlayerItemConsumeEvent` and `PrepareItemCraftEvent`)
+  - `OldPotionEffectsIntegrationTest` (manual `PlayerItemConsumeEvent`, `PlayerInteractEvent`, `BlockDispenseEvent`)
+  - `OldArmourDurabilityIntegrationTest` (manual `PlayerItemDamageEvent`, `EntityDamageEvent`)
+  - `PlayerKnockbackIntegrationTest` (manual `EntityDamageByEntityEvent`, `PlayerVelocityEvent`)
+  - `SwordBlockingIntegrationTest` (manual `PlayerInteractEvent`)
+  - `SwordSweepIntegrationTest` (manual `EntityDamageByEntityEvent`)
+- Some tests directly invoke module handlers instead of going through the event bus:
+  - `PlayerKnockbackIntegrationTest` (direct `module.onEntityDamageEntity`)
+  - `SwordSweepIntegrationTest` (direct `module.onEntityDamaged`)
+- `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
+- Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
+
 ## TDAID reminders (this repo)
 - Plan → Red → Green → Refactor → Validate.
 - Red phase: only touch tests. Do not modify production code.
