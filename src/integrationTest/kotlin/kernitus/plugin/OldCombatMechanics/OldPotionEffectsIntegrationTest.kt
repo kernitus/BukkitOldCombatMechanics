@@ -799,5 +799,43 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 event.weaknessLevel.shouldBe(1)
             }
         }
+
+        test("high amplifier weakness does not distort base damage reconstruction") {
+            withConfig {
+                val weakness = XPotion.WEAKNESS.get() ?: error("Weakness potion missing")
+                var baseLevel0 = 0.0
+                var baseLevel67 = 0.0
+
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(weakness, 200, 0), true)
+                }
+
+                val eventLevel0 = OCMEntityDamageByEntityEvent(
+                    player,
+                    player,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    4.0
+                )
+                Bukkit.getPluginManager().callEvent(eventLevel0)
+                baseLevel0 = eventLevel0.baseDamage
+
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(weakness, 200, 67), true)
+                }
+
+                val eventLevel67 = OCMEntityDamageByEntityEvent(
+                    player,
+                    player,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    4.0
+                )
+                Bukkit.getPluginManager().callEvent(eventLevel67)
+                baseLevel67 = eventLevel67.baseDamage
+
+                baseLevel67.shouldBe(baseLevel0.plusOrMinus(0.0001))
+            }
+        }
     }
 })

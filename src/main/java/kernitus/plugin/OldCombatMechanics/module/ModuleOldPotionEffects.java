@@ -151,7 +151,7 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionEffectType weakness = XPotion.WEAKNESS.get();
         if (type == null || weakness == null || !type.equals(weakness)) return;
 
-        if (newEffect != null && newEffect.getAmplifier() == 0) {
+        if (newEffect != null && newEffect.getAmplifier() >= 0) {
             WeaknessCompensation.apply(livingEntity);
         } else {
             WeaknessCompensation.remove(livingEntity);
@@ -309,7 +309,7 @@ public class ModuleOldPotionEffects extends OCMModule {
         final PotionEffectType weakness = XPotion.WEAKNESS.get();
         if (weakness == null) return;
         final PotionEffect effect = PotionEffects.getOrNull(entity, weakness);
-        if (effect != null && effect.getAmplifier() == 0) {
+        if (effect != null && effect.getAmplifier() >= 0) {
             WeaknessCompensation.apply(entity);
         } else {
             WeaknessCompensation.remove(entity);
