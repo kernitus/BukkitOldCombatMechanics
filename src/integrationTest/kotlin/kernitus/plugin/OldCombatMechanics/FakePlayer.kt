@@ -22,6 +22,7 @@ import org.bukkit.event.player.PlayerPreLoginEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 import xyz.jpenilla.reflectionremapper.ReflectionRemapper
+import java.lang.reflect.Method
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketAddress
@@ -35,6 +36,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private var bukkitPlayer: Player? = null
     private var networkConnection: Any? = null
     private var usedPlaceNewPlayer: Boolean = false
+    private var tickTaskId: Int? = null
     private val isLegacy = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
     private val legacyImpl: LegacyFakePlayer12? = if (isLegacy) LegacyFakePlayer12(plugin, uuid, name) else null
     private val reflectionRemapper: ReflectionRemapper = try {
@@ -119,7 +121,11 @@ class FakePlayer(private val plugin: JavaPlugin) {
         if (!usedPlaceNewPlayer) {
             notifyPlayersOfJoin()
             spawnPlayerInWorld(worldServer, minecraftServer)
+        } else if (bukkitPlayer?.world?.players?.contains(bukkitPlayer) != true) {
+            spawnPlayerInWorld(worldServer, minecraftServer)
         }
+
+        scheduleServerPlayerTick()
 
         plugin.logger.info("Spawn: completed successfully")
     }
@@ -588,6 +594,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun removePlayer() {
+        tickTaskId?.let { Bukkit.getScheduler().cancelTask(it) }
         if (isLegacy) {
             legacyImpl!!.removePlayer()
             return
@@ -636,6 +643,37 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val quitMessageNoColour = "$name left the game"
         val disconnectMessage = getNMSComponent(quitMessageNoColour)
         disconnectMethod.invoke(connection, disconnectMessage)
+    }
+
+    private fun scheduleServerPlayerTick() {
+        if (isLegacy) return
+        val tickMethod = resolveServerPlayerTickMethod(serverPlayer.javaClass) ?: return
+        tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, Runnable {
+            runCatching { tickMethod.invoke(serverPlayer) }
+        }, 1L, 1L)
+    }
+
+    private fun resolveServerPlayerTickMethod(serverPlayerClass: Class<*>): Method? {
+        val candidateNames = listOf("tick", "doTick")
+        for (name in candidateNames) {
+            val remapped = reflectionRemapper.remapMethodName(serverPlayerClass, name)
+            val method = Reflector.getMethod(serverPlayerClass, remapped) ?: Reflector.getMethod(serverPlayerClass, name)
+            if (method != null && method.parameterCount == 0) {
+                method.isAccessible = true
+                return method
+            }
+        }
+
+        val fallback = serverPlayerClass.methods.firstOrNull { method ->
+            method.parameterCount == 0 &&
+                method.returnType == Void.TYPE &&
+                method.name.lowercase().contains("tick")
+        } ?: serverPlayerClass.methods.firstOrNull { method ->
+            method.parameterCount == 0 && method.returnType == Void.TYPE
+        }
+
+        fallback?.isAccessible = true
+        return fallback
     }
 
     private fun getNMSComponent(message: String): Any {

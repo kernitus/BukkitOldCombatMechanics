@@ -100,6 +100,12 @@ This file captures repo-specific context discovered while working on this branch
   - `SwordSweepIntegrationTest` (direct `module.onEntityDamaged`)
 - `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
 - Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
+- FakePlayer now schedules a manual NMS tick for non-legacy servers (resolved via reflection); this was added to help passive effects but still needs validation.
+
+## Fire aspect / fire tick test notes
+- `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
+- The first two tests fire a synthetic `EntityDamageEvent` with `FIRE_TICK` to control timing and make the baseline check deterministic.
+- Current matrix results: 1.19.2 and 1.21.11 pass; 1.12 fails `fire aspect does not bypass invulnerability cancellation` and `fire tick does not clear overdamage baseline` (second hit not cancelled after fire tick).
 
 ## TDAID reminders (this repo)
 - Plan → Red → Green → Refactor → Validate.
