@@ -115,13 +115,15 @@ public class Config {
             modulesInModesets.addAll(moduleSet);
         }
 
-        // Find modules not present in any modeset
-        final Set<String> modulesNotInAnyModeset = new HashSet<>(moduleNames);
-        modulesNotInAnyModeset.removeAll(modulesInModesets);
+        if (config.getBoolean("unused-modules-apply-to-all-modesets", true)) {
+            // Find modules not present in any modeset
+            final Set<String> modulesNotInAnyModeset = new HashSet<>(moduleNames);
+            modulesNotInAnyModeset.removeAll(modulesInModesets);
 
-        // Add any module not present in any modeset to all modesets
-        for (Set<String> modeSet : modesets.values()) {
-            modeSet.addAll(modulesNotInAnyModeset);
+            // Add any module not present in any modeset to all modesets
+            for (Set<String> modeSet : modesets.values()) {
+                modeSet.addAll(modulesNotInAnyModeset);
+            }
         }
     }
 
