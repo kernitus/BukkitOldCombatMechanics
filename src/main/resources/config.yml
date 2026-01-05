@@ -12,7 +12,6 @@
 
 modesets:
   # Modesets are lists of modules that are enabled for a player in that mode.
-  # Modules not listed in any modeset are assumed to always be available.
   # You can create, remove, and rename as many modesets as you like by modifying the list below.
   # When in PvP, the modeset of the attacker is checked first.
   # If not PvP, the modeset of the defending entity is checked.
@@ -34,6 +33,9 @@ modesets:
     - "old-critical-hits"
   new:
     - "old-golden-apples"
+
+# Whether unused modules (not in any modeset) should be applied to all modesets
+unused-modules-apply-to-all-modesets: true
 
 worlds:
   # These are the modesets available in each world.
