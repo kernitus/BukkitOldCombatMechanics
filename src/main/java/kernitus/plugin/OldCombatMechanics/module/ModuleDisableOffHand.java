@@ -174,6 +174,9 @@ public class ModuleDisableOffHand extends OCMModule {
 
     @Override
     public void onModesetChange(Player player) {
+        if (!isEnabled(player))
+            return;
+
         final PlayerInventory inventory = player.getInventory();
         final ItemStack offHandItem = inventory.getItemInOffHand();
 
