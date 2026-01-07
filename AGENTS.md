@@ -86,6 +86,9 @@ This file captures repo-specific context discovered while working on this branch
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
+- Added `DisableOffhandIntegrationTest` to assert the disable-offhand modeset-change handler does not clear the offhand when the module is not enabled for the player.
+- `KotestRunner` now includes `DisableOffhandIntegrationTest` in its explicit class list.
+- When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:

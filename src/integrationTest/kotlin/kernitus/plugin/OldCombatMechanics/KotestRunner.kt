@@ -83,6 +83,7 @@ object KotestRunner {
                     .withListener(compositeListener)
                     .withProjectConfig(KotestProjectConfig)
                     .withClasses(
+                        DisableOffhandIntegrationTest::class,
                         InGameTesterIntegrationTest::class,
                         CopperToolsIntegrationTest::class,
                         OldPotionEffectsIntegrationTest::class,
