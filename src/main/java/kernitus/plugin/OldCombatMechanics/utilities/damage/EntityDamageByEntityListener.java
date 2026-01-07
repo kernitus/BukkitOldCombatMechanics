@@ -212,7 +212,7 @@ public class EntityDamageByEntityListener extends OCMModule {
     }
 
     private double checkOverdamage(LivingEntity livingDamagee, EntityDamageEvent event, double newDamage) {
-        final double newLastDamage = newDamage;
+        final double newLastDamage = Math.max(0, newDamage);
 
         if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
             // Last damage was either set to correct value above in this listener, or we're using the server's value

@@ -92,6 +92,9 @@ This file captures repo-specific context discovered while working on this branch
 - When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
 - Added `ModesetRulesIntegrationTest` to cover always-enabled, disabled, and modeset-scoped module rules plus reload failures for invalid assignments.
 - Added `ConfigMigrationIntegrationTest` to cover config upgrade migration into always/disabled module lists and preservation of custom modesets.
+- Added a `weakness should not store negative last damage values` test in `InvulnerabilityDamageIntegrationTest` that forces `old-potion-effects.weakness.modifier = -10`, consumes a weakness potion (amplifier -1), attacks once, and asserts the stored last damage is non-negative; passes on 1.12/1.19.2 after clamping, but 1.21.11 can still fail with `No stored last damage for victim (events=0)` (attack event not recorded).
+- `EntityDamageByEntityListener.checkOverdamage` now clamps the stored `lastDamages` value to a minimum of 0 to avoid negative last-damage entries when weakness (or other modifiers) drives pre-clamp damage below zero.
+- Weakness amplifier clamping changed in 1.20+: attempts to use amplifier `-1` are clamped to `0` (Weakness I). With low-damage weapons this can yield zero vanilla damage, and Paper 1.21 does not fire `EntityDamageByEntityEvent` for zero damage, so tests that rely on an EDBE hit must use a stronger weapon or account for the clamp.
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
