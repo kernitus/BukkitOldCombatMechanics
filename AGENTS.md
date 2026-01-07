@@ -84,11 +84,14 @@ This file captures repo-specific context discovered while working on this branch
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
+- Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
 - Added `DisableOffhandIntegrationTest` to assert the disable-offhand modeset-change handler does not clear the offhand when the module is not enabled for the player.
 - `KotestRunner` now includes `DisableOffhandIntegrationTest` in its explicit class list.
 - When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
+- Added `ModesetRulesIntegrationTest` to cover always-enabled, disabled, and modeset-scoped module rules plus reload failures for invalid assignments.
+- Added `ConfigMigrationIntegrationTest` to cover config upgrade migration into always/disabled module lists and preservation of custom modesets.
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:

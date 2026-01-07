@@ -67,6 +67,12 @@ public abstract class OCMModule implements Listener {
      * Whether this module should be enabled for this player given his current modeset
      */
     public boolean isEnabled(@NotNull HumanEntity humanEntity) {
+        if (Config.isModuleDisabled(configName)) {
+            return false;
+        }
+        if (Config.isModuleAlwaysEnabled(configName)) {
+            return true;
+        }
         final World world = humanEntity.getWorld();
         final String modesetName = PlayerStorage.getPlayerData(humanEntity.getUniqueId()).getModesetForWorld(world.getUID());
 

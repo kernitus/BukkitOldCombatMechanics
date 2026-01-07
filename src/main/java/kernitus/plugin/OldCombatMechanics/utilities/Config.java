@@ -29,6 +29,17 @@ public class Config {
     private static FileConfiguration config;
     private static final Map<String, Set<String>> modesets = new HashMap<>();
     private static final Map<UUID, Set<String>> worlds = new HashMap<>();
+    private static final Set<String> alwaysEnabledModules = new HashSet<>();
+    private static final Set<String> disabledModules = new HashSet<>();
+    private static final Set<String> optionalModules = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "disable-attack-sounds",
+            "disable-sword-sweep-particles"
+    )));
+    private static final Set<String> internalModules = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "modeset-listener",
+            "attack-cooldown-tracker",
+            "entity-damage-listener"
+    )));
 
     public static void initialise(OCMMain plugin) {
         Config.plugin = plugin;
@@ -67,6 +78,9 @@ public class Config {
 
         WeaponDamages.initialise(plugin); //Reload weapon damages from config
 
+        reloadModesets();
+        reloadWorlds();
+
         //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
         final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
         if (EDBEL != null) {
@@ -75,9 +89,6 @@ public class Config {
                     || moduleEnabled("old-critical-hits")
             );
         }
-
-        reloadModesets();
-        reloadWorlds();
 
         // Dynamically registers / unregisters all event listeners for optimal performance!
         ModuleLoader.toggleModules();
@@ -95,18 +106,86 @@ public class Config {
 
     private static void reloadModesets() {
         modesets.clear();
+        alwaysEnabledModules.clear();
+        disabledModules.clear();
 
-        final Set<String> moduleNames = ModuleLoader.getModules().stream().map(OCMModule::getConfigName).collect(Collectors.toSet());
+        final Set<String> moduleNames = ModuleLoader.getModules().stream()
+                .map(OCMModule::getConfigName)
+                .map(Config::normaliseModuleName)
+                .collect(Collectors.toSet());
+        final Set<String> knownModuleNames = new HashSet<>(moduleNames);
+        knownModuleNames.addAll(optionalModules);
+        final Set<String> configurableModuleNames = new HashSet<>(knownModuleNames);
+        configurableModuleNames.removeAll(internalModules);
         final ConfigurationSection modesetsSection = config.getConfigurationSection("modesets");
+        if (modesetsSection == null) {
+            throw new IllegalStateException("Missing 'modesets' section in config. Every module must be assigned to a modeset, always_enabled_modules, or disabled_modules.");
+        }
+
+        final List<String> errors = new ArrayList<>();
 
         // A set to keep track of all the modules that are already in a modeset
         final Set<String> modulesInModesets = new HashSet<>();
+
+        final List<String> alwaysModules = config.getStringList("always_enabled_modules");
+        for (String moduleName : alwaysModules) {
+            final String normalised = normaliseModuleName(moduleName);
+            if (internalModules.contains(normalised)) {
+                errors.add("Internal module should not be configured: " + moduleName);
+                continue;
+            }
+            if (!configurableModuleNames.contains(normalised)) {
+                Messenger.warn("Unknown module in always_enabled_modules: " + moduleName);
+                continue;
+            }
+            alwaysEnabledModules.add(normalised);
+        }
+
+        final List<String> disabledModuleList = config.getStringList("disabled_modules");
+        for (String moduleName : disabledModuleList) {
+            final String normalised = normaliseModuleName(moduleName);
+            if (internalModules.contains(normalised)) {
+                errors.add("Internal module should not be configured: " + moduleName);
+                continue;
+            }
+            if (!configurableModuleNames.contains(normalised)) {
+                Messenger.warn("Unknown module in disabled_modules: " + moduleName);
+                continue;
+            }
+            disabledModules.add(normalised);
+        }
+
+        for (String moduleName : alwaysEnabledModules) {
+            if (disabledModules.contains(moduleName)) {
+                errors.add("Module listed in both always_enabled_modules and disabled_modules: " + moduleName);
+            }
+        }
 
         // Iterate over each modeset
         for (String key : modesetsSection.getKeys(false)) {
             // Retrieve the list of module names for the current modeset
             final List<String> moduleList = modesetsSection.getStringList(key);
-            final Set<String> moduleSet = new HashSet<>(moduleList);
+            final Set<String> moduleSet = new HashSet<>();
+            for (String moduleName : moduleList) {
+                final String normalised = normaliseModuleName(moduleName);
+                if (internalModules.contains(normalised)) {
+                    errors.add("Internal module should not be configured: " + moduleName);
+                    continue;
+                }
+                if (!configurableModuleNames.contains(normalised)) {
+                    Messenger.warn("Unknown module in modeset '%s': %s", key, moduleName);
+                    continue;
+                }
+                if (disabledModules.contains(normalised)) {
+                    errors.add("Module listed in disabled_modules and modeset '" + key + "': " + moduleName);
+                    continue;
+                }
+                if (alwaysEnabledModules.contains(normalised)) {
+                    errors.add("Module listed in always_enabled_modules and modeset '" + key + "': " + moduleName);
+                    continue;
+                }
+                moduleSet.add(normalised);
+            }
 
             // Add the current modeset and its modules to the map
             modesets.put(key, moduleSet);
@@ -115,14 +194,26 @@ public class Config {
             modulesInModesets.addAll(moduleSet);
         }
 
-        // Find modules not present in any modeset
-        final Set<String> modulesNotInAnyModeset = new HashSet<>(moduleNames);
-        modulesNotInAnyModeset.removeAll(modulesInModesets);
-
-        // Add any module not present in any modeset to all modesets
-        for (Set<String> modeSet : modesets.values()) {
-            modeSet.addAll(modulesNotInAnyModeset);
+        for (String moduleName : configurableModuleNames) {
+            if (disabledModules.contains(moduleName)) {
+                continue;
+            }
+            if (alwaysEnabledModules.contains(moduleName)) {
+                continue;
+            }
+            if (modulesInModesets.contains(moduleName)) {
+                continue;
+            }
+            errors.add("Module not assigned to any list: " + moduleName);
         }
+
+        if (!errors.isEmpty()) {
+            final String message = "Invalid module assignment configuration:\n - " + String.join("\n - ", errors)
+                    + "\nEvery module must appear in exactly one of always_enabled_modules, disabled_modules, or modesets.";
+            throw new IllegalStateException(message);
+        }
+
+        alwaysEnabledModules.addAll(internalModules);
     }
 
     private static void reloadWorlds() {
@@ -187,24 +278,19 @@ public class Config {
      * @return Whether the module is enabled for the found modeset
      */
     public static boolean moduleEnabled(String moduleName, World world) {
-        final ConfigurationSection section = config.getConfigurationSection(moduleName);
-
-        if (section == null) {
-            plugin.getLogger().warning("Tried to check module '" + moduleName + "', but it didn't exist!");
-            return false;
-        }
-
-        if (!section.getBoolean("enabled")) return false;
-        if (world == null) return true; // Only checking if module is globally enabled
+        final String normalised = normaliseModuleName(moduleName);
+        if (disabledModules.contains(normalised)) return false;
+        if (alwaysEnabledModules.contains(normalised)) return true;
+        if (world == null) return isModuleInAnyModeset(normalised); // Only checking if module is globally enabled
 
         final Set<String> defaultModeset = getDefaultModeset(world.getUID());
         // If no default modeset found, the module should be enabled
         if(defaultModeset == null){
-            return true;
+            return isModuleInAnyModeset(normalised);
         }
 
         // Check if module is in default modeset
-        return defaultModeset.contains(moduleName);
+        return defaultModeset.contains(normalised);
     }
 
     /**
@@ -217,7 +303,7 @@ public class Config {
     }
 
     public static boolean debugEnabled() {
-        return moduleEnabled("debug", null);
+        return config.getBoolean("debug.enabled");
     }
 
     public static boolean moduleSettingEnabled(String moduleName, String moduleSettingName) {
@@ -237,7 +323,23 @@ public class Config {
         return modesets;
     }
 
+    public static boolean isModuleAlwaysEnabled(String moduleName) {
+        return alwaysEnabledModules.contains(normaliseModuleName(moduleName));
+    }
+
+    public static boolean isModuleDisabled(String moduleName) {
+        return disabledModules.contains(normaliseModuleName(moduleName));
+    }
+
+    public static boolean isModuleInAnyModeset(String moduleName) {
+        return modesets.values().stream().anyMatch(set -> set.contains(normaliseModuleName(moduleName)));
+    }
+
     public static Map<UUID, Set<String>> getWorlds() {
         return worlds;
+    }
+
+    private static String normaliseModuleName(String moduleName) {
+        return moduleName == null ? "" : moduleName.toLowerCase(Locale.ROOT);
     }
 }
