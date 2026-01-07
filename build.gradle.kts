@@ -284,6 +284,9 @@ tasks.withType<RunServer>().configureEach {
 val integrationTestMatrixTasks = mutableListOf<TaskProvider<Task>>()
 var previousMatrixTask: TaskProvider<Task>? = null
 
+val kotestSpecFilterProvider = providers.systemProperty("kotest.filter.specs")
+val kotestTestFilterProvider = providers.systemProperty("kotest.filter.tests")
+
 fun versionTaskSuffix(version: String): String {
     return version.replace(Regex("[^A-Za-z0-9]"), "_")
 }
@@ -355,6 +358,12 @@ for (version in integrationTestVersions) {
         runDirectory.set(runDir)
         minecraftVersion(version)
         jvmArgs("-Dcom.mojang.eula.agree=true")
+        kotestSpecFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
+            jvmArgs("-Dkotest.filter.specs=$it")
+        }
+        kotestTestFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
+            jvmArgs("-Dkotest.filter.tests=$it")
+        }
         if (needsLegacyVanillaJar(version)) {
             // Skip the legacy Paper "outdated build" startup sleep.
             jvmArgs("-DIReallyKnowWhatIAmDoingISwear=true")

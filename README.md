@@ -13,6 +13,8 @@
 
 A performant Spigot/Paper plugin to configure combat-related mechanics for Minecraft 1.9 upwards.
 
+It is extremely modular, so you can use it just to customise weapon, armour damage, gapples, sword blocking and more even if you do not care about attack cooldown. If you do want to remove cooldowns, modesets let you build per-world and per-player presets, which is ideal for minigames and mixed rulesets.
+
 <hr/>
 
 <a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
@@ -26,13 +28,7 @@ A performant Spigot/Paper plugin to configure combat-related mechanics for Minec
 </a>
 
 ## 🧰 Modesets
-Modesets can be configured for your players to choose from. Each modeset can have any combination of the below features enabled, with examples provided to replicate 1.9 vs 1.8 combat. Players can switch between modesets via command, choosing from the modesets allowed for the world they are in.
-
-## ⚡ Development Builds
-
-Oftentimes a particular bug fix or feature has already been implemented, but a new version of OCM has not been released
-yet. You can find the most up-to-date version of the plugin
-on [Hangar](https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?channel=Snapshot&platform=PAPER).
+Modesets are feature-presets and can be configured for your players to choose from. Each modeset can have any combination of the below features enabled, with examples provided to replicate 1.9 vs 1.8 combat. Players can switch between modesets via command, choosing from the modesets allowed for the world they are in.
 
 ## ⚙ Configurable Features
 Features are grouped in `module`s as listed below, and can be individually configured and disabled. Modules that are fully disabled will have no impact on server performance.
@@ -52,6 +48,7 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - Sword blocking
 - Shield damage reduction
 - Sword sweep
+- Sword sweep particles
 
 #### 🌬 Knockback
 - Player knockback
@@ -72,9 +69,17 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - Brewing stand refuel
 - Burn delay
 
-## 🔌 Plugin Compatibility
+## 🔌 Compatibility & Testing
+OCM targets Spigot 1.9+ and runs on Java 8 and up. It is backed by comprehensive integration tests that exercise the modules on live servers across multiple versions, so compatibility and behaviour are automatically verified with each release in real environments.
 Most plugins will work fine with OCM. Some are explicitly supported, including:
 - Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
+
+## ⚡ Development Builds
+
+Oftentimes a particular bug fix or feature has already been implemented, but a new version of OCM has not been released
+yet. You can find the most up-to-date version of the plugin
+on [Hangar](https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?channel=Snapshot&platform=PAPER).
+
 
 ## 🤝 Contributions
 
@@ -85,5 +90,3 @@ If you are interested in contributing, please [check this page first](.github/CO
 <a href="https://bstats.org/plugin/bukkit/OldCombatMechanics">
     <img src="https://bstats.org/signatures/bukkit/OldCombatMechanics.svg" alt="bStats">
 </a>
-
-

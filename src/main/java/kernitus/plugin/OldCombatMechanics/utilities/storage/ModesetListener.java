@@ -32,11 +32,6 @@ public class ModesetListener extends OCMModule {
         super(plugin, "modeset-listener");
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
-
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         final Player player = event.getPlayer();

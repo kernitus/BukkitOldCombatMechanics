@@ -80,11 +80,38 @@ This file captures repo-specific context discovered while working on this branch
 - Paper 1.12 sometimes fails to download legacy vanilla jar from old Mojang endpoint. The custom `downloadVanilla` task fixes that by using the v2 manifest.
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
 - 1.9 integration tests are currently on hold per user request.
+- Kotest filters (`kotest.filter.specs`, `kotest.filter.tests`) are now passed through Gradle into the run-paper JVM args for integration tests.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
-- For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection.
+- For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
+- Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
+- Added `DisableOffhandIntegrationTest` to assert the disable-offhand modeset-change handler does not clear the offhand when the module is not enabled for the player.
+- `KotestRunner` now includes `DisableOffhandIntegrationTest` in its explicit class list.
+- When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
+- Added `ModesetRulesIntegrationTest` to cover always-enabled, disabled, and modeset-scoped module rules plus reload failures for invalid assignments.
+- Added `ConfigMigrationIntegrationTest` to cover config upgrade migration into always/disabled module lists and preservation of custom modesets.
+
+## Test harness shortcuts (known non-realistic paths)
+- Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
+  - `GoldenAppleIntegrationTest` (manual `PlayerItemConsumeEvent` and `PrepareItemCraftEvent`)
+  - `OldPotionEffectsIntegrationTest` (manual `PlayerItemConsumeEvent`, `PlayerInteractEvent`, `BlockDispenseEvent`)
+  - `OldArmourDurabilityIntegrationTest` (manual `PlayerItemDamageEvent`, `EntityDamageEvent`)
+  - `PlayerKnockbackIntegrationTest` (manual `EntityDamageByEntityEvent`, `PlayerVelocityEvent`)
+  - `SwordBlockingIntegrationTest` (manual `PlayerInteractEvent`)
+  - `SwordSweepIntegrationTest` (manual `EntityDamageByEntityEvent`)
+- Some tests directly invoke module handlers instead of going through the event bus:
+  - `PlayerKnockbackIntegrationTest` (direct `module.onEntityDamageEntity`)
+  - `SwordSweepIntegrationTest` (direct `module.onEntityDamaged`)
+- `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
+- Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
+- FakePlayer now schedules a manual NMS tick for non-legacy servers (resolved via reflection); this was added to help passive effects but still needs validation.
+
+## Fire aspect / fire tick test notes
+- `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
+- The first two tests fire a synthetic `EntityDamageEvent` with `FIRE_TICK` to control timing and make the baseline check deterministic.
+- Current matrix results: 1.19.2 and 1.21.11 pass; 1.12 fails `fire aspect does not bypass invulnerability cancellation` and `fire tick does not clear overdamage baseline` (second hit not cancelled after fire tick).
 
 ## TDAID reminders (this repo)
 - Plan → Red → Green → Refactor → Validate.

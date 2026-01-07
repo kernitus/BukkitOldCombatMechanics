@@ -83,10 +83,15 @@ object KotestRunner {
                     .withListener(compositeListener)
                     .withProjectConfig(KotestProjectConfig)
                     .withClasses(
+                        ConfigMigrationIntegrationTest::class,
+                        ModesetRulesIntegrationTest::class,
+                        DisableOffhandIntegrationTest::class,
                         InGameTesterIntegrationTest::class,
                         CopperToolsIntegrationTest::class,
                         OldPotionEffectsIntegrationTest::class,
                         InvulnerabilityDamageIntegrationTest::class,
+                        FireAspectOverdamageIntegrationTest::class,
+                        OldCriticalHitsIntegrationTest::class,
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,

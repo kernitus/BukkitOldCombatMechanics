@@ -19,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -33,6 +34,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import kotlin.coroutines.resume
 
 @OptIn(ExperimentalKotest::class)
 class GoldenAppleIntegrationTest : FunSpec({
@@ -127,8 +129,14 @@ class GoldenAppleIntegrationTest : FunSpec({
         duration.shouldBeLessThanOrEqual(expectedTicks)
     }
 
-    suspend fun waitForEffects() {
-        delay(120)
+    suspend fun waitForEffects(ticks: Long = 1L) {
+        suspendCancellableCoroutine { continuation ->
+            Bukkit.getScheduler().runTaskLater(testPlugin, Runnable {
+                if (continuation.isActive) {
+                    continuation.resume(Unit)
+                }
+            }, ticks)
+        }
     }
 
     fun maxHealthAttribute(): Attribute {
