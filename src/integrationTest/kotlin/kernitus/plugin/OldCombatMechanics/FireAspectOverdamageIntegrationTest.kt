@@ -147,7 +147,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         }
     }
 
-    fun applyProtectionArmour(player: Player) {
+    fun applyProtectionArmour(entity: LivingEntity) {
         val protection = XEnchantment.PROTECTION.get()
         val armour = arrayOf(
             ItemStack(Material.DIAMOND_BOOTS),
@@ -158,7 +158,11 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         if (protection != null) {
             armour.forEach { it.addUnsafeEnchantment(protection, 4) }
         }
-        player.inventory.setArmorContents(armour)
+        if (entity is Player) {
+            entity.inventory.setArmorContents(armour)
+            return
+        }
+        entity.equipment?.armorContents = armour
     }
 
     suspend fun countSuccessfulAttacks(
@@ -403,7 +407,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         }
     }
 
-    test("fire aspect afterburn matches environmental fire tick damage") {
+    test("fire aspect afterburn matches environmental fire tick damage (zombie)") {
         lateinit var attacker: Player
         lateinit var victim: LivingEntity
         var fakeAttacker: FakePlayer? = null
@@ -454,6 +458,182 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
             runSync {
                 fakeAttacker?.removePlayer()
                 victim.remove()
+            }
+        }
+    }
+
+    test("fire aspect afterburn matches environmental fire tick damage (player)") {
+        lateinit var attacker: Player
+        lateinit var victim: Player
+        var fakeAttacker: FakePlayer? = null
+        var fakeVictim: FakePlayer? = null
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attackerLocation = Location(world, 0.0, 100.0, 0.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fakeA, playerA) = spawnPlayer(attackerLocation)
+                fakeAttacker = fakeA
+                attacker = playerA
+
+                val (fakeV, playerV) = spawnPlayer(victimLocation)
+                fakeVictim = fakeV
+                victim = playerV
+                prepareVictimState(victim)
+            }
+
+            val environmental = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    ensureBurning(victim, minTicks = 200)
+                }
+            }
+
+            val afterburn = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    val weapon = ItemStack(Material.DIAMOND_SWORD)
+                    val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                    if (fireAspect != null) {
+                        weapon.addUnsafeEnchantment(fireAspect, 2)
+                    }
+                    equip(attacker, weapon)
+                    attackCompat(attacker, victim)
+                    ensureBurning(victim, minTicks = 200)
+                }
+                delayTicks(12)
+            }
+
+            val environmentalAvg = environmental.average()
+            val afterburnAvg = afterburn.average()
+            abs(afterburnAvg - environmentalAvg).shouldBeLessThan(0.25)
+        } finally {
+            runSync {
+                fakeAttacker?.removePlayer()
+                fakeVictim?.removePlayer()
+            }
+        }
+    }
+
+    test("fire aspect afterburn matches environmental fire tick damage with protection armour (zombie)") {
+        // Use an armoured mob victim to keep fire tick sampling stable across versions.
+        lateinit var attacker: Player
+        lateinit var victim: LivingEntity
+        var fakeAttacker: FakePlayer? = null
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attackerLocation = Location(world, 0.0, 100.0, 0.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fakeA, playerA) = spawnPlayer(attackerLocation)
+                fakeAttacker = fakeA
+                attacker = playerA
+                victim = spawnVictim(victimLocation)
+                prepareVictimState(victim)
+                applyProtectionArmour(victim)
+            }
+
+            val environmental = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    ensureBurning(victim, minTicks = 200)
+                }
+            }
+
+            val afterburn = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    val weapon = ItemStack(Material.DIAMOND_SWORD)
+                    val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                    if (fireAspect != null) {
+                        weapon.addUnsafeEnchantment(fireAspect, 2)
+                    }
+                    equip(attacker, weapon)
+                    attackCompat(attacker, victim)
+                    ensureBurning(victim, minTicks = 200)
+                }
+                delayTicks(12)
+            }
+
+            val environmentalAvg = environmental.average()
+            val afterburnAvg = afterburn.average()
+            abs(afterburnAvg - environmentalAvg).shouldBeLessThan(0.25)
+        } finally {
+            runSync {
+                fakeAttacker?.removePlayer()
+                victim.remove()
+            }
+        }
+    }
+
+    test("fire aspect afterburn matches environmental fire tick damage with protection armour (player)") {
+        lateinit var attacker: Player
+        lateinit var victim: Player
+        var fakeAttacker: FakePlayer? = null
+        var fakeVictim: FakePlayer? = null
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attackerLocation = Location(world, 0.0, 100.0, 0.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fakeA, playerA) = spawnPlayer(attackerLocation)
+                fakeAttacker = fakeA
+                attacker = playerA
+
+                val (fakeV, playerV) = spawnPlayer(victimLocation)
+                fakeVictim = fakeV
+                victim = playerV
+                prepareVictimState(victim)
+                applyProtectionArmour(victim)
+            }
+
+            val environmental = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    ensureBurning(victim, minTicks = 200)
+                }
+            }
+
+            val afterburn = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    val weapon = ItemStack(Material.DIAMOND_SWORD)
+                    val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                    if (fireAspect != null) {
+                        weapon.addUnsafeEnchantment(fireAspect, 2)
+                    }
+                    equip(attacker, weapon)
+                    attackCompat(attacker, victim)
+                    ensureBurning(victim, minTicks = 200)
+                }
+                delayTicks(12)
+            }
+
+            val environmentalAvg = environmental.average()
+            val afterburnAvg = afterburn.average()
+            abs(afterburnAvg - environmentalAvg).shouldBeLessThan(0.25)
+        } finally {
+            runSync {
+                fakeAttacker?.removePlayer()
+                fakeVictim?.removePlayer()
             }
         }
     }

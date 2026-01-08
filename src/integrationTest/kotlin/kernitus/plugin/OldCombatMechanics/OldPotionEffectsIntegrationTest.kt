@@ -18,6 +18,7 @@ import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
+import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import com.cryptomorin.xseries.XAttribute
 import com.cryptomorin.xseries.XMaterial
@@ -338,11 +339,17 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         val weaknessSection = ocm.config.getConfigurationSection("old-potion-effects.weakness")
         val drinkSection = ocm.config.getConfigurationSection("old-potion-effects.potion-durations.drinkable")
         val splashSection = ocm.config.getConfigurationSection("old-potion-effects.potion-durations.splash")
+        val alwaysEnabledModules = ocm.config.getStringList("always_enabled_modules")
+        val disabledModules = ocm.config.getStringList("disabled_modules")
+        val modesetSection = ocm.config.getConfigurationSection("modesets")
 
         val strengthSnapshot = strengthSection?.getValues(false) ?: emptyMap<String, Any>()
         val weaknessSnapshot = weaknessSection?.getValues(false) ?: emptyMap<String, Any>()
         val drinkSnapshot = drinkSection?.getKeys(false)?.associateWith { drinkSection.get(it) } ?: emptyMap()
         val splashSnapshot = splashSection?.getKeys(false)?.associateWith { splashSection.get(it) } ?: emptyMap()
+        val modesetSnapshot = modesetSection?.getKeys(false)?.associateWith { key ->
+            ocm.config.getStringList("modesets.$key")
+        } ?: emptyMap()
 
         try {
             block()
@@ -360,8 +367,16 @@ class OldPotionEffectsIntegrationTest : FunSpec({
             splashSnapshot.forEach { (key, value) ->
                 ocm.config.set("old-potion-effects.potion-durations.splash.$key", value)
             }
-            module.reload()
-            ModuleLoader.toggleModules()
+            ocm.config.set("always_enabled_modules", alwaysEnabledModules)
+            ocm.config.set("disabled_modules", disabledModules)
+            modesetSnapshot.forEach { (key, list) ->
+                ocm.config.set("modesets.$key", list)
+            }
+            modesetSection?.getKeys(false)
+                ?.filterNot { modesetSnapshot.containsKey(it) }
+                ?.forEach { key -> ocm.config.set("modesets.$key", null) }
+            ocm.saveConfig()
+            Config.reload()
         }
     }
 
@@ -727,9 +742,25 @@ class OldPotionEffectsIntegrationTest : FunSpec({
         test("disabled via config leaves potions unchanged") {
             withConfig {
                 val potionCase = findSamplePotionCase()
-                ocm.config.set("old-potion-effects.enabled", false)
-                module.reload()
-                ModuleLoader.toggleModules()
+                val disabled = ocm.config.getStringList("disabled_modules")
+                    .filterNot { it.equals("old-potion-effects", true) }
+                    .toMutableList()
+                disabled.add("old-potion-effects")
+                ocm.config.set("disabled_modules", disabled)
+                ocm.config.set(
+                    "always_enabled_modules",
+                    ocm.config.getStringList("always_enabled_modules")
+                        .filterNot { it.equals("old-potion-effects", true) }
+                )
+                val modesetsSection = ocm.config.getConfigurationSection("modesets")
+                    ?: error("Missing 'modesets' section in config")
+                modesetsSection.getKeys(false).forEach { key ->
+                    val modules = ocm.config.getStringList("modesets.$key")
+                        .filterNot { it.equals("old-potion-effects", true) }
+                    ocm.config.set("modesets.$key", modules)
+                }
+                ocm.saveConfig()
+                Config.reload()
 
                 val item = createPotionItem(Material.POTION, potionCase)
                 val originalBase = snapshotBase(item.itemMeta as PotionMeta)
