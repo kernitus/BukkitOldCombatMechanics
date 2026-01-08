@@ -375,33 +375,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         // Add the player to the PlayerList
         val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
-        val loadMethodName = reflectionRemapper.remapMethodName(playerListClass, "load", serverPlayer.javaClass)
-        val loadMethod = playerListClass.methods.firstOrNull { method ->
-            method.name == loadMethodName &&
-                method.parameterCount == 1 &&
-                method.parameterTypes[0].isAssignableFrom(serverPlayer.javaClass)
-        }
-
-        if (loadMethod != null) {
-            Reflector.invokeMethod<Any>(loadMethod, playerList, serverPlayer)
-
-            val playersFieldName = reflectionRemapper.remapFieldName(playerListClass, "players")
-            val playersField = playerListClass.getDeclaredField(playersFieldName)
-            playersField.isAccessible = true
-            @Suppress("UNCHECKED_CAST") // Reflection into NMS collection; types vary by version.
-            val players = playersField.get(playerList) as MutableList<Any>
-            players.add(serverPlayer)
-
-            // Add player to the UUID map
-            val playersByUUIDField = Reflector.getMapFieldWithTypes(
-                playerListClass, UUID::class.java, serverPlayer.javaClass
-            )
-            @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
-            val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
-            playerByUUID[uuid] = serverPlayer
-            return false
-        }
-
         val placeMethodName = reflectionRemapper.remapMethodName(playerListClass, "placeNewPlayer")
         val connection = checkNotNull(networkConnection) { "Connection not initialised" }
         val placeMethodWithCookie = Reflector.getMethodAssignable(
@@ -440,6 +413,33 @@ class FakePlayer(private val plugin: JavaPlugin) {
         if (placeMethod != null) {
             placeMethod.invoke(playerList, connection, serverPlayer)
             return true
+        }
+
+        val loadMethodName = reflectionRemapper.remapMethodName(playerListClass, "load", serverPlayer.javaClass)
+        val loadMethod = playerListClass.methods.firstOrNull { method ->
+            method.name == loadMethodName &&
+                method.parameterCount == 1 &&
+                method.parameterTypes[0].isAssignableFrom(serverPlayer.javaClass)
+        }
+
+        if (loadMethod != null) {
+            Reflector.invokeMethod<Any>(loadMethod, playerList, serverPlayer)
+
+            val playersFieldName = reflectionRemapper.remapFieldName(playerListClass, "players")
+            val playersField = playerListClass.getDeclaredField(playersFieldName)
+            playersField.isAccessible = true
+            @Suppress("UNCHECKED_CAST") // Reflection into NMS collection; types vary by version.
+            val players = playersField.get(playerList) as MutableList<Any>
+            players.add(serverPlayer)
+
+            // Add player to the UUID map
+            val playersByUUIDField = Reflector.getMapFieldWithTypes(
+                playerListClass, UUID::class.java, serverPlayer.javaClass
+            )
+            @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
+            val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
+            playerByUUID[uuid] = serverPlayer
+            return false
         }
 
         throw NoSuchMethodException("No compatible PlayerList add method found for ${playerListClass.name}")
@@ -647,14 +647,16 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
     private fun scheduleServerPlayerTick() {
         if (isLegacy) return
-        val tickMethod = resolveServerPlayerTickMethod(serverPlayer.javaClass) ?: return
+        val tickMethod = resolveServerPlayerTickMethod(serverPlayer.javaClass)
         tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, Runnable {
-            runCatching { tickMethod.invoke(serverPlayer) }
+            if (tickMethod != null) {
+                runCatching { tickMethod.invoke(serverPlayer) }
+            }
         }, 1L, 1L)
     }
 
     private fun resolveServerPlayerTickMethod(serverPlayerClass: Class<*>): Method? {
-        val candidateNames = listOf("tick", "doTick")
+        val candidateNames = listOf("doTick", "tick")
         for (name in candidateNames) {
             val remapped = reflectionRemapper.remapMethodName(serverPlayerClass, name)
             val method = Reflector.getMethod(serverPlayerClass, remapped) ?: Reflector.getMethod(serverPlayerClass, name)
@@ -662,6 +664,11 @@ class FakePlayer(private val plugin: JavaPlugin) {
                 method.isAccessible = true
                 return method
             }
+        }
+
+        val baseTickMethod = resolveBaseTickMethod(serverPlayerClass)
+        if (baseTickMethod != null) {
+            return baseTickMethod
         }
 
         val fallback = serverPlayerClass.methods.firstOrNull { method ->
@@ -674,6 +681,28 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         fallback?.isAccessible = true
         return fallback
+    }
+
+    private fun resolveBaseTickMethod(serverPlayerClass: Class<*>): Method? {
+        val entityClass = runCatching { getNMSClass("net.minecraft.world.entity.Entity") }.getOrNull()
+        val candidateNames = buildList {
+            entityClass?.let { add(reflectionRemapper.remapMethodName(it, "baseTick")) }
+            add("baseTick")
+        }.distinct()
+        for (name in candidateNames) {
+            val method = (serverPlayerClass.declaredMethods + serverPlayerClass.methods).firstOrNull { candidate ->
+                candidate.name == name && candidate.parameterCount == 0
+            } ?: entityClass?.let { clazz ->
+                (clazz.declaredMethods + clazz.methods).firstOrNull { candidate ->
+                    candidate.name == name && candidate.parameterCount == 0
+                }
+            }
+            if (method != null) {
+                method.isAccessible = true
+                return method
+            }
+        }
+        return null
     }
 
     private fun getNMSComponent(message: String): Any {

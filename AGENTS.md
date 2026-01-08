@@ -96,6 +96,7 @@ This file captures repo-specific context discovered while working on this branch
 - `EntityDamageByEntityListener.checkOverdamage` now clamps the stored `lastDamages` value to a minimum of 0 to avoid negative last-damage entries when weakness (or other modifiers) drives pre-clamp damage below zero.
 - Weakness amplifier clamping changed in 1.20+: attempts to use amplifier `-1` are clamped to `0` (Weakness I). With low-damage weapons this can yield zero vanilla damage, and Paper 1.21 does not fire `EntityDamageByEntityEvent` for zero damage, so tests that rely on an EDBE hit must use a stronger weapon or account for the clamp.
 - `OldPotionEffectsIntegrationTest` now disables the module by moving `old-potion-effects` into `disabled_modules` (and removing it from modesets/always lists), then uses `Config.reload()`; the `withConfig` helper restores module lists/modesets and saves+reloads config to keep state consistent.
+- `FireAspectOverdamageIntegrationTest` includes afterburn-vs-environmental fire-tick checks for both player and zombie victims, with and without Protection IV armour (mirrors issue 707 MRE).
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
@@ -110,7 +111,9 @@ This file captures repo-specific context discovered while working on this branch
   - `SwordSweepIntegrationTest` (direct `module.onEntityDamaged`)
 - `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
 - Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
-- FakePlayer now schedules a manual NMS tick for non-legacy servers (resolved via reflection); this was added to help passive effects but still needs validation.
+- FakePlayer now schedules a manual NMS tick for non-legacy servers (prefers `doTick`, then `tick`, falls back to `baseTick`) to drive vanilla ticking like fire and passive effects.
+- FakePlayer now prefers `PlayerList.placeNewPlayer` over the legacy `load`/manual list insertion path to better mirror vanilla login initialisation (helps player fire-tick damage on modern servers).
+- FakePlayer does not emulate fire-tick damage; fire ticks should be driven by the NMS tick path.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
