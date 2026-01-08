@@ -114,7 +114,7 @@ This file captures repo-specific context discovered while working on this branch
 - `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
 - Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
 - FakePlayer now schedules a manual NMS tick for non-legacy servers (prefers `doTick`, then `tick`, falls back to `baseTick`) to drive vanilla ticking like fire and passive effects.
-- FakePlayer tick shim invokes `baseTick` whenever `remainingFireTicks > 0` (burning), because Paper 1.21+ can short-circuit `doTick`/`tick` for fake players, which otherwise prevents fire tick damage events.
+- FakePlayer tick shim invokes `baseTick` whenever `remainingFireTicks > 0` (burning) to ensure fire tick damage events still occur on Paper 1.21+ (which can short-circuit `doTick`/`tick` for fake players). When the fake player is in water, it prefers `doTick`/`tick` so the server can properly clear fire ticks (extinguish) before any fire damage is applied.
 - FakePlayer now prefers `PlayerList.placeNewPlayer` over the legacy `load`/manual list insertion path to better mirror vanilla login initialisation (helps player fire-tick damage on modern servers).
 - FakePlayer does not emulate fire-tick damage; fire ticks should be driven by the NMS tick path.
 - EntityDamageByEntityListener now logs extra debug about lastDamage restoration for non-entity damage, and documents the vanilla 1.12 damage flow in checkOverdamage.
@@ -125,6 +125,8 @@ This file captures repo-specific context discovered while working on this branch
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
 - The first two tests fire a synthetic `EntityDamageEvent` with `FIRE_TICK` to control timing and make the baseline check deterministic.
 - Paper 1.12 applies attack-cooldown scaling before the Bukkit damage event fires; fake players can start with a low initial cooldown, producing a weak first hit and allowing a stronger second hit as legitimate “overdamage”. `FireAspectOverdamageIntegrationTest` now waits a few ticks before the first attack to make the first hit stable on 1.12.
+- Added extra fire edge-case coverage in `FireAspectOverdamageIntegrationTest`: fire resistance + fire-immune victim rapid-click parity, water extinguish behaviour (no fire tick damage while submerged), fire protection vs protection comparisons (uses a Zombie victim for consistency), and alternating attackers during invulnerability.
+- Legacy (1.12) fake player behaviour differs for player-specific fire tick sampling, so the player afterburn-vs-environmental comparisons are no-ops on legacy; the Zombie variants still run across all versions.
 
 ## TDAID reminders (this repo)
 - Plan → Red → Green → Refactor → Validate.

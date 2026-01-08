@@ -661,9 +661,20 @@ class FakePlayer(private val plugin: JavaPlugin) {
             } else {
                 null
             }
-            if (remainingFireTicks != null && remainingFireTicks > 0 && baseTickMethod != null) {
-                runCatching { baseTickMethod.invoke(serverPlayer) }
-                return@Runnable
+            if (remainingFireTicks != null && remainingFireTicks > 0) {
+                val player = bukkitPlayer
+                val inWater = player != null && (
+                    player.location.block.type == Material.WATER ||
+                        player.eyeLocation.block.type == Material.WATER
+                    )
+                if (inWater && tickMethod != null) {
+                    runCatching { tickMethod.invoke(serverPlayer) }
+                    return@Runnable
+                }
+                if (baseTickMethod != null) {
+                    runCatching { baseTickMethod.invoke(serverPlayer) }
+                    return@Runnable
+                }
             }
 
             if (tickMethod != null) {

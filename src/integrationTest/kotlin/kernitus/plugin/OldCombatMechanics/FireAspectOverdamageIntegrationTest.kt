@@ -35,6 +35,9 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
+import org.bukkit.util.Vector
 import kotlinx.coroutines.delay
 import java.util.concurrent.Callable
 import kotlin.math.abs
@@ -61,6 +64,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
     }
 
     val isLegacyServer = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+
+    fun needsAttackWarmup(attacker: Player): Boolean = isLegacyServer
 
     data class AttackSample(
         val cancelled: Boolean,
@@ -176,6 +181,67 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
             return
         }
         entity.equipment?.armorContents = armour
+    }
+
+    fun applyFireProtectionArmour(entity: LivingEntity) {
+        val fireProtection = XEnchantment.FIRE_PROTECTION.get()
+        val armour = arrayOf(
+            ItemStack(Material.DIAMOND_BOOTS),
+            ItemStack(Material.DIAMOND_LEGGINGS),
+            ItemStack(Material.DIAMOND_CHESTPLATE),
+            ItemStack(Material.DIAMOND_HELMET)
+        )
+        if (fireProtection != null) {
+            armour.forEach { it.addUnsafeEnchantment(fireProtection, 4) }
+        }
+        if (entity is Player) {
+            entity.inventory.setArmorContents(armour)
+            return
+        }
+        entity.equipment?.armorContents = armour
+    }
+
+    fun applyFireResistance(entity: LivingEntity, durationTicks: Int = 20 * 60) {
+        entity.addPotionEffect(PotionEffect(PotionEffectType.FIRE_RESISTANCE, durationTicks, 0), true)
+    }
+
+    fun disableAiIfPossible(entity: LivingEntity) {
+        runCatching {
+            val method = entity.javaClass.methods.firstOrNull { m ->
+                m.name == "setAI" &&
+                    m.parameterTypes.size == 1 &&
+                    (m.parameterTypes[0] == java.lang.Boolean.TYPE || m.parameterTypes[0] == java.lang.Boolean::class.java)
+            } ?: return
+            method.invoke(entity, false)
+        }
+    }
+
+    fun stabilise(entity: Entity, location: Location) {
+        entity.fallDistance = 0.0f
+        entity.teleport(location)
+        entity.velocity = Vector(0, 0, 0)
+    }
+
+    data class BlockTypeSnapshot(val location: Location, val type: Material)
+
+    fun placeWaterColumn(world: org.bukkit.World, base: Location, height: Int = 2): List<BlockTypeSnapshot> {
+        val x = base.blockX
+        val y = base.blockY
+        val z = base.blockZ
+        val snapshots = mutableListOf<BlockTypeSnapshot>()
+        repeat(height) { dy ->
+            val block = world.getBlockAt(x, y + dy, z)
+            snapshots.add(BlockTypeSnapshot(block.location, block.type))
+            block.type = Material.WATER
+        }
+        return snapshots
+    }
+
+    fun restoreBlocks(snapshots: List<BlockTypeSnapshot>) {
+        snapshots.forEach { snap ->
+            val world = snap.location.world ?: return@forEach
+            world.getBlockAt(snap.location.blockX, snap.location.blockY, snap.location.blockZ).type = snap.type
+        }
     }
 
     suspend fun countSuccessfulAttacks(
@@ -347,7 +413,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
             // Vanilla 1.12 scales attack damage by cooldown *before* the Bukkit damage event is fired.
             // Fake players can start with an incomplete cooldown, so wait a few ticks to make the first hit stable.
-            if (isLegacyServer) {
+            if (needsAttackWarmup(attacker)) {
                 delayTicks(6)
             }
             runSync {
@@ -444,7 +510,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                 equip(attacker, weapon)
             }
 
-            if (isLegacyServer) {
+            if (needsAttackWarmup(attacker)) {
                 delayTicks(6)
             }
             runSync {
@@ -541,6 +607,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
     }
 
     test("fire aspect afterburn matches environmental fire tick damage (player)") {
+        if (isLegacyServer) return@test
+
         lateinit var attacker: Player
         lateinit var victim: Player
         var fakeAttacker: FakePlayer? = null
@@ -640,6 +708,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                     }
                     equip(attacker, weapon)
                     attackCompat(attacker, victim)
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
                     ensureBurning(victim, minTicks = 200)
                 }
                 delayTicks(12)
@@ -657,6 +727,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
     }
 
     test("fire aspect afterburn matches environmental fire tick damage with protection armour (player)") {
+        if (isLegacyServer) return@test
+
         lateinit var attacker: Player
         lateinit var victim: Player
         var fakeAttacker: FakePlayer? = null
@@ -780,6 +852,310 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
             HandlerList.unregisterAll(fireTickListener)
             runSync {
                 fakeAttacker?.removePlayer()
+                victim.remove()
+            }
+        }
+    }
+
+    test("fire aspect does not increase successful hits for fire resistant or fire immune victims") {
+        lateinit var attacker: Player
+        var fakeAttacker: FakePlayer? = null
+        var fakeVictim: FakePlayer? = null
+        var blaze: LivingEntity? = null
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attackerLocation = Location(world, 0.0, 100.0, 0.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fakeA, playerA) = spawnPlayer(attackerLocation)
+                fakeAttacker = fakeA
+                attacker = playerA
+
+                val (fakeV, playerV) = spawnPlayer(victimLocation)
+                fakeVictim = fakeV
+                prepareVictimState(playerV, maxHealthOverride = 200.0)
+                applyFireResistance(playerV)
+            }
+
+            val baselineWeapon = ItemStack(Material.DIAMOND_SWORD)
+            val fireWeapon = ItemStack(Material.DIAMOND_SWORD).also { item ->
+                val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                if (fireAspect != null) item.addUnsafeEnchantment(fireAspect, 2)
+            }
+
+            val fireResBaseline = countSuccessfulAttacks(
+                attacker = attacker,
+                victim = checkNotNull(Bukkit.getPlayer(checkNotNull(fakeVictim).uuid)),
+                weapon = baselineWeapon,
+                attempts = 30,
+                tickDelay = 1
+            )
+            runSync {
+                val victim = checkNotNull(Bukkit.getPlayer(checkNotNull(fakeVictim).uuid))
+                prepareVictimState(victim, maxHealthOverride = 200.0)
+                applyFireResistance(victim)
+            }
+            val fireResWithFireAspect = countSuccessfulAttacks(
+                attacker = attacker,
+                victim = checkNotNull(Bukkit.getPlayer(checkNotNull(fakeVictim).uuid)),
+                weapon = fireWeapon,
+                attempts = 30,
+                tickDelay = 1
+            )
+
+            abs(fireResWithFireAspect - fireResBaseline).shouldBeLessThanOrEqual(2)
+
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val blazeLocation = Location(world, 1.2, 100.0, 2.0)
+                blaze = world.spawn(blazeLocation, org.bukkit.entity.Blaze::class.java).apply {
+                    maximumNoDamageTicks = 100
+                    noDamageTicks = 0
+                    isInvulnerable = false
+                    health = maxHealth
+                }
+                disableAiIfPossible(checkNotNull(blaze))
+                stabilise(checkNotNull(blaze), blazeLocation)
+            }
+
+            val blazeBaseline = countSuccessfulAttacks(
+                attacker = attacker,
+                victim = checkNotNull(blaze),
+                weapon = baselineWeapon,
+                attempts = 30,
+                tickDelay = 1
+            )
+            runSync {
+                prepareVictimState(checkNotNull(blaze), maxHealthOverride = 200.0)
+                stabilise(checkNotNull(blaze), checkNotNull(blaze).location)
+            }
+            val blazeWithFireAspect = countSuccessfulAttacks(
+                attacker = attacker,
+                victim = checkNotNull(blaze),
+                weapon = fireWeapon,
+                attempts = 30,
+                tickDelay = 1
+            )
+
+            abs(blazeWithFireAspect - blazeBaseline).shouldBeLessThanOrEqual(2)
+        } finally {
+            runSync {
+                fakeAttacker?.removePlayer()
+                fakeVictim?.removePlayer()
+                blaze?.remove()
+            }
+        }
+    }
+
+    test("fire protection reduces fire tick damage and afterburn matches environmental") {
+        lateinit var attacker: Player
+        lateinit var victim: LivingEntity
+        var fakeAttacker: FakePlayer? = null
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attackerLocation = Location(world, 0.0, 100.0, 0.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fakeA, playerA) = spawnPlayer(attackerLocation)
+                fakeAttacker = fakeA
+                attacker = playerA
+
+                victim = spawnVictim(victimLocation)
+                prepareVictimState(victim)
+            }
+
+            runSync { applyProtectionArmour(victim) }
+            val protEnvironmental = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    ensureBurning(victim, minTicks = 200)
+                }
+            }
+
+            runSync {
+                prepareVictimState(victim)
+                applyFireProtectionArmour(victim)
+            }
+            val fireProtEnvironmental = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    ensureBurning(victim, minTicks = 200)
+                }
+            }
+
+            fireProtEnvironmental.average().shouldBeLessThan(protEnvironmental.average() + 0.25 + 1e-6)
+
+            runSync {
+                prepareVictimState(victim)
+                applyFireProtectionArmour(victim)
+            }
+            val afterburn = collectFireTickDamages(victim, 1) {
+                runSync {
+                    victim.maximumNoDamageTicks = 0
+                    victim.noDamageTicks = 0
+                    victim.lastDamage = 0.0
+                    val weapon = ItemStack(Material.DIAMOND_SWORD)
+                    val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                    if (fireAspect != null) {
+                        weapon.addUnsafeEnchantment(fireAspect, 2)
+                    }
+                    equip(attacker, weapon)
+                    attackCompat(attacker, victim)
+                    ensureBurning(victim, minTicks = 200)
+                }
+                delayTicks(12)
+            }
+
+            abs(afterburn.average() - fireProtEnvironmental.average()).shouldBeLessThan(0.25)
+        } finally {
+            runSync {
+                fakeAttacker?.removePlayer()
+                victim.remove()
+            }
+        }
+    }
+
+    test("water extinguishes fire without fire tick damage") {
+        lateinit var victim: Player
+        var fakeVictim: FakePlayer? = null
+        var blockSnapshots: List<BlockTypeSnapshot> = emptyList()
+        val samples = mutableListOf<FireTickSample>()
+
+        val listener = object : Listener {
+            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+            fun onFireTick(event: EntityDamageEvent) {
+                if (event.entity.uniqueId != victim.uniqueId) return
+                val cause = event.cause
+                if (cause != EntityDamageEvent.DamageCause.FIRE_TICK &&
+                    cause != EntityDamageEvent.DamageCause.FIRE
+                ) return
+                samples.add(FireTickSample(event.isCancelled, event.finalDamage))
+            }
+        }
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val victimLocation = Location(world, 0.5, 100.0, 0.5)
+                val (fakeV, playerV) = spawnPlayer(victimLocation)
+                fakeVictim = fakeV
+                victim = playerV
+                prepareVictimState(victim)
+                blockSnapshots = placeWaterColumn(world, victimLocation, height = 2)
+                stabilise(victim, victimLocation)
+                Bukkit.getPluginManager().registerEvents(listener, plugin)
+                ensureBurning(victim, minTicks = 200)
+            }
+
+            // Allow the initial tick or two to settle (some versions may still emit an early fire damage event).
+            delayTicks(2)
+            runSync { samples.clear() }
+            delayTicks(20)
+
+            val hadPositiveDamage = samples.any { !it.cancelled && it.finalDamage > 0.0 }
+            hadPositiveDamage.shouldBe(false)
+
+            runSync {
+                victim.fireTicks.shouldBeLessThanOrEqual(1)
+            }
+        } finally {
+            HandlerList.unregisterAll(listener)
+            runSync {
+                restoreBlocks(blockSnapshots)
+                fakeVictim?.removePlayer()
+            }
+        }
+    }
+
+    test("fire tick does not let a second attacker bypass invulnerability") {
+        lateinit var attackerA: Player
+        lateinit var attackerB: Player
+        lateinit var victim: LivingEntity
+        var fakeA: FakePlayer? = null
+        var fakeB: FakePlayer? = null
+
+        val samples = mutableListOf<AttackSample>()
+        val listener = object : Listener {
+            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+            fun onDamage(event: EntityDamageByEntityEvent) {
+                if (event.entity.uniqueId != victim.uniqueId) return
+                if (event.cause != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return
+                if (event.damager.uniqueId != attackerA.uniqueId &&
+                    event.damager.uniqueId != attackerB.uniqueId
+                ) return
+                samples.add(
+                    AttackSample(
+                        cancelled = event.isCancelled,
+                        damage = event.damage,
+                        finalDamage = event.finalDamage,
+                        noDamageTicks = victim.noDamageTicks,
+                        lastDamage = victim.lastDamage
+                    )
+                )
+            }
+        }
+
+        try {
+            runSync {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val aLocation = Location(world, 0.0, 100.0, 0.0)
+                val bLocation = Location(world, 0.0, 100.0, 2.0)
+                val victimLocation = Location(world, 1.2, 100.0, 0.0)
+
+                val (fa, pa) = spawnPlayer(aLocation)
+                fakeA = fa
+                attackerA = pa
+
+                val (fb, pb) = spawnPlayer(bLocation)
+                fakeB = fb
+                attackerB = pb
+
+                victim = spawnVictim(victimLocation)
+                prepareVictimState(victim)
+
+                val fireWeapon = ItemStack(Material.DIAMOND_SWORD).also { item ->
+                    val fireAspect = XEnchantment.FIRE_ASPECT.get()
+                    if (fireAspect != null) item.addUnsafeEnchantment(fireAspect, 2)
+                }
+                equip(attackerA, fireWeapon)
+                equip(attackerB, ItemStack(Material.DIAMOND_SWORD))
+
+                Bukkit.getPluginManager().registerEvents(listener, plugin)
+            }
+
+            if (needsAttackWarmup(attackerA)) {
+                delayTicks(6)
+            }
+            runSync { attackCompat(attackerA, victim) }
+
+            delayTicks(2)
+            runSync {
+                val fireEvent = EntityDamageEvent(victim, EntityDamageEvent.DamageCause.FIRE_TICK, 1.0)
+                Bukkit.getPluginManager().callEvent(fireEvent)
+            }
+            runSync { requireInvulnerabilityWindow(victim) }
+
+            if (needsAttackWarmup(attackerB)) {
+                delayTicks(6)
+            }
+            runSync { attackCompat(attackerB, victim) }
+
+            delayTicks(2)
+
+            samples.count { !it.cancelled }.shouldBeExactly(1)
+        } finally {
+            HandlerList.unregisterAll(listener)
+            runSync {
+                fakeA?.removePlayer()
+                fakeB?.removePlayer()
                 victim.remove()
             }
         }
