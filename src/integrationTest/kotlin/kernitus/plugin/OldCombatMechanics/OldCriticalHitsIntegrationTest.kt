@@ -182,19 +182,27 @@ class OldCriticalHitsIntegrationTest : FunSpec({
 
                 equip(attacker, weapon)
             }
-            delayTicks(5)
+            delayTicks(1)
+            if (isLegacy) {
+                // Vanilla 1.12 applies attack cooldown scaling before the Bukkit damage event fires.
+                // Give the fake player a short warmup so the baseline (non-critical) hit is not under-scaled.
+                delayTicks(6)
+            }
             runSync {
+                // Fake players are ticked and can have their fall distance cleared between ticks.
+                // Apply the critical-hit state and swing immediately to keep the state consistent.
+                val base = Location(attacker.world, 0.0, 100.0, 0.0)
+                attacker.teleport(base)
+                attacker.velocity = Vector(0.0, 0.0, 0.0)
+                attacker.isSprinting = false
+                attacker.fallDistance = 0f
+
                 attacker.isSprinting = critical
-                attacker.fallDistance = if (critical) 2f else 0f
                 if (critical) {
                     attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
                     attacker.velocity = Vector(0.0, -0.1, 0.0)
+                    attacker.fallDistance = 2f
                 }
-            }
-            if (critical) {
-                delayTicks(1)
-            }
-            runSync {
                 attacker.updateInventory()
                 attackCompat(attacker, victim)
             }
