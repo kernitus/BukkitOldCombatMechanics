@@ -188,23 +188,40 @@ class OldCriticalHitsIntegrationTest : FunSpec({
                 // Give the fake player a short warmup so the baseline (non-critical) hit is not under-scaled.
                 delayTicks(6)
             }
+            val base = Location(attacker.world, 0.0, 100.0, 0.0)
             runSync {
-                // Fake players are ticked and can have their fall distance cleared between ticks.
-                // Apply the critical-hit state and swing immediately to keep the state consistent.
-                val base = Location(attacker.world, 0.0, 100.0, 0.0)
                 attacker.teleport(base)
                 attacker.velocity = Vector(0.0, 0.0, 0.0)
                 attacker.isSprinting = false
                 attacker.fallDistance = 0f
+                attacker.updateInventory()
+            }
 
-                attacker.isSprinting = critical
-                if (critical) {
+            if (critical) {
+                // Give the server one tick to recognise the falling state, then re-apply immediately before the swing
+                // so it does not get cleared by ticking (varies by version / fake player internals).
+                runSync {
+                    attacker.isSprinting = true
                     attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
                     attacker.velocity = Vector(0.0, -0.1, 0.0)
                     attacker.fallDistance = 2f
                 }
-                attacker.updateInventory()
-                attackCompat(attacker, victim)
+                delayTicks(1)
+                runSync {
+                    attacker.isSprinting = true
+                    attacker.velocity = Vector(0.0, -0.1, 0.0)
+                    attacker.fallDistance = 2f
+                    attacker.updateInventory()
+                    attackCompat(attacker, victim)
+                }
+            } else {
+                runSync {
+                    attacker.isSprinting = false
+                    attacker.fallDistance = 0f
+                    attacker.velocity = Vector(0.0, 0.0, 0.0)
+                    attacker.updateInventory()
+                    attackCompat(attacker, victim)
+                }
             }
             delayTicks(2)
             return events.firstOrNull()?.damage

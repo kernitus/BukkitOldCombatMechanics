@@ -104,6 +104,18 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         if (attackSpeedAttribute != null) {
             player.getAttribute(attackSpeedAttribute)?.baseValue = 1000.0
         }
+        if (isLegacyServer) {
+            // Legacy fake players can miss item-based attack damage modifiers until after the first swing.
+            // Force a stable baseline so overdamage tests are not dependent on attribute refresh timing.
+            val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get()
+            val attribute = attackDamageAttribute?.let { player.getAttribute(it) }
+            if (attribute != null) {
+                attribute.baseValue = when (item.type) {
+                    Material.DIAMOND_SWORD -> 7.0
+                    else -> attribute.baseValue
+                }
+            }
+        }
         player.inventory.setItemInMainHand(item)
         player.updateInventory()
     }

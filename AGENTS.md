@@ -119,6 +119,7 @@ This file captures repo-specific context discovered while working on this branch
 - FakePlayer does not emulate fire-tick damage; fire ticks should be driven by the NMS tick path.
 - EntityDamageByEntityListener now logs extra debug about lastDamage restoration for non-entity damage, and documents the vanilla 1.12 damage flow in checkOverdamage.
 - EntityDamageByEntityListener no longer overwrites the stored last-damage baseline when cancelling “fake overdamage” (e.g. cancelled fire tick during invulnerability), preventing subsequent hits from incorrectly bypassing immunity.
+- Stored last-damage baselines now use a single lightweight expiry sweeper (tick-based TTL) instead of scheduling one Bukkit task per damage event; this keeps the hot path allocation-free while still expiring entries after `maximumNoDamageTicks`.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes
