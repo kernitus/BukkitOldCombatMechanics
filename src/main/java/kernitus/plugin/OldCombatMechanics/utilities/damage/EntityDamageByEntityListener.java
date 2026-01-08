@@ -241,7 +241,8 @@ public class EntityDamageByEntityListener extends OCMModule {
     }
 
     private double checkOverdamage(LivingEntity livingDamagee, EntityDamageEvent event, double newDamage) {
-        final double newLastDamage = Math.max(0, newDamage);
+        final double incomingDamage = newDamage; // base damage (before defence), used for baseline tracking
+        final double newLastDamage = Math.max(0, incomingDamage);
 
         /*
          * Vanilla 1.12 EntityLiving#damageEntity(DamageSource, float) flow:
@@ -267,12 +268,17 @@ public class EntityDamageByEntityListener extends OCMModule {
                 event.setDamage(0);
                 event.setCancelled(true);
                 debug("Was fake overdamage, cancelling " + newDamage + " <= " + lastDamage);
+                // Do not overwrite the stored baseline with this cancelled damage (e.g. fire tick),
+                // otherwise the next attack can incorrectly bypass immunity.
+                lastDamages.put(livingDamagee.getUniqueId(), lastDamage);
+                livingDamagee.setMetadata(LAST_DAMAGE_META, new FixedMetadataValue(plugin, lastDamage));
+                scheduleStoredDamageExpiry(livingDamagee);
                 return 0;
             }
 
             debug("Overdamage: " + newDamage + " - " + lastDamage);
             // We must subtract previous damage from new weapon damage for this attack
-            newDamage -= livingDamagee.getLastDamage();
+            newDamage -= lastDamage;
 
             debug("Last damage " + lastDamage + " new damage: " + newLastDamage + " applied: " + newDamage
                     + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
