@@ -14,6 +14,8 @@ This file captures repo-specific context discovered while working on this branch
 - Integration tests live in `src/integrationTest/kotlin` and are packaged into `OldCombatMechanics-<version>-tests.jar`.
 - Entrypoint plugin class: `kernitus.plugin.OldCombatMechanics.OCMTestMain`.
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
+- RunServer output is redirected to `build/integration-test-logs/<version>.log`; `checkTestResults<version>` prints only a compact summary/failures to the console.
+- Token hygiene: do **not** open/read `build/integration-test-logs/*.log` unless the user explicitly asks for log inspection; rely on the compact console summary by default and ask for permission before digging into full logs.
 - Matrix task: `integrationTest` depends on `integrationTestMatrix` which runs per-version tasks like:
   - `integrationTest1_19_2`, `integrationTest1_21_11`, `integrationTest1_12`, `integrationTest1_9`
 - Test result handoff:
@@ -114,6 +116,8 @@ This file captures repo-specific context discovered while working on this branch
 - FakePlayer now schedules a manual NMS tick for non-legacy servers (prefers `doTick`, then `tick`, falls back to `baseTick`) to drive vanilla ticking like fire and passive effects.
 - FakePlayer now prefers `PlayerList.placeNewPlayer` over the legacy `load`/manual list insertion path to better mirror vanilla login initialisation (helps player fire-tick damage on modern servers).
 - FakePlayer does not emulate fire-tick damage; fire ticks should be driven by the NMS tick path.
+- EntityDamageByEntityListener now logs extra debug about lastDamage restoration for non-entity damage, and documents the vanilla 1.12 damage flow in checkOverdamage.
+- InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

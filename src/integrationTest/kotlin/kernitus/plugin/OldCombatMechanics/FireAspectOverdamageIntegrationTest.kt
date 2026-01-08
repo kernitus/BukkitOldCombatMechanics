@@ -86,6 +86,10 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
     fun equip(player: Player, item: ItemStack) {
         prepareWeapon(item)
+        val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get()
+        if (attackSpeedAttribute != null) {
+            player.getAttribute(attackSpeedAttribute)?.baseValue = 1000.0
+        }
         player.inventory.setItemInMainHand(item)
         player.updateInventory()
     }
