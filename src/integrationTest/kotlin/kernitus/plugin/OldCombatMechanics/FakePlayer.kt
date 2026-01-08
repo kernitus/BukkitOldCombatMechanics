@@ -647,10 +647,29 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
     private fun scheduleServerPlayerTick() {
         if (isLegacy) return
-        val tickMethod = resolveServerPlayerTickMethod(serverPlayer.javaClass)
+        val serverPlayerClass = serverPlayer.javaClass
+        val tickMethod = resolveServerPlayerTickMethod(serverPlayerClass)
+        val baseTickMethod = resolveBaseTickMethod(serverPlayerClass)
+        val getRemainingFireTicksMethod = runCatching {
+            val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
+            val remapped = reflectionRemapper.remapMethodName(entityClass, "getRemainingFireTicks")
+            Reflector.getMethod(entityClass, remapped) ?: Reflector.getMethod(entityClass, "getRemainingFireTicks")
+        }.getOrNull()
         tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, Runnable {
+            val remainingFireTicks = if (getRemainingFireTicksMethod != null) {
+                runCatching { getRemainingFireTicksMethod.invoke(serverPlayer) as Int }.getOrNull()
+            } else {
+                null
+            }
+            if (remainingFireTicks != null && remainingFireTicks > 0 && baseTickMethod != null) {
+                runCatching { baseTickMethod.invoke(serverPlayer) }
+                return@Runnable
+            }
+
             if (tickMethod != null) {
                 runCatching { tickMethod.invoke(serverPlayer) }
+            } else if (baseTickMethod != null) {
+                runCatching { baseTickMethod.invoke(serverPlayer) }
             }
         }, 1L, 1L)
     }

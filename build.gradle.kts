@@ -18,6 +18,7 @@ import java.io.Serializable
 import java.net.URI
 import java.security.MessageDigest
 import java.nio.file.Files
+import java.io.Closeable
 
 val paperVersion: List<String> = (property("gameVersions") as String)
         .split(",")
@@ -253,6 +254,159 @@ fun requiredJavaVersion(version: String): Int {
     return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
 }
 
+data class KotestSummary(
+    val specsPassed: Int?,
+    val specsFailed: Int?,
+    val specsTotal: Int?,
+    val testsPassed: Int?,
+    val testsFailed: Int?,
+    val testsIgnored: Int?,
+    val testsTotal: Int?,
+    val failures: List<String>,
+    val failureDetails: List<String>
+)
+
+fun parseKotestSummary(logFile: File): KotestSummary? {
+    if (!logFile.exists()) return null
+
+    val lines = logFile.readLines()
+    var inFailures = false
+    var blockContext: String? = null // "specs" or "tests"
+
+    var specsPassed: Int? = null
+    var specsFailed: Int? = null
+    var specsTotal: Int? = null
+
+    var testsPassed: Int? = null
+    var testsFailed: Int? = null
+    var testsIgnored: Int? = null
+    var testsTotal: Int? = null
+
+    val failures = mutableListOf<String>()
+    val failureDetails = mutableListOf<String>()
+
+    val numberLine = Regex("^(\\d+) (passed|failed|ignored|total)$")
+    val inlineSpecsLine = Regex("^Specs:\\s*(\\d+) passed,\\s*(\\d+) failed,\\s*(\\d+) total$")
+    val inlineTestsLine = Regex("^Tests:\\s*(\\d+) passed,\\s*(\\d+) failed,\\s*(\\d+) ignored,\\s*(\\d+) total$")
+    val stackTopLine = Regex("^\\s*[^\\s].*\\(([^)]+:\\d+)\\)\\s*$")
+
+    var lastTestName: String? = null
+    var pendingFailureName: String? = null
+    var pendingFailureMessage: String? = null
+
+    for (raw in lines) {
+        val line = raw.substringAfter("]:", raw).trim()
+
+        when {
+            line.startsWith(">> There were test failures") -> {
+                inFailures = true
+                blockContext = null
+            }
+
+            line.startsWith("Specs:") -> {
+                inFailures = false
+                val inline = inlineSpecsLine.matchEntire(line)
+                if (inline != null) {
+                    specsPassed = inline.groupValues[1].toInt()
+                    specsFailed = inline.groupValues[2].toInt()
+                    specsTotal = inline.groupValues[3].toInt()
+                    blockContext = null
+                } else {
+                    blockContext = "specs"
+                }
+            }
+
+            line.startsWith("Tests:") -> {
+                inFailures = false
+                val inline = inlineTestsLine.matchEntire(line)
+                if (inline != null) {
+                    testsPassed = inline.groupValues[1].toInt()
+                    testsFailed = inline.groupValues[2].toInt()
+                    testsIgnored = inline.groupValues[3].toInt()
+                    testsTotal = inline.groupValues[4].toInt()
+                    blockContext = null
+                } else {
+                    blockContext = "tests"
+                }
+            }
+
+            inFailures -> {
+                val cleaned = line.removePrefix("-").trim()
+                if (cleaned.isNotBlank()) {
+                    failures.add(cleaned)
+                }
+            }
+
+            line.startsWith("- ") -> {
+                lastTestName = line.removePrefix("-").trim()
+            }
+
+            line == "FAILED" -> {
+                pendingFailureName = lastTestName
+                pendingFailureMessage = null
+            }
+
+            pendingFailureName != null && pendingFailureMessage == null && line.isNotBlank() -> {
+                // First line after FAILED is usually the assertion message.
+                pendingFailureMessage = line
+            }
+
+            pendingFailureName != null && pendingFailureMessage != null -> {
+                val match = stackTopLine.matchEntire(line)
+                if (match != null) {
+                    val location = match.groupValues[1]
+                    val name = pendingFailureName!!
+                    val message = pendingFailureMessage!!
+                    failureDetails.add("$name: $message ($location)")
+                    pendingFailureName = null
+                    pendingFailureMessage = null
+                }
+            }
+
+            blockContext != null -> {
+                val match = numberLine.matchEntire(line)
+                if (match != null) {
+                    val value = match.groupValues[1].toInt()
+                    when (blockContext) {
+                        "specs" -> when (match.groupValues[2]) {
+                            "passed" -> specsPassed = value
+                            "failed" -> specsFailed = value
+                            "total" -> specsTotal = value
+                        }
+
+                        "tests" -> when (match.groupValues[2]) {
+                            "passed" -> testsPassed = value
+                            "failed" -> testsFailed = value
+                            "ignored" -> testsIgnored = value
+                            "total" -> testsTotal = value
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (
+        specsPassed == null && specsFailed == null && specsTotal == null &&
+        testsPassed == null && testsFailed == null && testsIgnored == null && testsTotal == null &&
+        failures.isEmpty()
+    ) {
+        return null
+    }
+
+    return KotestSummary(
+        specsPassed,
+        specsFailed,
+        specsTotal,
+        testsPassed,
+        testsFailed,
+        testsIgnored,
+        testsTotal,
+        failures,
+        failureDetails.distinct()
+    )
+}
+
 fun sha1(file: File): String {
     val digest = MessageDigest.getInstance("SHA-1")
     file.inputStream().use { input ->
@@ -296,6 +450,7 @@ for (version in integrationTestVersions) {
     val runDir = file("run/$version")
     val resultFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-results.txt")
     val vanillaCacheFile = runDir.resolve("cache/mojang_${version}.jar")
+    val logFile = layout.buildDirectory.file("integration-test-logs/$suffix.log")
 
     val writePropsTask = tasks.register<WriteProperties>("writeProperties${suffix}") {
         encoding = "UTF-8"
@@ -313,7 +468,8 @@ for (version in integrationTestVersions) {
                     .toURL()
                     .readText()
                 val manifest = slurper.parseText(manifestText) as Map<*, *>
-                val versionsList = manifest["versions"] as List<Map<*, *>>
+                val versionsList = manifest["versions"] as? List<Map<*, *>>
+                    ?: throw GradleException("Invalid Mojang manifest format: missing 'versions' list.")
                 val versionEntry = versionsList.firstOrNull { it["id"] == version }
                     ?: throw GradleException("Minecraft version '$version' not found in Mojang manifest.")
                 val versionUrl = versionEntry["url"] as String
@@ -376,6 +532,18 @@ for (version in integrationTestVersions) {
         pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
 
         doFirst {
+            val log = logFile.get().asFile
+            log.parentFile.mkdirs()
+            val stream = log.outputStream()
+            standardOutput = stream
+            errorOutput = stream
+        }
+
+        doLast {
+            (standardOutput as? Closeable)?.close()
+        }
+
+        doFirst {
             if (resultFile.exists()) {
                 resultFile.delete()
             }
@@ -392,12 +560,39 @@ for (version in integrationTestVersions) {
                 throw GradleException("Test results file not found for $version. Tests may not have run correctly.")
             }
             val result = resultFile.readText().trim()
+            val log = logFile.get().asFile
+            val summary = parseKotestSummary(log)
+            summary?.let {
+                val parts = mutableListOf<String>()
+                if (it.specsTotal != null) {
+                    parts.add("Specs: ${it.specsPassed ?: "?"} passed, ${it.specsFailed ?: "?"} failed, ${it.specsTotal} total")
+                }
+                if (it.testsTotal != null) {
+                    parts.add("Tests: ${it.testsPassed ?: "?"} passed, ${it.testsFailed ?: "?"} failed, ${it.testsIgnored ?: 0} ignored, ${it.testsTotal} total")
+                }
+                if (it.failures.isNotEmpty()) {
+                    parts.add("Failures: ${it.failures.joinToString(", ")}")
+                }
+                if (it.failureDetails.isNotEmpty()) {
+                    parts.add("Reasons: ${it.failureDetails.take(2).joinToString("; ")}")
+                }
+                if (parts.isNotEmpty()) {
+                    logger.lifecycle("[${version}] ${parts.joinToString(" | ")}")
+                }
+            } ?: run {
+                val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
+                logger.lifecycle("[${version}] No Kotest summary parsed. Full log: $rel")
+            }
+            run {
+                val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
+                logger.lifecycle("[${version}] Log: $rel")
+            }
             if (result == "FAIL") {
                 throw GradleException("Integration tests failed for $version.")
             } else if (result != "PASS") {
                 throw GradleException("Unknown test result for $version: $result")
             }
-            println("Integration tests passed for $version.")
+            logger.lifecycle("Integration tests passed for $version.")
         }
     }
 

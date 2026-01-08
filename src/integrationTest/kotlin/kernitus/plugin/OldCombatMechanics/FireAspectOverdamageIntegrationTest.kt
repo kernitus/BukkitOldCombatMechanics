@@ -15,6 +15,7 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.assertions.withClue
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import org.bukkit.Bukkit
@@ -59,7 +60,15 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         delay(ticks * 50L)
     }
 
-    data class AttackSample(val cancelled: Boolean)
+    val isLegacyServer = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+
+    data class AttackSample(
+        val cancelled: Boolean,
+        val damage: Double,
+        val finalDamage: Double,
+        val noDamageTicks: Int,
+        val lastDamage: Double
+    )
 
     data class FireTickSample(val cancelled: Boolean, val finalDamage: Double)
 
@@ -86,6 +95,10 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
     fun equip(player: Player, item: ItemStack) {
         prepareWeapon(item)
+        val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get()
+        if (attackSpeedAttribute != null) {
+            player.getAttribute(attackSpeedAttribute)?.baseValue = 1000.0
+        }
         player.inventory.setItemInMainHand(item)
         player.updateInventory()
     }
@@ -243,6 +256,35 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         return nonCancelled.take(expectedCount).map { it.finalDamage }
     }
 
+    fun snapshotOverdamageState(
+        attacker: Player,
+        victim: LivingEntity,
+        attackSamples: List<AttackSample>,
+        fireTickSamples: List<FireTickSample>
+    ): String {
+        var snapshot = ""
+        runSync {
+            val meta = victim.getMetadata("ocm-last-damage")
+                .joinToString(prefix = "[", postfix = "]") { m ->
+                    "${m.owningPlugin?.name ?: "?"}=${runCatching { m.asDouble() }.getOrNull()}"
+                }
+            val attackDetails = attackSamples.joinToString(prefix = "[", postfix = "]") {
+                "{c=${it.cancelled}, dmg=${it.damage}, final=${it.finalDamage}, ndt=${it.noDamageTicks}, ld=${it.lastDamage}}"
+            }
+            snapshot =
+                "attacks(total=${attackSamples.size}, ok=${attackSamples.count { !it.cancelled }}, " +
+                    "cancelled=${attackSamples.count { it.cancelled }}, details=$attackDetails) " +
+                    "fireTicks(total=${fireTickSamples.size}, ok=${fireTickSamples.count { !it.cancelled }}, " +
+                    "cancelled=${fireTickSamples.count { it.cancelled }}) " +
+                    "attacker(onGround=${attacker.isOnGround}, fallDistance=${attacker.fallDistance}, " +
+                    "sprinting=${attacker.isSprinting}, velocity=${attacker.velocity}) " +
+                    "victim(noDamageTicks=${victim.noDamageTicks}, maxNoDamageTicks=${victim.maximumNoDamageTicks}, " +
+                    "lastDamage=${victim.lastDamage}, health=${victim.health}/${victim.maxHealth}, " +
+                    "fireTicks=${victim.fireTicks}, meta=$meta)"
+        }
+        return snapshot
+    }
+
     test("fire aspect does not bypass invulnerability cancellation") {
         val attackSamples = mutableListOf<AttackSample>()
         val fireTickSamples = mutableListOf<FireTickSample>()
@@ -257,7 +299,15 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                 if (event.entity.uniqueId == currentVictim.uniqueId &&
                     event.damager.uniqueId == attacker.uniqueId
                 ) {
-                    attackSamples.add(AttackSample(event.isCancelled))
+                    attackSamples.add(
+                        AttackSample(
+                            cancelled = event.isCancelled,
+                            damage = event.damage,
+                            finalDamage = event.finalDamage,
+                            noDamageTicks = currentVictim.noDamageTicks,
+                            lastDamage = currentVictim.lastDamage
+                        )
+                    )
                 }
             }
 
@@ -293,6 +343,14 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                     weapon.addUnsafeEnchantment(fireAspect, 2)
                 }
                 equip(attacker, weapon)
+            }
+
+            // Vanilla 1.12 scales attack damage by cooldown *before* the Bukkit damage event is fired.
+            // Fake players can start with an incomplete cooldown, so wait a few ticks to make the first hit stable.
+            if (isLegacyServer) {
+                delayTicks(6)
+            }
+            runSync {
                 attackCompat(attacker, checkNotNull(victim))
             }
 
@@ -317,7 +375,10 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
             delayTicks(2)
 
-            attackSamples.count { !it.cancelled }.shouldBeExactly(1)
+            val state = snapshotOverdamageState(attacker, checkNotNull(victim), attackSamples, fireTickSamples)
+            withClue(state) {
+                attackSamples.count { !it.cancelled }.shouldBeExactly(1)
+            }
         } finally {
             HandlerList.unregisterAll(listener)
             runSync {
@@ -341,7 +402,15 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                 if (event.entity.uniqueId == currentVictim.uniqueId &&
                     event.damager.uniqueId == attacker.uniqueId
                 ) {
-                    attackSamples.add(AttackSample(event.isCancelled))
+                    attackSamples.add(
+                        AttackSample(
+                            cancelled = event.isCancelled,
+                            damage = event.damage,
+                            finalDamage = event.finalDamage,
+                            noDamageTicks = currentVictim.noDamageTicks,
+                            lastDamage = currentVictim.lastDamage
+                        )
+                    )
                 }
             }
 
@@ -373,6 +442,12 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
                 val weapon = ItemStack(Material.DIAMOND_SWORD)
                 equip(attacker, weapon)
+            }
+
+            if (isLegacyServer) {
+                delayTicks(6)
+            }
+            runSync {
                 attackCompat(attacker, checkNotNull(victim))
             }
 
@@ -397,7 +472,10 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
 
             delayTicks(2)
 
-            attackSamples.count { !it.cancelled }.shouldBeExactly(1)
+            val state = snapshotOverdamageState(attacker, checkNotNull(victim), attackSamples, fireTickSamples)
+            withClue(state) {
+                attackSamples.count { !it.cancelled }.shouldBeExactly(1)
+            }
         } finally {
             HandlerList.unregisterAll(listener)
             runSync {
