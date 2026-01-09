@@ -78,7 +78,11 @@ public class EntityDamageByEntityListener extends OCMModule {
         // Some implementations / test setups set maximumNoDamageTicks to 0, but damage immunity bookkeeping can
         // still matter for a short period (e.g. cancelled fire ticks during invulnerability). Keep a small minimum.
         final long delayTicks = Math.max(MIN_LAST_DAMAGE_TTL_TICKS, damagee.getMaximumNoDamageTicks());
-        lastDamageExpiryTicks.put(uuid, tickCounter + delayTicks);
+        final long candidateExpiry = tickCounter + delayTicks;
+        final Long existingExpiry = lastDamageExpiryTicks.get(uuid);
+        if (existingExpiry == null || candidateExpiry > existingExpiry) {
+            lastDamageExpiryTicks.put(uuid, candidateExpiry);
+        }
     }
 
     private void sweepExpiredEntries() {
