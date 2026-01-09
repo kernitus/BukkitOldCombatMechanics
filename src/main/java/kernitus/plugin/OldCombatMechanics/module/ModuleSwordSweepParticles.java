@@ -56,12 +56,23 @@ public class ModuleSwordSweepParticles extends OCMModule {
 
             try {
                 final PacketContainer packetContainer = packetEvent.getPacket();
-                String particleName;
+                String particleName = null;
                 try {
-                    particleName = packetContainer.getNewParticles().read(0).getParticle().name();
-                } catch (Exception exception) {
-                    particleName = packetContainer.getParticles().read(0).name(); // for pre 1.13
+                    com.comphenix.protocol.wrappers.WrappedParticle<?> newParticle =
+                            packetContainer.getNewParticles().read(0);
+                    if (newParticle != null && newParticle.getParticle() != null) {
+                        particleName = newParticle.getParticle().name();
+                    }
+                } catch (Exception exception) { // fall back for legacy packets / wrappers
+                    com.comphenix.protocol.wrappers.EnumWrappers.Particle legacyParticle =
+                            packetContainer.getParticles().read(0); // for pre 1.13
+                    if (legacyParticle != null) {
+                        particleName = legacyParticle.name();
+                    }
                 }
+
+                if (particleName == null)
+                    return; // unknown particle; do not disable the listener
 
                 if (particleName.toUpperCase(Locale.ROOT).contains("SWEEP")) {
                     packetEvent.setCancelled(true);

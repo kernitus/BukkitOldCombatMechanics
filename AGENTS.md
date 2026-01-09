@@ -133,6 +133,8 @@ This file captures repo-specific context discovered while working on this branch
 - EntityDamageByEntityListener no longer overwrites the stored last-damage baseline when cancelling “fake overdamage” (e.g. cancelled fire tick during invulnerability), preventing subsequent hits from incorrectly bypassing immunity.
 - Stored last-damage baselines now use a single lightweight expiry sweeper (tick-based TTL) instead of scheduling one Bukkit task per damage event; this keeps the hot path allocation-free. Expiry is monotonic (only extended, never shortened) and has a small minimum TTL to tolerate `maximumNoDamageTicks = 0`.
 - `WeaponDurabilityIntegrationTest` now uses a Zombie victim (fake-player attacker) and prefers the Bukkit `Player#attack` API before falling back to reflective NMS attack resolution, to make hit delivery reliable on modern servers.
+- `ModuleSwordSweepParticles` now null-checks ProtocolLib particle wrappers so sweep-particle cancellation does not disable itself when ProtocolLib returns an unknown/null particle on 1.21+.
+- Sword sweep integration tests now pass on 1.19.2 and 1.21.11 after the particle null-guard fix.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes
