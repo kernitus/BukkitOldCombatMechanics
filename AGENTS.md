@@ -135,6 +135,7 @@ This file captures repo-specific context discovered while working on this branch
 - `WeaponDurabilityIntegrationTest` now uses a Zombie victim (fake-player attacker) and prefers the Bukkit `Player#attack` API before falling back to reflective NMS attack resolution, to make hit delivery reliable on modern servers.
 - `ModuleSwordSweepParticles` now null-checks ProtocolLib particle wrappers so sweep-particle cancellation does not disable itself when ProtocolLib returns an unknown/null particle on 1.21+.
 - Sword sweep integration tests now pass on 1.19.2 and 1.21.11 after the particle null-guard fix.
+- `ModuleAttackSounds` now skips packets it cannot resolve instead of throwing when ProtocolLib hands back holder wrappers without a detectable location method, preventing the listener from self-disabling on 1.20+.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes

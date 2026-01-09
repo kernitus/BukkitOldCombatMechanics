@@ -244,10 +244,10 @@ public class ModuleAttackSounds extends OCMModule {
                     }
 
                     if (soundName == null) {
-                        // If we still can't find it, something changed in the server/ProtocolLib
-                        // mapping
-                        throw new IllegalStateException(
-                                "Could not find sound location method on " + soundEventObject.getClass().getName());
+                        // Could not resolve the sound name; skip quietly to avoid disabling the listener
+                        debug("Could not resolve sound name for " + soundEventObject.getClass().getName(),
+                                packetEvent.getPlayer());
+                        return;
                     }
 
                     soundNameCache.put(nmsSoundEvent, soundName);
