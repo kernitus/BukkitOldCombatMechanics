@@ -86,6 +86,9 @@ This file captures repo-specific context discovered while working on this branch
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
+- Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.
+- Added integration test ensuring vanilla strength addend applies when `old-potion-effects` is disabled.
+- Strength modifier in `OCMEntityDamageByEntityEvent` now stores per-level value (3) and applies level when reconstructing base damage.
 - Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.

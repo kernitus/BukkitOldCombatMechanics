@@ -164,7 +164,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
                 .map(PotionEffect::getAmplifier)
                 .orElse(-1) + 1;
 
-        strengthModifier = strengthLevel * 3;
+        // Store per-level modifier so listeners can multiply by level consistently.
+        strengthModifier = strengthLevel > 0 ? 3 : 0;
 
         debug(livingDamager, "Strength Modifier: " + strengthModifier);
 
@@ -193,7 +194,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             debug(livingDamager, "Weakness compensated; skipping base weakness modifier");
         }
 
-        baseDamage = tempDamage + weaknessForBase - strengthModifier;
+        baseDamage = tempDamage + weaknessForBase - (strengthModifier * strengthLevel);
         debug(livingDamager, "Base tool damage: " + baseDamage);
     }
 
