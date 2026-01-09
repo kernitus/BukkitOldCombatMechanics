@@ -93,6 +93,8 @@ This file captures repo-specific context discovered while working on this branch
 - `KotestRunner` class list updated to include `OldToolDamageMobIntegrationTest`.
 - `ModuleOldToolDamage` now adjusts mob weapon damage by shifting base damage with the configured-vs-vanilla delta for non-player damagers.
 - `ModuleOldToolDamage` documents that mob custom weapons are not detected; the delta is always applied for mobs and may conflict with other plugins.
+- Added `WeaponDurabilityIntegrationTest` covering tool durability vs hit counts during invulnerability and after it expires (FakePlayer attacker vs FakePlayer victim); registered in `KotestRunner`.
+- `WeaponDurabilityIntegrationTest` writes debug summaries to `build/weapon-durability-debug-<version>.txt`.
 - `OldToolDamageMobIntegrationTest` uses a Villager victim and waits for a real Vindicator hit by setting a target and retrying with tick delays (plus a best-effort NMS attackCompat call) before asserting the mob tool-damage delta.
 - Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
@@ -125,9 +127,12 @@ This file captures repo-specific context discovered while working on this branch
 - FakePlayer tick shim invokes `baseTick` whenever `remainingFireTicks > 0` (burning) to ensure fire tick damage events still occur on Paper 1.21+ (which can short-circuit `doTick`/`tick` for fake players). When the fake player is in water, it prefers `doTick`/`tick` so the server can properly clear fire ticks (extinguish) before any fire damage is applied.
 - FakePlayer now prefers `PlayerList.placeNewPlayer` over the legacy `load`/manual list insertion path to better mirror vanilla login initialisation (helps player fire-tick damage on modern servers).
 - FakePlayer does not emulate fire-tick damage; fire ticks should be driven by the NMS tick path.
+- FakePlayer now forces a world add when the Bukkit world does not report the fake player entity after `placeNewPlayer` to keep PvP interactions reliable.
+- FakePlayer now clears invulnerability/instabuild abilities after spawn (plus a legacy fallback) to improve PvP interactions between fake players.
 - EntityDamageByEntityListener now logs extra debug about lastDamage restoration for non-entity damage, and documents the vanilla 1.12 damage flow in checkOverdamage.
 - EntityDamageByEntityListener no longer overwrites the stored last-damage baseline when cancelling “fake overdamage” (e.g. cancelled fire tick during invulnerability), preventing subsequent hits from incorrectly bypassing immunity.
 - Stored last-damage baselines now use a single lightweight expiry sweeper (tick-based TTL) instead of scheduling one Bukkit task per damage event; this keeps the hot path allocation-free. Expiry is monotonic (only extended, never shortened) and has a small minimum TTL to tolerate `maximumNoDamageTicks = 0`.
+- `WeaponDurabilityIntegrationTest` now uses a Zombie victim (fake-player attacker) and prefers the Bukkit `Player#attack` API before falling back to reflective NMS attack resolution, to make hit delivery reliable on modern servers.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes
