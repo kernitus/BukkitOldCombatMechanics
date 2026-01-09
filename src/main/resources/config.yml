@@ -141,6 +141,10 @@ old-tool-damage:
     DIAMOND_HOE: 1
     NETHERITE_HOE: 1
     COPPER_HOE: 1
+    # Trident and mace
+    TRIDENT: 8
+    TRIDENT_THROWN: 8
+    MACE: 6
 
 old-critical-hits:
   # Makes critical hits work like in 1.8

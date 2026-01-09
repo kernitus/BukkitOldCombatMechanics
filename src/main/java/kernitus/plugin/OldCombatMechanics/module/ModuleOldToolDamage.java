@@ -12,7 +12,10 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
+import org.bukkit.entity.Trident;
 import org.bukkit.entity.Entity;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
@@ -47,6 +50,7 @@ public class ModuleOldToolDamage extends OCMModule {
 
         final ItemStack weapon = event.getWeapon();
         final Material weaponMaterial = weapon.getType();
+        final String weaponName = weaponMaterial.name();
         debug("Weapon material: " + weaponMaterial);
 
         if (!isWeapon(weaponMaterial)) return;
@@ -60,19 +64,27 @@ public class ModuleOldToolDamage extends OCMModule {
         final double oldBaseDamage = event.getBaseDamage();
         final Float expectedBaseDamage = NewWeaponDamage.getDamageOrNull(weaponMaterial);
         if (damager instanceof org.bukkit.entity.HumanEntity) {
-            // If damage was not what we expected, ignore it because it's probably a custom weapon or from another plugin
+            boolean isMace = weaponName.equals("MACE");
+            double adjustedBase = newWeaponBaseDamage;
+
             if (expectedBaseDamage != null) {
-                // We check difference as calculation inaccuracies can make it not match
-                if (Math.abs(oldBaseDamage - expectedBaseDamage) > 0.0001) {
-                    debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
-                    return;
+                final double diff = oldBaseDamage - expectedBaseDamage;
+                // For mace we treat diff as the vanilla fall bonus and preserve it.
+                if (isMace) {
+                    adjustedBase += diff;
+                } else {
+                    // We check difference as calculation inaccuracies can make it not match
+                    if (Math.abs(diff) > 0.0001) {
+                        debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
+                        return;
+                    }
                 }
             } else {
                 debug("No baseline damage for " + weaponMaterial + ", applying configured damage.", damager);
             }
 
-            event.setBaseDamage(newWeaponBaseDamage);
-            Messenger.debug("Old tool damage: " + oldBaseDamage + " New: " + newWeaponBaseDamage);
+            event.setBaseDamage(adjustedBase);
+            Messenger.debug("Old tool damage: " + oldBaseDamage + " New: " + adjustedBase);
         } else if (damager instanceof org.bukkit.entity.LivingEntity) {
             if (expectedBaseDamage == null) {
                 debug("No baseline damage for " + weaponMaterial + ", ignoring mob weapon.", damager);
@@ -102,10 +114,24 @@ public class ModuleOldToolDamage extends OCMModule {
     }
 
     private boolean isWeapon(Material material) {
+        final String name = material.name();
+        if (name.equals("TRIDENT") || name.equals("MACE")) return true;
         return Arrays.stream(WEAPONS).anyMatch(type -> isOfType(material, type));
     }
 
     private boolean isOfType(Material mat, String type) {
         return mat.toString().endsWith("_" + type.toUpperCase(Locale.ROOT));
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTridentProjectile(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Trident)) return;
+        if (!isEnabled(event.getDamager(), event.getEntity())) return;
+
+        final double configured = WeaponDamages.getDamage("TRIDENT_THROWN");
+        if (configured <= 0) return;
+
+        event.setDamage(configured);
+        debug("Applied custom thrown trident damage: " + configured, event.getDamager());
     }
 }
