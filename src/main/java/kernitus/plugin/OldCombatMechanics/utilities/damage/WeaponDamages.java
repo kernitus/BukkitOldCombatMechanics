@@ -35,6 +35,10 @@ public class WeaponDamages {
         return damages.getOrDefault(name, -1.0);
     }
 
+    public static double getDamage(String key) {
+        return damages.getOrDefault(key, -1.0);
+    }
+
     public static Map<Material, Double> getMaterialDamages() {
         final Map<Material, Double> materialMap = new HashMap<>();
         damages.forEach((name, damage) -> {

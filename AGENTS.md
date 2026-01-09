@@ -139,6 +139,7 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleChorusFruit` now reimplements the chorus teleport search (16 attempts, world-border aware, passable feet/head, solid ground) for custom teleport distances; falls back to vanilla target if no safe spot found.
 - Added `ChorusFruitIntegrationTest` (in KotestRunner list) to assert custom chorus teleport distance lands on a safe block within the configured radius.
 - Chorus fruit safety test now handles legacy 1.12 by using solid/non-solid checks when `Block#isPassable` is absent; passes on 1.12, 1.19.2, and 1.21.11.
+- `ModuleOldToolDamage` now supports configurable TRIDENT (melee), TRIDENT_THROWN, and MACE damage; mace preserves its vanilla fall bonus while overriding base damage. New defaults added to `old-tool-damage.damages`.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 
 ## Fire aspect / fire tick test notes
