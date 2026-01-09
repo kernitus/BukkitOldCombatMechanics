@@ -10,10 +10,14 @@ import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.block.BlockFace;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -86,15 +90,51 @@ public class ModuleChorusFruit extends OCMModule {
 
         final int maxheight = toLocation.getWorld().getMaxHeight();
 
-        e.setTo(player.getLocation().add(
-                ThreadLocalRandom.current().nextDouble(-distance, distance),
-                MathsHelper.clamp(ThreadLocalRandom.current().nextDouble(-distance, distance), 0, maxheight - 1),
-                ThreadLocalRandom.current().nextDouble(-distance, distance)
-        ));
+        final Location origin = player.getLocation();
+        final World world = origin.getWorld();
+        final ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+        Location chosen = null;
+        // Mirror vanilla chorus fruit: up to 16 attempts to find a safe spot
+        for (int i = 0; i < 16; i++) {
+            final double x = origin.getX() + (rng.nextDouble() - 0.5D) * 2 * distance;
+            final double y = MathsHelper.clamp(origin.getY() + rng.nextInt(Math.max(1, (int) Math.ceil(distance))), 0,
+                    maxheight - 1);
+            final double z = origin.getZ() + (rng.nextDouble() - 0.5D) * 2 * distance;
+            final Location candidate = new Location(world, x, y, z);
+
+            if (!world.getWorldBorder().isInside(candidate)) continue;
+            if (!isSafe(candidate)) continue;
+
+            chosen = candidate;
+            break;
+        }
+
+        if (chosen == null) {
+            debug("No safe chorus teleport found within distance " + distance + ", keeping vanilla target", player);
+            return;
+        }
+
+        e.setTo(chosen);
+        debug("Chorus teleport redirected to safe location " + chosen, player);
     }
 
 
     private double getMaxTeleportationDistance() {
         return module().getDouble("max-teleportation-distance");
+    }
+
+    private boolean isSafe(Location location) {
+        Block feet = location.getBlock();
+        Block head = feet.getRelative(BlockFace.UP);
+        Block below = feet.getRelative(BlockFace.DOWN);
+
+        boolean modern = Reflector.versionIsNewerOrEqualTo(1, 13, 0);
+        boolean feetPassable = modern ? feet.isPassable() : !feet.getType().isSolid();
+        boolean headPassable = modern ? head.isPassable() : !head.getType().isSolid();
+
+        if (!feetPassable || !headPassable) return false;
+        if (!below.getType().isSolid()) return false;
+        return true;
     }
 }
