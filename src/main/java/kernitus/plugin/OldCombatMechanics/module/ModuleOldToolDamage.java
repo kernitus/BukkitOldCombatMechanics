@@ -79,6 +79,9 @@ public class ModuleOldToolDamage extends OCMModule {
                 return;
             }
 
+            // Mobs do not have a reliable baseline check like players, so we always apply the delta.
+            // This means custom mob weapons are not detected and will still be shifted, which may
+            // interact poorly with other plugins that modify mob damage in non-vanilla ways.
             final double delta = newWeaponBaseDamage - expectedBaseDamage;
             final double newBaseDamage = oldBaseDamage + delta;
             event.setBaseDamage(newBaseDamage);
