@@ -182,21 +182,46 @@ class OldCriticalHitsIntegrationTest : FunSpec({
 
                 equip(attacker, weapon)
             }
-            delayTicks(5)
+            delayTicks(1)
+            if (isLegacy) {
+                // Vanilla 1.12 applies attack cooldown scaling before the Bukkit damage event fires.
+                // Give the fake player a short warmup so the baseline (non-critical) hit is not under-scaled.
+                delayTicks(6)
+            }
+            val base = Location(attacker.world, 0.0, 100.0, 0.0)
             runSync {
-                attacker.isSprinting = critical
-                attacker.fallDistance = if (critical) 2f else 0f
-                if (critical) {
+                attacker.teleport(base)
+                attacker.velocity = Vector(0.0, 0.0, 0.0)
+                attacker.isSprinting = false
+                attacker.fallDistance = 0f
+                attacker.updateInventory()
+            }
+
+            if (critical) {
+                // Give the server one tick to recognise the falling state, then re-apply immediately before the swing
+                // so it does not get cleared by ticking (varies by version / fake player internals).
+                runSync {
+                    attacker.isSprinting = true
                     attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
                     attacker.velocity = Vector(0.0, -0.1, 0.0)
+                    attacker.fallDistance = 2f
                 }
-            }
-            if (critical) {
                 delayTicks(1)
-            }
-            runSync {
-                attacker.updateInventory()
-                attackCompat(attacker, victim)
+                runSync {
+                    attacker.isSprinting = true
+                    attacker.velocity = Vector(0.0, -0.1, 0.0)
+                    attacker.fallDistance = 2f
+                    attacker.updateInventory()
+                    attackCompat(attacker, victim)
+                }
+            } else {
+                runSync {
+                    attacker.isSprinting = false
+                    attacker.fallDistance = 0f
+                    attacker.velocity = Vector(0.0, 0.0, 0.0)
+                    attacker.updateInventory()
+                    attackCompat(attacker, victim)
+                }
             }
             delayTicks(2)
             return events.firstOrNull()?.damage

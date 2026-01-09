@@ -15,28 +15,27 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
-
-import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class EntityDamageByEntityListener extends OCMModule {
 
-    private static final String LAST_DAMAGE_META = "ocm-last-damage";
     private static EntityDamageByEntityListener INSTANCE;
     private boolean enabled;
     private final Map<UUID, Double> lastDamages;
-    private final Map<UUID, Integer> lastDamageGenerations;
-    private int lastDamageGenerationCounter;
+    private final Map<UUID, Long> lastDamageExpiryTicks;
+    private long tickCounter;
+    private int expirySweepTaskId = -1;
+    private static final long EXPIRY_SWEEP_INTERVAL_TICKS = 20L;
+    private static final long MIN_LAST_DAMAGE_TTL_TICKS = 20L;
 
     public EntityDamageByEntityListener(OCMMain plugin) {
         super(plugin, "entity-damage-listener");
         INSTANCE = this;
         lastDamages = new HashMap<>();
-        lastDamageGenerations = new HashMap<>();
+        lastDamageExpiryTicks = new HashMap<>();
     }
 
     public static EntityDamageByEntityListener getINSTANCE() {
@@ -50,6 +49,51 @@ public class EntityDamageByEntityListener extends OCMModule {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        if (enabled) {
+            startExpirySweeperIfNeeded();
+        } else {
+            stopExpirySweeperIfNeeded();
+            lastDamages.clear();
+            lastDamageExpiryTicks.clear();
+        }
+    }
+
+    private void startExpirySweeperIfNeeded() {
+        if (expirySweepTaskId != -1) return;
+        expirySweepTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            tickCounter++;
+            if (tickCounter % EXPIRY_SWEEP_INTERVAL_TICKS != 0) return;
+            sweepExpiredEntries();
+        }, 1L, 1L);
+    }
+
+    private void stopExpirySweeperIfNeeded() {
+        if (expirySweepTaskId == -1) return;
+        Bukkit.getScheduler().cancelTask(expirySweepTaskId);
+        expirySweepTaskId = -1;
+    }
+
+    private void touchExpiry(LivingEntity damagee) {
+        final UUID uuid = damagee.getUniqueId();
+        // Some implementations / test setups set maximumNoDamageTicks to 0, but damage immunity bookkeeping can
+        // still matter for a short period (e.g. cancelled fire ticks during invulnerability). Keep a small minimum.
+        final long delayTicks = Math.max(MIN_LAST_DAMAGE_TTL_TICKS, damagee.getMaximumNoDamageTicks());
+        final long candidateExpiry = tickCounter + delayTicks;
+        final Long existingExpiry = lastDamageExpiryTicks.get(uuid);
+        if (existingExpiry == null || candidateExpiry > existingExpiry) {
+            lastDamageExpiryTicks.put(uuid, candidateExpiry);
+        }
+    }
+
+    private void sweepExpiredEntries() {
+        final Iterator<Map.Entry<UUID, Long>> it = lastDamageExpiryTicks.entrySet().iterator();
+        while (it.hasNext()) {
+            final Map.Entry<UUID, Long> entry = it.next();
+            if (entry.getValue() > tickCounter) continue;
+            final UUID uuid = entry.getKey();
+            it.remove();
+            lastDamages.remove(uuid);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -214,7 +258,6 @@ public class EntityDamageByEntityListener extends OCMModule {
                     return;
                 }
                 clearStoredDamage(livingDamagee);
-                livingDamagee.removeMetadata(LAST_DAMAGE_META, plugin);
             }
             debug("Non-entity damage, using default last damage", damagee);
             debug("Non-entity damage, using default last damage");
@@ -232,6 +275,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             final LivingEntity livingDamagee = damagee;
             livingDamagee.setLastDamage(lastStoredDamage);
             lastDamages.put(livingDamagee.getUniqueId(), lastStoredDamage);
+            touchExpiry(livingDamagee);
             debug("Set last damage back to " + lastStoredDamage, livingDamagee);
             debug("Set last damage back to " + lastStoredDamage);
         } else {
@@ -271,8 +315,7 @@ public class EntityDamageByEntityListener extends OCMModule {
                 // Do not overwrite the stored baseline with this cancelled damage (e.g. fire tick),
                 // otherwise the next attack can incorrectly bypass immunity.
                 lastDamages.put(livingDamagee.getUniqueId(), lastDamage);
-                livingDamagee.setMetadata(LAST_DAMAGE_META, new FixedMetadataValue(plugin, lastDamage));
-                scheduleStoredDamageExpiry(livingDamagee);
+                touchExpiry(livingDamagee);
                 return 0;
             }
 
@@ -287,46 +330,26 @@ public class EntityDamageByEntityListener extends OCMModule {
         // Update the last damage done, including when it was overdamage.
         // This means attacks must keep increasing in value during immunity period to keep dealing overdamage.
         lastDamages.put(livingDamagee.getUniqueId(), newLastDamage);
-        livingDamagee.setMetadata(LAST_DAMAGE_META, new FixedMetadataValue(plugin, newLastDamage));
-        scheduleStoredDamageExpiry(livingDamagee);
+        touchExpiry(livingDamagee);
 
         return newDamage;
     }
 
     private Double resolveStoredDamage(LivingEntity damagee) {
-        Double lastStoredDamage = lastDamages.get(damagee.getUniqueId());
-        if (lastStoredDamage != null) {
-            return lastStoredDamage;
-        }
-        final List<MetadataValue> metadataValues = damagee.getMetadata(LAST_DAMAGE_META);
-        for (MetadataValue metadataValue : metadataValues) {
-            if (metadataValue.getOwningPlugin() == plugin) {
-                return metadataValue.asDouble();
-            }
-        }
-        return null;
-    }
-
-    private void scheduleStoredDamageExpiry(LivingEntity damagee) {
         final UUID uuid = damagee.getUniqueId();
-        final int generation = ++lastDamageGenerationCounter;
-        lastDamageGenerations.put(uuid, generation);
-
-        final long delayTicks = Math.max(1, damagee.getMaximumNoDamageTicks());
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            final Integer currentGeneration = lastDamageGenerations.get(uuid);
-            if (currentGeneration == null || currentGeneration != generation) {
-                return;
-            }
-            clearStoredDamage(damagee);
-        }, delayTicks);
+        final Long expiresAtTick = lastDamageExpiryTicks.get(uuid);
+        if (expiresAtTick != null && expiresAtTick <= tickCounter) {
+            lastDamageExpiryTicks.remove(uuid);
+            lastDamages.remove(uuid);
+            return null;
+        }
+        return lastDamages.get(uuid);
     }
 
     private void clearStoredDamage(LivingEntity damagee) {
         final UUID uuid = damagee.getUniqueId();
-        lastDamageGenerations.remove(uuid);
+        lastDamageExpiryTicks.remove(uuid);
         lastDamages.remove(uuid);
-        damagee.removeMetadata(LAST_DAMAGE_META, plugin);
     }
 
 }

@@ -38,6 +38,7 @@ import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockDispenseEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.EventPriority
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.inventory.EquipmentSlot
@@ -390,6 +391,14 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 action()
                 null
             }).get()
+        }
+    }
+
+    fun <T> runSyncResult(action: () -> T): T {
+        return if (Bukkit.isPrimaryThread()) {
+            action()
+        } else {
+            Bukkit.getScheduler().callSyncMethod(testPlugin, Callable { action() }).get()
         }
     }
 
@@ -771,6 +780,130 @@ class OldPotionEffectsIntegrationTest : FunSpec({
     }
 
     context("Strength and weakness modifiers") {
+        test("vanilla strength addend applies when old-potion-effects is disabled") {
+            withConfig {
+                val disabled = ocm.config.getStringList("disabled_modules")
+                    .filterNot { it.equals("old-potion-effects", true) }
+                    .toMutableList()
+                disabled.add("old-potion-effects")
+                ocm.config.set("disabled_modules", disabled)
+                ocm.config.set(
+                    "always_enabled_modules",
+                    ocm.config.getStringList("always_enabled_modules")
+                        .filterNot { it.equals("old-potion-effects", true) }
+                )
+                val modesetsSection = ocm.config.getConfigurationSection("modesets")
+                    ?: error("Missing 'modesets' section in config")
+                modesetsSection.getKeys(false).forEach { key ->
+                    val modules = ocm.config.getStringList("modesets.$key")
+                        .filterNot { it.equals("old-potion-effects", true) }
+                    ocm.config.set("modesets.$key", modules)
+                }
+                ocm.saveConfig()
+                Config.reload()
+
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                val weapon = ItemStack(Material.DIAMOND_SWORD)
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION")
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
+                    )
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun captureDamage(victim: LivingEntity): Double {
+                    val events = mutableListOf<EntityDamageByEntityEvent>()
+                    val listener = object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == player.uniqueId &&
+                                event.entity.uniqueId == victim.uniqueId
+                            ) {
+                                events.add(event)
+                            }
+                        }
+                    }
+                    runSync {
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    try {
+                        waitForAttackReady(player)
+                        runSync {
+                            attackCompat(player, victim)
+                        }
+                        delay(200)
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                    val event = events.lastOrNull()
+                        ?: error("Expected a damage event for vanilla strength test")
+                    return event.damage
+                }
+
+                prepareWeapon(weapon)
+                runSync {
+                    player.inventory.clear()
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    player.updateInventory()
+                    player.isSprinting = false
+                    player.fallDistance = 0f
+                    player.velocity = Vector(0.0, 0.0, 0.0)
+                    player.isInvulnerable = false
+                    player.health = player.maxHealth
+                }
+
+                val baselineVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                val baselineDamage = captureDamage(baselineVictim)
+                runSync { baselineVictim.remove() }
+
+                val strengthVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 1), true)
+                }
+                delay(50)
+                val strengthDamage = captureDamage(strengthVictim)
+                runSync { strengthVictim.remove() }
+
+                val delta = strengthDamage - baselineDamage
+                delta.shouldBe(6.0.plusOrMinus(0.0001))
+            }
+        }
+
         test("damage modifiers are applied from config") {
             withConfig {
                 val strengthModifier = 2.4
@@ -800,6 +933,446 @@ class OldPotionEffectsIntegrationTest : FunSpec({
                 event.weaknessModifier.shouldBe(weaknessModifier)
                 event.isWeaknessModifierMultiplier.shouldBeTrue()
                 event.weaknessLevel.shouldBe(1)
+            }
+        }
+
+        test("strength addend scales per level for Strength II") {
+            withConfig {
+                val strengthModifier = 2.0
+                ocm.config.set("old-potion-effects.strength.modifier", strengthModifier)
+                ocm.config.set("old-potion-effects.strength.multiplier", false)
+                ocm.config.set("old-potion-effects.strength.addend", true)
+                module.reload()
+
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                val weapon = ItemStack(Material.DIAMOND_SWORD)
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION")
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
+                    )
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun captureDamage(victim: LivingEntity): Double {
+                    val events = mutableListOf<EntityDamageByEntityEvent>()
+                    val listener = object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == player.uniqueId &&
+                                event.entity.uniqueId == victim.uniqueId
+                            ) {
+                                events.add(event)
+                            }
+                        }
+                    }
+                    runSync {
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    try {
+                        waitForAttackReady(player)
+                        runSync {
+                            attackCompat(player, victim)
+                        }
+                        delay(200)
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                    val event = events.lastOrNull()
+                        ?: error("Expected a damage event for strength addend test")
+                    return event.damage
+                }
+
+                prepareWeapon(weapon)
+                runSync {
+                    player.inventory.clear()
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    player.updateInventory()
+                    player.isSprinting = false
+                    player.fallDistance = 0f
+                    player.velocity = Vector(0.0, 0.0, 0.0)
+                    player.isInvulnerable = false
+                    player.health = player.maxHealth
+                }
+
+                val baselineVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                val baselineDamage = captureDamage(baselineVictim)
+                runSync { baselineVictim.remove() }
+
+                val strengthVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 1), true)
+                }
+                delay(50)
+                val strengthDamage = captureDamage(strengthVictim)
+                runSync { strengthVictim.remove() }
+
+                val delta = strengthDamage - baselineDamage
+                delta.shouldBe((strengthModifier * 2).plusOrMinus(0.0001))
+            }
+        }
+
+        test("strength addend scales per level for Strength III") {
+            withConfig {
+                val strengthModifier = 2.0
+                ocm.config.set("old-potion-effects.strength.modifier", strengthModifier)
+                ocm.config.set("old-potion-effects.strength.multiplier", false)
+                ocm.config.set("old-potion-effects.strength.addend", true)
+                module.reload()
+
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                val weapon = ItemStack(Material.DIAMOND_SWORD)
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION")
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
+                    )
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun captureDamage(victim: LivingEntity): Double {
+                    val events = mutableListOf<EntityDamageByEntityEvent>()
+                    val listener = object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == player.uniqueId &&
+                                event.entity.uniqueId == victim.uniqueId
+                            ) {
+                                events.add(event)
+                            }
+                        }
+                    }
+                    runSync {
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    try {
+                        waitForAttackReady(player)
+                        runSync {
+                            attackCompat(player, victim)
+                        }
+                        delay(200)
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                    val event = events.lastOrNull()
+                        ?: error("Expected a damage event for strength addend test")
+                    return event.damage
+                }
+
+                prepareWeapon(weapon)
+                runSync {
+                    player.inventory.clear()
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    player.updateInventory()
+                    player.isSprinting = false
+                    player.fallDistance = 0f
+                    player.velocity = Vector(0.0, 0.0, 0.0)
+                    player.isInvulnerable = false
+                    player.health = player.maxHealth
+                }
+
+                val baselineVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                val baselineDamage = captureDamage(baselineVictim)
+                runSync { baselineVictim.remove() }
+
+                val strengthVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 2), true)
+                }
+                delay(50)
+                val strengthDamage = captureDamage(strengthVictim)
+                runSync { strengthVictim.remove() }
+
+                val delta = strengthDamage - baselineDamage
+                delta.shouldBe((strengthModifier * 3).plusOrMinus(0.0001))
+            }
+        }
+
+        test("strength addend respects configured modifier value") {
+            withConfig {
+                val strengthModifier = 4.5
+                ocm.config.set("old-potion-effects.strength.modifier", strengthModifier)
+                ocm.config.set("old-potion-effects.strength.multiplier", false)
+                ocm.config.set("old-potion-effects.strength.addend", true)
+                module.reload()
+
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                val weapon = ItemStack(Material.DIAMOND_SWORD)
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION")
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
+                    )
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun captureDamage(victim: LivingEntity): Double {
+                    val events = mutableListOf<EntityDamageByEntityEvent>()
+                    val listener = object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == player.uniqueId &&
+                                event.entity.uniqueId == victim.uniqueId
+                            ) {
+                                events.add(event)
+                            }
+                        }
+                    }
+                    runSync {
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    try {
+                        waitForAttackReady(player)
+                        runSync {
+                            attackCompat(player, victim)
+                        }
+                        delay(200)
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                    val event = events.lastOrNull()
+                        ?: error("Expected a damage event for strength addend test")
+                    return event.damage
+                }
+
+                prepareWeapon(weapon)
+                runSync {
+                    player.inventory.clear()
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    player.updateInventory()
+                    player.isSprinting = false
+                    player.fallDistance = 0f
+                    player.velocity = Vector(0.0, 0.0, 0.0)
+                    player.isInvulnerable = false
+                    player.health = player.maxHealth
+                }
+
+                val baselineVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                val baselineDamage = captureDamage(baselineVictim)
+                runSync { baselineVictim.remove() }
+
+                val strengthVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0), true)
+                }
+                delay(50)
+                val strengthDamage = captureDamage(strengthVictim)
+                runSync { strengthVictim.remove() }
+
+                val delta = strengthDamage - baselineDamage
+                delta.shouldBe(strengthModifier.plusOrMinus(0.0001))
+            }
+        }
+
+        test("strength multiplier scales base damage") {
+            withConfig {
+                val strengthModifier = 1.4
+                ocm.config.set("old-potion-effects.strength.modifier", strengthModifier)
+                ocm.config.set("old-potion-effects.strength.multiplier", true)
+                ocm.config.set("old-potion-effects.strength.addend", false)
+                module.reload()
+
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                val weapon = ItemStack(Material.DIAMOND_SWORD)
+
+                fun prepareWeapon(item: ItemStack) {
+                    val meta = item.itemMeta ?: return
+                    @Suppress("DEPRECATION")
+                    val speedModifier = createAttributeModifier(
+                        name = "speed",
+                        amount = 1000.0,
+                        operation = AttributeModifier.Operation.ADD_NUMBER,
+                        slot = EquipmentSlot.HAND
+                    )
+                    val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
+                    addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
+                    item.itemMeta = meta
+                }
+
+                fun applyAttackDamageModifiers(item: ItemStack) {
+                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
+                    val attackAttribute = player.getAttribute(attackDamageAttribute) ?: return
+                    val modifiers = getDefaultAttributeModifiersCompat(item, EquipmentSlot.HAND, attackDamageAttribute)
+                    modifiers.forEach { modifier ->
+                        attackAttribute.removeModifier(modifier)
+                        attackAttribute.addModifier(modifier)
+                    }
+                }
+
+                suspend fun captureDamage(victim: LivingEntity): Double {
+                    val events = mutableListOf<EntityDamageByEntityEvent>()
+                    val listener = object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == player.uniqueId &&
+                                event.entity.uniqueId == victim.uniqueId
+                            ) {
+                                events.add(event)
+                            }
+                        }
+                    }
+                    runSync {
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    try {
+                        waitForAttackReady(player)
+                        runSync {
+                            attackCompat(player, victim)
+                        }
+                        delay(200)
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                    val event = events.lastOrNull()
+                        ?: error("Expected a damage event for strength multiplier test")
+                    return event.damage
+                }
+
+                prepareWeapon(weapon)
+                runSync {
+                    player.inventory.clear()
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.inventory.setItemInMainHand(weapon)
+                    applyAttackDamageModifiers(weapon)
+                    player.updateInventory()
+                    player.isSprinting = false
+                    player.fallDistance = 0f
+                    player.velocity = Vector(0.0, 0.0, 0.0)
+                    player.isInvulnerable = false
+                    player.health = player.maxHealth
+                }
+
+                val baselineVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                val baselineDamage = captureDamage(baselineVictim)
+                runSync { baselineVictim.remove() }
+
+                val strengthVictim = runSyncResult {
+                    world.spawn(Location(world, 1.2, 100.0, 0.0), org.bukkit.entity.Cow::class.java).apply {
+                        maximumNoDamageTicks = 20
+                        noDamageTicks = 0
+                        isInvulnerable = false
+                        health = maxHealth
+                    }
+                }
+                runSync {
+                    player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                    player.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 1), true)
+                }
+                delay(50)
+                val strengthDamage = captureDamage(strengthVictim)
+                runSync { strengthVictim.remove() }
+
+                val ratio = strengthDamage / baselineDamage
+                ratio.shouldBe((strengthModifier * 2).plusOrMinus(0.0001))
             }
         }
 
