@@ -97,7 +97,8 @@ object KotestRunner {
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,
-                        SwordSweepIntegrationTest::class
+                        SwordSweepIntegrationTest::class,
+                        ChorusFruitIntegrationTest::class
                     )
                     .launch()
             } catch (e: Throwable) {
