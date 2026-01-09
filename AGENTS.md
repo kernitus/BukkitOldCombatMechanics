@@ -89,6 +89,10 @@ This file captures repo-specific context discovered while working on this branch
 - Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.
 - Added integration test ensuring vanilla strength addend applies when `old-potion-effects` is disabled.
 - Strength modifier in `OCMEntityDamageByEntityEvent` now stores per-level value (3) and applies level when reconstructing base damage.
+- Added `OldToolDamageMobIntegrationTest` to assert old-tool-damage config affects vindicator iron-axe hits.
+- `KotestRunner` class list updated to include `OldToolDamageMobIntegrationTest`.
+- `ModuleOldToolDamage` now adjusts mob weapon damage by shifting base damage with the configured-vs-vanilla delta for non-player damagers.
+- `OldToolDamageMobIntegrationTest` uses a Villager victim and waits for a real Vindicator hit by setting a target and retrying with tick delays (plus a best-effort NMS attackCompat call) before asserting the mob tool-damage delta.
 - Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.

@@ -92,6 +92,7 @@ object KotestRunner {
                         InvulnerabilityDamageIntegrationTest::class,
                         FireAspectOverdamageIntegrationTest::class,
                         OldCriticalHitsIntegrationTest::class,
+                        OldToolDamageMobIntegrationTest::class,
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,
