@@ -21,15 +21,17 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
 
-<a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
+<p align="center">
+  <a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
     <img src="res/paper.png" alt="Paper" height="100">
-</a>
-<a href="https://www.spigotmc.org/resources/19510/">
+  </a>
+  <a href="https://www.spigotmc.org/resources/19510/">
     <img src="res/spigot.png" alt="Spigot" height="100">
-</a>
-<a href="https://dev.bukkit.org/projects/oldcombatmechanics">
+  </a>
+  <a href="https://dev.bukkit.org/projects/oldcombatmechanics">
     <img src="res/bukkit.png" alt="Bukkit" height="100">
-</a>
+  </a>
+</p>
 
 **Quick start** ⚡
 1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
