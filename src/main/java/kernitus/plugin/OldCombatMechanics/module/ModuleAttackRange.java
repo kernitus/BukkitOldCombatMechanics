@@ -14,8 +14,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
@@ -43,6 +47,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
     public ModuleAttackRange(OCMMain plugin) {
         super(plugin, "attack-range");
         initialiseReflection();
+        registerCleanerListener(plugin);
         reload();
     }
 
@@ -82,15 +87,43 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHotbar(PlayerItemHeldEvent event) {
+        // strip old, then apply/strip new
+        cleanHand(event.getPlayer(), event.getPreviousSlot());
         applyToHeld(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSwap(PlayerSwapHandItemsEvent event) {
+        // strip both hands, then re-apply according to enablement
+        stripComponent(event.getMainHandItem());
+        stripComponent(event.getOffHandItem());
+        applyToItem(event.getPlayer(), event.getOffHandItem()); // new main hand after swap
+        applyToItem(event.getPlayer(), event.getMainHandItem()); // new offhand (kept clean)
     }
 
     private void applyToHeld(Player player) {
         if (!supported) return;
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() == Material.AIR) return;
-        if (!isWeapon(item.getType())) return;
+        applyToItem(player, item);
+    }
+
+    private void applyToItem(Player player, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR || !isWeapon(item.getType())) {
+            stripComponent(item);
+            return;
+        }
+        if (!isEnabled(player)) {
+            stripComponent(item);
+            return;
+        }
+        if (paperAdapter.hasComponent(item)) return;
         applyAttackRange(item);
+    }
+
+    private void cleanHand(Player player, int slot) {
+        ItemStack old = player.getInventory().getItem(slot);
+        stripComponent(old);
     }
 
     private boolean isWeapon(Material material) {
@@ -100,6 +133,48 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     private void applyAttackRange(ItemStack item) {
         paperAdapter.apply(item, minRange, maxRange, minCreative, maxCreative, hitboxMargin, mobFactor);
+    }
+
+    private void stripComponent(ItemStack item) {
+        if (item == null) return;
+        paperAdapter.clear(item);
+    }
+
+    private void registerCleanerListener(Plugin plugin) {
+        Bukkit.getPluginManager().registerEvents(new CleanerListener(), plugin);
+    }
+
+    /**
+     * Always-on listener that strips the component when the item leaves hand or is dropped,
+     * preventing lingering modified stacks even when the module is disabled.
+     */
+    private class CleanerListener implements Listener {
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onHeldChange(PlayerItemHeldEvent event) {
+            cleanHand(event.getPlayer(), event.getPreviousSlot());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onSwap(PlayerSwapHandItemsEvent event) {
+            stripComponent(event.getMainHandItem());
+            stripComponent(event.getOffHandItem());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDrop(PlayerDropItemEvent event) {
+            stripComponent(event.getItemDrop().getItemStack());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDeath(PlayerDeathEvent event) {
+            event.getDrops().forEach(ModuleAttackRange.this::stripComponent);
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onQuit(PlayerQuitEvent event) {
+            stripComponent(event.getPlayer().getInventory().getItemInMainHand());
+            stripComponent(event.getPlayer().getInventory().getItemInOffHand());
+        }
     }
 
     /**
@@ -116,6 +191,8 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         private final java.lang.reflect.Method mobFactorSetter;
         private final java.lang.reflect.Method buildMethod;
         private final java.lang.reflect.Method itemSetData;
+        private final java.lang.reflect.Method itemHasData;
+        private final java.lang.reflect.Method itemUnsetData;
         private boolean warned;
 
         PaperAttackRangeAdapter() throws Exception {
@@ -133,6 +210,8 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             buildMethod = builder.getMethod("build");
             Class<?> typeClass = dct.getField("ATTACK_RANGE").getType();
             itemSetData = ItemStack.class.getMethod("setData", typeClass, ar);
+            itemHasData = ItemStack.class.getMethod("hasData", Class.forName("io.papermc.paper.datacomponent.DataComponentType"));
+            itemUnsetData = ItemStack.class.getMethod("unsetData", Class.forName("io.papermc.paper.datacomponent.DataComponentType"));
         }
 
         void apply(ItemStack stack, float min, float max, float minCreative, float maxCreative, float margin, float mobFactor) {
@@ -151,6 +230,24 @@ public class ModuleAttackRange extends OCMModule implements Listener {
                     Messenger.warn("Attack range component application failed; leaving item unchanged. (" + t.getClass().getSimpleName() + ": " + t.getMessage() + ")");
                     warned = true;
                 }
+            }
+        }
+
+        boolean hasComponent(ItemStack stack) {
+            try {
+                return (boolean) itemHasData.invoke(stack, attackRangeType);
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+
+        void clear(ItemStack stack) {
+            try {
+                if (hasComponent(stack)) {
+                    itemUnsetData.invoke(stack, attackRangeType);
+                }
+            } catch (Throwable ignored) {
+                // ignore
             }
         }
     }

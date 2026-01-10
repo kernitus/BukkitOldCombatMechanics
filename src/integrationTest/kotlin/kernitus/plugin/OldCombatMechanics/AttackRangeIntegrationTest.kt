@@ -9,7 +9,6 @@ package kernitus.plugin.OldCombatMechanics
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.doubles.shouldBeLessThan
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackRange
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
@@ -22,6 +21,8 @@ import org.bukkit.entity.Player
 import org.bukkit.entity.Zombie
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.event.player.PlayerItemHeldEvent
+import org.bukkit.event.player.PlayerDropItemEvent
 import java.util.concurrent.Callable
 
 /**
@@ -39,6 +40,19 @@ class AttackRangeIntegrationTest : FunSpec({
     val applyMethod = attackRangeModule?.javaClass?.getDeclaredMethod("applyToHeld", Player::class.java)?.apply {
         isAccessible = true
     }
+
+    fun hasAttackRange(stack: ItemStack?): Boolean =
+        try {
+            if (stack == null) return false
+            val dctClass = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+            val typeField = dctClass.getField("ATTACK_RANGE")
+            val type = typeField.get(null)
+            val baseTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType")
+            val getter = ItemStack::class.java.getMethod("getData", baseTypeClass)
+            getter.invoke(stack, type) != null
+        } catch (t: Throwable) {
+            false
+        }
 
     extensions(MainThreadDispatcherExtension(testPlugin))
 
@@ -175,6 +189,81 @@ class AttackRangeIntegrationTest : FunSpec({
 
             cleanup(actors)
         }
+    }
+
+    test("reach boost is removed after disabling while holding the same item (Paper 1.21.11+)") {
+        if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        if (attackRangeModule == null) return@test
+
+        val actors = spawnActors()
+        val (_, player, zombie) = actors
+
+        withModuleState(enabled = true, maxRange = 5.5) {
+            runSync { applyMethod?.invoke(attackRangeModule, player) }
+            runSync { zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5)) }
+            var start = zombie.health
+            swingAt(zombie, player) // should hit with extended reach
+            runSync { zombie.health shouldBeLessThan start }
+
+            withModuleState(enabled = false) {
+                runSync {
+                    // trigger hand re-evaluation
+                    Bukkit.getPluginManager().callEvent(
+                        PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot)
+                    )
+                    zombie.health = zombie.maxHealth
+                    zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5))
+                }
+                start = zombie.health
+                swingAt(zombie, player) // should now miss
+                runSync { zombie.health shouldBe start }
+            }
+        }
+
+        cleanup(actors)
+    }
+
+    test("dropped items do not retain reach boost (Paper 1.21.11+)") {
+        if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        if (attackRangeModule == null) return@test
+
+        val actors = spawnActors()
+        val (_, player, zombie) = actors
+
+        withModuleState(enabled = true) {
+            runSync { applyMethod?.invoke(attackRangeModule, player) }
+            runSync { zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5)) }
+            var start = zombie.health
+            swingAt(zombie, player) // extended reach hit
+            runSync { zombie.health shouldBeLessThan start }
+
+            val dropped: ItemStack = run {
+                var item: ItemStack? = null
+                runSync {
+                    val drop = player.world.dropItem(player.location, player.inventory.itemInMainHand.clone())
+                    Bukkit.getPluginManager().callEvent(PlayerDropItemEvent(player, drop))
+                    item = drop.itemStack
+                    drop.remove()
+                }
+                item!!
+            }
+
+            withModuleState(enabled = false) {
+                runSync {
+                    player.inventory.setItemInMainHand(dropped)
+                    Bukkit.getPluginManager().callEvent(
+                        PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot)
+                    )
+                    zombie.health = zombie.maxHealth
+                    zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5))
+                }
+                start = zombie.health
+                swingAt(zombie, player) // should miss because drop cleaned component
+                runSync { zombie.health shouldBe start }
+            }
+        }
+
+        cleanup(actors)
     }
 
     test("extended reach does not apply when module disabled; close swing still hits (Paper 1.21.11+)") {
