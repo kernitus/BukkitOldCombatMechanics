@@ -100,7 +100,14 @@ public class OCMMain extends JavaPlugin {
         // BStats Metrics
         final Metrics metrics = new Metrics(this, 53);
 
-        // Simple bar chart
+        metrics.addCustomChart(new SimplePie("server_software", () -> {
+            final String name = Bukkit.getServer().getName();
+            if (name == null || name.isEmpty()) return "Unknown";
+            final String cleaned = name.split("\\s", 2)[0].trim();
+            return cleaned.isEmpty() ? "Unknown" : cleaned;
+        }));
+
+        // Simple bar chart (kept in case bStats re-enables bar display)
         metrics.addCustomChart(
                 new SimpleBarChart(
                         "enabled_modules",
@@ -112,6 +119,12 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.getModules().forEach(module -> metrics.addCustomChart(
                 new SimplePie(module.getModuleName() + "_pie",
                         () -> module.isEnabled() ? "enabled" : "disabled")));
+
+        // Simple pie: exact count of enabled modules per server (as a string key).
+        metrics.addCustomChart(new SimplePie("enabled_modules_count", () -> {
+            int count = (int) ModuleLoader.getModules().stream().filter(OCMModule::isEnabled).count();
+            return Integer.toString(count);
+        }));
 
         enableListeners.forEach(Runnable::run);
 
