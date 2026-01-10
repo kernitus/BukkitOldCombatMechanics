@@ -14,12 +14,12 @@
 Fine‑tune Minecraft combat, movement, and item balance without breaking your server. OldCombatMechanics is a free, open‑source toolkit for Spigot & Paper that lets you mix 1.8‑style snappiness with modern features, per world and per player.
 
 **Why servers pick OCM** ✨
-- Modular: enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
-- Performant: lean listeners only enabled as needed to keep tick time low.
-- Modesets: ship different rules for different worlds or players; perfect for mixed PvP/PvE, minigames, or duels.
-- Backwards‑friendly: runs on Java 8+, supports 1.9–latest; integrates cleanly with PlaceholderAPI and ProtocolLib.
-- Tested for you: live integration tests run real Paper servers across multiple versions every build.
-- Zero cost: fully open source, optional basic telemetry (bStats only), no paywalls.
+- 🧩 **Modular:** enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
+- 🚀 **Performant:** lean listeners only enabled as needed to keep tick time low.
+- 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for mixed PvP/PvE, minigames, or duels.
+- ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and ProtocolLib.
+- ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
+- 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
 
 **Quick start** ⚡
 1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
