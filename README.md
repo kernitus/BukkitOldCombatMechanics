@@ -21,6 +21,12 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
 
+**Quick start** ⚡
+1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
+2. Restart and edit `config.yml` to pick your modules and modesets.
+3. Use `/ocm reload` to apply changes instantly.
+4. Hand players `/ocm modeset <name>` to let them choose their ruleset.
+
 <p align="center">
   <a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
     <img src="res/paper.png" alt="Paper" height="100">
@@ -32,12 +38,6 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
     <img src="res/bukkit.png" alt="Bukkit" height="100">
   </a>
 </p>
-
-**Quick start** ⚡
-1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
-2. Restart and edit `config.yml` to pick your modules and modesets.
-3. Use `/ocm reload` to apply changes instantly.
-4. Hand players `/ocm modeset <name>` to let them choose their ruleset.
 
 <hr/>
 
