@@ -195,6 +195,7 @@ public class OCMMain extends JavaPlugin {
 
         // Module listeners
         ModuleLoader.addModule(new ModuleAttackCooldown(this));
+        ModuleLoader.addModule(new ModuleAttackRange(this));
 
         // If below 1.16, we need to keep track of player attack cooldown ourselves
         if (Reflector.getMethod(HumanEntity.class, "getAttackCooldown", 0) == null) {

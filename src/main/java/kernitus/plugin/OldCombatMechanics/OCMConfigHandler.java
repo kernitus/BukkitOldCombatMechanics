@@ -153,6 +153,10 @@ public class OCMConfigHandler {
 
         for (String moduleName : moduleNames) {
             final String enabledKey = moduleName + ".enabled";
+            if ("attack-range".equals(moduleName)) {
+                disabledModules.add(moduleName);
+                continue;
+            }
             final boolean enabled = !oldConfig.contains(enabledKey) || oldConfig.getBoolean(enabledKey);
 
             if (!enabled) {

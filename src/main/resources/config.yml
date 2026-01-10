@@ -33,6 +33,7 @@ disabled_modules:
   - "disable-attack-sounds"
   - "chorus-fruit"
   - "old-burn-delay"
+  - "attack-range"
 
 modesets:
   # Modesets are lists of modules that are enabled for a player in that mode.
@@ -90,6 +91,16 @@ attack-frequency:
   # The hit delay to apply. Default for 1.9+ is 20 ticks (1 second)
   playerDelay: 18
   mobDelay: 16
+
+attack-range:
+  # Applies 1.8-style hit detection (smaller hitbox margin, shorter creative reach).
+  # Paper 1.21.11+ only; auto-disables on older/Paperless servers.
+  min-range: 0.0
+  max-range: 3.0
+  min-creative-range: 0.0
+  max-creative-range: 4.0
+  hitbox-margin: 0.1
+  mob-factor: 1.0
 
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
@@ -557,4 +568,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 70
+config-version: 71
