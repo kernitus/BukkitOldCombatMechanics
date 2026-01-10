@@ -21,14 +21,6 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
 
-**Quick start** ⚡
-1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
-2. Restart and edit `config.yml` to pick your modules and modesets.
-3. Use `/ocm reload` to apply changes instantly.
-4. Hand players `/ocm modeset <name>` to let them choose their ruleset.
-
-<hr/>
-
 <a href="https://hangar.papermc.io/kernitus/OldCombatMechanics">
     <img src="res/paper.png" alt="Paper" height="100">
 </a>
@@ -39,6 +31,14 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
     <img src="res/bukkit.png" alt="Bukkit" height="100">
 </a>
 
+**Quick start** ⚡
+1. Drop the jar into `plugins/` (Spigot or Paper-derivatives 1.9+).
+2. Restart and edit `config.yml` to pick your modules and modesets.
+3. Use `/ocm reload` to apply changes instantly.
+4. Hand players `/ocm modeset <name>` to let them choose their ruleset.
+
+<hr/>
+
 ## 🧰 Modesets
 - Per-player/per-world presets that decide which features are active; each world has an allowed list and a default modeset.
 - Let players pick ( `/ocm modeset <name>` ) to run, for example, 1.8-style PvP in an arena world while keeping vanilla rules in survival.
@@ -47,7 +47,7 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 Features are grouped in `module`s as listed below, and can be individually configured and disabled. Disabled modules will have no impact on server performance.
 
 #### ⚔ Combat
-Tweak timing, damage, and reach.
+*Tweak timing, damage, and reach.*
 - Attack cooldown: adjust or remove 1.9+ cooldown
 - Attack frequency: set global hit delay
 - Tool damage: pre-1.9 weapon values
@@ -56,32 +56,32 @@ Tweak timing, damage, and reach.
 - Player regen: tune regen rates
 
 #### 🤺 Armour
-Balance defence and wear.
+*Balance defence and wear.*
 - Armour strength: scale armour protection
 - Armour durability: change durability loss
 
 #### 🛡 Swords & Shields
-Control block and sweep behaviour.
+*Control block and sweep behaviour.*
 - Sword blocking: restore old right-click block
 - Shield damage reduction: scale shield protection
 - Sword sweep: enable or disable sweeps
 - Sword sweep particles: hide or show sweep visuals
 
 #### 🌬 Knockback
-Shape knockback per source.
+*Shape knockback per source.*
 - Player knockback: adjust PvP knockback
 - Fishing knockback: fishing-rod knockback
 - Fishing rod velocity: pull speed
 - Projectile knockback: arrows and other projectiles
 
 #### 🧙 Gapples & Potions
-Change consumable power.
+*Change consumable power.*
 - Golden apple crafting and effects: notch and normal
 - Potion effects and duration: old-style values
 - Chorus fruit: teleport behaviour and range
 
 #### ❌ New feature disabling
-Toggle later-version mechanics.
+*Toggle later-version mechanics.*
 - Item crafting: block selected recipes
 - Offhand: disable offhand use
 - New attack sounds: mute new swing sounds
