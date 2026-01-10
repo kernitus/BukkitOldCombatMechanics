@@ -50,51 +50,52 @@ Features are grouped in `module`s as listed below, and can be individually confi
 
 #### ⚔ Combat
 *Tweak timing, damage, and reach.*
-- Attack cooldown: adjust or remove 1.9+ cooldown
-- Attack frequency: set global hit delay
-- Tool damage: pre-1.9 weapon values
-- Attack range (Paper 1.21.11+): 1.8-style reach
-- Critical hits: control crit multiplier
-- Player regen: tune regen rates
+- **Attack cooldown:** adjust or remove 1.9+ cooldown
+- **Attack frequency:** set global hit delay
+- **Tool damage:** pre-1.9 weapon values
+- **Attack range (Paper 1.21.11+):** 1.8-style reach
+- **Critical hits:** control crit multiplier
+- **Player regen:** tune regen rates
 
 #### 🤺 Armour
 *Balance defence and wear.*
-- Armour strength: scale armour protection
-- Armour durability: change durability loss
+- **Armour strength:** scale armour protection
+- **Armour durability:** change durability loss
 
 #### 🛡 Swords & Shields
 *Control block and sweep behaviour.*
-- Sword blocking: restore old right-click block
-- Shield damage reduction: scale shield protection
-- Sword sweep: enable or disable sweeps
-- Sword sweep particles: hide or show sweep visuals
+- **Sword blocking:** restore old right-click block
+- **Shield damage reduction:** scale shield protection
+- **Sword sweep:** enable or disable sweeps
+- **Sword sweep particles:** hide or show sweep visuals
 
 #### 🌬 Knockback
 *Shape knockback per source.*
-- Player knockback: adjust PvP knockback
-- Fishing knockback: fishing-rod knockback
-- Fishing rod velocity: pull speed
-- Projectile knockback: arrows and other projectiles
+- **Player knockback:** adjust PvP knockback
+- **Fishing knockback:** fishing-rod knockback
+- **Fishing rod velocity:** pull speed
+- **Projectile knockback:** arrows and other projectiles
 
 #### 🧙 Gapples & Potions
 *Change consumable power.*
-- Golden apple crafting and effects: notch and normal
-- Potion effects and duration: old-style values
-- Chorus fruit: teleport behaviour and range
+- **Golden apple crafting and effects:** notch and normal
+- **Potion effects and duration:** old-style values
+- **Chorus fruit:** teleport behaviour and range
 
 #### ❌ New feature disabling
 *Toggle later-version mechanics.*
-- Item crafting: block selected recipes
-- Offhand: disable offhand use
-- New attack sounds: mute new swing sounds
-- Enderpearl cooldown: enable or remove cooldown
-- Brewing stand refuel: alter fuel use
-- Burn delay: adjust fire tick delay
+- **Item crafting:** block selected recipes
+- **Offhand:** disable offhand use
+- **New attack sounds:** mute new swing sounds
+- **Enderpearl cooldown:** enable or remove cooldown
+- **Brewing stand refuel:** alter fuel use
+- **Burn delay:** adjust fire tick delay
 
 ## 🔌 Compatibility & Testing
-OCM targets Spigot 1.9+ and runs on Java 8 and up. It is backed by integration tests that boot real servers on 1.12, 1.19.2, and 1.21.11 each build, so compatibility and behaviour are automatically verified in live environments.
-Most plugins will work fine with OCM. Some are explicitly supported, including:
-- Placeholder API (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI) for details)
+- OCM targets Spigot 1.9+ and runs on Java 8 and up.
+- We stick to Spigot/Paper APIs for forward compatibility; NMS/reflection is used only when necessary.
+- Integration tests boot real servers on 1.12, 1.19.2, and 1.21.11 each build to verify behaviour.
+- Most plugins work fine with OCM. Explicitly tested integrations include PlaceholderAPI (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI)).
 
 ## ⚡ Development Builds
 Oftentimes a particular bug fix or feature has already been implemented, but a new version of OCM has not been released
