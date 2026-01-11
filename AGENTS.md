@@ -109,6 +109,7 @@ This file captures repo-specific context discovered while working on this branch
 - Weakness amplifier clamping changed in 1.20+: attempts to use amplifier `-1` are clamped to `0` (Weakness I). With low-damage weapons this can yield zero vanilla damage, and Paper 1.21 does not fire `EntityDamageByEntityEvent` for zero damage, so tests that rely on an EDBE hit must use a stronger weapon or account for the clamp.
 - `OldPotionEffectsIntegrationTest` now disables the module by moving `old-potion-effects` into `disabled_modules` (and removing it from modesets/always lists), then uses `Config.reload()`; the `withConfig` helper restores module lists/modesets and saves+reloads config to keep state consistent.
 - `FireAspectOverdamageIntegrationTest` includes afterburn-vs-environmental fire-tick checks for both player and zombie victims, with and without Protection IV armour (mirrors issue 707 MRE).
+- Release workflow (`.github/workflows/build-upload-release.yml`) now uploads Bukkit files via `itsmeow/curseforge-upload@v3` with `game_endpoint=bukkit`, reusing `DBO_UPLOAD_API_TOKEN`, and namespaces `GAME_VERSIONS` as `Minecraft <ver>:<ver>` to avoid Bukkit version ambiguity.
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
@@ -143,6 +144,8 @@ This file captures repo-specific context discovered while working on this branch
 - Added `ModuleAttackRange` (Paper 1.21.11+ only) to apply a configurable attack_range data component (default 1.8-like: 0–3 range, creative 0–4, margin 0.1, mob factor 1.0); auto-disables on Spigot/older versions. `attack-range` module listed in `disabled_modules` by default.
 - Added `AttackRangeIntegrationTest` (1.21.11+) to assert vanilla hits at ~3.6 blocks and 1.8-style attack_range reduces reach so the same hit misses; registered in `KotestRunner`.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
+- `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.
+- GitHub release asset now keeps a stable filename `OldCombatMechanics.jar` (no version suffix); the CurseForge upload uses the same path.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

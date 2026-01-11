@@ -37,8 +37,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private var networkConnection: Any? = null
     private var usedPlaceNewPlayer: Boolean = false
     private var tickTaskId: Int? = null
-    private val isLegacy = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
-    private val legacyImpl: LegacyFakePlayer12? = if (isLegacy) LegacyFakePlayer12(plugin, uuid, name) else null
+    private val isLegacy9 = !Reflector.versionIsNewerOrEqualTo(1, 10, 0) // 1.9.x and below
+    private val isLegacy12 = !Reflector.versionIsNewerOrEqualTo(1, 13, 0) && Reflector.versionIsNewerOrEqualTo(1, 10, 0)
+    private val isMidLegacy = !Reflector.versionIsNewerOrEqualTo(1, 17, 0) && Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+    private val legacyImpl9: LegacyFakePlayer9? = if (isLegacy9) LegacyFakePlayer9(plugin, uuid, name) else null
+    private val legacyImpl12: LegacyFakePlayer12? = if (isLegacy12) LegacyFakePlayer12(plugin, uuid, name) else null
+    private val midLegacyImpl: LegacyFakePlayer16? = if (isMidLegacy) LegacyFakePlayer16(plugin, uuid, name) else null
     private val reflectionRemapper: ReflectionRemapper = try {
         ReflectionRemapper.forReobfMappingsInPaperJar()
     } catch (e: Throwable) {
@@ -61,10 +65,22 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun spawn(location: Location) {
-        if (isLegacy) {
-            legacyImpl!!.spawn(location)
-            serverPlayer = legacyImpl.entityPlayer ?: throw IllegalStateException("Legacy entity player not created.")
-            bukkitPlayer = legacyImpl.bukkitPlayer
+        if (isLegacy9) {
+            legacyImpl9!!.spawn(location)
+            serverPlayer = legacyImpl9.entityPlayer ?: throw IllegalStateException("Legacy9 entity player not created.")
+            bukkitPlayer = legacyImpl9.bukkitPlayer
+            return
+        }
+        if (isLegacy12) {
+            legacyImpl12!!.spawn(location)
+            serverPlayer = legacyImpl12.entityPlayer ?: throw IllegalStateException("Legacy12 entity player not created.")
+            bukkitPlayer = legacyImpl12.bukkitPlayer
+            return
+        }
+        if (isMidLegacy) {
+            midLegacyImpl!!.spawn(location)
+            serverPlayer = midLegacyImpl.entityPlayer ?: throw IllegalStateException("Mid-legacy entity player not created.")
+            bukkitPlayer = midLegacyImpl.bukkitPlayer
             return
         }
         plugin.logger.info("Spawn: Starting")
@@ -584,19 +600,28 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun getConnection(serverPlayer: Any): Any {
-        if (isLegacy) {
-            return legacyImpl!!.getConnection(serverPlayer)
-        }
+        if (isLegacy9) return legacyImpl9!!.getConnection(serverPlayer)
+        if (isLegacy12) return legacyImpl12!!.getConnection(serverPlayer)
         val entityPlayerClass = serverPlayer.javaClass
         val connectionFieldName = reflectionRemapper.remapFieldName(entityPlayerClass, "connection")
         val connectionField = Reflector.getField(entityPlayerClass, connectionFieldName)
-        return connectionField.get(serverPlayer)
+        if (connectionField != null) return connectionField.get(serverPlayer)
+        val legacyField = Reflector.getField(entityPlayerClass, "playerConnection")
+        return legacyField?.get(serverPlayer) ?: error("No connection field on ${entityPlayerClass.name}")
     }
 
     fun removePlayer() {
         tickTaskId?.let { Bukkit.getScheduler().cancelTask(it) }
-        if (isLegacy) {
-            legacyImpl!!.removePlayer()
+        if (isLegacy9) {
+            legacyImpl9!!.removePlayer()
+            return
+        }
+        if (isLegacy12) {
+            legacyImpl12!!.removePlayer()
+            return
+        }
+        if (isMidLegacy) {
+            midLegacyImpl!!.removePlayer()
             return
         }
         // Fire PlayerQuitEvent
@@ -646,7 +671,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     private fun scheduleServerPlayerTick() {
-        if (isLegacy) return
+        if (isLegacy9 || isLegacy12) return
         val serverPlayerClass = serverPlayer.javaClass
         val tickMethod = resolveServerPlayerTickMethod(serverPlayerClass)
         val baseTickMethod = resolveBaseTickMethod(serverPlayerClass)
@@ -799,18 +824,22 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun attack(bukkitEntity: Entity) {
+        if (isMidLegacy) {
+            bukkitPlayer?.let { attackCompat(it, bukkitEntity) }
+            return
+        }
         attackCompat(checkNotNull(bukkitPlayer), bukkitEntity)
     }
 
     fun doBlocking() {
-        if (isLegacy) {
+        if (isLegacy9 || isLegacy12) {
             // Legacy blocking: ensure sword in hand + shield in offhand, then raise offhand.
             bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.DIAMOND_SWORD))
             if (bukkitPlayer!!.inventory.itemInOffHand.type != Material.SHIELD) {
                 bukkitPlayer!!.inventory.setItemInOffHand(org.bukkit.inventory.ItemStack(Material.SHIELD))
             }
             bukkitPlayer!!.updateInventory()
-            legacyImpl?.startUsingOffhand()
+            if (isLegacy12) legacyImpl12?.startUsingOffhand()
             return
         }
         bukkitPlayer!!.inventory.setItemInMainHand(org.bukkit.inventory.ItemStack(Material.SHIELD))

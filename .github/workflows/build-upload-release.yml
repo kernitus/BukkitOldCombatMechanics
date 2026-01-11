@@ -38,35 +38,44 @@ jobs:
           ./gradlew clean build
         fi
         
-    - name: Rename Release Asset
-      if: ${{ github.event_name == 'release' }}
-      run: mv ./build/libs/OldCombatMechanics.jar ./build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar
-
     - name: Upload Artifact to GitHub Release
       if: ${{ github.event_name == 'release' }}
       uses: softprops/action-gh-release@v2
       with:
         # The 'files' input takes a path to the asset(s) you want to upload.
-        # We point it to the newly renamed JAR file.
-        files: ./build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar
+        # Keep a stable filename for external download links.
+        files: ./build/libs/OldCombatMechanics.jar
 
     - name: Read game versions from gradle.properties
       run: |
-        GAME_VERSIONS=$(grep ^gameVersions gradle.properties | cut -d'=' -f2-)
-        echo "GAME_VERSIONS=$GAME_VERSIONS" >> $GITHUB_ENV
+        RAW=$(grep ^gameVersions gradle.properties | cut -d'=' -f2-)
+        # Convert "1.21, 1.20.6" -> "Minecraft 1.21:1.21,Minecraft 1.20.6:1.20.6" to disambiguate Bukkit versions
+        GAME_VERSIONS=$(echo "$RAW" | tr -d ' ' | awk -F',' '{
+          out="";
+          for (i=1; i<=NF; i++) {
+            v=$i;
+            if (v!= "") {
+              if (out!= "") out=out ",";
+              out=out "Minecraft " v ":" v;
+            }
+          }
+          print out;
+        }')
+        echo "GAME_VERSIONS=$GAME_VERSIONS" >> "$GITHUB_ENV"
         
-    - name: Upload to dev.bukkit.org
+    - name: Upload to CurseForge (Bukkit)
       if: ${{ github.event_name == 'release' }}
-      uses: benwoo1110/dbo-upload-action@main
+      uses: itsmeow/curseforge-upload@v3
       with:
-        api_token: ${{ secrets.DBO_UPLOAD_API_TOKEN }}
+        token: ${{ secrets.DBO_UPLOAD_API_TOKEN }}
         project_id: '98233'
+        game_endpoint: 'bukkit'
+        file_path: './build/libs/OldCombatMechanics.jar'
         changelog: ${{ github.event.release.body }}
-        changelog_type: markdown
-        display_name: OldCombatMechanics ${{ github.event.release.tag_name }}
+        changelog_type: 'markdown'
+        release_type: 'release'
+        display_name: 'OldCombatMechanics ${{ github.event.release.tag_name }}'
         game_versions: ${{ env.GAME_VERSIONS }}
-        # IMPORTANT: Update the file_path to use the renamed JAR
-        file_path: './build/libs/OldCombatMechanics-${{ github.event.release.tag_name }}.jar'
 
 
     - name: Publish to Hangar

@@ -212,7 +212,7 @@ val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
-val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11", "1.12")
+val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11", "1.12", "1.9.4")
     .distinct()
 
 val integrationTestVersions: List<String> = (findProperty("integrationTestVersions") as String?)
@@ -226,6 +226,8 @@ val integrationTestJavaVersionLegacy =
     (findProperty("integrationTestJavaVersionLegacy") as String?)?.toInt() ?: 17
 val integrationTestJavaVersionLegacyPre13 =
     (findProperty("integrationTestJavaVersionLegacyPre13") as String?)?.toInt() ?: 8
+val integrationTestJavaVersionLegacy16 =
+    (findProperty("integrationTestJavaVersionLegacy16") as String?)?.toInt() ?: 11
 val integrationTestJavaVersionModern =
     (findProperty("integrationTestJavaVersionModern") as String?)?.toInt() ?: 25
 
@@ -251,6 +253,8 @@ fun requiresModernJava(version: String): Boolean {
 
 fun requiredJavaVersion(version: String): Int {
     if (needsLegacyVanillaJar(version)) return integrationTestJavaVersionLegacyPre13
+    val (_, minor, _) = parseMinecraftVersion(version)
+    if (minor <= 16) return integrationTestJavaVersionLegacy16
     return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
 }
 

@@ -136,7 +136,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
     }
 
     private void stripComponent(ItemStack item) {
-        if (item == null) return;
+        if (!supported || paperAdapter == null || item == null) return;
         paperAdapter.clear(item);
     }
 

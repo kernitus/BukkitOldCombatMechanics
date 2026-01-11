@@ -12,11 +12,10 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
 import org.bukkit.Material;
-import org.bukkit.entity.Trident;
 import org.bukkit.entity.Entity;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -29,7 +28,22 @@ import java.util.Locale;
 public class ModuleOldToolDamage extends OCMModule {
 
     private static final String[] WEAPONS = {"sword", "axe", "pickaxe", "spade", "shovel", "hoe"};
+    private static final Class<?> TRIDENT_CLASS;
+    private static final boolean HAS_TRIDENT;
     private boolean oldSharpness;
+
+    static {
+        Class<?> tridentClass = null;
+        boolean hasTrident = false;
+        try {
+            tridentClass = Class.forName("org.bukkit.entity.Trident");
+            hasTrident = true;
+        } catch (ClassNotFoundException ignored) {
+            // Legacy servers (e.g. 1.9/1.12) do not have tridents.
+        }
+        TRIDENT_CLASS = tridentClass;
+        HAS_TRIDENT = hasTrident;
+    }
 
     public ModuleOldToolDamage(OCMMain plugin) {
         super(plugin, "old-tool-damage");
@@ -125,7 +139,7 @@ public class ModuleOldToolDamage extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTridentProjectile(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Trident)) return;
+        if (!HAS_TRIDENT || !TRIDENT_CLASS.isInstance(event.getDamager())) return;
         if (!isEnabled(event.getDamager(), event.getEntity())) return;
 
         final double configured = WeaponDamages.getDamage("TRIDENT_THROWN");

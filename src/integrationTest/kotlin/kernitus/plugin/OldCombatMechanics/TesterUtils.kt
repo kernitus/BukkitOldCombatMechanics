@@ -13,6 +13,9 @@ package kernitus.plugin.OldCombatMechanics
 
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger.send
 import org.bukkit.command.CommandSender
+import org.bukkit.entity.LivingEntity
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 
 object TesterUtils {
     /**
@@ -40,5 +43,20 @@ object TesterUtils {
                 "&cFAILED &f$testName [E: $a / A: $b]"
             )
         }
+    }
+
+    /**
+     * Cross-version accessor for a specific potion effect. Pre-1.12 servers lack
+     * LivingEntity#getPotionEffect, so we fall back to scanning active effects.
+     */
+    fun LivingEntity.getPotionEffectCompat(type: PotionEffectType): PotionEffect? {
+        // Prefer reflection to avoid linkage errors on legacy servers.
+        val method = javaClass.methods.firstOrNull { m ->
+            m.name == "getPotionEffect" &&
+                m.parameterTypes.size == 1 &&
+                m.parameterTypes[0] == PotionEffectType::class.java
+        }
+        return runCatching { method?.invoke(this, type) as PotionEffect? }.getOrNull()
+            ?: activePotionEffects.firstOrNull { it.type == type }
     }
 }

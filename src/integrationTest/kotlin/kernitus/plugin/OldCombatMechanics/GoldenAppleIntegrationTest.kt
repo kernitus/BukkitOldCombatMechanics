@@ -12,11 +12,11 @@ import com.cryptomorin.xseries.XPotion
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
-import io.kotest.matchers.longs.shouldBeBetween
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.longs.shouldBeBetween
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -35,6 +35,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import kotlin.coroutines.resume
+import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
 
 @OptIn(ExperimentalKotest::class)
 class GoldenAppleIntegrationTest : FunSpec({
@@ -129,7 +130,7 @@ class GoldenAppleIntegrationTest : FunSpec({
         duration.shouldBeLessThanOrEqual(expectedTicks)
     }
 
-    suspend fun waitForEffects(ticks: Long = 1L) {
+    suspend fun waitForEffects(ticks: Long = 2L) {
         suspendCancellableCoroutine { continuation ->
             Bukkit.getScheduler().runTaskLater(testPlugin, Runnable {
                 if (continuation.isActive) {
@@ -189,8 +190,8 @@ class GoldenAppleIntegrationTest : FunSpec({
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
-            val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
-            val absorption = player.getPotionEffect(PotionEffectType.ABSORPTION)
+            val regeneration = player.getPotionEffectCompat(PotionEffectType.REGENERATION)
+            val absorption = player.getPotionEffectCompat(PotionEffectType.ABSORPTION)
 
             assertDuration(regeneration, 5 * 20)
             regeneration?.amplifier shouldBe 1
@@ -203,10 +204,10 @@ class GoldenAppleIntegrationTest : FunSpec({
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
-            val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
-            val absorption = player.getPotionEffect(PotionEffectType.ABSORPTION)
-            val resistance = player.getPotionEffect(XPotion.RESISTANCE.get()!!)
-            val fireResistance = player.getPotionEffect(PotionEffectType.FIRE_RESISTANCE)
+            val regeneration = player.getPotionEffectCompat(PotionEffectType.REGENERATION)
+            val absorption = player.getPotionEffectCompat(PotionEffectType.ABSORPTION)
+            val resistance = player.getPotionEffectCompat(XPotion.RESISTANCE.get()!!)
+            val fireResistance = player.getPotionEffectCompat(PotionEffectType.FIRE_RESISTANCE)
 
             assertDuration(regeneration, 30 * 20)
             regeneration?.amplifier shouldBe 4
@@ -225,7 +226,7 @@ class GoldenAppleIntegrationTest : FunSpec({
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
-            val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
+            val regeneration = player.getPotionEffectCompat(PotionEffectType.REGENERATION)
             regeneration?.amplifier shouldBe 1
             assertDuration(regeneration, 5 * 20)
         }
@@ -237,7 +238,7 @@ class GoldenAppleIntegrationTest : FunSpec({
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
-            val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
+            val regeneration = player.getPotionEffectCompat(PotionEffectType.REGENERATION)
             regeneration?.amplifier shouldBe 1
             assertDuration(regeneration, 5 * 20)
         }
@@ -249,7 +250,7 @@ class GoldenAppleIntegrationTest : FunSpec({
             callConsume(player.inventory.itemInMainHand)
             waitForEffects()
 
-            val regeneration = player.getPotionEffect(PotionEffectType.REGENERATION)
+            val regeneration = player.getPotionEffectCompat(PotionEffectType.REGENERATION)
             regeneration?.amplifier shouldBe 3
         }
 
@@ -263,9 +264,9 @@ class GoldenAppleIntegrationTest : FunSpec({
                 callConsume(player.inventory.itemInMainHand)
                 waitForEffects()
 
-                player.getPotionEffect(PotionEffectType.SPEED).shouldNotBe(null)
-                player.getPotionEffect(PotionEffectType.REGENERATION).shouldBe(null)
-                player.getPotionEffect(PotionEffectType.ABSORPTION).shouldBe(null)
+                player.getPotionEffectCompat(PotionEffectType.SPEED).shouldNotBe(null)
+                player.getPotionEffectCompat(PotionEffectType.REGENERATION).shouldBe(null)
+                player.getPotionEffectCompat(PotionEffectType.ABSORPTION).shouldBe(null)
             }
         }
     }

@@ -21,6 +21,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils.getDamag
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getDamage
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
+import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -196,7 +197,7 @@ class InGameTester(private val plugin: JavaPlugin) {
 
         // Strength effect
         // 1.8: +130% for each strength level
-        val strength = attacker.getPotionEffect(XPotion.STRENGTH.get()!!)
+        val strength = attacker.getPotionEffectCompat(XPotion.STRENGTH.get()!!)
         if (strength != null) expectedDamage += (strength.amplifier + 1) * 1.3 * expectedDamage
 
         expectedDamage += weaknessAddend
