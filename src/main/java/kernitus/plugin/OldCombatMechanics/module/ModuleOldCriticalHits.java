@@ -7,6 +7,8 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 
 public class ModuleOldCriticalHits extends OCMModule {
@@ -29,8 +31,13 @@ public class ModuleOldCriticalHits extends OCMModule {
     public void onOCMDamage(OCMEntityDamageByEntityEvent e) {
         if (!isEnabled(e.getDamager(), e.getDamagee())) return;
 
+        boolean isCritical = e.was1_8Crit();
+        if (!isCritical && e.getDamager() instanceof HumanEntity) {
+            isCritical = DamageUtils.isCriticalHit1_8((HumanEntity) e.getDamager());
+        }
+
         // In 1.9, a critical hit requires the player not to be sprinting
-        if (e.was1_8Crit() && (allowSprinting || !e.wasSprinting()))
+        if (isCritical && (allowSprinting || !e.wasSprinting()))
             e.setCriticalMultiplier(multiplier);
     }
 }

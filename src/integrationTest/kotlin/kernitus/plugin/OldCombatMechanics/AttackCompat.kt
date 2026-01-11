@@ -14,13 +14,13 @@ import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
 fun attackCompat(attacker: Player, target: Entity) {
-    // Prefer the Bukkit/Paper API if it exists on this runtime.
     val apiAttack = attacker.javaClass.methods.firstOrNull { method ->
         method.name == "attack" &&
             method.parameterCount == 1 &&
             Entity::class.java.isAssignableFrom(method.parameterTypes[0])
     }
-    if (apiAttack != null) {
+    val useApiAttack = Reflector.versionIsNewerOrEqualTo(1, 12, 0)
+    if (useApiAttack && apiAttack != null) {
         try {
             apiAttack.invoke(attacker, target)
             return
@@ -51,6 +51,11 @@ fun attackCompat(attacker: Player, target: Entity) {
         }
     }
 
+    // Legacy fallback: try Bukkit API even if we prefer NMS (helps 1.12 fake players)
+    if (!useApiAttack && apiAttack != null) {
+        runCatching { apiAttack.invoke(attacker, target); return }
+    }
+
     error(
         "Failed to invoke NMS attack for attacker=${attackerHandle.javaClass.name} " +
             "target=${targetHandle.javaClass.name} (candidates=${nmsAttackMethods.size})"
@@ -69,7 +74,8 @@ private fun buildAttackMethodCandidates(attackerHandleClass: Class<*>, targetHan
     // Prefer explicit names if they exist, then fall back to signature-based heuristics.
     val explicit = listOfNotNull(
         Reflector.getMethodAssignable(attackerHandleClass, "attack", targetHandleClass),
-        Reflector.getMethodAssignable(attackerHandleClass, "a", targetHandleClass)
+        Reflector.getMethodAssignable(attackerHandleClass, "a", targetHandleClass),
+        Reflector.getMethodAssignable(attackerHandleClass, "B", targetHandleClass) // legacy 1.12 variants
     )
     if (explicit.isNotEmpty()) {
         explicit.forEach { it.isAccessible = true }
