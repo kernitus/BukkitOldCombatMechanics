@@ -52,6 +52,17 @@ internal class LegacyFakePlayer9(
         entityPlayer = ep
         bukkitPlayer = ep.javaClass.getMethod("getBukkitEntity").invoke(ep) as Player
 
+        // Ensure NMS alive/dead flags are sane so Bukkit sees the player as valid.
+        runCatching {
+            val deadField = ep.javaClass.superclass.getDeclaredField("dead")
+            deadField.isAccessible = true
+            deadField.setBoolean(ep, false)
+        }
+        runCatching {
+            val health = ep.javaClass.getMethod("setHealth", Float::class.javaPrimitiveType)
+            health.invoke(ep, 20.0f)
+        }
+
         firePreLogin()
         setPosition(ep, location)
         setGameMode(ep)
@@ -168,6 +179,18 @@ internal class LegacyFakePlayer9(
                     ?: ep.javaClass.methods.firstOrNull { it.name == "n" && it.parameterCount == 0 }
                     ?: ep.javaClass.methods.firstOrNull { it.name == "playerTick" && it.parameterCount == 0 }
                 tick?.invoke(ep)
+                // Keep entity alive/valid flags cleared so Bukkit reports the player as valid
+                runCatching {
+                    val deadField = ep.javaClass.superclass.getDeclaredField("dead")
+                    deadField.isAccessible = true
+                    deadField.setBoolean(ep, false)
+                }
+                runCatching {
+                    val craftEntity = Class.forName("org.bukkit.craftbukkit.$cbVersion.entity.CraftEntity")
+                    val validField = craftEntity.getDeclaredField("valid")
+                    validField.isAccessible = true
+                    validField.setBoolean(bukkitPlayer, true)
+                }
             }
             // keep chunk tracking fresh
             runCatching {

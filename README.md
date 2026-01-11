@@ -94,7 +94,7 @@ Features are grouped in `module`s as listed below, and can be individually confi
 ## 🔌 Compatibility & Testing
 - OCM targets Spigot 1.9+ and runs on Java 8 and up.
 - We stick to Spigot/Paper APIs for forward compatibility; NMS/reflection is used only when necessary.
-- Integration tests boot real servers on 1.12, 1.19.2, and 1.21.11 each build to verify behaviour.
+- Integration tests boot real servers on 1.9.4, 1.12, 1.19.2, and 1.21.11 each build to verify behaviour.
 - Most plugins work fine with OCM. Explicitly tested integrations include PlaceholderAPI (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI)).
 
 ## ⚡ Development Builds

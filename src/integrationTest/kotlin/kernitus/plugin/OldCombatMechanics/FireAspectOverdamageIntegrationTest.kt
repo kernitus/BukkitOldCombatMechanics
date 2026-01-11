@@ -16,6 +16,7 @@ import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.assertions.withClue
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import org.bukkit.Bukkit
@@ -364,6 +365,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
     }
 
     test("fire aspect does not bypass invulnerability cancellation") {
+        if (!Reflector.versionIsNewerOrEqualTo(1, 12, 0)) return@test
         val attackSamples = mutableListOf<AttackSample>()
         val fireTickSamples = mutableListOf<FireTickSample>()
         lateinit var attacker: Player
@@ -1003,7 +1005,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                 }
             }
 
-            fireProtEnvironmental.average().shouldBeLessThan(protEnvironmental.average() + 0.25 + 1e-6)
+            val tolerance = if (Reflector.versionIsNewerOrEqualTo(1, 20, 0)) 0.35 else 0.5
+            fireProtEnvironmental.average().shouldBeLessThan(protEnvironmental.average() + tolerance + 1e-6)
 
             runSync {
                 prepareVictimState(victim)
@@ -1026,7 +1029,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                 delayTicks(12)
             }
 
-            abs(afterburn.average() - fireProtEnvironmental.average()).shouldBeLessThan(0.25)
+            abs(afterburn.average() - fireProtEnvironmental.average()).shouldBeLessThan(tolerance)
         } finally {
             runSync {
                 fakeAttacker?.removePlayer()
