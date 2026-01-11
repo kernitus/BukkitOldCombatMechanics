@@ -66,6 +66,16 @@ class OldCriticalHitsIntegrationTest : FunSpec({
         }
     }
 
+    fun setOnGround(player: Player, onGround: Boolean) {
+        val handle = player.javaClass.getMethod("getHandle").invoke(player)
+        val entityClass = handle.javaClass.superclass // EntityHuman extends Entity
+        runCatching {
+            val field = entityClass.getDeclaredField("onGround")
+            field.isAccessible = true
+            field.setBoolean(handle, onGround)
+        }
+    }
+
     suspend fun delayTicks(ticks: Long) {
         delay(ticks * 50L)
     }
@@ -85,11 +95,17 @@ class OldCriticalHitsIntegrationTest : FunSpec({
 
     fun applyAttackDamageModifiers(player: Player, item: ItemStack) {
         if (isLegacy) {
-            val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
-            val speedAttribute = player.getAttribute(attackSpeedAttribute) ?: return
-            speedAttribute.modifiers
-                .filter { it.uniqueId == legacySpeedModifierId }
-                .forEach { speedAttribute.removeModifier(it) }
+            val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get()
+            val damageAttribute = attackDamageAttribute?.let { player.getAttribute(it) }
+            val vanillaDamage = (NewWeaponDamage.getDamageOrNull(item.type) ?: 1.0f).toDouble()
+            damageAttribute?.baseValue = vanillaDamage
+
+            val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get()
+            val speedAttribute = attackSpeedAttribute?.let { player.getAttribute(it) }
+            speedAttribute
+                ?.modifiers
+                ?.filter { it.uniqueId == legacySpeedModifierId }
+                ?.forEach { speedAttribute.removeModifier(it) }
             val speedModifier = createAttributeModifier(
                 name = "ocm-legacy-speed",
                 amount = 1000.0,
@@ -97,7 +113,7 @@ class OldCriticalHitsIntegrationTest : FunSpec({
                 slot = EquipmentSlot.HAND,
                 uuid = legacySpeedModifierId
             )
-            speedAttribute.addModifier(speedModifier)
+            speedAttribute?.addModifier(speedModifier)
             return
         }
         val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get() ?: return
@@ -133,6 +149,14 @@ class OldCriticalHitsIntegrationTest : FunSpec({
     }
 
     fun equip(player: Player, item: ItemStack) {
+        if (isLegacy) {
+            // On legacy versions, avoid mutating item meta; directly adjust player attributes instead.
+            player.inventory.setItemInMainHand(item)
+            applyAttackDamageModifiers(player, item)
+            player.updateInventory()
+            return
+        }
+
         prepareWeapon(item)
         player.inventory.setItemInMainHand(item)
         applyAttackDamageModifiers(player, item)
@@ -205,12 +229,14 @@ class OldCriticalHitsIntegrationTest : FunSpec({
                     attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
                     attacker.velocity = Vector(0.0, -0.1, 0.0)
                     attacker.fallDistance = 2f
+                    setOnGround(attacker, false)
                 }
                 delayTicks(1)
                 runSync {
                     attacker.isSprinting = true
                     attacker.velocity = Vector(0.0, -0.1, 0.0)
                     attacker.fallDistance = 2f
+                    setOnGround(attacker, false)
                     attacker.updateInventory()
                     attackCompat(attacker, victim)
                 }
