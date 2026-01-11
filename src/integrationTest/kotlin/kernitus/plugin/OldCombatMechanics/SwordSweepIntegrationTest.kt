@@ -10,6 +10,7 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordSweep
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -89,14 +90,27 @@ class SwordSweepIntegrationTest : FunSpec({
 
     context("Sweep attack cancellation") {
         test("sweep attack is cancelled when enabled") {
-            val event = EntityDamageByEntityEvent(
-                attacker,
-                victim,
-                EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK,
-                1.0
-            )
-            Bukkit.getPluginManager().callEvent(event)
-            event.isCancelled shouldBe true
+            val sweepCause = EntityDamageEvent.DamageCause.values()
+                .firstOrNull { it.name == "ENTITY_SWEEP_ATTACK" }
+
+            if (sweepCause != null) {
+                val event = EntityDamageByEntityEvent(attacker, victim, sweepCause, 1.0)
+                Bukkit.getPluginManager().callEvent(event)
+                event.isCancelled shouldBe true
+            } else {
+                // Legacy (1.9): simulate sweep detection fallback (no dedicated cause)
+                val baseDamage = (NewWeaponDamage.getDamageOrNull(attacker.inventory.itemInMainHand.type)
+                    ?: 1.0f).toDouble()
+                val sweepDamage = 1.0 // matches ModuleSwordSweep fallback for level 0
+
+                // First, register the attacker location so the module can recognise the next hit as sweep
+                val priming = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, baseDamage + 1)
+                module.onEntityDamaged(priming)
+
+                val sweepEvent = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, sweepDamage)
+                module.onEntityDamaged(sweepEvent)
+                sweepEvent.isCancelled shouldBe true
+            }
         }
 
         test("non-sweep attack is not cancelled") {
@@ -112,14 +126,25 @@ class SwordSweepIntegrationTest : FunSpec({
 
         test("disabled module does not cancel sweep") {
             setModeset(attacker, "new")
-            val event = EntityDamageByEntityEvent(
-                attacker,
-                victim,
-                EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK,
-                1.0
-            )
-            module.onEntityDamaged(event)
-            event.isCancelled shouldBe false
+            val sweepCause = EntityDamageEvent.DamageCause.values()
+                .firstOrNull { it.name == "ENTITY_SWEEP_ATTACK" }
+
+            if (sweepCause != null) {
+                val event = EntityDamageByEntityEvent(attacker, victim, sweepCause, 1.0)
+                module.onEntityDamaged(event)
+                event.isCancelled shouldBe false
+            } else {
+                val baseDamage = (NewWeaponDamage.getDamageOrNull(attacker.inventory.itemInMainHand.type)
+                    ?: 1.0f).toDouble()
+                val sweepDamage = 1.0
+
+                val priming = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, baseDamage + 1)
+                module.onEntityDamaged(priming)
+
+                val sweepEvent = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, sweepDamage)
+                module.onEntityDamaged(sweepEvent)
+                sweepEvent.isCancelled shouldBe false
+            }
         }
     }
 })

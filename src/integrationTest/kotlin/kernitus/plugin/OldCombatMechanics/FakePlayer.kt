@@ -39,10 +39,8 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private var tickTaskId: Int? = null
     private val isLegacy9 = !Reflector.versionIsNewerOrEqualTo(1, 10, 0) // 1.9.x and below
     private val isLegacy12 = !Reflector.versionIsNewerOrEqualTo(1, 13, 0) && Reflector.versionIsNewerOrEqualTo(1, 10, 0)
-    private val isMidLegacy = !Reflector.versionIsNewerOrEqualTo(1, 17, 0) && Reflector.versionIsNewerOrEqualTo(1, 13, 0)
     private val legacyImpl9: LegacyFakePlayer9? = if (isLegacy9) LegacyFakePlayer9(plugin, uuid, name) else null
     private val legacyImpl12: LegacyFakePlayer12? = if (isLegacy12) LegacyFakePlayer12(plugin, uuid, name) else null
-    private val midLegacyImpl: LegacyFakePlayer16? = if (isMidLegacy) LegacyFakePlayer16(plugin, uuid, name) else null
     private val reflectionRemapper: ReflectionRemapper = try {
         ReflectionRemapper.forReobfMappingsInPaperJar()
     } catch (e: Throwable) {
@@ -75,12 +73,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
             legacyImpl12!!.spawn(location)
             serverPlayer = legacyImpl12.entityPlayer ?: throw IllegalStateException("Legacy12 entity player not created.")
             bukkitPlayer = legacyImpl12.bukkitPlayer
-            return
-        }
-        if (isMidLegacy) {
-            midLegacyImpl!!.spawn(location)
-            serverPlayer = midLegacyImpl.entityPlayer ?: throw IllegalStateException("Mid-legacy entity player not created.")
-            bukkitPlayer = midLegacyImpl.bukkitPlayer
             return
         }
         plugin.logger.info("Spawn: Starting")
@@ -620,10 +612,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
             legacyImpl12!!.removePlayer()
             return
         }
-        if (isMidLegacy) {
-            midLegacyImpl!!.removePlayer()
-            return
-        }
         // Fire PlayerQuitEvent
         val quitMessage = "§e$name left the game"
         val playerQuitEvent = PlayerQuitEvent(bukkitPlayer!!, quitMessage)
@@ -824,10 +812,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
     }
 
     fun attack(bukkitEntity: Entity) {
-        if (isMidLegacy) {
-            bukkitPlayer?.let { attackCompat(it, bukkitEntity) }
-            return
-        }
         attackCompat(checkNotNull(bukkitPlayer), bukkitEntity)
     }
 
