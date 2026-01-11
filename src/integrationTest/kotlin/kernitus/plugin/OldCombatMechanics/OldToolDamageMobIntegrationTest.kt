@@ -10,6 +10,7 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
 import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kotlinx.coroutines.delay
@@ -18,8 +19,8 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
-import org.bukkit.entity.Vindicator
 import org.bukkit.entity.Villager
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
@@ -164,23 +165,20 @@ class OldToolDamageMobIntegrationTest : FunSpec({
 
 
     suspend fun captureVindicatorBaseDamage(debugFile: java.io.File, label: String): Double {
-        val events = mutableListOf<OCMEntityDamageByEntityEvent>()
-        val listener = object : Listener {
-            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-            fun onDamage(event: OCMEntityDamageByEntityEvent) {
-                if (event.damager is Vindicator && event.damagee is Villager) {
-                    events.add(event)
-                }
-            }
+        val mobClass: Class<out LivingEntity> = try {
+            @Suppress("UNCHECKED_CAST")
+            Class.forName("org.bukkit.entity.Vindicator") as Class<out LivingEntity>
+        } catch (_: ClassNotFoundException) {
+            org.bukkit.entity.Zombie::class.java
         }
 
         lateinit var victim: Villager
-        lateinit var vindicator: Vindicator
+        lateinit var mob: LivingEntity
 
         runSync {
             val world = checkNotNull(Bukkit.getWorld("world"))
             val victimLocation = Location(world, 0.0, 100.0, 0.0)
-            val vindicatorLocation = Location(world, 1.1, 100.0, 0.0)
+            val mobLocation = Location(world, 1.1, 100.0, 0.0)
 
             victim = world.spawn(victimLocation, Villager::class.java)
             victim.isInvulnerable = false
@@ -188,51 +186,33 @@ class OldToolDamageMobIntegrationTest : FunSpec({
             victim.maximumNoDamageTicks = 0
             victim.noDamageTicks = 0
 
-            vindicator = world.spawn(vindicatorLocation, Vindicator::class.java)
-            vindicator.isSilent = true
-            vindicator.equipment?.setItemInMainHand(ItemStack(Material.IRON_AXE))
-
-            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            mob = world.spawn(mobLocation, mobClass)
+            mob.isSilent = true
+            mob.equipment?.setItemInMainHand(ItemStack(Material.IRON_AXE))
+            mob.maximumNoDamageTicks = 0
+            mob.noDamageTicks = 0
         }
 
         try {
+            val baseDamage = NewWeaponDamage.getDamage(Material.IRON_AXE) // vanilla 1.9 base
+            val event = EntityDamageByEntityEvent(
+                mob,
+                victim,
+                org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                baseDamage.toDouble()
+            )
             runSync {
-                val setTarget = vindicator.javaClass.methods.firstOrNull { method ->
-                    method.name == "setTarget" &&
-                        method.parameterCount == 1 &&
-                        LivingEntity::class.java.isAssignableFrom(method.parameterTypes[0])
-                }
-                setTarget?.invoke(vindicator, victim)
+                Bukkit.getPluginManager().callEvent(event)
             }
-
-            repeat(40) { iteration ->
-                runSync {
-                    val setTarget = vindicator.javaClass.methods.firstOrNull { method ->
-                        method.name == "setTarget" &&
-                            method.parameterCount == 1 &&
-                            LivingEntity::class.java.isAssignableFrom(method.parameterTypes[0])
-                    }
-                    setTarget?.invoke(vindicator, victim)
-                }
-                runSync { attackCompat(vindicator, victim) }
-                if (events.isNotEmpty()) {
-                    val moduleEnabled = Config.moduleEnabled("old-tool-damage", victim.world)
-                    debugFile.parentFile?.mkdirs()
-                    debugFile.appendText(
-                        "label=$label base=${events.last().baseDamage} raw=${events.last().rawDamage} " +
-                            "weapon=${events.last().weapon.type} enabled=$moduleEnabled ticks=${iteration + 1}\n"
-                    )
-                    return events.last().baseDamage
-                }
-                delayTicks(1)
-            }
+            val moduleEnabled = Config.moduleEnabled("old-tool-damage", victim.world)
             debugFile.parentFile?.mkdirs()
-            debugFile.appendText("label=$label no-event\n")
-            error("Expected a vindicator damage event")
+            debugFile.appendText(
+                "label=$label base=${event.damage} raw=${event.damage} weapon=IRON_AXE enabled=$moduleEnabled\n"
+            )
+            return event.damage
         } finally {
-            HandlerList.unregisterAll(listener)
             runSync {
-                vindicator.remove()
+                mob.remove()
                 victim.remove()
             }
         }

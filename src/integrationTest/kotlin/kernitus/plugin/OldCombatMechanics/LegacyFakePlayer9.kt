@@ -181,6 +181,13 @@ internal class LegacyFakePlayer9(
                 ep.javaClass.methods.firstOrNull { it.name == "ae" && it.parameterCount == 0 } // baseTick in 1.9 obf
                     ?.invoke(ep)
             }
+            // Ensure water extinguishes burning for fake players on legacy
+            runCatching {
+                val bp = bukkitPlayer
+                if (bp != null && bp.fireTicks > 0 && bp.location.block.isLiquid) {
+                    bp.fireTicks = 0
+                }
+            }
         }, 1L, 1L)
     }
 
