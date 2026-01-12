@@ -80,11 +80,54 @@ class PlayerKnockbackIntegrationTest : FunSpec({
         kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData(player.uniqueId, playerData)
     }
 
-    fun knockbackMap(): MutableMap<UUID, Vector> {
-        val field = ModulePlayerKnockback::class.java.getDeclaredField("playerKnockbackHashMap")
-        field.isAccessible = true
+    fun pendingKnockbackField(): java.lang.reflect.Field {
+        val names = listOf("pendingKnockback", "playerKnockbackHashMap")
+        for (name in names) {
+            val f = runCatching { ModulePlayerKnockback::class.java.getDeclaredField(name) }.getOrNull() ?: continue
+            f.isAccessible = true
+            return f
+        }
+        error("No pending knockback field found on ModulePlayerKnockback (tried: $names)")
+    }
+
+    fun pendingKnockbackMap(): MutableMap<UUID, Any> {
+        val field = pendingKnockbackField()
         @Suppress("UNCHECKED_CAST")
-        return field.get(module) as MutableMap<UUID, Vector>
+        return field.get(module) as MutableMap<UUID, Any>
+    }
+
+    fun getPendingVector(uuid: UUID): Vector? {
+        val map = pendingKnockbackMap()
+        val value = map[uuid] ?: return null
+        return when (value) {
+            is Vector -> value
+            else -> {
+                val vf = value.javaClass.getDeclaredField("velocity")
+                vf.isAccessible = true
+                vf.get(value) as? Vector
+            }
+        }
+    }
+
+    fun removePending(uuid: UUID) {
+        pendingKnockbackMap().remove(uuid)
+    }
+
+    fun putPending(uuid: UUID, vector: Vector) {
+        val fieldName = pendingKnockbackField().name
+        if (fieldName == "playerKnockbackHashMap") {
+            @Suppress("UNCHECKED_CAST")
+            (pendingKnockbackMap() as MutableMap<UUID, Vector>)[uuid] = vector
+            return
+        }
+
+        val pendingClass = ModulePlayerKnockback::class.java.declaredClasses
+            .firstOrNull { it.simpleName == "PendingKnockback" }
+            ?: error("PendingKnockback inner class not found")
+        val ctor = pendingClass.getDeclaredConstructor(Vector::class.java, Long::class.javaPrimitiveType)
+        ctor.isAccessible = true
+        val pending = ctor.newInstance(vector, Long.MAX_VALUE)
+        pendingKnockbackMap()[uuid] = pending
     }
 
     fun damageEvent(): EntityDamageByEntityEvent {
@@ -162,11 +205,11 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                 module.reload()
 
                 damageEvent()
-                val vector = knockbackMap()[victim.uniqueId] ?: error("No knockback stored")
+                val vector = getPendingVector(victim.uniqueId) ?: error("No knockback stored")
                 vector.x shouldBe (0.4 plusOrMinus 0.0001)
                 vector.y shouldBe (0.4 plusOrMinus 0.0001)
                 vector.z shouldBe (0.0 plusOrMinus 0.0001)
-                knockbackMap().remove(victim.uniqueId)
+                removePending(victim.uniqueId)
             }
         }
 
@@ -190,11 +233,11 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                     4.0
                 )
                 module.onEntityDamageEntity(event)
-                val vector = knockbackMap()[victim.uniqueId] ?: error("No knockback stored")
+                val vector = getPendingVector(victim.uniqueId) ?: error("No knockback stored")
                 vector.x shouldBe (0.4 plusOrMinus 0.0001)
                 vector.y shouldBe (0.5 plusOrMinus 0.0001)
                 vector.z shouldBe (0.5 plusOrMinus 0.0001)
-                knockbackMap().remove(victim.uniqueId)
+                removePending(victim.uniqueId)
             }
         }
 
@@ -209,7 +252,7 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                 module.reload()
 
                 val expected = Vector(0.4, 0.4, 0.0)
-                knockbackMap()[victim.uniqueId] = expected
+                putPending(victim.uniqueId, expected)
                 val first = velocityEvent(Vector(0, 0, 0))
                 first.velocity.x shouldBe (0.4 plusOrMinus 0.0001)
 
@@ -277,11 +320,11 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                 try {
                     val event = damageEvent()
                     event.isCancelled shouldBe false
-                    val vector = knockbackMap()[victim.uniqueId] ?: error("No knockback stored")
+                    val vector = getPendingVector(victim.uniqueId) ?: error("No knockback stored")
                     val expectedHorizontal = 0.4 * (1 - attribute.value)
                     vector.x shouldBe (expectedHorizontal plusOrMinus 0.0001)
                     vector.y shouldBe (0.4 plusOrMinus 0.0001)
-                    knockbackMap().remove(victim.uniqueId)
+                    removePending(victim.uniqueId)
                 } finally {
                     attribute.baseValue = originalBase
                 }

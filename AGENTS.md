@@ -89,6 +89,7 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleFishingRodVelocity` uses a single shared per-tick task (1.14+) to adjust hook gravity for all active hooks, instead of one scheduled task per hook.
 - `AttackCooldownTracker#getLastCooldown` is safe to call when the tracker is not registered (returns null) and uses a `HashMap` rather than a `WeakHashMap`.
 - `AttackCooldownTracker` defensively feature-detects `HumanEntity#getAttackCooldown` and avoids scheduling its per-tick sampler when the API exists (modern/backported servers).
+- `ModulePlayerKnockback` uses a `HashMap` + a single shared 1-tick expiry cleaner for pending velocity overrides, instead of `WeakHashMap` + one scheduled task per hit.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
 - Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.

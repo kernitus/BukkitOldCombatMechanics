@@ -15,7 +15,7 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 
 **Why servers pick OCM** ✨
 - 🧩 **Modular:** enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
-- 🚀 **Performant:** lean listeners only enabled as needed to keep tick time low.
+- 🚀 **Performant:** lean listeners only enabled as needed; reflection lookups are cached and recurring tasks are minimised (shared where possible) to keep tick time low on busy PvP servers.
 - 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for mixed PvP/PvE, minigames, or duels.
 - ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and ProtocolLib.
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.

@@ -25,11 +25,13 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 /**
  * Reverts knockback formula to 1.8.
@@ -44,7 +46,15 @@ public class ModulePlayerKnockback extends OCMModule {
     private double knockbackExtraVertical;
     private boolean netheriteKnockbackResistance;
 
-    private final Map<UUID, Vector> playerKnockbackHashMap = new WeakHashMap<>();
+    // Knockback override for the next PlayerVelocityEvent.
+    // Performance/correctness:
+    // - Use a normal HashMap (WeakHashMap can drop entries unpredictably).
+    // - Keep entries for at most 1 tick. If PlayerVelocityEvent does not fire, a stale entry must not affect
+    //   a later, unrelated velocity event (explosions, plugins, etc.).
+    // - Avoid scheduling one task per hit: we run one shared cleanup task only while there is anything pending.
+    private final Map<UUID, PendingKnockback> pendingKnockback = new HashMap<>();
+    private BukkitTask pendingCleanupTask;
+    private long pendingTickCounter;
 
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");
@@ -64,7 +74,8 @@ public class ModulePlayerKnockback extends OCMModule {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
-        playerKnockbackHashMap.remove(e.getPlayer().getUniqueId());
+        pendingKnockback.remove(e.getPlayer().getUniqueId());
+        stopCleanupTaskIfIdle();
     }
 
     // Vanilla does its own knockback, so we need to set it again.
@@ -73,10 +84,10 @@ public class ModulePlayerKnockback extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerVelocityEvent(PlayerVelocityEvent event) {
         final UUID uuid = event.getPlayer().getUniqueId();
-        if (!playerKnockbackHashMap.containsKey(uuid))
-            return;
-        event.setVelocity(playerKnockbackHashMap.get(uuid));
-        playerKnockbackHashMap.remove(uuid);
+        final PendingKnockback pending = pendingKnockback.remove(uuid);
+        if (pending == null) return;
+        event.setVelocity(pending.velocity);
+        stopCleanupTaskIfIdle();
     }
 
     @EventHandler
@@ -188,10 +199,49 @@ public class ModulePlayerKnockback extends OCMModule {
 
         // Knockback is sent immediately in 1.8+, there is no reason to send packets
         // manually
-        playerKnockbackHashMap.put(victimId, playerVelocity);
+        pendingKnockback.put(victimId, new PendingKnockback(playerVelocity, pendingTickCounter + 1));
+        ensureCleanupTaskRunning();
+    }
 
-        // Sometimes PlayerVelocityEvent doesn't fire, remove data to not affect later
-        // events if that happens
-        Bukkit.getScheduler().runTaskLater(plugin, () -> playerKnockbackHashMap.remove(victimId), 1);
+    private void ensureCleanupTaskRunning() {
+        if (pendingCleanupTask != null) return;
+        pendingTickCounter = 0;
+
+        // Delay by 1 tick so we never expire entries in the same tick they were created.
+        pendingCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            pendingTickCounter++;
+            if (pendingKnockback.isEmpty()) {
+                stopCleanupTaskIfIdle();
+                return;
+            }
+
+            final Iterator<Map.Entry<UUID, PendingKnockback>> it = pendingKnockback.entrySet().iterator();
+            while (it.hasNext()) {
+                final PendingKnockback pending = it.next().getValue();
+                if (pending == null || pending.expiresAtTick <= pendingTickCounter) {
+                    it.remove();
+                }
+            }
+
+            stopCleanupTaskIfIdle();
+        }, 1L, 1L);
+    }
+
+    private void stopCleanupTaskIfIdle() {
+        if (pendingCleanupTask == null) return;
+        if (!pendingKnockback.isEmpty()) return;
+        pendingCleanupTask.cancel();
+        pendingCleanupTask = null;
+    }
+
+    private static final class PendingKnockback {
+        private final Vector velocity;
+        private final long expiresAtTick;
+
+        private PendingKnockback(Vector velocity, long expiresAtTick) {
+            // Defensive clone: callers may re-use/mutate the Vector instance.
+            this.velocity = velocity == null ? new Vector() : velocity.clone();
+            this.expiresAtTick = expiresAtTick;
+        }
     }
 }
