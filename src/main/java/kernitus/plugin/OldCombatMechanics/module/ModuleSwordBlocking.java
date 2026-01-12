@@ -34,7 +34,9 @@ public class ModuleSwordBlocking extends OCMModule {
     private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here, for extra reliability
     private final Map<UUID, ItemStack> storedItems = new HashMap<>();
-    private final Map<UUID, Collection<BukkitTask>> correspondingTasks = new HashMap<>();
+    private final Map<UUID, LegacySwordBlockState> legacyStates = new HashMap<>();
+    private BukkitTask legacyTask;
+    private long tickCounter;
     private int restoreDelay;
     private boolean paperSupported;
     private Object paperAdapter;
@@ -151,7 +153,7 @@ public class ModuleSwordBlocking extends OCMModule {
             // Force an inventory update to avoid ghost items
             player.updateInventory();
         }
-        scheduleRestore(player);
+        scheduleLegacyRestore(player);
 
         applyConsumableComponent(player, mainHandItem);
     }
@@ -228,37 +230,28 @@ public class ModuleSwordBlocking extends OCMModule {
     private void restore(Player p, boolean force) {
         final UUID id = p.getUniqueId();
 
-        tryCancelTask(id);
-
         if (!areItemsStored(id)) return;
 
+        // Paper path does not store/restore offhand shields.
+        if (paperSupported && paperAdapter != null) return;
+
         // If they are still blocking with the shield, postpone restoring
-        if (!force && isPlayerBlocking(p)) scheduleRestore(p);
-        else p.getInventory().setItemInOffHand(storedItems.remove(id));
+        if (!force && isPlayerBlocking(p)) {
+            scheduleLegacyRestore(p);
+            return;
+        }
+
+        p.getInventory().setItemInOffHand(storedItems.remove(id));
+        legacyStates.remove(id);
+        stopLegacyTaskIfIdle();
     }
 
-    private void tryCancelTask(UUID id) {
-        Optional.ofNullable(correspondingTasks.remove(id))
-                .ifPresent(tasks -> tasks.forEach(BukkitTask::cancel));
-    }
-
-    private void scheduleRestore(Player p) {
+    private void scheduleLegacyRestore(Player p) {
         final UUID id = p.getUniqueId();
-        tryCancelTask(id);
-
-        final BukkitTask removeItem = Bukkit.getScheduler()
-                .runTaskLater(plugin, () -> restore(p), restoreDelay);
-
-        final BukkitTask checkBlocking = Bukkit.getScheduler()
-                .runTaskTimer(plugin, () -> {
-                    if (!isPlayerBlocking(p))
-                        restore(p);
-                }, 10L, 2L);
-
-        final List<BukkitTask> tasks = new ArrayList<>(2);
-        tasks.add(removeItem);
-        tasks.add(checkBlocking);
-        correspondingTasks.put(p.getUniqueId(), tasks);
+        final LegacySwordBlockState state = legacyStates.computeIfAbsent(id, ignored -> new LegacySwordBlockState());
+        state.restoreAtTick = tickCounter + Math.max(0, restoreDelay);
+        state.nextBlockingCheckTick = tickCounter + 10L;
+        ensureLegacyTaskRunning();
     }
 
     private boolean areItemsStored(UUID uuid) {
@@ -366,5 +359,69 @@ public class ModuleSwordBlocking extends OCMModule {
             stripConsumable(event.getPlayer().getInventory().getItemInOffHand());
             applyConsumableComponent(event.getPlayer(), event.getPlayer().getInventory().getItemInMainHand());
         }
+    }
+
+    private void ensureLegacyTaskRunning() {
+        if (legacyTask != null) return;
+        tickCounter = 0;
+        legacyTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickCounter++;
+            if (legacyStates.isEmpty()) {
+                stopLegacyTaskIfIdle();
+                return;
+            }
+
+            final Iterator<Map.Entry<UUID, LegacySwordBlockState>> it = legacyStates.entrySet().iterator();
+            while (it.hasNext()) {
+                final Map.Entry<UUID, LegacySwordBlockState> entry = it.next();
+                final UUID uuid = entry.getKey();
+                if (!storedItems.containsKey(uuid)) {
+                    it.remove();
+                    continue;
+                }
+
+                final Player player = Bukkit.getPlayer(uuid);
+                if (player == null) {
+                    // Cannot restore cleanly; drop state and stored item reference.
+                    storedItems.remove(uuid);
+                    it.remove();
+                    continue;
+                }
+
+                final LegacySwordBlockState state = entry.getValue();
+
+                // Mirror previous behaviour: after 10 ticks, poll every 2 ticks for stop-blocking.
+                if (tickCounter >= state.nextBlockingCheckTick) {
+                    if (!isPlayerBlocking(player)) {
+                        restore(player, false);
+                        it.remove();
+                        continue;
+                    }
+                    state.nextBlockingCheckTick += 2L;
+                }
+
+                // Restore-delay timeout: attempt restore; if still blocking, restore() reschedules.
+                if (tickCounter >= state.restoreAtTick) {
+                    restore(player, false);
+                    if (!storedItems.containsKey(uuid)) {
+                        it.remove();
+                    }
+                }
+            }
+
+            stopLegacyTaskIfIdle();
+        }, 1L, 1L);
+    }
+
+    private void stopLegacyTaskIfIdle() {
+        if (legacyTask == null) return;
+        if (!legacyStates.isEmpty()) return;
+        legacyTask.cancel();
+        legacyTask = null;
+    }
+
+    private static final class LegacySwordBlockState {
+        private long restoreAtTick;
+        private long nextBlockingCheckTick;
     }
 }
