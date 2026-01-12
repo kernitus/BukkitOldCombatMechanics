@@ -7,9 +7,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 /**
  * Spigot versions below 1.16 did not have way of getting attack cooldown.
@@ -23,7 +23,7 @@ public class AttackCooldownTracker extends OCMModule {
     public AttackCooldownTracker(OCMMain plugin) {
         super(plugin, "attack-cooldown-tracker");
         INSTANCE = this;
-        lastCooldown = new WeakHashMap<>();
+        lastCooldown = new HashMap<>();
 
         Runnable cooldownTask = () -> Bukkit.getOnlinePlayers().forEach(
                 player -> lastCooldown.put(player.getUniqueId(),
@@ -38,7 +38,9 @@ public class AttackCooldownTracker extends OCMModule {
     }
 
     public static Float getLastCooldown(UUID uuid) {
-        return INSTANCE.lastCooldown.get(uuid);
+        final AttackCooldownTracker instance = INSTANCE;
+        if (instance == null) return null;
+        return instance.lastCooldown.get(uuid);
     }
 
 }

@@ -71,6 +71,10 @@ public class ModuleSwordBlocking extends OCMModule {
             return;
         }
         try {
+            // Paper-only optimisation: use Paper's item data components to give swords a BLOCK use animation
+            // (and the BLOCKING component where available). We keep this behind reflection so the plugin can
+            // still compile against Spigot, and we cache the reflective handles once during initialisation to
+            // keep the hot path allocation-free.
             final Class<?> adapterClass = Class.forName("kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking");
             paperAdapter = adapterClass.getConstructor().newInstance();
             paperApply = adapterClass.getMethod("applyComponents", ItemStack.class);
@@ -138,6 +142,9 @@ public class ModuleSwordBlocking extends OCMModule {
                 !player.hasPermission("oldcombatmechanics.swordblock")) return;
 
         if (paperSupported && paperAdapter != null) {
+            // Modern Paper path: we can provide a sword blocking animation via components, without swapping an
+            // offhand shield. This avoids the legacy polling/restore tasks and avoids interfering with offhand
+            // gameplay items (totems, food, etc.).
             applyConsumableComponent(player, mainHandItem);
             return;
         }
@@ -153,6 +160,8 @@ public class ModuleSwordBlocking extends OCMModule {
             // Force an inventory update to avoid ghost items
             player.updateInventory();
         }
+        // Legacy path: per-player state is required because we temporarily equip a shield. We restore the
+        // original offhand item once the player stops blocking or after a configurable delay.
         scheduleLegacyRestore(player);
 
         applyConsumableComponent(player, mainHandItem);
@@ -364,6 +373,9 @@ public class ModuleSwordBlocking extends OCMModule {
     private void ensureLegacyTaskRunning() {
         if (legacyTask != null) return;
         tickCounter = 0;
+        // Performance: previously, sword blocking could schedule per-player repeating tasks. When many players
+        // block at once this scales poorly (scheduler overhead + allocations). Instead, keep per-player state in
+        // a map and run one shared tick task while there is any active legacy blocking state.
         legacyTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickCounter++;
             if (legacyStates.isEmpty()) {

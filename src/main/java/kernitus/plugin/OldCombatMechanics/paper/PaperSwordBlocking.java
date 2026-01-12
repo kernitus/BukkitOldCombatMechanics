@@ -11,6 +11,8 @@ import org.bukkit.inventory.ItemStack;
  * Paper-only helper: reflection-based to avoid linking Paper API at compile time.
  *
  * Performance: all reflective lookups are done once in the constructor; hot calls only use cached MethodHandles.
+ * We deliberately swallow failures here: if Paper changes an API/method signature, we prefer "no sword blocking
+ * components" over hard-failing the whole plugin.
  */
 public class PaperSwordBlocking {
 

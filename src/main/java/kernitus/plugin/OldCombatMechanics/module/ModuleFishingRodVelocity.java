@@ -95,7 +95,10 @@ public class ModuleFishingRodVelocity extends OCMModule {
         if (!hasDifferentGravity) return;
 
         // Adjust gravity on every tick unless it's in water.
-        // On 1.14+ this used to schedule one task per hook; instead we share a single task across active hooks.
+        // Performance: on 1.14+ this used to schedule one repeating task per cast/hook. When players spam rods,
+        // that can create lots of concurrent scheduled tasks. Instead, keep a set of active hooks and run one
+        // shared per-tick task only while the set is non-empty. The work is still O(active hooks), but we avoid
+        // scheduler overhead and per-hook task allocations.
         activeHooks.add(fishHook);
         ensureGravityTask();
     }
@@ -106,6 +109,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
         gravityTask = new BukkitRunnable() {
             @Override
             public void run() {
+                // Stop the task as soon as it is not needed (no active hooks) to avoid a permanent every-tick cost.
                 if (activeHooks.isEmpty()) {
                     cancel();
                     gravityTask = null;
