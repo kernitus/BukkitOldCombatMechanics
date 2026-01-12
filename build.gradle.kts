@@ -455,6 +455,7 @@ for (version in integrationTestVersions) {
     val suffix = versionTaskSuffix(version)
     val runDir = file("run/$version")
     val resultFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-results.txt")
+    val failuresFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-failures.txt")
     val vanillaCacheFile = runDir.resolve("cache/mojang_${version}.jar")
     val logFile = layout.buildDirectory.file("integration-test-logs/$suffix.log")
 
@@ -553,6 +554,9 @@ for (version in integrationTestVersions) {
             if (resultFile.exists()) {
                 resultFile.delete()
             }
+            if (failuresFile.exists()) {
+                failuresFile.delete()
+            }
             val ocmConfigFile = runDir.resolve("plugins/OldCombatMechanics/config.yml")
             if (ocmConfigFile.exists()) {
                 ocmConfigFile.delete()
@@ -592,6 +596,12 @@ for (version in integrationTestVersions) {
             run {
                 val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
                 logger.lifecycle("[${version}] Log: $rel")
+            }
+            if (failuresFile.exists()) {
+                val lines = failuresFile.readLines().map { it.trim() }.filter { it.isNotEmpty() }
+                if (lines.isNotEmpty()) {
+                    logger.lifecycle("[${version}] Failure details: ${lines.take(5).joinToString(" | ")}")
+                }
             }
             if (result == "FAIL") {
                 throw GradleException("Integration tests failed for $version.")

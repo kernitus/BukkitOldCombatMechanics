@@ -15,11 +15,13 @@ This file captures repo-specific context discovered while working on this branch
 - Entrypoint plugin class: `kernitus.plugin.OldCombatMechanics.OCMTestMain`.
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
 - RunServer output is redirected to `build/integration-test-logs/<version>.log`; `checkTestResults<version>` prints only a compact summary/failures to the console.
+- `KotestRunner` writes a compact `plugins/OldCombatMechanicsTest/test-failures.txt` file (up to 25 failures) so CI can surface failure reasons without opening the full server log.
 - Token hygiene: do **not** open/read `build/integration-test-logs/*.log` unless the user explicitly asks for log inspection; rely on the compact console summary by default and ask for permission before digging into full logs.
 - Matrix task: `integrationTest` depends on `integrationTestMatrix` which runs per-version tasks like:
   - `integrationTest1_19_2`, `integrationTest1_21_11`, `integrationTest1_12`, `integrationTest1_9`
 - Test result handoff:
   - `OCMTestMain` writes `plugins/OldCombatMechanicsTest/test-results.txt` containing `PASS` or `FAIL`.
+  - `KotestRunner` also writes `plugins/OldCombatMechanicsTest/test-failures.txt` (small failure summary).
   - Gradle `checkTestResults<version>` fails build if file missing, or content is not `PASS`.
 
 ## Version matrix + Java selection

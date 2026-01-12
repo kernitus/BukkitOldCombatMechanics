@@ -29,4 +29,15 @@ object TestResultWriter {
 
         Bukkit.shutdown()
     }
+
+    @JvmStatic
+    fun writeFailureSummary(plugin: JavaPlugin, lines: List<String>) {
+        try {
+            val file = File(plugin.dataFolder, "test-failures.txt")
+            file.parentFile.mkdirs()
+            file.writeText(lines.joinToString(separator = "\n", postfix = if (lines.isEmpty()) "" else "\n"))
+        } catch (e: Exception) {
+            plugin.logger.log(Level.SEVERE, "Failed to write test failures file.", e)
+        }
+    }
 }

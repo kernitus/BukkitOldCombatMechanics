@@ -58,16 +58,50 @@ object KotestRunner {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
             try {
                 var hasFailures = false
+                val failureLines = ArrayList<String>(16)
+
+                fun throwableFromResult(result: TestResult): Throwable? {
+                    // Avoid depending on Kotest internals: fetch any Throwable via reflection for cross-version tolerance.
+                    val candidateGetters = listOf(
+                        "getErrorOrNull",
+                        "getCauseOrNull",
+                        "getThrowableOrNull",
+                        "getFailureOrNull"
+                    )
+                    for (getter in candidateGetters) {
+                        val m = result::class.java.methods.firstOrNull { it.name == getter && it.parameterCount == 0 } ?: continue
+                        val t = runCatching { m.invoke(result) }.getOrNull() as? Throwable
+                        if (t != null) return t
+                    }
+                    return null
+                }
+
+                fun formatFailure(testCase: TestCase, result: TestResult): String {
+                    val specName = testCase.spec::class.qualifiedName ?: testCase.spec::class.java.name
+                    val testName = testCase.displayName
+                    val t = throwableFromResult(result)
+                    if (t == null) return "$specName, $testName"
+
+                    val message = t.message?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+                    val head = if (message.isNotEmpty()) "${t::class.java.simpleName}: $message" else t::class.java.simpleName
+                    val frame = t.stackTrace.firstOrNull()
+                    val at = if (frame != null) " (${frame.fileName}:${frame.lineNumber})" else ""
+                    return "$specName, $testName -- $head$at"
+                }
 
                 val listener = object : AbstractTestEngineListener() {
                     override suspend fun testFinished(testCase: TestCase, result: TestResult) {
                         if (result.isFailure || result.isError) {
                             hasFailures = true
+                            if (failureLines.size < 25) {
+                                failureLines.add(formatFailure(testCase, result))
+                            }
                         }
                     }
 
                     override suspend fun engineFinished(t: List<Throwable>) {
                         val success = t.isEmpty() && !hasFailures
+                        TestResultWriter.writeFailureSummary(plugin, failureLines)
                         TestResultWriter.writeAndShutdown(plugin, success)
                     }
                 }
@@ -97,6 +131,7 @@ object KotestRunner {
                         GoldenAppleIntegrationTest::class,
                         OldArmourDurabilityIntegrationTest::class,
                         PlayerKnockbackIntegrationTest::class,
+                        FishingRodVelocityIntegrationTest::class,
                         SwordSweepIntegrationTest::class,
                         ChorusFruitIntegrationTest::class,
                         CustomWeaponDamageIntegrationTest::class,
