@@ -2,8 +2,10 @@ package kernitus.plugin.OldCombatMechanics.utilities.damage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -22,13 +24,24 @@ public class AttackCooldownTracker extends OCMModule {
 
     public AttackCooldownTracker(OCMMain plugin) {
         super(plugin, "attack-cooldown-tracker");
-        INSTANCE = this;
         lastCooldown = new HashMap<>();
+
+        // This module only matters on versions where HumanEntity#getAttackCooldown does not exist (pre-1.16).
+        // OCMMain already gates registration via feature detection, but keep this as a safety net in case a
+        // fork/backport adds the method or another plugin initialises this module manually.
+        if (Reflector.getMethod(HumanEntity.class, "getAttackCooldown", 0) != null) {
+            INSTANCE = null;
+            return;
+        }
+
+        INSTANCE = this;
 
         Runnable cooldownTask = () -> Bukkit.getOnlinePlayers().forEach(
                 player -> lastCooldown.put(player.getUniqueId(),
                         VersionCompatUtils.getAttackCooldown(player)
                 ));
+        // Performance: one global per-tick task, not per-player. We must sample every tick because the NMS value
+        // is reset before the Bukkit damage event fires, so on-demand reads would be incorrect.
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, cooldownTask, 0, 1L);
     }
 
