@@ -9,7 +9,6 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import com.cryptomorin.xseries.XEnchantment;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -21,17 +20,20 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * A module to disable the sweep attack.
  */
 public class ModuleSwordSweep extends OCMModule {
 
-    private final List<Location> sweepLocations = new ArrayList<>();
+    // Legacy (pre-1.11) sweep detection: we observe a normal sword hit, then a 1.0 sweep-damage hit follows
+    // immediately afterwards from the same attacker. Track per-attacker, not by Location (yaw/pitch makes Location unstable).
+    private final Set<UUID> sweepPrimedAttackers = new HashSet<>();
     private EntityDamageEvent.DamageCause sweepDamageCause;
-    private BukkitTask task;
+    private BukkitTask pendingClearTask;
 
     public ModuleSwordSweep(OCMMain plugin) {
         super(plugin, "disable-sword-sweep");
@@ -51,9 +53,11 @@ public class ModuleSwordSweep extends OCMModule {
         // we didn't set anything up in the first place
         if (sweepDamageCause != null) return;
 
-        if (task != null) task.cancel();
-
-        task = Bukkit.getScheduler().runTaskTimer(plugin, sweepLocations::clear, 0, 1);
+        if (pendingClearTask != null) {
+            pendingClearTask.cancel();
+            pendingClearTask = null;
+        }
+        sweepPrimedAttackers.clear();
     }
 
 
@@ -83,8 +87,6 @@ public class ModuleSwordSweep extends OCMModule {
 
     private void onSwordAttack(EntityDamageByEntityEvent e, Player attacker, ItemStack weapon) {
         //Disable sword sweep
-        final Location attackerLocation = attacker.getLocation();
-
         int level = 0;
 
         final Enchantment sweepingEdge = XEnchantment.SWEEPING_EDGE.getEnchant();
@@ -101,13 +103,22 @@ public class ModuleSwordSweep extends OCMModule {
 
         if (e.getDamage() == damage) {
             // Possibly a sword-sweep attack
-            if (sweepLocations.contains(attackerLocation)) {
+            if (sweepPrimedAttackers.contains(attacker.getUniqueId())) {
                 debug("Cancelling sweep...", attacker);
                 e.setCancelled(true);
             }
         } else {
-            sweepLocations.add(attackerLocation);
+            sweepPrimedAttackers.add(attacker.getUniqueId());
+            scheduleClearNextTickIfNeeded();
         }
+    }
+
+    private void scheduleClearNextTickIfNeeded() {
+        if (pendingClearTask != null) return;
+        pendingClearTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            sweepPrimedAttackers.clear();
+            pendingClearTask = null;
+        }, 1L);
     }
 
     private boolean isHoldingSword(Material mat) {
