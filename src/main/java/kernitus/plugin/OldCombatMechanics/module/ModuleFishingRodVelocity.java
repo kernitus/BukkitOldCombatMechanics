@@ -17,7 +17,10 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * This module reverts fishing rod gravity and velocity back to 1.8 behaviour
@@ -29,6 +32,8 @@ public class ModuleFishingRodVelocity extends OCMModule {
 
     private Random random;
     private boolean hasDifferentGravity;
+    private final Set<FishHook> activeHooks = new HashSet<>();
+    private BukkitRunnable gravityTask;
     // In 1.12- getHook() returns a Fish which extends FishHook
     private final SpigotFunctionChooser<PlayerFishEvent, Object, FishHook> getHook = SpigotFunctionChooser.apiCompatReflectionCall(
             (e, params) -> e.getHook(),
@@ -46,6 +51,12 @@ public class ModuleFishingRodVelocity extends OCMModule {
 
         // Versions 1.14+ have different gravity than previous versions
         hasDifferentGravity = Reflector.versionIsNewerOrEqualTo(1, 14, 0);
+
+        if (gravityTask != null) {
+            gravityTask.cancel();
+            gravityTask = null;
+        }
+        activeHooks.clear();
     }
 
     @EventHandler (ignoreCancelled = true)
@@ -83,19 +94,46 @@ public class ModuleFishingRodVelocity extends OCMModule {
 
         if (!hasDifferentGravity) return;
 
-        // Adjust gravity on every tick unless it's in water
-        new BukkitRunnable() {
+        // Adjust gravity on every tick unless it's in water.
+        // On 1.14+ this used to schedule one task per hook; instead we share a single task across active hooks.
+        activeHooks.add(fishHook);
+        ensureGravityTask();
+    }
+
+    private void ensureGravityTask() {
+        if (gravityTask != null) return;
+
+        gravityTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!fishHook.isValid() || fishHook.isOnGround()) cancel();
+                if (activeHooks.isEmpty()) {
+                    cancel();
+                    gravityTask = null;
+                    return;
+                }
 
-                // We check both conditions as sometimes it's underwater but in seagrass, or when bobbing not underwater but the material is water
-                if (!fishHook.isInWater() && fishHook.getWorld().getBlockAt(fishHook.getLocation()).getType() != Material.WATER) {
-                    final Vector fVelocity = fishHook.getVelocity();
-                    fVelocity.setY(fVelocity.getY() - 0.01);
-                    fishHook.setVelocity(fVelocity);
+                final Iterator<FishHook> it = activeHooks.iterator();
+                while (it.hasNext()) {
+                    final FishHook hook = it.next();
+                    if (hook == null || !hook.isValid() || hook.isOnGround()) {
+                        it.remove();
+                        continue;
+                    }
+
+                    // We check both conditions as sometimes it's underwater but in seagrass, or when bobbing not underwater but the material is water
+                    if (!hook.isInWater() && hook.getWorld().getBlockAt(hook.getLocation()).getType() != Material.WATER) {
+                        final Vector fVelocity = hook.getVelocity();
+                        fVelocity.setY(fVelocity.getY() - 0.01);
+                        hook.setVelocity(fVelocity);
+                    }
+                }
+
+                if (activeHooks.isEmpty()) {
+                    cancel();
+                    gravityTask = null;
                 }
             }
-        }.runTaskTimer(plugin, 1, 1);
+        };
+        gravityTask.runTaskTimer(plugin, 1, 1);
     }
 }
