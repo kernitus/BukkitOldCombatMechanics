@@ -46,7 +46,10 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
     public void reload() {
         cooldown = module().getInt("cooldown");
         if (cooldown > 0) {
-            if (lastLaunched == null) lastLaunched = new WeakHashMap<>();
+            // Performance/correctness:
+            // - Use a normal HashMap; WeakHashMap<UUID, ...> can drop entries unpredictably.
+            // - Avoid a recurring cleanup task: expired entries are dropped lazily during checks.
+            if (lastLaunched == null) lastLaunched = new HashMap<>();
         } else lastLaunched = null;
 
         message = module().getBoolean("showMessage") ? module().getString("message") : null;
@@ -77,6 +80,8 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
 
         // Check if the cooldown has expired yet
         if (lastLaunched != null) {
+            // Intentionally wall-clock driven: enderpearl cooldowns are typically expected to be real-time, even
+            // when TPS drops, unlike 1.8 natural regen which is tick based.
             final long currentTime = System.currentTimeMillis() / 1000;
             if (lastLaunched.containsKey(uuid)) {
                 final long elapsedSeconds = currentTime - lastLaunched.get(uuid);
@@ -84,6 +89,8 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
                     if (message != null) Messenger.send(player, message, cooldown - elapsedSeconds);
                     return;
                 }
+                // Lazy expiry cleanup to keep the map bounded without a recurring task.
+                lastLaunched.remove(uuid);
             }
 
             lastLaunched.put(uuid, currentTime);
@@ -130,6 +137,11 @@ public class ModuleDisableEnderpearlCooldown extends OCMModule {
             final long lastLaunchTime = lastLaunched.get(playerUUID); // Last launch time in seconds
             final long elapsedSeconds = currentTime - lastLaunchTime;
             final long cooldownRemaining = cooldown - elapsedSeconds;
+            if (cooldownRemaining <= 0) {
+                // Lazy expiry cleanup: if the cooldown has elapsed, drop the entry.
+                lastLaunched.remove(playerUUID);
+                return 0;
+            }
             return Math.max(cooldownRemaining, 0); // Return the remaining cooldown or 0 if it has expired
         }
         return 0;
