@@ -16,10 +16,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 /**
  * Establishes custom health regeneration rules.
@@ -28,10 +29,38 @@ import java.util.WeakHashMap;
  */
 public class ModulePlayerRegen extends OCMModule {
 
-    private final Map<UUID, Long> healTimes = new WeakHashMap<>();
+    // Vanilla 1.8 natural regen is driven by ticks (foodTickTimer reaches 80 ticks), not wall-clock time.
+    // We therefore measure "interval" in ticks so behaviour stays consistent with TPS drops, rather than
+    // speeding up/slowing down based on real time.
+    //
+    // Performance/correctness:
+    // - Use a normal HashMap (WeakHashMap<UUID, ...> can drop entries unpredictably).
+    // - Keep a single shared tick counter task that runs only while we are tracking at least one player, rather
+    //   than any per-player repeating tasks.
+    private final Map<UUID, Long> lastHealTick = new HashMap<>();
+    private BukkitTask tickTask;
+    private long tickCounter;
+    private long intervalTicks;
+    private int healAmount;
+    private float exhaustionToApply;
 
     public ModulePlayerRegen(OCMMain plugin) {
         super(plugin, "old-player-regen");
+        reload();
+    }
+
+    @Override
+    public void reload() {
+        final long intervalMillis = module().getLong("interval");
+        // Config is in milliseconds for user friendliness, but internal logic is tick based.
+        intervalTicks = Math.max(1L, Math.round(intervalMillis / 50.0));
+        healAmount = module().getInt("amount");
+        exhaustionToApply = (float) module().getDouble("exhaustion");
+
+        if (tickTask != null && lastHealTick.isEmpty()) {
+            tickTask.cancel();
+            tickTask = null;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -56,16 +85,17 @@ public class ModulePlayerRegen extends OCMModule {
         final float previousExhaustion = p.getExhaustion();
         final float previousSaturation = p.getSaturation();
 
-        // Check that it has been at least x seconds since last heal
-        final long currentTime = System.currentTimeMillis();
-        final boolean hasLastHealTime = healTimes.containsKey(playerId);
-        final long lastHealTime = healTimes.computeIfAbsent(playerId, id -> currentTime);
+        ensureTickTaskRunning();
 
-        debug("Exh: " + previousExhaustion + " Sat: " + previousSaturation + " Time: " + (currentTime - lastHealTime),
+        // Check that it has been at least x ticks since last heal
+        final long currentTick = tickCounter;
+        final Long lastTick = lastHealTick.get(playerId);
+        debug("Exh: " + previousExhaustion + " Sat: " + previousSaturation + " Ticks since: " +
+                        (lastTick == null ? "?" : (currentTick - lastTick)),
                 p);
 
         // If we're skipping this heal, we must fix the exhaustion in the following tick
-        if (hasLastHealTime && currentTime - lastHealTime <= module().getLong("interval")) {
+        if (lastTick != null && currentTick - lastTick < intervalTicks) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> p.setExhaustion(previousExhaustion), 1L);
             return;
         }
@@ -74,14 +104,12 @@ public class ModulePlayerRegen extends OCMModule {
         final double playerHealth = p.getHealth();
 
         if (playerHealth < maxHealth) {
-            p.setHealth(MathsHelper.clamp(playerHealth + module().getInt("amount"), 0.0, maxHealth));
-            healTimes.put(playerId, currentTime);
+            p.setHealth(MathsHelper.clamp(playerHealth + healAmount, 0.0, maxHealth));
+            lastHealTick.put(playerId, currentTick);
         }
 
         // Calculate new exhaustion value, must be between 0 and 4. If above, it will
         // reduce the saturation in the following tick.
-        final float exhaustionToApply = (float) module().getDouble("exhaustion");
-
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             // We do this in the next tick because bukkit doesn't stop the exhaustion change
             // when cancelling the event
@@ -93,6 +121,25 @@ public class ModulePlayerRegen extends OCMModule {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
-        healTimes.remove(e.getPlayer().getUniqueId());
+        lastHealTick.remove(e.getPlayer().getUniqueId());
+        stopTickTaskIfIdle();
+    }
+
+    private void ensureTickTaskRunning() {
+        if (tickTask != null) return;
+        tickCounter = 0;
+        tickTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickCounter++;
+            if (lastHealTick.isEmpty()) {
+                stopTickTaskIfIdle();
+            }
+        }, 1L, 1L);
+    }
+
+    private void stopTickTaskIfIdle() {
+        if (tickTask == null) return;
+        if (!lastHealTick.isEmpty()) return;
+        tickTask.cancel();
+        tickTask = null;
     }
 }

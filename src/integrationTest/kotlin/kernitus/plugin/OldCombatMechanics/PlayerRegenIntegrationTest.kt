@@ -124,10 +124,15 @@ class PlayerRegenIntegrationTest : FunSpec({
 
             // Ensure per-player state from previous tests does not leak (healTimes is keyed by UUID).
             runCatching {
-                val f = ModulePlayerRegen::class.java.getDeclaredField("healTimes")
-                f.isAccessible = true
-                @Suppress("UNCHECKED_CAST")
-                (f.get(module) as? MutableMap<Any, Any>)?.clear()
+                val names = listOf("lastHealTick", "healTimes")
+                val f = names.asSequence()
+                    .mapNotNull { name -> runCatching { ModulePlayerRegen::class.java.getDeclaredField(name) }.getOrNull() }
+                    .firstOrNull()
+                if (f != null) {
+                    f.isAccessible = true
+                    @Suppress("UNCHECKED_CAST")
+                    (f.get(module) as? MutableMap<Any, Any>)?.clear()
+                }
             }
         }
     }
