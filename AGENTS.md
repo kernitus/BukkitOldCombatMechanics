@@ -94,6 +94,7 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleOldArmourDurability` uses a `HashMap` + a single shared 1-tick expiry cleaner for the “explosion damaged armour” suppression, instead of `WeakHashMap` + one scheduled task per explosion.
 - `ModulePlayerRegen` uses tick-based interval tracking (1.8-like; TPS aware) with a `HashMap` and a single shared tick counter task that runs only while players are tracked.
 - `ModuleDisableEnderpearlCooldown` uses a `HashMap` and lazily drops expired cooldown entries during checks (wall-clock cooldown; no recurring task).
+- `ModuleSwordBlocking` no longer version-gates Paper support; it feature-detects Paper data component APIs and avoids ConcurrentModificationException by iterating legacy tick state over a snapshot.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
 - Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.
@@ -157,6 +158,7 @@ This file captures repo-specific context discovered while working on this branch
 - `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.
 - GitHub release asset now keeps a stable filename `OldCombatMechanics.jar` (no version suffix); the CurseForge upload uses the same path.
 - Expanded `SwordBlockingIntegrationTest` to cover right-click blocking, non-sword handling, offhand restoration (hotbar change and drop cancel), permission gating, and preserving an existing real shield.
+- Added `PaperSwordBlockingDamageReductionIntegrationTest` (in KotestRunner list) to regression-test that Paper sword blocking is recognised server-side (via `ModuleSwordBlocking.isPaperSwordBlocking`) and produces a non-zero 1.8-style reduction from `applyPaperBlockingReduction`. This uses a synthetic damage event to avoid flakiness from mob AI / PvP settings.
 - Paper-only sword blocking uses a runtime-gated helper (`kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking`) that applies consumable + blocking components via cached reflection (lookup once, MethodHandle invoke thereafter). 1.8-style reduction is applied via `EntityDamageByEntityListener` using the `BLOCKING` damage modifier, while legacy/non-Paper keeps the shield swap path.
 - Fixed legacy (1.9.x) sweep detection flakiness by tracking priming per-attacker UUID (not `Location`, which is unstable due to yaw/pitch) and clearing the set on module reload; stabilises `SwordSweepIntegrationTest` on 1.9.4.
 - `ModuleSwordSweep` now uses a one-shot next-tick clear (single scheduled task guarded by `pendingClearTask`) instead of a repeating every-tick task, to avoid doing any work on ticks where no sword hits occurred.

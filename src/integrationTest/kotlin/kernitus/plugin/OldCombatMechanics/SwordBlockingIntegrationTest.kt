@@ -220,8 +220,10 @@ class SwordBlockingIntegrationTest : StringSpec({
             rightClickWithMainHand()
 
             runSync {
-                player.isBlocking shouldBe true
-                player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                // Legacy path injects a shield and sets isBlocking; Paper path keeps offhand intact and uses a
+                // consumable-based use animation which can surface as "hand raised".
+                (player.isBlocking || player.isHandRaised) shouldBe true
+                setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
             }
         }
     }

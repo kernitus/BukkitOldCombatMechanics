@@ -138,6 +138,8 @@ object KotestRunner {
                         EnderpearlCooldownIntegrationTest::class,
                         ChorusFruitIntegrationTest::class,
                         CustomWeaponDamageIntegrationTest::class,
+                        SwordBlockingIntegrationTest::class,
+                        PaperSwordBlockingDamageReductionIntegrationTest::class,
                         AttackRangeIntegrationTest::class
                     )
                     .launch()

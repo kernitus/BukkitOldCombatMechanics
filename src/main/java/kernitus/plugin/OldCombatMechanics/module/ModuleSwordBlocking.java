@@ -21,6 +21,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -42,6 +43,9 @@ public class ModuleSwordBlocking extends OCMModule {
     private Object paperAdapter;
     private java.lang.reflect.Method paperApply;
     private java.lang.reflect.Method paperClear;
+    private java.lang.reflect.Method paperIsBlockingSword;
+    private volatile java.lang.reflect.Method startUsingItemMethod;
+    private volatile boolean startUsingItemMethodResolved;
     private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
@@ -65,11 +69,6 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private void initialisePaperAdapter() {
-        if (!Reflector.versionIsNewerOrEqualTo(1, 21, 2)) {
-            paperSupported = false;
-            paperAdapter = null;
-            return;
-        }
         try {
             // Paper-only optimisation: use Paper's item data components to give swords a BLOCK use animation
             // (and the BLOCKING component where available). We keep this behind reflection so the plugin can
@@ -79,12 +78,35 @@ public class ModuleSwordBlocking extends OCMModule {
             paperAdapter = adapterClass.getConstructor().newInstance();
             paperApply = adapterClass.getMethod("applyComponents", ItemStack.class);
             paperClear = adapterClass.getMethod("clearComponents", ItemStack.class);
+            paperIsBlockingSword = adapterClass.getMethod("isBlockingSword", Player.class);
             paperSupported = true;
+            if (isPaperDataComponentApiPresent()) {
+                plugin.getLogger().info("Paper sword blocking components enabled (no offhand shield swap).");
+            }
         } catch (Throwable t) {
             paperSupported = false;
             paperAdapter = null;
             paperApply = null;
             paperClear = null;
+            paperIsBlockingSword = null;
+            // Feature-gated warning: only warn when the Paper data component API is present, otherwise this is a
+            // normal Spigot/non-Paper environment where the Paper path is not expected to work.
+            if (isPaperDataComponentApiPresent()) {
+                final Throwable root = (t instanceof java.lang.reflect.InvocationTargetException && ((java.lang.reflect.InvocationTargetException) t).getTargetException() != null)
+                        ? ((java.lang.reflect.InvocationTargetException) t).getTargetException()
+                        : t;
+                plugin.getLogger().warning("Paper sword blocking components unavailable; falling back to legacy offhand shield swap. (" +
+                        root.getClass().getSimpleName() + (root.getMessage() == null ? "" : (": " + root.getMessage())) + ")");
+            }
+        }
+    }
+
+    private boolean isPaperDataComponentApiPresent() {
+        try {
+            Class.forName("io.papermc.paper.datacomponent.DataComponentTypes");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -145,7 +167,13 @@ public class ModuleSwordBlocking extends OCMModule {
             // Modern Paper path: we can provide a sword blocking animation via components, without swapping an
             // offhand shield. This avoids the legacy polling/restore tasks and avoids interfering with offhand
             // gameplay items (totems, food, etc.).
-            applyConsumableComponent(player, mainHandItem);
+            // Set first, then re-read and patch the inventory-backed stack (CraftItemStack) so NMS components
+            // are applied to the real server-side item.
+            inventory.setItemInMainHand(mainHandItem);
+            final ItemStack invMain = inventory.getItemInMainHand();
+            applyConsumableComponent(player, invMain);
+            inventory.setItemInMainHand(invMain);
+            startUsingMainHandIfSupported(player);
             return;
         }
 
@@ -237,6 +265,10 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private void restore(Player p, boolean force) {
+        restore(p, force, false);
+    }
+
+    private void restore(Player p, boolean force, boolean fromLegacyTask) {
         final UUID id = p.getUniqueId();
 
         if (!areItemsStored(id)) return;
@@ -246,13 +278,24 @@ public class ModuleSwordBlocking extends OCMModule {
 
         // If they are still blocking with the shield, postpone restoring
         if (!force && isPlayerBlocking(p)) {
-            scheduleLegacyRestore(p);
+            if (!fromLegacyTask) {
+                scheduleLegacyRestore(p);
+            } else {
+                // When running inside the legacy tick task, do not touch the map structure while iterating.
+                // Just extend the restore deadline.
+                final LegacySwordBlockState state = legacyStates.get(id);
+                if (state != null) {
+                    state.restoreAtTick = tickCounter + Math.max(0, restoreDelay);
+                }
+            }
             return;
         }
 
         p.getInventory().setItemInOffHand(storedItems.remove(id));
-        legacyStates.remove(id);
-        stopLegacyTaskIfIdle();
+        if (!fromLegacyTask) {
+            legacyStates.remove(id);
+            stopLegacyTaskIfIdle();
+        }
     }
 
     private void scheduleLegacyRestore(Player p) {
@@ -302,7 +345,7 @@ public class ModuleSwordBlocking extends OCMModule {
         final Player player = (Player) event.getEntity();
         if (!isEnabled(event.getDamager(), player)) return 0;
         if (!isHoldingSword(player.getInventory().getItemInMainHand().getType())) return 0;
-        if (!player.isBlocking() && !(Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised())) return 0;
+        if (!isPaperSwordBlocking(player)) return 0;
 
         final int amount = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionAmount", 1);
         final int percent = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionPercentage", 50);
@@ -310,6 +353,22 @@ public class ModuleSwordBlocking extends OCMModule {
         if (reduction < 0) reduction = 0;
         if (reduction > incomingDamage) reduction = incomingDamage;
         return reduction;
+    }
+
+    public boolean isPaperSwordBlocking(Player player) {
+        if (!paperSupported || paperAdapter == null) return false;
+        if (player == null) return false;
+        try {
+            if (paperIsBlockingSword != null) {
+                final Object result = paperIsBlockingSword.invoke(paperAdapter, player);
+                if (result instanceof Boolean) {
+                    return (Boolean) result;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback: may work on some combinations, but is not reliable for consumable-based sword blocking.
+        return player.isBlocking() || (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
     }
 
     /* ---------- Paper consumable component (animation-only) ---------- */
@@ -324,6 +383,30 @@ public class ModuleSwordBlocking extends OCMModule {
         }
     }
 
+    private void startUsingMainHandIfSupported(Player player) {
+        // Feature-gated: Paper exposes LivingEntity#startUsingItem(EquipmentSlot). Spigot does not.
+        // Without this, some server/client combinations do not transition into the "hand raised" state for
+        // component-based sword blocking, even if the item has the correct components.
+        if (player == null) return;
+
+        if (!startUsingItemMethodResolved) {
+            startUsingItemMethodResolved = true;
+            try {
+                final Class<?> livingEntityClass = Class.forName("org.bukkit.entity.LivingEntity");
+                startUsingItemMethod = livingEntityClass.getMethod("startUsingItem", EquipmentSlot.class);
+            } catch (Throwable ignored) {
+                startUsingItemMethod = null;
+            }
+        }
+
+        final java.lang.reflect.Method m = startUsingItemMethod;
+        if (m == null) return;
+        try {
+            m.invoke(player, EquipmentSlot.HAND);
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void stripConsumable(ItemStack item) {
         if (!paperSupported || paperAdapter == null || item == null) return;
         try {
@@ -333,17 +416,96 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private class ConsumableCleaner implements Listener {
+        @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+        public void onInventoryClickPre(InventoryClickEvent event) {
+            if (!paperSupported || paperAdapter == null) return;
+            if (!(event.getWhoClicked() instanceof Player)) return;
+
+            // Inventory moves (shift-click, number-key swaps, etc.) can move a sword out of the main hand slot.
+            // We strip the consumable component from items involved in the operation so swords do not keep the
+            // component when they are stored elsewhere. We then re-apply it to the actual main-hand item after
+            // the click has been processed.
+            final ItemStack current = event.getCurrentItem();
+            stripConsumable(current);
+            if (current != null) event.setCurrentItem(current);
+
+            final ItemStack cursor = event.getCursor();
+            stripConsumable(cursor);
+            if (cursor != null) event.setCursor(cursor);
+
+            // Number-key hotbar swap: the hotbar item is also involved even if it isn't the clicked slot.
+            final int hotbarButton = event.getHotbarButton();
+            if (hotbarButton >= 0 && hotbarButton <= 8) {
+                final Player p = (Player) event.getWhoClicked();
+                final ItemStack hotbar = p.getInventory().getItem(hotbarButton);
+                stripConsumable(hotbar);
+                p.getInventory().setItem(hotbarButton, hotbar);
+            }
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onInventoryClickPost(InventoryClickEvent event) {
+            if (!paperSupported || paperAdapter == null) return;
+            if (!(event.getWhoClicked() instanceof Player)) return;
+            final Player p = (Player) event.getWhoClicked();
+
+            // Ensure the (possibly new) main-hand item has the component after the click resolves.
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                final PlayerInventory inv = p.getInventory();
+                final ItemStack main = inv.getItemInMainHand();
+                applyConsumableComponent(p, main);
+                inv.setItemInMainHand(main);
+            });
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onInventoryDrag(InventoryDragEvent event) {
+            if (!paperSupported || paperAdapter == null) return;
+            if (!(event.getWhoClicked() instanceof Player)) return;
+            final Player p = (Player) event.getWhoClicked();
+
+            // Dragging can place items into multiple slots; strip only the slots affected by this event (no sweep),
+            // then re-apply to the actual main-hand item.
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                final org.bukkit.inventory.InventoryView view = p.getOpenInventory();
+                for (Integer rawSlot : event.getRawSlots()) {
+                    final ItemStack item = view.getItem(rawSlot);
+                    stripConsumable(item);
+                    view.setItem(rawSlot, item);
+                }
+
+                final PlayerInventory inv = p.getInventory();
+                final ItemStack main = inv.getItemInMainHand();
+                applyConsumableComponent(p, main);
+                inv.setItemInMainHand(main);
+            });
+        }
+
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onHeld(PlayerItemHeldEvent event) {
-            stripConsumable(event.getPlayer().getInventory().getItem(event.getPreviousSlot()));
-            applyConsumableComponent(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getNewSlot()));
+            final PlayerInventory inv = event.getPlayer().getInventory();
+            final ItemStack prev = inv.getItem(event.getPreviousSlot());
+            stripConsumable(prev);
+            inv.setItem(event.getPreviousSlot(), prev);
+
+            final ItemStack next = inv.getItem(event.getNewSlot());
+            applyConsumableComponent(event.getPlayer(), next);
+            inv.setItem(event.getNewSlot(), next);
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onSwap(PlayerSwapHandItemsEvent event) {
-            stripConsumable(event.getMainHandItem());
-            stripConsumable(event.getOffHandItem());
-            applyConsumableComponent(event.getPlayer(), event.getOffHandItem());
+            // Apply/strip against the actual inventory after the swap has taken place.
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                final PlayerInventory inv = event.getPlayer().getInventory();
+                final ItemStack main = inv.getItemInMainHand();
+                final ItemStack off = inv.getItemInOffHand();
+                stripConsumable(main);
+                stripConsumable(off);
+                applyConsumableComponent(event.getPlayer(), main);
+                inv.setItemInMainHand(main);
+                inv.setItemInOffHand(off);
+            });
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -358,15 +520,25 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onQuit(PlayerQuitEvent event) {
-            stripConsumable(event.getPlayer().getInventory().getItemInMainHand());
-            stripConsumable(event.getPlayer().getInventory().getItemInOffHand());
+            final PlayerInventory inv = event.getPlayer().getInventory();
+            final ItemStack main = inv.getItemInMainHand();
+            final ItemStack off = inv.getItemInOffHand();
+            stripConsumable(main);
+            stripConsumable(off);
+            inv.setItemInMainHand(main);
+            inv.setItemInOffHand(off);
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onWorldChange(PlayerChangedWorldEvent event) {
-            stripConsumable(event.getPlayer().getInventory().getItemInMainHand());
-            stripConsumable(event.getPlayer().getInventory().getItemInOffHand());
-            applyConsumableComponent(event.getPlayer(), event.getPlayer().getInventory().getItemInMainHand());
+            final PlayerInventory inv = event.getPlayer().getInventory();
+            final ItemStack main = inv.getItemInMainHand();
+            final ItemStack off = inv.getItemInOffHand();
+            stripConsumable(main);
+            stripConsumable(off);
+            applyConsumableComponent(event.getPlayer(), main);
+            inv.setItemInMainHand(main);
+            inv.setItemInOffHand(off);
         }
     }
 
@@ -383,12 +555,13 @@ public class ModuleSwordBlocking extends OCMModule {
                 return;
             }
 
-            final Iterator<Map.Entry<UUID, LegacySwordBlockState>> it = legacyStates.entrySet().iterator();
-            while (it.hasNext()) {
-                final Map.Entry<UUID, LegacySwordBlockState> entry = it.next();
-                final UUID uuid = entry.getKey();
+            // Iterate over a snapshot to avoid ConcurrentModificationException if legacyStates is mutated by other
+            // events during this tick (quit/world change, additional right-clicks, etc.).
+            final List<UUID> uuids = new ArrayList<>(legacyStates.keySet());
+            for (UUID uuid : uuids) {
+                final LegacySwordBlockState state = legacyStates.get(uuid);
+                if (state == null) continue;
                 if (!storedItems.containsKey(uuid)) {
-                    it.remove();
                     continue;
                 }
 
@@ -396,17 +569,15 @@ public class ModuleSwordBlocking extends OCMModule {
                 if (player == null) {
                     // Cannot restore cleanly; drop state and stored item reference.
                     storedItems.remove(uuid);
-                    it.remove();
+                    legacyStates.remove(uuid);
                     continue;
                 }
-
-                final LegacySwordBlockState state = entry.getValue();
 
                 // Mirror previous behaviour: after 10 ticks, poll every 2 ticks for stop-blocking.
                 if (tickCounter >= state.nextBlockingCheckTick) {
                     if (!isPlayerBlocking(player)) {
-                        restore(player, false);
-                        it.remove();
+                        restore(player, false, true);
+                        legacyStates.remove(uuid);
                         continue;
                     }
                     state.nextBlockingCheckTick += 2L;
@@ -414,10 +585,8 @@ public class ModuleSwordBlocking extends OCMModule {
 
                 // Restore-delay timeout: attempt restore; if still blocking, restore() reschedules.
                 if (tickCounter >= state.restoreAtTick) {
-                    restore(player, false);
-                    if (!storedItems.containsKey(uuid)) {
-                        it.remove();
-                    }
+                    restore(player, false, true);
+                    if (!storedItems.containsKey(uuid)) legacyStates.remove(uuid);
                 }
             }
 

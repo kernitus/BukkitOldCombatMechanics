@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -82,6 +83,11 @@ public class ModuleShieldDamageReduction extends OCMModule {
         final Player player = (Player) entity;
 
         if (!isEnabled(e.getDamager(), player)) return;
+
+        // Paper sword blocking sets the BLOCKING modifier to emulate 1.8 sword blocking. This module is for
+        // shield blocking only; do not double-apply a second reduction when the player is blocking with a sword.
+        final ModuleSwordBlocking swordBlocking = ModuleSwordBlocking.getInstance();
+        if (swordBlocking != null && swordBlocking.isPaperSwordBlocking(player)) return;
 
         // Blocking is calculated after base and hard hat, and before armour etc.
         final double baseDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
