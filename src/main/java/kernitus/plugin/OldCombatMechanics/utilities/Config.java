@@ -178,7 +178,7 @@ public class Config {
                 }
                 if (disabledModules.contains(normalised)) {
                     errors.add("Module listed in disabled_modules and modeset '" + key + "': " + moduleName);
-                    continue;
+                    continue; // skip to next module name
                 }
                 if (alwaysEnabledModules.contains(normalised)) {
                     errors.add("Module listed in always_enabled_modules and modeset '" + key + "': " + moduleName);

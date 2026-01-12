@@ -46,6 +46,7 @@ idea {
 
 repositories {
     mavenCentral()
+    maven("https://repo.papermc.io/repository/maven-public/")
     // Spigot API
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
@@ -125,6 +126,7 @@ dependencies {
      */
 
     // Integration test dependencies
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
     add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
     add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.0")
     add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.0")

@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +16,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -34,21 +36,50 @@ public class ModuleSwordBlocking extends OCMModule {
     private final Map<UUID, ItemStack> storedItems = new HashMap<>();
     private final Map<UUID, Collection<BukkitTask>> correspondingTasks = new HashMap<>();
     private int restoreDelay;
+    private boolean paperSupported;
+    private Object paperAdapter;
+    private java.lang.reflect.Method paperApply;
+    private java.lang.reflect.Method paperClear;
+    private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
     private Map<Location, UUID> lastInteractedBlocks;
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
+        INSTANCE = this;
 
         if (!Reflector.versionIsNewerOrEqualTo(1, 13, 0)) {
             lastInteractedBlocks = new WeakHashMap<>();
         }
+
+        initialisePaperAdapter();
+        Bukkit.getPluginManager().registerEvents(new ConsumableCleaner(), plugin);
     }
 
     @Override
     public void reload() {
         restoreDelay = module().getInt("restoreDelay", 40);
+    }
+
+    private void initialisePaperAdapter() {
+        if (!Reflector.versionIsNewerOrEqualTo(1, 21, 2)) {
+            paperSupported = false;
+            paperAdapter = null;
+            return;
+        }
+        try {
+            final Class<?> adapterClass = Class.forName("kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking");
+            paperAdapter = adapterClass.getConstructor().newInstance();
+            paperApply = adapterClass.getMethod("applyComponents", ItemStack.class);
+            paperClear = adapterClass.getMethod("clearComponents", ItemStack.class);
+            paperSupported = true;
+        } catch (Throwable t) {
+            paperSupported = false;
+            paperAdapter = null;
+            paperApply = null;
+            paperClear = null;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -104,6 +135,11 @@ public class ModuleSwordBlocking extends OCMModule {
         if (module().getBoolean("use-permission") &&
                 !player.hasPermission("oldcombatmechanics.swordblock")) return;
 
+        if (paperSupported && paperAdapter != null) {
+            applyConsumableComponent(player, mainHandItem);
+            return;
+        }
+
         final UUID id = player.getUniqueId();
 
         if (!isPlayerBlocking(player)) {
@@ -116,6 +152,8 @@ public class ModuleSwordBlocking extends OCMModule {
             player.updateInventory();
         }
         scheduleRestore(player);
+
+        applyConsumableComponent(player, mainHandItem);
     }
 
     @EventHandler
@@ -243,5 +281,90 @@ public class ModuleSwordBlocking extends OCMModule {
 
     private boolean isHoldingSword(Material mat) {
         return mat.toString().endsWith("_SWORD");
+    }
+
+    public static ModuleSwordBlocking getInstance() {
+        return INSTANCE;
+    }
+
+    /**
+     * Paper path: compute 1.8-style blocking reduction for sword blocking without offhand shield.
+     *
+     * @param event          underlying damage event
+     * @param incomingDamage current damage value before blocking is applied (attack side only)
+     * @return reduction amount to subtract from damage, or 0 if not blocking/unsupported.
+     */
+    public double applyPaperBlockingReduction(org.bukkit.event.entity.EntityDamageByEntityEvent event, double incomingDamage) {
+        if (!paperSupported || paperAdapter == null) return 0;
+        if (!(event.getEntity() instanceof Player)) return 0;
+        final Player player = (Player) event.getEntity();
+        if (!isEnabled(event.getDamager(), player)) return 0;
+        if (!isHoldingSword(player.getInventory().getItemInMainHand().getType())) return 0;
+        if (!player.isBlocking() && !(Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised())) return 0;
+
+        final int amount = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionAmount", 1);
+        final int percent = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionPercentage", 50);
+        double reduction = (incomingDamage - amount) * (percent / 100.0);
+        if (reduction < 0) reduction = 0;
+        if (reduction > incomingDamage) reduction = incomingDamage;
+        return reduction;
+    }
+
+    /* ---------- Paper consumable component (animation-only) ---------- */
+
+    private void applyConsumableComponent(Player player, ItemStack item) {
+        if (!paperSupported || paperAdapter == null) return;
+        if (item == null || item.getType() == Material.AIR || !isHoldingSword(item.getType())) return;
+        if (!isEnabled(player)) return;
+        try {
+            paperApply.invoke(paperAdapter, item);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void stripConsumable(ItemStack item) {
+        if (!paperSupported || paperAdapter == null || item == null) return;
+        try {
+            paperClear.invoke(paperAdapter, item);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private class ConsumableCleaner implements Listener {
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onHeld(PlayerItemHeldEvent event) {
+            stripConsumable(event.getPlayer().getInventory().getItem(event.getPreviousSlot()));
+            applyConsumableComponent(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getNewSlot()));
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onSwap(PlayerSwapHandItemsEvent event) {
+            stripConsumable(event.getMainHandItem());
+            stripConsumable(event.getOffHandItem());
+            applyConsumableComponent(event.getPlayer(), event.getOffHandItem());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDrop(PlayerDropItemEvent event) {
+            stripConsumable(event.getItemDrop().getItemStack());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDeath(PlayerDeathEvent event) {
+            event.getDrops().forEach(ModuleSwordBlocking.this::stripConsumable);
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onQuit(PlayerQuitEvent event) {
+            stripConsumable(event.getPlayer().getInventory().getItemInMainHand());
+            stripConsumable(event.getPlayer().getInventory().getItemInOffHand());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onWorldChange(PlayerChangedWorldEvent event) {
+            stripConsumable(event.getPlayer().getInventory().getItemInMainHand());
+            stripConsumable(event.getPlayer().getInventory().getItemInOffHand());
+            applyConsumableComponent(event.getPlayer(), event.getPlayer().getInventory().getItemInMainHand());
+        }
     }
 }

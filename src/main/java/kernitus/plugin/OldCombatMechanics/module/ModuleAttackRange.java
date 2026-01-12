@@ -20,11 +20,13 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.lang.reflect.Method;
 
 /**
  * Applies the 1.8-style attack range (reach + hitbox margin) to melee weapons on 1.21.11+ Paper.
@@ -175,6 +177,13 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             stripComponent(event.getPlayer().getInventory().getItemInMainHand());
             stripComponent(event.getPlayer().getInventory().getItemInOffHand());
         }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onWorldChange(PlayerChangedWorldEvent event) {
+            stripComponent(event.getPlayer().getInventory().getItemInMainHand());
+            stripComponent(event.getPlayer().getInventory().getItemInOffHand());
+            applyToHeld(event.getPlayer());
+        }
     }
 
     /**
@@ -208,10 +217,23 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             hitboxSetter = builder.getMethod("hitboxMargin", float.class);
             mobFactorSetter = builder.getMethod("mobFactor", float.class);
             buildMethod = builder.getMethod("build");
-            Class<?> typeClass = dct.getField("ATTACK_RANGE").getType();
-            itemSetData = ItemStack.class.getMethod("setData", typeClass, ar);
-            itemHasData = ItemStack.class.getMethod("hasData", Class.forName("io.papermc.paper.datacomponent.DataComponentType"));
-            itemUnsetData = ItemStack.class.getMethod("unsetData", Class.forName("io.papermc.paper.datacomponent.DataComponentType"));
+            Class<?> dctClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            itemSetData = findSetDataMethod(dctClass, ar);
+            itemHasData = ItemStack.class.getMethod("hasData", dctClass);
+            itemUnsetData = ItemStack.class.getMethod("unsetData", dctClass);
+        }
+
+        private Method findSetDataMethod(Class<?> dctClass, Class<?> valueClass) throws NoSuchMethodException {
+            for (Method m : ItemStack.class.getMethods()) {
+                if (!m.getName().equals("setData")) continue;
+                Class<?>[] params = m.getParameterTypes();
+                if (params.length != 2) continue;
+                // accept any data component type class
+                if (!dctClass.isAssignableFrom(params[0]) && !params[0].getName().contains("DataComponentType")) continue;
+                if (!params[1].isAssignableFrom(valueClass) && !valueClass.isAssignableFrom(params[1]) && !params[1].isAssignableFrom(Object.class)) continue;
+                return m;
+            }
+            throw new NoSuchMethodException(ItemStack.class.getName() + "#setData(DataComponentType, AttackRange)");
         }
 
         void apply(ItemStack stack, float min, float max, float minCreative, float maxCreative, float margin, float mobFactor) {

@@ -178,9 +178,22 @@ public class OCMConfigHandler {
 
         newConfig.set("always_enabled_modules", alwaysEnabled);
         newConfig.set("disabled_modules", disabledModules);
+
         if (!migratedModesets.isEmpty()) {
-            newConfig.set("modesets", null);
-            newConfig.createSection("modesets", migratedModesets);
+            ConfigurationSection targetModesets = newConfig.getConfigurationSection("modesets");
+            if (targetModesets == null) {
+                targetModesets = newConfig.createSection("modesets");
+            }
+            // Remove old keys that are no longer present, without deleting the section (keeps placement)
+            for (String key : new ArrayList<>(targetModesets.getKeys(false))) {
+                if (!migratedModesets.containsKey(key)) {
+                    targetModesets.set(key, null);
+                }
+            }
+            // Apply migrated entries
+            for (Map.Entry<String, List<String>> entry : migratedModesets.entrySet()) {
+                targetModesets.set(entry.getKey(), entry.getValue());
+            }
         }
 
         final ConfigurationSection oldWorlds = oldConfig.getConfigurationSection("worlds");

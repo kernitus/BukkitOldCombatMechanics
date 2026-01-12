@@ -64,7 +64,7 @@ Features are grouped in `module`s as listed below, and can be individually confi
 
 #### 🛡 Swords & Shields
 *Control block and sweep behaviour.*
-- **Sword blocking:** restore old right-click block
+- **Sword blocking:** restore old right-click block; on Paper 1.21.2+ we also add the native sword blocking animation via the consumable component
 - **Shield damage reduction:** scale shield protection
 - **Sword sweep:** enable or disable sweeps
 - **Sword sweep particles:** hide or show sweep visuals

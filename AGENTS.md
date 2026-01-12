@@ -146,6 +146,8 @@ This file captures repo-specific context discovered while working on this branch
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 - `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.
 - GitHub release asset now keeps a stable filename `OldCombatMechanics.jar` (no version suffix); the CurseForge upload uses the same path.
+- Expanded `SwordBlockingIntegrationTest` to cover right-click blocking, non-sword handling, offhand restoration (hotbar change and drop cancel), permission gating, and preserving an existing real shield.
+- Paper-only sword blocking uses a runtime-gated helper (`kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking`) that applies consumable + blocking components via cached reflection (lookup once, MethodHandle invoke thereafter). 1.8-style reduction is applied via `EntityDamageByEntityListener` using the `BLOCKING` damage modifier, while legacy/non-Paper keeps the shield swap path.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
