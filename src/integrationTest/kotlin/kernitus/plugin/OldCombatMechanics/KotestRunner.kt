@@ -135,6 +135,7 @@ object KotestRunner {
                         PlayerRegenIntegrationTest::class,
                         FishingRodVelocityIntegrationTest::class,
                         SwordSweepIntegrationTest::class,
+                        EnderpearlCooldownIntegrationTest::class,
                         ChorusFruitIntegrationTest::class,
                         CustomWeaponDamageIntegrationTest::class,
                         AttackRangeIntegrationTest::class
