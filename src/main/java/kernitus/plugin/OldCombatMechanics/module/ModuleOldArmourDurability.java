@@ -16,13 +16,24 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ModuleOldArmourDurability extends OCMModule {
 
-    private final Map<UUID, List<ItemStack>> explosionDamaged = new WeakHashMap<>();
+    // Armour durability events can fire right after an explosion damage event. We suppress those for one tick so
+    // old-armour-durability doesn't double-apply/over-apply changes during explosion bursts.
+    //
+    // Performance/correctness:
+    // - Use a normal HashMap (WeakHashMap<UUID, ...> can drop entries unpredictably).
+    // - Avoid scheduling one task per explosion: keep a shared cleanup task that runs only while entries exist.
+    // - Entries expire after 1 tick, which is long enough for the follow-up PlayerItemDamageEvents to fire but
+    //   short enough to not interfere with unrelated armour wear later.
+    private final Map<UUID, ExplosionDamagedArmour> explosionDamaged = new HashMap<>();
+    private BukkitTask explosionCleanupTask;
+    private long explosionTickCounter;
 
     public ModuleOldArmourDurability(OCMMain plugin) {
         super(plugin, "old-armour-durability");
@@ -45,7 +56,9 @@ public class ModuleOldArmourDurability extends OCMModule {
 
         final UUID uuid = player.getUniqueId();
         if (explosionDamaged.containsKey(uuid)) {
-            final List<ItemStack> armour = explosionDamaged.get(uuid);
+            final ExplosionDamagedArmour data = explosionDamaged.get(uuid);
+            if (data == null) return;
+            final List<ItemStack> armour = data.armour;
             // ItemStack.equals() checks material, durability and quantity to make sure nothing changed in the meantime
             // We're checking all the pieces this way just in case they're wearing two helmets or something strange
             final List<ItemStack> matchedPieces = armour.stream()
@@ -80,13 +93,49 @@ public class ModuleOldArmourDurability extends OCMModule {
         final Player player = (Player) e.getEntity();
         final UUID uuid = player.getUniqueId();
         final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
-        explosionDamaged.put(uuid, armour);
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            explosionDamaged.remove(uuid);
-            debug("Removed from explosion set!", player);
-        }, 1L); // This delay seems enough for the durability events to fire
+        explosionDamaged.put(uuid, new ExplosionDamagedArmour(armour, explosionTickCounter + 1L));
+        ensureExplosionCleanupTaskRunning();
 
         debug("Detected explosion!", player);
+    }
+
+    private void ensureExplosionCleanupTaskRunning() {
+        if (explosionCleanupTask != null) return;
+        explosionTickCounter = 0;
+
+        explosionCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            explosionTickCounter++;
+            if (explosionDamaged.isEmpty()) {
+                stopExplosionCleanupTaskIfIdle();
+                return;
+            }
+
+            final Iterator<Map.Entry<UUID, ExplosionDamagedArmour>> it = explosionDamaged.entrySet().iterator();
+            while (it.hasNext()) {
+                final ExplosionDamagedArmour data = it.next().getValue();
+                if (data == null || data.expiresAtTick <= explosionTickCounter) {
+                    it.remove();
+                }
+            }
+
+            stopExplosionCleanupTaskIfIdle();
+        }, 1L, 1L);
+    }
+
+    private void stopExplosionCleanupTaskIfIdle() {
+        if (explosionCleanupTask == null) return;
+        if (!explosionDamaged.isEmpty()) return;
+        explosionCleanupTask.cancel();
+        explosionCleanupTask = null;
+    }
+
+    private static final class ExplosionDamagedArmour {
+        private final List<ItemStack> armour;
+        private final long expiresAtTick;
+
+        private ExplosionDamagedArmour(List<ItemStack> armour, long expiresAtTick) {
+            this.armour = armour;
+            this.expiresAtTick = expiresAtTick;
+        }
     }
 }

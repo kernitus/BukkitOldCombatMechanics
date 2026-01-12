@@ -91,6 +91,7 @@ This file captures repo-specific context discovered while working on this branch
 - `AttackCooldownTracker` defensively feature-detects `HumanEntity#getAttackCooldown` and avoids scheduling its per-tick sampler when the API exists (modern/backported servers).
 - `ModulePlayerKnockback` uses a `HashMap` + a single shared 1-tick expiry cleaner for pending velocity overrides, instead of `WeakHashMap` + one scheduled task per hit.
 - `ModuleShieldDamageReduction` uses a `HashMap` + a single shared 1-tick expiry cleaner for the “fully blocked” armour-durability suppression, instead of `WeakHashMap` + one scheduled task per hit.
+- `ModuleOldArmourDurability` uses a `HashMap` + a single shared 1-tick expiry cleaner for the “explosion damaged armour” suppression, instead of `WeakHashMap` + one scheduled task per explosion.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
 - Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.
