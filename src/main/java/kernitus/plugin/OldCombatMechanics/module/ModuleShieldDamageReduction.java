@@ -16,6 +16,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +27,16 @@ import java.util.stream.Collectors;
 public class ModuleShieldDamageReduction extends OCMModule {
 
     private int genericDamageReductionAmount, genericDamageReductionPercentage, projectileDamageReductionAmount, projectileDamageReductionPercentage;
-    private final Map<UUID, List<ItemStack>> fullyBlocked = new WeakHashMap<>();
+
+    // When a hit is fully blocked (0 final damage), vanilla can still damage armour durability.
+    // We cancel that armour durability for one tick only (just long enough for PlayerItemDamageEvent to fire).
+    //
+    // Performance/correctness:
+    // - Use a normal HashMap (WeakHashMap<UUID, ...> can drop entries unpredictably).
+    // - Avoid scheduling one task per fully-blocked hit: keep a shared cleanup task that runs only while entries exist.
+    private final Map<UUID, FullyBlockedArmour> fullyBlocked = new HashMap<>();
+    private BukkitTask fullyBlockedCleanupTask;
+    private long fullyBlockedTickCounter;
 
     public ModuleShieldDamageReduction(OCMMain plugin) {
         super(plugin, "shield-damage-reduction");
@@ -49,7 +59,9 @@ public class ModuleShieldDamageReduction extends OCMModule {
         final ItemStack item = e.getItem();
 
         if (fullyBlocked.containsKey(uuid)) {
-            final List<ItemStack> armour = fullyBlocked.get(uuid);
+            final FullyBlockedArmour data = fullyBlocked.get(uuid);
+            if (data == null) return;
+            final List<ItemStack> armour = data.armour;
             // ItemStack.equals() checks material, durability and quantity to make sure nothing changed in the meantime
             // We're checking all the pieces this way just in case they're wearing two helmets or something strange
             final List<ItemStack> matchedPieces = armour.stream().filter(piece -> piece.equals(item)).collect(Collectors.toList());
@@ -86,12 +98,48 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
         if (currentDamage <= 0) { // Make sure armour is not damaged if fully blocked
             final List<ItemStack> armour = Arrays.stream(player.getInventory().getArmorContents()).filter(Objects::nonNull).collect(Collectors.toList());
-            fullyBlocked.put(uuid, armour);
+            fullyBlocked.put(uuid, new FullyBlockedArmour(armour, fullyBlockedTickCounter + 1L));
+            ensureFullyBlockedCleanupTaskRunning();
+        }
+    }
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                fullyBlocked.remove(uuid);
-                debug("Removed from fully blocked set!", player);
-            }, 1L);
+    private void ensureFullyBlockedCleanupTaskRunning() {
+        if (fullyBlockedCleanupTask != null) return;
+        fullyBlockedTickCounter = 0;
+
+        fullyBlockedCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            fullyBlockedTickCounter++;
+            if (fullyBlocked.isEmpty()) {
+                stopFullyBlockedCleanupTaskIfIdle();
+                return;
+            }
+
+            final Iterator<Map.Entry<UUID, FullyBlockedArmour>> it = fullyBlocked.entrySet().iterator();
+            while (it.hasNext()) {
+                final FullyBlockedArmour data = it.next().getValue();
+                if (data == null || data.expiresAtTick <= fullyBlockedTickCounter) {
+                    it.remove();
+                }
+            }
+
+            stopFullyBlockedCleanupTaskIfIdle();
+        }, 1L, 1L);
+    }
+
+    private void stopFullyBlockedCleanupTaskIfIdle() {
+        if (fullyBlockedCleanupTask == null) return;
+        if (!fullyBlocked.isEmpty()) return;
+        fullyBlockedCleanupTask.cancel();
+        fullyBlockedCleanupTask = null;
+    }
+
+    private static final class FullyBlockedArmour {
+        private final List<ItemStack> armour;
+        private final long expiresAtTick;
+
+        private FullyBlockedArmour(List<ItemStack> armour, long expiresAtTick) {
+            this.armour = armour;
+            this.expiresAtTick = expiresAtTick;
         }
     }
 
