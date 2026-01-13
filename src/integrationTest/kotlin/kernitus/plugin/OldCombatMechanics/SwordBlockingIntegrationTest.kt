@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.event.player.PlayerItemHeldEvent
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
@@ -86,6 +87,10 @@ class SwordBlockingIntegrationTest : StringSpec({
         player.inventory.heldItemSlot = previous
     }
 
+    suspend fun delayTicks(ticks: Long) {
+        delay(ticks * 50L)
+    }
+
     suspend fun TestScope.withUsePermission(required: Boolean, block: suspend TestScope.() -> Unit) {
         val original = runSync { ocm.config.getBoolean("sword-blocking.use-permission") }
         runSync {
@@ -132,9 +137,12 @@ class SwordBlockingIntegrationTest : StringSpec({
         }
 
         rightClickWithMainHand()
+        delayTicks(1)
 
         runSync {
-            (player.isBlocking || player.isHandRaised) shouldBe true
+            // Legacy path: module injects a shield (actual "blocking" state is client-driven).
+            // Paper path: offhand remains intact and a consumable-based use animation can surface as "hand raised".
+            (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
             // Legacy path injects shield; paper path keeps offhand intact
             setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
         }
@@ -210,6 +218,7 @@ class SwordBlockingIntegrationTest : StringSpec({
             }
 
             rightClickWithMainHand()
+            delayTicks(1)
 
             runSync {
                 player.isBlocking shouldBe false
@@ -218,11 +227,12 @@ class SwordBlockingIntegrationTest : StringSpec({
 
             runSync { player.addAttachment(plugin, "oldcombatmechanics.swordblock", true) }
             rightClickWithMainHand()
+            delayTicks(1)
 
             runSync {
                 // Legacy path injects a shield and sets isBlocking; Paper path keeps offhand intact and uses a
                 // consumable-based use animation which can surface as "hand raised".
-                (player.isBlocking || player.isHandRaised) shouldBe true
+                (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
                 setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
             }
         }

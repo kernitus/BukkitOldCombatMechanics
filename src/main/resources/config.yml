@@ -107,12 +107,18 @@ attack-range:
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   # IMPORTANT: Also enable disable-sword-sweep module or sweeps will have the damage value of the weapon in hand
-  # NOTE: this will modify the damage, however the item tooltip will still show the 1.9+ damage
+  # NOTE: this will modify the damage, however the vanilla attribute tooltip will still show the 1.9+ values.
+  # The tooltip section below is enabled by default so players can see the configured damage in-game.
   # Use old sharpness calculations, i.e. each level adds 1.25 damage
   # In 1.9+, sharpness adds 1 + 0.5 * level damage
   old-sharpness: true
-  # Damage values shown in 1.9 representation (actual damage)
-  # In 1.8 the damage tooltip value would be added to 1 'base damage', yielding the values below
+  tooltip:
+    # Optionally adds a lore line showing the configured damage from old-tool-damage.damages (the actual damage OCM applies).
+    # This is a cosmetic helper to reduce confusion, but can interact with other plugins that rewrite item lore.
+    enabled: true
+    prefix: "OCM Damage:"
+  # Damage values are in 1.9+ "actual damage" terms (1 damage = half a heart).
+  # In 1.8, the client tooltip showed "+X Attack Damage", where X = (actual_damage - 1) because the base unarmed damage is 1.
   damages:
     # Axe damages
     GOLD_AXE: 4
@@ -570,4 +576,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 71
+config-version: 72

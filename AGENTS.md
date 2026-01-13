@@ -113,6 +113,10 @@ This file captures repo-specific context discovered while working on this branch
 - Added `DisableOffhandIntegrationTest` to assert the disable-offhand modeset-change handler does not clear the offhand when the module is not enabled for the player.
 - `KotestRunner` now includes `DisableOffhandIntegrationTest` in its explicit class list.
 - When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
+- Added `ToolDamageTooltipIntegrationTest` (in `KotestRunner` list) to define behaviour for an opt-in “configured tool damage tooltip” feature (lore line) under `old-tool-damage.tooltip` (`enabled`, `prefix`).
+- `old-tool-damage.tooltip.enabled` is now enabled by default in the bundled config so players can see the configured damage in-game.
+- Modules are enabled/disabled solely via `always_enabled_modules`, `disabled_modules`, and `modesets` (no per-module `enabled:` toggle).
+- `SwordBlockingIntegrationTest` uses synthetic `PlayerInteractEvent` right-clicks; on legacy (offhand-shield) path this cannot reliably assert `isBlocking`/`isHandRaised` (client-driven), so tests treat “blocking applied” as either a shield injection or a raised hand depending on path.
 - Added `ModesetRulesIntegrationTest` to cover always-enabled, disabled, and modeset-scoped module rules plus reload failures for invalid assignments.
 - Added `ConfigMigrationIntegrationTest` to cover config upgrade migration into always/disabled module lists and preservation of custom modesets.
 - Added a `weakness should not store negative last damage values` test in `InvulnerabilityDamageIntegrationTest` that forces `old-potion-effects.weakness.modifier = -10`, consumes a weakness potion (amplifier -1), attacks once, and asserts the stored last damage is non-negative; passes on 1.12/1.19.2 after clamping, but 1.21.11 can still fail with `No stored last damage for victim (events=0)` (attack event not recorded).

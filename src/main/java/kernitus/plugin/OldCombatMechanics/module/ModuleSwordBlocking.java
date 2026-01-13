@@ -28,6 +28,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class ModuleSwordBlocking extends OCMModule {
@@ -44,8 +45,10 @@ public class ModuleSwordBlocking extends OCMModule {
     private java.lang.reflect.Method paperApply;
     private java.lang.reflect.Method paperClear;
     private java.lang.reflect.Method paperIsBlockingSword;
-    private volatile java.lang.reflect.Method startUsingItemMethod;
-    private volatile boolean startUsingItemMethodResolved;
+    private Method startUsingItemMethod;
+    private boolean startUsingItemMethodResolved;
+    private Method craftPlayerGetHandleMethod;
+    private final Map<Class<?>, Method> nmsStartUsingItemCache = new HashMap<>();
     private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
@@ -187,6 +190,10 @@ public class ModuleSwordBlocking extends OCMModule {
             inventory.setItemInOffHand(SHIELD);
             // Force an inventory update to avoid ghost items
             player.updateInventory();
+            // Best-effort: ask the server to start using the offhand item so blocking becomes visible immediately
+            // (and works for fake players / synthetic events). If the API is not present, we fall back silently.
+            startUsingItemIfSupported(player, EquipmentSlot.OFF_HAND);
+            startUsingItemNmsIfSupported(player, true);
         }
         // Legacy path: per-player state is required because we temporarily equip a shield. We restore the
         // original offhand item once the player stops blocking or after a configurable delay.
@@ -384,10 +391,14 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private void startUsingMainHandIfSupported(Player player) {
+        startUsingItemIfSupported(player, EquipmentSlot.HAND);
+    }
+
+    private void startUsingItemIfSupported(Player player, EquipmentSlot slot) {
         // Feature-gated: Paper exposes LivingEntity#startUsingItem(EquipmentSlot). Spigot does not.
-        // Without this, some server/client combinations do not transition into the "hand raised" state for
-        // component-based sword blocking, even if the item has the correct components.
-        if (player == null) return;
+        // Without this, some server/client combinations do not transition into the "hand raised" state, even if the
+        // item has a BLOCK use animation (or a shield is injected on legacy path).
+        if (player == null || slot == null) return;
 
         if (!startUsingItemMethodResolved) {
             startUsingItemMethodResolved = true;
@@ -402,9 +413,103 @@ public class ModuleSwordBlocking extends OCMModule {
         final java.lang.reflect.Method m = startUsingItemMethod;
         if (m == null) return;
         try {
-            m.invoke(player, EquipmentSlot.HAND);
+            m.invoke(player, slot);
         } catch (Throwable ignored) {
         }
+    }
+
+    private void startUsingItemNmsIfSupported(Player player, boolean offhand) {
+        // Ultra-legacy fallback for environments without LivingEntity#startUsingItem(EquipmentSlot).
+        // We reflect into NMS to call LivingEntity#startUsingItem(InteractionHand/EnumHand).
+        if (player == null) return;
+        try {
+            final Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit.entity.CraftPlayer");
+            if (!craftPlayerClass.isInstance(player)) return;
+
+            Method getHandle = craftPlayerGetHandleMethod;
+            if (getHandle == null) {
+                getHandle = Reflector.getMethod(craftPlayerClass, "getHandle");
+                if (getHandle == null) return;
+                craftPlayerGetHandleMethod = getHandle;
+            }
+            final Object handle = getHandle.invoke(player);
+            if (handle == null) return;
+
+            final Class<?> handleClass = handle.getClass();
+            Method startUsing = nmsStartUsingItemCache.get(handleClass);
+            if (startUsing == null) {
+                startUsing = resolveNmsStartUsingItem(handleClass);
+                nmsStartUsingItemCache.put(handleClass, startUsing);
+            }
+            if (startUsing == null) return;
+
+            final Class<?> handType = startUsing.getParameterTypes()[0];
+            if (!handType.isEnum()) return;
+            final Object hand = enumConstantByName(handType, offhand ? "OFF_HAND" : "MAIN_HAND");
+            if (hand == null) return;
+
+            startUsing.invoke(handle, hand);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private java.lang.reflect.Method resolveNmsStartUsingItem(Class<?> handleClass) {
+        // Prefer Mojang-named method where available.
+        final Method direct = Reflector.getMethod(handleClass, "startUsingItem", 1);
+        if (direct != null && direct.getReturnType() == void.class && direct.getParameterTypes()[0].isEnum()) {
+            final Class<?> hand = direct.getParameterTypes()[0];
+            if (enumHasConstant(hand, "MAIN_HAND") && enumHasConstant(hand, "OFF_HAND")) {
+                return direct;
+            }
+        }
+
+        // Heuristic fallback: any void method taking an enum hand with MAIN_HAND/OFF_HAND constants.
+        Method best = null;
+        int bestScore = -1;
+        Class<?> current = handleClass;
+        while (current != null && current != Object.class) {
+            for (Method m : current.getDeclaredMethods()) {
+                if (m.getParameterCount() != 1) continue;
+                if (m.getReturnType() != void.class) continue;
+                final Class<?> param = m.getParameterTypes()[0];
+                if (!param.isEnum()) continue;
+                if (!enumHasConstant(param, "MAIN_HAND") || !enumHasConstant(param, "OFF_HAND")) continue;
+
+                int score = 0;
+                if (m.getName().equals("startUsingItem")) score += 100;
+                if (m.getName().equals("c")) score += 50;
+                if (m.getName().equals("a")) score += 40;
+                final String owner = m.getDeclaringClass().getSimpleName();
+                if (owner.contains("Living")) score += 20;
+                if (owner.contains("Entity")) score += 10;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = m;
+                }
+            }
+            current = current.getSuperclass();
+        }
+
+        if (best != null) {
+            best.setAccessible(true);
+        }
+        return best;
+    }
+
+    private boolean enumHasConstant(Class<?> enumClass, String name) {
+        return enumConstantByName(enumClass, name) != null;
+    }
+
+    private Object enumConstantByName(Class<?> enumClass, String name) {
+        try {
+            for (Object constant : enumClass.getEnumConstants()) {
+                if (constant instanceof Enum && ((Enum<?>) constant).name().equals(name)) {
+                    return constant;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 
     private void stripConsumable(ItemStack item) {

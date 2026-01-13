@@ -55,7 +55,6 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
         mace: Double?,
         block: suspend TestScope.() -> Unit
     ) {
-        val enabled = ocm.config.getBoolean("old-tool-damage.enabled")
         val snapshot = ocm.config.getConfigurationSection("old-tool-damage.damages")?.getValues(false) ?: emptyMap<String, Any?>()
 
         fun set(path: String, value: Double?) {
@@ -64,7 +63,6 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
         }
 
         try {
-            ocm.config.set("old-tool-damage.enabled", true)
             set("TRIDENT", tridentMelee)
             set("TRIDENT_THROWN", tridentThrown)
             set("MACE", mace)
@@ -74,7 +72,6 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
             block()
         } finally {
             // restore
-            ocm.config.set("old-tool-damage.enabled", enabled)
             snapshot.forEach { (k, v) -> ocm.config.set("old-tool-damage.damages.$k", v) }
             toolDamageModule.reload()
             WeaponDamages.initialise(ocm)

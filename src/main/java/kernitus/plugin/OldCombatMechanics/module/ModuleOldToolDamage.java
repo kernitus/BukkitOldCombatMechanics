@@ -11,16 +11,23 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Restores old tool damage.
@@ -31,6 +38,9 @@ public class ModuleOldToolDamage extends OCMModule {
     private static final Class<?> TRIDENT_CLASS;
     private static final boolean HAS_TRIDENT;
     private boolean oldSharpness;
+    private boolean tooltipEnabled;
+    private String tooltipPrefix;
+    private final TooltipListener tooltipListener;
 
     static {
         Class<?> tridentClass = null;
@@ -47,12 +57,22 @@ public class ModuleOldToolDamage extends OCMModule {
 
     public ModuleOldToolDamage(OCMMain plugin) {
         super(plugin, "old-tool-damage");
+        tooltipListener = new TooltipListener();
+        Bukkit.getPluginManager().registerEvents(tooltipListener, plugin);
         reload();
     }
 
     @Override
     public void reload() {
         oldSharpness = module().getBoolean("old-sharpness", true);
+        tooltipEnabled = module().getBoolean("tooltip.enabled", false);
+        tooltipPrefix = module().getString("tooltip.prefix", "OCM Damage:");
+        if (tooltipPrefix == null || tooltipPrefix.trim().isEmpty()) {
+            tooltipPrefix = "OCM Damage:";
+        }
+
+        // Update online players so config changes take effect immediately
+        Bukkit.getOnlinePlayers().forEach(tooltipListener::applyToHeld);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -147,5 +167,104 @@ public class ModuleOldToolDamage extends OCMModule {
 
         event.setDamage(configured);
         debug("Applied custom thrown trident damage: " + configured, event.getDamager());
+    }
+
+    private boolean shouldApplyTooltip(Player player) {
+        if (!tooltipEnabled) return false;
+        return isEnabled(player);
+    }
+
+    private String formatDamage(double value) {
+        if (value == (long) value) {
+            return Long.toString((long) value);
+        }
+        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+
+    private List<String> removeExistingTooltip(List<String> lore) {
+        final String needle = tooltipPrefix;
+        if (needle == null || needle.trim().isEmpty()) {
+            return lore;
+        }
+        return lore.stream()
+                .filter(line -> {
+                    final String stripped = ChatColor.stripColor(line);
+                    return stripped == null || !stripped.startsWith(needle);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private void applyTooltip(Player player, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        if (!isWeapon(item.getType())) {
+            stripTooltip(item);
+            return;
+        }
+        if (!shouldApplyTooltip(player)) {
+            stripTooltip(item);
+            return;
+        }
+
+        final double configured = WeaponDamages.getDamage(item.getType());
+        if (configured <= 0) {
+            stripTooltip(item);
+            return;
+        }
+
+        final org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        final List<String> base = meta.getLore() == null ? new java.util.ArrayList<>() : removeExistingTooltip(meta.getLore());
+        base.add(ChatColor.BLUE + tooltipPrefix + " " + formatDamage(configured));
+        meta.setLore(base);
+        item.setItemMeta(meta);
+    }
+
+    private void stripTooltip(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        final org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta == null || meta.getLore() == null) return;
+        final List<String> updated = removeExistingTooltip(meta.getLore());
+        if (updated.size() == meta.getLore().size()) return;
+        if (updated.isEmpty()) {
+            meta.setLore(null);
+        } else {
+            meta.setLore(updated);
+        }
+        item.setItemMeta(meta);
+    }
+
+    /**
+     * Always-on listener that keeps the tooltip line in sync with the held item, and strips it when the module is
+     * disabled or the item leaves hand.
+     */
+    private class TooltipListener implements Listener {
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+            applyToHeld(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onHotbar(org.bukkit.event.player.PlayerItemHeldEvent event) {
+            cleanHand(event.getPlayer(), event.getPreviousSlot());
+            applyToHeld(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onSwap(org.bukkit.event.player.PlayerSwapHandItemsEvent event) {
+            stripTooltip(event.getMainHandItem());
+            stripTooltip(event.getOffHandItem());
+            applyTooltip(event.getPlayer(), event.getOffHandItem()); // new main hand after swap
+            stripTooltip(event.getMainHandItem()); // new offhand should stay clean
+        }
+
+        void applyToHeld(Player player) {
+            final ItemStack item = player.getInventory().getItemInMainHand();
+            applyTooltip(player, item);
+        }
+
+        private void cleanHand(Player player, int slot) {
+            final ItemStack old = player.getInventory().getItem(slot);
+            stripTooltip(old);
+        }
     }
 }

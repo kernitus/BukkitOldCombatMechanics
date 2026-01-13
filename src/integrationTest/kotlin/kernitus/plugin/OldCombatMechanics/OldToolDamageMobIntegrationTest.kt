@@ -52,7 +52,6 @@ class OldToolDamageMobIntegrationTest : FunSpec({
     }
 
     suspend fun TestScope.withConfig(block: suspend TestScope.() -> Unit) {
-        val toolEnabled = ocm.config.getBoolean("old-tool-damage.enabled")
         val damagesSection = ocm.config.getConfigurationSection("old-tool-damage.damages")
         val damagesSnapshot = damagesSection?.getKeys(false)?.associateWith { damagesSection.get(it) } ?: emptyMap()
         val disabledModules = ocm.config.getStringList("disabled_modules")
@@ -70,7 +69,6 @@ class OldToolDamageMobIntegrationTest : FunSpec({
         try {
             block()
         } finally {
-            ocm.config.set("old-tool-damage.enabled", toolEnabled)
             damagesSnapshot.forEach { (key, value) ->
                 ocm.config.set("old-tool-damage.damages.$key", value)
             }
@@ -224,7 +222,6 @@ class OldToolDamageMobIntegrationTest : FunSpec({
             debugFile.parentFile?.mkdirs()
             debugFile.writeText("start\n")
             try {
-                ocm.config.set("old-tool-damage.enabled", true)
                 ocm.config.set(
                     "disabled_modules",
                     ocm.config.getStringList("disabled_modules")

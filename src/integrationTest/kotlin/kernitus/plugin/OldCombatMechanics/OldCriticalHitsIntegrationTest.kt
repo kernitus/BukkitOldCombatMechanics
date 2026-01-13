@@ -345,7 +345,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
         val critEnabled = ocm.config.getBoolean("old-critical-hits.enabled")
         val critMultiplier = ocm.config.getDouble("old-critical-hits.multiplier")
         val critAllowSprinting = ocm.config.getBoolean("old-critical-hits.allow-sprinting")
-        val toolEnabled = ocm.config.getBoolean("old-tool-damage.enabled")
         val damagesSection = ocm.config.getConfigurationSection("old-tool-damage.damages")
         val damagesSnapshot = damagesSection?.getKeys(false)?.associateWith { damagesSection.get(it) } ?: emptyMap()
 
@@ -362,7 +361,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.enabled", critEnabled)
             ocm.config.set("old-critical-hits.multiplier", critMultiplier)
             ocm.config.set("old-critical-hits.allow-sprinting", critAllowSprinting)
-            ocm.config.set("old-tool-damage.enabled", toolEnabled)
             damagesSnapshot.forEach { (key, value) ->
                 ocm.config.set("old-tool-damage.damages.$key", value)
             }
@@ -399,7 +397,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.enabled", true)
             ocm.config.set("old-critical-hits.multiplier", 1.5)
             ocm.config.set("old-critical-hits.allow-sprinting", true)
-            ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.STONE_SWORD", 10)
             WeaponDamages.initialise(ocm)
             criticalModule.reload()
@@ -421,7 +418,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.enabled", true)
             ocm.config.set("old-critical-hits.multiplier", 1.5)
             ocm.config.set("old-critical-hits.allow-sprinting", true)
-            ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.IRON_SWORD", 6)
             WeaponDamages.initialise(ocm)
             criticalModule.reload()
@@ -443,7 +439,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.enabled", true)
             ocm.config.set("old-critical-hits.multiplier", 1.5)
             ocm.config.set("old-critical-hits.allow-sprinting", true)
-            ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.IRON_AXE", 6)
             WeaponDamages.initialise(ocm)
             criticalModule.reload()
@@ -466,7 +461,6 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             ocm.config.set("old-critical-hits.enabled", true)
             ocm.config.set("old-critical-hits.multiplier", 1.25)
             ocm.config.set("old-critical-hits.allow-sprinting", true)
-            ocm.config.set("old-tool-damage.enabled", true)
             ocm.config.set("old-tool-damage.damages.IRON_AXE", 4.5)
             WeaponDamages.initialise(ocm)
             criticalModule.reload()
