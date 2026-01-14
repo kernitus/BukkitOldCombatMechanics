@@ -167,6 +167,7 @@ This file captures repo-specific context discovered while working on this branch
 - Fixed legacy (1.9.x) sweep detection flakiness by tracking priming per-attacker UUID (not `Location`, which is unstable due to yaw/pitch) and clearing the set on module reload; stabilises `SwordSweepIntegrationTest` on 1.9.4.
 - `ModuleSwordSweep` now uses a one-shot next-tick clear (single scheduled task guarded by `pendingClearTask`) instead of a repeating every-tick task, to avoid doing any work on ticks where no sword hits occurred.
 - `ModuleSwordBlocking` legacy (offhand shield) path no longer schedules per-player repeating tasks; it now uses a single shared tick runner with per-player tick deadlines (10-tick warmup + 2-tick poll + restoreDelay), which reduces task churn under heavy right-click spam.
+- `ModuleLoader` now clears the static module list on initialise to prevent duplicate registrations after hot reloads.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

@@ -18,6 +18,7 @@ public class ModuleLoader {
     private static final List<OCMModule> modules = new ArrayList<>();
 
     public static void initialise(OCMMain plugin) {
+        modules.clear();
         ModuleLoader.eventRegistry = new EventRegistry(plugin);
     }
 
