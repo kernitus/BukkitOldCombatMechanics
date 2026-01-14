@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics
 
 import com.mojang.authlib.GameProfile
 import io.netty.channel.ChannelInboundHandlerAdapter
+import io.netty.channel.ChannelOutboundHandlerAdapter
 import io.netty.channel.embedded.EmbeddedChannel
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -267,9 +268,13 @@ internal class LegacyFakePlayer9(
         val nm = nmClass.getConstructor(dirClass).newInstance(clientbound)
         // Dummy channel with predictable address
         val remote = java.net.InetSocketAddress("127.0.0.1", 25565)
-        val channel = object : EmbeddedChannel(ChannelInboundHandlerAdapter()) {
-            override fun remoteAddress(): java.net.SocketAddress = remote
-            override fun localAddress(): java.net.SocketAddress = remote
+        val channel = EmbeddedChannel(ChannelInboundHandlerAdapter())
+        val pipeline = channel.pipeline()
+        if (pipeline.get("decoder") == null) {
+            pipeline.addLast("decoder", ChannelInboundHandlerAdapter())
+        }
+        if (pipeline.get("encoder") == null) {
+            pipeline.addLast("encoder", ChannelOutboundHandlerAdapter())
         }
         nmClass.getField("channel").set(nm, channel)
         runCatching { nmClass.getField("socketAddress").set(nm, remote) }
