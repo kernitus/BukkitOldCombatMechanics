@@ -8,5 +8,5 @@ authors: [ kernitus, Rayzr522 ]
 description: Reverts to pre-1.9 combat mechanics
 website: https://github.com/kernitus/BukkitOldCombatMechanics
 load: POSTWORLD
-softdepend: [ ProtocolLib, OldCombatMechanics ]
+softdepend: [ OldCombatMechanics ]
 api-version: 1.13

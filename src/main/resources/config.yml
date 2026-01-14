@@ -232,11 +232,11 @@ sword-blocking:
 
 disable-sword-sweep:
   # This is to disable the sword sweep attack
-  # With ProtocolLib, particle effect is also removed
+  # With PacketEvents, particle effect is also removed
 
 disable-sword-sweep-particles:
   # This is to disable the sword sweep attack particles
-  # Requires ProtocolLib
+  # Requires PacketEvents
 
 # ########################
 # KNOCKBACK
@@ -538,7 +538,7 @@ old-burn-delay:
 
 disable-attack-sounds:
   # Disables attack sounds that were added with 1.9+
-  # Requires ProtocolLib
+  # Requires PacketEvents
   # The sounds that will be blocked by this module
   blocked-sound-names:
     - "ENTITY_PLAYER_ATTACK_STRONG"

@@ -17,7 +17,7 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 - 🧩 **Modular:** enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
 - 🚀 **Performant:** lean listeners only enabled as needed; reflection lookups are cached and recurring tasks are minimised (shared where possible) to keep tick time low on busy PvP servers.
 - 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for mixed PvP/PvE, minigames, or duels.
-- ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and ProtocolLib.
+- ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and PacketEvents.
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
 
@@ -96,6 +96,11 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - We stick to Spigot/Paper APIs for forward compatibility; NMS/reflection is used only when necessary.
 - Integration tests boot real servers on 1.9.4, 1.12, 1.19.2, and 1.21.11 each build to verify behaviour.
 - Most plugins work fine with OCM. Explicitly tested integrations include PlaceholderAPI (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI)).
+
+## 🧾 Licence
+- Source code in this repository is under the Mozilla Public License 2.0 (MPL‑2.0).
+- Pre-built jars bundle PacketEvents (GPLv3). Those binary distributions are provided under GPLv3 terms due to the included dependency.
+- If you build a jar without PacketEvents, you may distribute that build under MPL‑2.0, subject to its terms.
 
 ## ⚡ Development Builds
 Oftentimes a particular bug fix or feature has already been implemented, but a new version of OCM has not been released

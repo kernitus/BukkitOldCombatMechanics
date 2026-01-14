@@ -5,37 +5,31 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import com.cryptomorin.xseries.XSound;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Sound;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.entity.Player;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
+import java.lang.reflect.Method;
 
 /**
  * A module to disable the new attack sounds.
  */
 public class ModuleAttackSounds extends OCMModule {
 
-    private final ProtocolManager protocolManager = plugin.getProtocolManager();
-    private final SoundListener soundListener = new SoundListener(plugin);
+    private final SoundListener soundListener = new SoundListener();
     private final Set<String> blockedSounds = new HashSet<>();
 
     public ModuleAttackSounds(OCMMain plugin) {
@@ -50,9 +44,9 @@ public class ModuleAttackSounds extends OCMModule {
         blockedSounds.addAll(getBlockedSounds());
 
         if (isEnabled() && !blockedSounds.isEmpty())
-            protocolManager.addPacketListener(soundListener);
+            PacketEvents.getAPI().getEventManager().registerListener(soundListener);
         else
-            protocolManager.removePacketListener(soundListener);
+            PacketEvents.getAPI().getEventManager().unregisterListener(soundListener);
     }
 
     private Collection<String> getBlockedSounds() {
@@ -90,172 +84,40 @@ public class ModuleAttackSounds extends OCMModule {
     /**
      * Disables attack sounds.
      */
-    private class SoundListener extends PacketAdapter {
+    private class SoundListener extends PacketListenerAbstract {
         private boolean disabledDueToError;
 
-        // Cache reflective lookups per class to reduce overhead in hot paths
-        private final Map<Class<?>, Method> valueMethodCache = new ConcurrentHashMap<>();
-        private final Map<Class<?>, Method> keyMethodCache = new ConcurrentHashMap<>();
-        private final Map<Class<?>, Method> unwrapKeyMethodCache = new ConcurrentHashMap<>();
-        private final Map<Class<?>, Method> getLocationMethodCache = new ConcurrentHashMap<>();
-        private final Map<Class<?>, Method> locationMethodCache = new ConcurrentHashMap<>();
-        // Cache resolved names per packet sound object; weak keys prevent memory
-        // retention
-        private final Map<Object, String> soundNameCache = Collections.synchronizedMap(new WeakHashMap<>());
-
-        private Method getCachedOrFind(Map<Class<?>, Method> cache, Class<?> clazz, String name) {
-            Method m = cache.get(clazz);
-            if (m == null) {
-                m = Reflector.getMethod(clazz, name);
-                if (m != null)
-                    cache.put(clazz, m);
-            }
-            return m;
-        }
-
-        public SoundListener(Plugin plugin) {
-            super(plugin, PacketType.Play.Server.NAMED_SOUND_EFFECT);
-        }
-
         @Override
-        public void onPacketSending(PacketEvent packetEvent) {
-            if (disabledDueToError || packetEvent.isCancelled() || !isEnabled(packetEvent.getPlayer()))
+        public void onPacketSend(PacketSendEvent packetEvent) {
+            if (disabledDueToError || packetEvent.isCancelled())
                 return;
             if (blockedSounds.isEmpty())
                 return;
 
+            final Object playerObject = packetEvent.getPlayer();
+            if (!(playerObject instanceof Player))
+                return;
+
+            final Player player = (Player) playerObject;
+            if (!isEnabled(player))
+                return;
+
+            final Object packetType = packetEvent.getPacketType();
+            if (!PacketType.Play.Server.NAMED_SOUND_EFFECT.equals(packetType)
+                    && !PacketType.Play.Server.SOUND_EFFECT.equals(packetType)) {
+                return;
+            }
+
             try {
-                final PacketContainer packetContainer = packetEvent.getPacket();
-
-                // Get the sound name via reflection to avoid conversion errors for unregistered
-                // sounds.
-                // This is necessary because some server versions/plugins might send sound
-                // packets
-                // with sounds that are not in the Bukkit registry, causing
-                // packetContainer.getSoundEffects().read(0) to throw an exception.
-                Object nmsSoundEvent = packetContainer.getModifier().read(0);
-                if (nmsSoundEvent == null) {
+                WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(packetEvent);
+                com.github.retrooper.packetevents.protocol.sound.Sound sound = wrapper.getSound();
+                if (sound == null || sound.getSoundId() == null)
                     return;
-                }
 
-                // Use a weakly-referenced cache to avoid recomputing names across recipients
-                String soundName = soundNameCache.get(nmsSoundEvent);
-                if (soundName == null) {
-                    Object soundEventObject = nmsSoundEvent;
-
-                    // Prefer not to resolve the Holder value: derive the ResourceKey first if
-                    // possible
-                    // 1) Try key() directly on the object (Holder may expose it)
-                    Method keyMethod = getCachedOrFind(keyMethodCache, soundEventObject.getClass(), "key");
-                    if (keyMethod != null) {
-                        Object resourceKey = Reflector.invokeMethod(keyMethod, soundEventObject);
-                        if (resourceKey != null) {
-                            Method keyLoc = getCachedOrFind(locationMethodCache, resourceKey.getClass(), "location");
-                            if (keyLoc != null) {
-                                Object resourceLocation = Reflector.invokeMethod(keyLoc, resourceKey);
-                                if (resourceLocation != null)
-                                    soundName = resourceLocation.toString();
-                            }
-                        }
-                    }
-
-                    // 2) Try unwrapKey() -> Optional<ResourceKey>
-                    if (soundName == null) {
-                        Method unwrapKeyMethod = getCachedOrFind(unwrapKeyMethodCache, soundEventObject.getClass(),
-                                "unwrapKey");
-                        if (unwrapKeyMethod != null) {
-                            Object optionalKeyObj = Reflector.invokeMethod(unwrapKeyMethod, soundEventObject);
-                            if (optionalKeyObj instanceof Optional) {
-                                Optional<?> opt = (Optional<?>) optionalKeyObj;
-                                if (opt.isPresent()) {
-                                    Object resourceKey = opt.get();
-                                    if (resourceKey != null) {
-                                        Method keyLoc = getCachedOrFind(locationMethodCache, resourceKey.getClass(),
-                                                "location");
-                                        if (keyLoc != null) {
-                                            Object resourceLocation = Reflector.invokeMethod(keyLoc, resourceKey);
-                                            if (resourceLocation != null)
-                                                soundName = resourceLocation.toString();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 3) Try to obtain a ResourceLocation from the object directly (older versions)
-                    if (soundName == null) {
-                        Method getLocationMethod = getCachedOrFind(getLocationMethodCache, soundEventObject.getClass(),
-                                "getLocation");
-                        if (getLocationMethod == null) {
-                            // Mojang-mapped methods often use `location()`
-                            getLocationMethod = getCachedOrFind(locationMethodCache, soundEventObject.getClass(),
-                                    "location");
-                        }
-                        if (getLocationMethod != null) {
-                            Object resourceLocation = Reflector.invokeMethod(getLocationMethod, soundEventObject);
-                            if (resourceLocation != null)
-                                soundName = resourceLocation.toString();
-                        }
-                    }
-
-                    // 4) As a last resort, resolve Holder.value() then repeat the steps
-                    if (soundName == null) {
-                        Method valueMethod = getCachedOrFind(valueMethodCache, nmsSoundEvent.getClass(), "value");
-                        if (valueMethod != null) {
-                            Object unwrappedEvent = Reflector.invokeMethod(valueMethod, nmsSoundEvent);
-                            if (unwrappedEvent != null) {
-                                soundEventObject = unwrappedEvent;
-
-                                // Try direct location on the unwrapped SoundEvent
-                                Method getLocationMethod = getCachedOrFind(getLocationMethodCache,
-                                        soundEventObject.getClass(), "getLocation");
-                                if (getLocationMethod == null) {
-                                    getLocationMethod = getCachedOrFind(locationMethodCache,
-                                            soundEventObject.getClass(), "location");
-                                }
-                                if (getLocationMethod != null) {
-                                    Object resourceLocation = Reflector.invokeMethod(getLocationMethod,
-                                            soundEventObject);
-                                    if (resourceLocation != null)
-                                        soundName = resourceLocation.toString();
-                                }
-
-                                // Or key() on the unwrapped event if provided
-                                if (soundName == null) {
-                                    Method keyMethodUnwrapped = getCachedOrFind(keyMethodCache,
-                                            soundEventObject.getClass(), "key");
-                                    if (keyMethodUnwrapped != null) {
-                                        Object resourceKey = Reflector.invokeMethod(keyMethodUnwrapped,
-                                                soundEventObject);
-                                        if (resourceKey != null) {
-                                            Method keyLoc = getCachedOrFind(locationMethodCache, resourceKey.getClass(),
-                                                    "location");
-                                            if (keyLoc != null) {
-                                                Object resourceLocation = Reflector.invokeMethod(keyLoc, resourceKey);
-                                                if (resourceLocation != null)
-                                                    soundName = resourceLocation.toString();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (soundName == null) {
-                        // Could not resolve the sound name; skip quietly to avoid disabling the listener
-                        debug("Could not resolve sound name for " + soundEventObject.getClass().getName(),
-                                packetEvent.getPlayer());
-                        return;
-                    }
-
-                    soundNameCache.put(nmsSoundEvent, soundName);
-                }
-
+                String soundName = sound.getSoundId().toString();
                 if (blockedSounds.contains(soundName)) {
                     packetEvent.setCancelled(true);
-                    debug("Blocked sound " + soundName, packetEvent.getPlayer());
+                    debug("Blocked sound " + soundName, player);
                 }
             } catch (Exception | ExceptionInInitializerError e) {
                 disabledDueToError = true;

@@ -51,6 +51,9 @@ repositories {
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://oss.sonatype.org/content/repositories/central")
+    // PacketEvents
+    maven("https://repo.codemc.io/repository/maven-releases/")
+    maven("https://repo.codemc.io/repository/maven-snapshots/")
     // Placeholder API
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     // CodeMC Repo for bStats
@@ -90,6 +93,10 @@ configurations {
     val integrationTestImplementation by getting {
         extendsFrom(configurations.implementation.get())
     }
+    create("integrationTestServerPlugins") {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+    }
 }
 
 configurations.named("compileClasspath") {
@@ -111,8 +118,8 @@ dependencies {
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     // JSR-305 annotations (javax.annotation.Nullable)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    // ProtocolLib
-    compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
+    // PacketEvents
+    implementation("com.github.retrooper:packetevents-spigot:2.11.2-SNAPSHOT")
     // XSeries
     implementation("com.github.cryptomorin:XSeries:13.6.0")
 
@@ -134,7 +141,6 @@ dependencies {
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
-
     add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.1.130.Final")
@@ -166,6 +172,8 @@ val shadowJarTask = tasks.named<ShadowJar>("shadowJar") {
         exclude(dependency("org.jetbrains.kotlin:.*"))
         relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
         relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
+        relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
+        relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
     }
 }
 
@@ -190,15 +198,27 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 }
 
-val integrationTestJarTask = tasks.register<ShadowJar>("integrationTestJar") {
+val relocateIntegrationTestClasses = tasks.register<ShadowJar>("relocateIntegrationTestClasses") {
+    archiveClassifier.set("tests-relocated")
+    dependsOn("compileIntegrationTestKotlin")
+    configurations = emptyList()
+    from(sourceSets["integrationTest"].output)
+    relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
+    relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
+}
+
+val integrationTestJarTask = tasks.register<Jar>("integrationTestJar") {
     archiveClassifier.set("tests")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    dependsOn("compileIntegrationTestKotlin")
+    dependsOn(relocateIntegrationTestClasses)
 
-    from(sourceSets["integrationTest"].output)
+    from(relocateIntegrationTestClasses.flatMap { it.archiveFile }.map { zipTree(it.asFile) })
 
     project.configurations["integrationTestRuntimeClasspath"].forEach { file: File ->
+        if (file.name.contains("packetevents", ignoreCase = true)) {
+            return@forEach
+        }
         from(if (file.isDirectory) file else zipTree(file))
     }
 
@@ -537,6 +557,7 @@ for (version in integrationTestVersions) {
 
         pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
         pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
+        pluginJars.from(configurations["integrationTestServerPlugins"])
 
         doFirst {
             val log = logFile.get().asFile

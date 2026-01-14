@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics
 
 import com.mojang.authlib.GameProfile
 import io.netty.channel.ChannelInboundHandlerAdapter
+import io.netty.channel.ChannelOutboundHandlerAdapter
 import io.netty.channel.embedded.EmbeddedChannel
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.Bukkit
@@ -158,14 +159,13 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         // Create a custom EmbeddedChannel with an overridden remoteAddress()
         val remoteAddress = InetSocketAddress("127.0.0.1", 9999)
-        val embeddedChannel = object : EmbeddedChannel(ChannelInboundHandlerAdapter()) {
-            override fun remoteAddress(): SocketAddress {
-                return remoteAddress
-            }
-
-            override fun localAddress(): SocketAddress {
-                return remoteAddress
-            }
+        val embeddedChannel = EmbeddedChannel(ChannelInboundHandlerAdapter())
+        val pipeline = embeddedChannel.pipeline()
+        if (pipeline.get("decoder") == null) {
+            pipeline.addLast("decoder", ChannelInboundHandlerAdapter())
+        }
+        if (pipeline.get("encoder") == null) {
+            pipeline.addLast("encoder", ChannelOutboundHandlerAdapter())
         }
 
         // Set the 'channel' field of 'connection' to the custom EmbeddedChannel

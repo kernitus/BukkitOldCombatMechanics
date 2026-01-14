@@ -17,6 +17,12 @@ This file captures repo-specific context discovered while working on this branch
 - RunServer output is redirected to `build/integration-test-logs/<version>.log`; `checkTestResults<version>` prints only a compact summary/failures to the console.
 - `KotestRunner` writes a compact `plugins/OldCombatMechanicsTest/test-failures.txt` file (up to 25 failures) so CI can surface failure reasons without opening the full server log.
 - Token hygiene: do **not** open/read `build/integration-test-logs/*.log` unless the user explicitly asks for log inspection; rely on the compact console summary by default and ask for permission before digging into full logs.
+- PacketEvents is shaded into the plugin; integration tests do not inject external packet libraries.
+- `relocateIntegrationTestClasses` (ShadowJar) relocates PacketEvents references in test classes only.
+- `integrationTestJar` is a plain `Jar` task that embeds the relocated test classes plus runtime deps, excluding PacketEvents so the test plugin resolves PacketEvents from the main plugin’s shaded copy.
+- `PacketCancellationIntegrationTest` now uses a cancellable `CompletableFuture.await()` so `withTimeout` actually aborts when no packet arrives.
+- `PacketCancellationIntegrationTest` now drives PacketEvents via `PacketEventsImplHelper.handleClientBoundPacket` with a synthetic `User` instead of relying on live channel injection; this avoids timeouts when PacketEvents does not emit send events for fake channels.
+- `PacketCancellationIntegrationTest` sets the Bukkit player on the synthetic PacketEvents event so module listeners can match `PacketSendEvent#getPlayer`.
 - Matrix task: `integrationTest` depends on `integrationTestMatrix` which runs per-version tasks like:
   - `integrationTest1_19_2`, `integrationTest1_21_11`, `integrationTest1_12`, `integrationTest1_9`
 - Test result handoff:
@@ -64,6 +70,8 @@ This file captures repo-specific context discovered while working on this branch
 - run-paper plugin: 3.0.2
 - Hangar publish plugin: 0.1.4
 - Other deps updated (bstats, netty, BSON, XSeries, authlib, reflection-remapper, adventure).
+- PacketEvents is now used for packet interception (shaded and relocated in the main jar).
+- PacketEvents dependency moved to `2.11.2-SNAPSHOT` (CodeMC snapshots) for 1.21.11 support.
 - JSR-305 added for `javax.annotation.Nullable` (compileOnly).
 
 ## Current failing area
@@ -117,6 +125,7 @@ This file captures repo-specific context discovered while working on this branch
 - `old-tool-damage.tooltip.enabled` is now enabled by default in the bundled config so players can see the configured damage in-game.
 - Modules are enabled/disabled solely via `always_enabled_modules`, `disabled_modules`, and `modesets` (no per-module `enabled:` toggle).
 - `SwordBlockingIntegrationTest` uses synthetic `PlayerInteractEvent` right-clicks; on legacy (offhand-shield) path this cannot reliably assert `isBlocking`/`isHandRaised` (client-driven), so tests treat “blocking applied” as either a shield injection or a raised hand depending on path.
+- Added `PacketCancellationIntegrationTest` to cover PacketEvents sweep-particle and attack-sound cancellation using PacketEvents wrappers/listeners (registered in `KotestRunner`).
 - Added `ModesetRulesIntegrationTest` to cover always-enabled, disabled, and modeset-scoped module rules plus reload failures for invalid assignments.
 - Added `ConfigMigrationIntegrationTest` to cover config upgrade migration into always/disabled module lists and preservation of custom modesets.
 - Added a `weakness should not store negative last damage values` test in `InvulnerabilityDamageIntegrationTest` that forces `old-potion-effects.weakness.modifier = -10`, consumes a weakness potion (amplifier -1), attacks once, and asserts the stored last damage is non-negative; passes on 1.12/1.19.2 after clamping, but 1.21.11 can still fail with `No stored last damage for victim (events=0)` (attack event not recorded).
@@ -139,6 +148,7 @@ This file captures repo-specific context discovered while working on this branch
   - `SwordSweepIntegrationTest` (direct `module.onEntityDamaged`)
 - `AttributeModifierCompat` synthesises a fallback attack-damage modifier from `NewWeaponDamage` when API attributes are missing.
 - Fake player implementations use simulated login/network plumbing (EmbeddedChannel + manual login/join/quit events), not a real networked client.
+- FakePlayer uses a plain `EmbeddedChannel` (not an anonymous subclass) so PacketEvents treats it as fake and does not disallow login; dummy `decoder`/`encoder` handlers are still added to the pipeline.
 - FakePlayer now schedules a manual NMS tick for non-legacy servers (prefers `doTick`, then `tick`, falls back to `baseTick`) to drive vanilla ticking like fire and passive effects.
 - FakePlayer tick shim invokes `baseTick` whenever `remainingFireTicks > 0` (burning) to ensure fire tick damage events still occur on Paper 1.21+ (which can short-circuit `doTick`/`tick` for fake players). When the fake player is in water, it prefers `doTick`/`tick` so the server can properly clear fire ticks (extinguish) before any fire damage is applied.
 - FakePlayer now prefers `PlayerList.placeNewPlayer` over the legacy `load`/manual list insertion path to better mirror vanilla login initialisation (helps player fire-tick damage on modern servers).
@@ -149,9 +159,9 @@ This file captures repo-specific context discovered while working on this branch
 - EntityDamageByEntityListener no longer overwrites the stored last-damage baseline when cancelling “fake overdamage” (e.g. cancelled fire tick during invulnerability), preventing subsequent hits from incorrectly bypassing immunity.
 - Stored last-damage baselines now use a single lightweight expiry sweeper (tick-based TTL) instead of scheduling one Bukkit task per damage event; this keeps the hot path allocation-free. Expiry is monotonic (only extended, never shortened) and has a small minimum TTL to tolerate `maximumNoDamageTicks = 0`.
 - `WeaponDurabilityIntegrationTest` now uses a Zombie victim (fake-player attacker) and prefers the Bukkit `Player#attack` API before falling back to reflective NMS attack resolution, to make hit delivery reliable on modern servers.
-- `ModuleSwordSweepParticles` now null-checks ProtocolLib particle wrappers so sweep-particle cancellation does not disable itself when ProtocolLib returns an unknown/null particle on 1.21+.
-- Sword sweep integration tests now pass on 1.19.2 and 1.21.11 after the particle null-guard fix.
-- `ModuleAttackSounds` now skips packets it cannot resolve instead of throwing when ProtocolLib hands back holder wrappers without a detectable location method, preventing the listener from self-disabling on 1.20+.
+- `ModuleSwordSweepParticles` and `ModuleAttackSounds` now use PacketEvents listeners/wrappers instead of ProtocolLib.
+- `PacketCancellationIntegrationTest` now builds a `PacketSendEvent` directly (reflection) from the transformed buffer, sets the packet id/type explicitly, and dispatches it via the PacketEvents `eventManager` so module listeners can cancel reliably.
+- README now includes a licence note: source remains MPL‑2.0, but pre-built jars bundling PacketEvents are distributed under GPLv3; builds without PacketEvents can remain MPL‑2.0.
 - `ModuleChorusFruit` now reimplements the chorus teleport search (16 attempts, world-border aware, passable feet/head, solid ground) for custom teleport distances; falls back to vanilla target if no safe spot found.
 - Added `ChorusFruitIntegrationTest` (in KotestRunner list) to assert custom chorus teleport distance lands on a safe block within the configured radius.
 - Chorus fruit safety test now handles legacy 1.12 by using solid/non-solid checks when `Block#isPassable` is absent; passes on 1.12, 1.19.2, and 1.21.11.

@@ -5,8 +5,8 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
@@ -48,10 +48,14 @@ public class OCMMain extends JavaPlugin {
     private final List<Runnable> disableListeners = new ArrayList<>();
     private final List<Runnable> enableListeners = new ArrayList<>();
     private final List<Hook> hooks = new ArrayList<>();
-    private ProtocolManager protocolManager;
-
     public OCMMain() {
         super();
+    }
+
+    @Override
+    public void onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().load();
     }
 
     @Override
@@ -72,14 +76,7 @@ public class OCMMain extends JavaPlugin {
 
         // Initialise the Messenger utility
         Messenger.initialise(this);
-
-        try {
-            if (getServer().getPluginManager().getPlugin("ProtocolLib") != null &&
-                    getServer().getPluginManager().getPlugin("ProtocolLib").isEnabled())
-                protocolManager = ProtocolLibrary.getProtocolManager();
-        } catch (Exception e) {
-            Messenger.warn("No ProtocolLib detected, some features might be disabled");
-        }
+        PacketEvents.getAPI().init();
 
         // Register all the modules
         registerModules();
@@ -194,6 +191,8 @@ public class OCMMain extends JavaPlugin {
 
         PlayerStorage.instantSave();
 
+        PacketEvents.getAPI().terminate();
+
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
     }
@@ -256,13 +255,8 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleAttackFrequency(this));
         ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
 
-        // These modules require ProtocolLib
-        if (protocolManager != null) {
-            ModuleLoader.addModule(new ModuleAttackSounds(this));
-            ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
-        } else {
-            Messenger.warn("No ProtocolLib detected, attack-sounds and sword-sweep-particles modules will be disabled");
-        }
+        ModuleLoader.addModule(new ModuleAttackSounds(this));
+        ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
     }
 
     private void registerHooks() {
@@ -315,7 +309,4 @@ public class OCMMain extends JavaPlugin {
         return INSTANCE.getDescription().getVersion();
     }
 
-    public ProtocolManager getProtocolManager() {
-        return protocolManager;
-    }
 }
