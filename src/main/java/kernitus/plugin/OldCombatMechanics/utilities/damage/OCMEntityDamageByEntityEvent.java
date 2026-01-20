@@ -18,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 
 import java.util.HashSet;
@@ -61,6 +62,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     private boolean was1_8Crit = false;
     private boolean wasSprinting = false;
     private static final Set<String> warnedUnknownWeaponEnchants = new HashSet<>();
+    private static final Set<Enchantment> VANILLA_ENCHANTMENTS = initVanillaEnchantments();
 
     // Here we reverse-engineer all the various damages caused by removing them one at a time, backwards from what NMS code does.
     // This is so the modules can listen to this event and make their modifications, then EntityDamageByEntityListener sets the new values back.
@@ -209,6 +211,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             if (enchantment == null || enchantment.equals(sharpness) || enchantment.equals(smite) || enchantment.equals(bane)) {
                 continue;
             }
+            if (!shouldWarnOnUnknownEnchantment(enchantment)) {
+                continue;
+            }
             final String name = enchantment.getName();
             if (warnedUnknownWeaponEnchants.add(name)) {
                 kernitus.plugin.OldCombatMechanics.utilities.Messenger.warn(
@@ -216,6 +221,33 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
                         name);
             }
         }
+    }
+
+    private static boolean shouldWarnOnUnknownEnchantment(Enchantment enchantment) {
+        try {
+            final NamespacedKey key = enchantment.getKey();
+            if (key != null) {
+                return !"minecraft".equals(key.getNamespace());
+            }
+        } catch (NoSuchMethodError | NoClassDefFoundError ignored) {
+            // Legacy servers do not expose NamespacedKey; fall back to known vanilla list.
+        }
+        return !isVanillaEnchantment(enchantment);
+    }
+
+    private static Set<Enchantment> initVanillaEnchantments() {
+        final Set<Enchantment> enchantments = new HashSet<>();
+        for (XEnchantment xEnchantment : XEnchantment.values()) {
+            final Enchantment enchantment = xEnchantment.getEnchant();
+            if (enchantment != null) {
+                enchantments.add(enchantment);
+            }
+        }
+        return enchantments;
+    }
+
+    private static boolean isVanillaEnchantment(Enchantment enchantment) {
+        return VANILLA_ENCHANTMENTS.contains(enchantment);
     }
 
     public Entity getDamager() {

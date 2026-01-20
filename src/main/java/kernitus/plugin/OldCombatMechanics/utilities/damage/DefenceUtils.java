@@ -13,6 +13,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
@@ -57,6 +58,7 @@ public class DefenceUtils {
     // In 1.19 FIRE bypasses armour, but it doesn't in 1.8 so we don't add it here
     );
     private static final Set<String> warnedUnknownArmourEnchants = new HashSet<>();
+    private static final Set<Enchantment> VANILLA_ENCHANTMENTS = initVanillaEnchantments();
 
     // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly
     // checked below
@@ -266,6 +268,9 @@ public class DefenceUtils {
             if (enchantment == null || isModelledArmourEnchantment(enchantment)) {
                 continue;
             }
+            if (!shouldWarnOnUnknownEnchantment(enchantment)) {
+                continue;
+            }
             final String name = enchantment.getName();
             if (warnedUnknownArmourEnchants.add(name)) {
                 kernitus.plugin.OldCombatMechanics.utilities.Messenger.warn(
@@ -273,6 +278,33 @@ public class DefenceUtils {
                         name);
             }
         }
+    }
+
+    private static boolean shouldWarnOnUnknownEnchantment(Enchantment enchantment) {
+        try {
+            final NamespacedKey key = enchantment.getKey();
+            if (key != null) {
+                return !"minecraft".equals(key.getNamespace());
+            }
+        } catch (NoSuchMethodError | NoClassDefFoundError ignored) {
+            // Legacy servers do not expose NamespacedKey; fall back to known vanilla list.
+        }
+        return !isVanillaEnchantment(enchantment);
+    }
+
+    private static Set<Enchantment> initVanillaEnchantments() {
+        final Set<Enchantment> enchantments = new HashSet<>();
+        for (XEnchantment xEnchantment : XEnchantment.values()) {
+            final Enchantment enchantment = xEnchantment.getEnchant();
+            if (enchantment != null) {
+                enchantments.add(enchantment);
+            }
+        }
+        return enchantments;
+    }
+
+    private static boolean isVanillaEnchantment(Enchantment enchantment) {
+        return VANILLA_ENCHANTMENTS.contains(enchantment);
     }
 
     private static boolean isModelledArmourEnchantment(Enchantment enchantment) {
