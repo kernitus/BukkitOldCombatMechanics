@@ -82,24 +82,36 @@ public class Reflector {
     }
 
     public static Method getMethod(Class<?> clazz, String name) {
-        return Arrays.stream(clazz.getMethods())
+        return Stream.concat(
+                        Arrays.stream(clazz.getDeclaredMethods()),
+                        Arrays.stream(clazz.getMethods())
+                )
                 .filter(method -> method.getName().equals(name))
+                .peek(method -> method.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
 
     public static Method getMethod(Class<?> clazz, String name, int parameterCount) {
-        return Arrays.stream(clazz.getMethods())
+        return Stream.concat(
+                        Arrays.stream(clazz.getDeclaredMethods()),
+                        Arrays.stream(clazz.getMethods())
+                )
                 .filter(method -> method.getName().equals(name) && method.getParameterCount() == parameterCount)
+                .peek(method -> method.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }
 
     public static Method getMethod(Class<?> clazz, Class<?> returnType, String... parameterTypeSimpleNames){
         List<String> typeNames = Arrays.asList(parameterTypeSimpleNames);
-        return Arrays.stream(clazz.getMethods())
+        return Stream.concat(
+                        Arrays.stream(clazz.getDeclaredMethods()),
+                        Arrays.stream(clazz.getMethods())
+                )
                 .filter(method -> method.getReturnType() == returnType)
                 .filter(it -> getParameterNames.apply(it).equals(typeNames))
+                .peek(method -> method.setAccessible(true))
                 .findFirst()
                 .orElse(null);
     }

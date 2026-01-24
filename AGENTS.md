@@ -115,10 +115,12 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleOldToolDamage` documents that mob custom weapons are not detected; the delta is always applied for mobs and may conflict with other plugins.
 - Added `WeaponDurabilityIntegrationTest` covering tool durability vs hit counts during invulnerability and after it expires (FakePlayer attacker vs FakePlayer victim); registered in `KotestRunner`.
 - `WeaponDurabilityIntegrationTest` writes debug summaries to `build/weapon-durability-debug-<version>.txt`.
+- `WeaponDurabilityIntegrationTest` and `OldToolDamageMobIntegrationTest` now resolve debug output paths relative to the repo root (based on the server run directory), avoiding hard-coded home paths.
 - `OldToolDamageMobIntegrationTest` uses a Villager victim and waits for a real Vindicator hit by setting a target and retrying with tick delays (plus a best-effort NMS attackCompat call) before asserting the mob tool-damage delta.
 - Module assignment is strict for configurable modules: every non-internal module must appear in exactly one of `always_enabled_modules`, `disabled_modules`, or a modeset. Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed; reload/enable fails if they are configured.
 - Use British English spelling and phraseology at all times.
 - DO NOT use American English spelling or phraseology under any circumstances.
+- Never hard-code absolute filesystem paths in tests or production code; resolve locations relative to the repo root or server run directory.
 - Added `DisableOffhandIntegrationTest` to assert the disable-offhand modeset-change handler does not clear the offhand when the module is not enabled for the player.
 - `KotestRunner` now includes `DisableOffhandIntegrationTest` in its explicit class list.
 - When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
@@ -170,6 +172,8 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleOldToolDamage` now supports configurable TRIDENT (melee), TRIDENT_THROWN, and MACE damage; mace preserves its vanilla fall bonus while overriding base damage. New defaults added to `old-tool-damage.damages`.
 - Added `ModuleAttackRange` (Paper 1.21.11+ only) to apply a configurable attack_range data component (default 1.8-like: 0–3 range, creative 0–4, margin 0.1, mob factor 1.0); auto-disables on Spigot/older versions. `attack-range` module listed in `disabled_modules` by default.
 - `ModuleSwordBlocking` now only strips the Paper `CONSUMABLE` component from sword items, preventing food and other consumables from inheriting a `!minecraft:consumable` patch when inventory events fire on 1.20.5+.
+- Added `DisableOffhandReflectionIntegrationTest` (in `KotestRunner` list) to ensure reflective access to `InventoryView#getBottomInventory`/`getTopInventory` works on non-public CraftBukkit view implementations.
+- `Reflector.getMethod` overloads now include declared methods and call `setAccessible(true)` to avoid `IllegalAccessException` when CraftBukkit uses non-public view classes (e.g. `CraftContainer$1` on 1.20.1).
 - Added `AttackRangeIntegrationTest` (1.21.11+) to assert vanilla hits at ~3.6 blocks and 1.8-style attack_range reduces reach so the same hit misses; registered in `KotestRunner`.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 - `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.

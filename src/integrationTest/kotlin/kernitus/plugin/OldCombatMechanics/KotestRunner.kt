@@ -146,6 +146,7 @@ object KotestRunner {
                             ConfigMigrationIntegrationTest::class,
                             ModesetRulesIntegrationTest::class,
                             DisableOffhandIntegrationTest::class,
+                            DisableOffhandReflectionIntegrationTest::class,
                             InGameTesterIntegrationTest::class,
                             CopperToolsIntegrationTest::class,
                             OldPotionEffectsIntegrationTest::class,
