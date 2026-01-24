@@ -169,6 +169,7 @@ This file captures repo-specific context discovered while working on this branch
 - Chorus fruit safety test now handles legacy 1.12 by using solid/non-solid checks when `Block#isPassable` is absent; passes on 1.12, 1.19.2, and 1.21.11.
 - `ModuleOldToolDamage` now supports configurable TRIDENT (melee), TRIDENT_THROWN, and MACE damage; mace preserves its vanilla fall bonus while overriding base damage. New defaults added to `old-tool-damage.damages`.
 - Added `ModuleAttackRange` (Paper 1.21.11+ only) to apply a configurable attack_range data component (default 1.8-like: 0–3 range, creative 0–4, margin 0.1, mob factor 1.0); auto-disables on Spigot/older versions. `attack-range` module listed in `disabled_modules` by default.
+- `ModuleSwordBlocking` now only strips the Paper `CONSUMABLE` component from sword items, preventing food and other consumables from inheriting a `!minecraft:consumable` patch when inventory events fire on 1.20.5+.
 - Added `AttackRangeIntegrationTest` (1.21.11+) to assert vanilla hits at ~3.6 blocks and 1.8-style attack_range reduces reach so the same hit misses; registered in `KotestRunner`.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 - `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.

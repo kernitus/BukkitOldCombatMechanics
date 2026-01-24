@@ -514,6 +514,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
     private void stripConsumable(ItemStack item) {
         if (!paperSupported || paperAdapter == null || item == null) return;
+        if (item.getType() == Material.AIR || !isHoldingSword(item.getType())) return;
         try {
             paperClear.invoke(paperAdapter, item);
         } catch (Throwable ignored) {
