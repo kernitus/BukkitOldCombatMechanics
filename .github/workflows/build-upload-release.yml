@@ -80,6 +80,6 @@ jobs:
 
     - name: Publish to Hangar
       env:
-        HANGAR_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+        HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
         HANGAR_CHANGELOG: ${{ github.event.release.body }}
       run: ./gradlew build publishPluginPublicationToHangar --stacktrace

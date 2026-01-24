@@ -94,6 +94,7 @@ This file captures repo-specific context discovered while working on this branch
 - 1.9 integration tests are currently on hold per user request.
 - Kotest filters (`kotest.filter.specs`, `kotest.filter.tests`) are now passed through Gradle into the run-paper JVM args for integration tests.
 - Reflection should be used only as a fallback (performance cost); prefer direct API/code paths when available.
+- The Hangar publish workflow exports `HANGAR_API_TOKEN` to match the Gradle Hangar publish configuration.
 - `ModuleFishingRodVelocity` uses a single shared per-tick task (1.14+) to adjust hook gravity for all active hooks, instead of one scheduled task per hook.
 - `AttackCooldownTracker#getLastCooldown` is safe to call when the tracker is not registered (returns null) and uses a `HashMap` rather than a `WeakHashMap`.
 - `AttackCooldownTracker` defensively feature-detects `HumanEntity#getAttackCooldown` and avoids scheduling its per-tick sampler when the API exists (modern/backported servers).
