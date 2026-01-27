@@ -73,6 +73,56 @@ public class ModuleSwordBlocking extends OCMModule {
         restoreDelay = module().getInt("restoreDelay", 40);
     }
 
+    @Override
+    public void onModesetChange(Player player) {
+        // Paper component path: when sword-blocking becomes disabled for a player, strip the consumable component
+        // from their items so swords do not remain tainted after mode/world changes.
+        if (!paperSupported || paperAdapter == null || player == null) return;
+
+        final PlayerInventory inv = player.getInventory();
+        final boolean enabled = isEnabled(player);
+
+        // Offhand should never carry the component.
+        final ItemStack off = inv.getItemInOffHand();
+        if (stripConsumable(off)) {
+            inv.setItemInOffHand(off);
+        }
+
+        if (enabled) {
+            // Ensure the main-hand item is set up correctly.
+            final ItemStack main = inv.getItemInMainHand();
+            if (applyConsumableComponent(player, main)) {
+                inv.setItemInMainHand(main);
+            }
+
+            // Strip from stored items (excluding the held slot).
+            final int held = inv.getHeldItemSlot();
+            final ItemStack[] storage = inv.getStorageContents();
+            for (int i = 0; i < storage.length; i++) {
+                if (i == held) continue;
+                final ItemStack item = storage[i];
+                if (stripConsumable(item)) {
+                    inv.setItem(i, item);
+                }
+            }
+            return;
+        }
+
+        // Disabled: strip from the main hand and entire storage.
+        final ItemStack main = inv.getItemInMainHand();
+        if (stripConsumable(main)) {
+            inv.setItemInMainHand(main);
+        }
+
+        final ItemStack[] storage = inv.getStorageContents();
+        for (int i = 0; i < storage.length; i++) {
+            final ItemStack item = storage[i];
+            if (stripConsumable(item)) {
+                inv.setItem(i, item);
+            }
+        }
+    }
+
     private void initialisePaperAdapter() {
         try {
             // Paper-only optimisation: use Paper's item data components to give swords a BLOCK use animation
