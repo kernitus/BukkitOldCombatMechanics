@@ -18,16 +18,20 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.block.BlockFace
 import org.bukkit.entity.Player
+import org.bukkit.event.block.Action
 import org.bukkit.event.inventory.ClickType
 import org.bukkit.event.inventory.InventoryAction
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerDropItemEvent
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.Optional
@@ -55,6 +59,21 @@ class ConsumableComponentIntegrationTest :
 
         suspend fun delayTicks(ticks: Long) {
             delay(ticks * 50L)
+        }
+
+        fun rightClickMainHand(player: Player) {
+            runSync {
+                val event =
+                    PlayerInteractEvent(
+                        player,
+                        Action.RIGHT_CLICK_AIR,
+                        player.inventory.itemInMainHand,
+                        null,
+                        BlockFace.SELF,
+                        EquipmentSlot.HAND,
+                    )
+                Bukkit.getPluginManager().callEvent(event)
+            }
         }
 
         fun paperDataComponentApiPresent(): Boolean =
@@ -254,6 +273,54 @@ class ConsumableComponentIntegrationTest :
             } finally {
                 runSync {
                     restoreSection("worlds", originalWorlds)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+            }
+        }
+
+        suspend fun withSwordBlockingDisabled(block: suspend () -> Unit) {
+            val originalAlways = runSync { snapshotSection("always_enabled_modules") }
+            val originalDisabled = runSync { snapshotSection("disabled_modules") }
+            val originalModesets = runSync { snapshotSection("modesets") }
+            try {
+                runSync {
+                    val always =
+                        ocm
+                            .config
+                            .getStringList("always_enabled_modules")
+                            .filterNot { it.equals("sword-blocking", ignoreCase = true) }
+                    ocm.config.set("always_enabled_modules", always)
+
+                    val disabled =
+                        ocm
+                            .config
+                            .getStringList("disabled_modules")
+                            .filterNot { it.equals("sword-blocking", ignoreCase = true) }
+                            .toMutableList()
+                    disabled.add("sword-blocking")
+                    ocm.config.set("disabled_modules", disabled)
+
+                    val modesetsSection =
+                        ocm.config.getConfigurationSection("modesets")
+                            ?: error("modesets missing")
+                    for (key in modesetsSection.getKeys(false)) {
+                        val modules =
+                            modesetsSection
+                                .getStringList(key)
+                                .filterNot { it.equals("sword-blocking", ignoreCase = true) }
+                        ocm.config.set("modesets.$key", modules)
+                    }
+
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+                block()
+            } finally {
+                runSync {
+                    restoreSection("always_enabled_modules", originalAlways)
+                    restoreSection("disabled_modules", originalDisabled)
+                    restoreSection("modesets", originalModesets)
                     ocm.saveConfig()
                     Config.reload()
                 }
@@ -545,6 +612,199 @@ class ConsumableComponentIntegrationTest :
 
             runSync {
                 hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+            }
+        }
+
+        test("disabled_modules clears sword consumable component after reload") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(craftMirrorStack(Material.DIAMOND_SWORD))
+            }
+
+            runSync {
+                val main = player.inventory.itemInMainHand
+                applyConsumableComponent(main)
+                player.inventory.setItemInMainHand(main)
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+
+            withSwordBlockingDisabled {
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe false
+                }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+        }
+
+        test("disabled_modules prevents sword consumable component on right-click") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+            }
+
+            withSwordBlockingDisabled {
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe false
+                }
+
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+        }
+
+        test("reload toggle disables and re-enables sword consumable component") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+            }
+
+            rightClickMainHand(player)
+            delayTicks(1)
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+
+            withSwordBlockingDisabled {
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+
+            delayTicks(1)
+            rightClickMainHand(player)
+            delayTicks(1)
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+        }
+
+        test("disabled_modules clears stored sword consumable components after reload") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.STONE))
+            }
+
+            runSync {
+                val stored = craftMirrorStack(Material.IRON_SWORD)
+                applyConsumableComponent(stored)
+                player.inventory.setItem(2, stored)
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.getItem(2)) shouldBe true
+            }
+
+            withSwordBlockingDisabled {
+                runSync {
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe false
+                }
+            }
+        }
+
+        test("disabled_modules keeps offhand unchanged on right-click") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+            }
+
+            val offhandBefore = runSync { player.inventory.itemInOffHand }
+            assertNoConsumableRemoval(offhandBefore, "offhand item (before disabled right-click)")
+
+            withSwordBlockingDisabled {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.APPLE
+                    hasConsumableRemoval(player.inventory.itemInOffHand) shouldBe false
+                }
+            }
+        }
+
+        test("modeset change after disabled reload does not reapply sword consumable component") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(craftMirrorStack(Material.DIAMOND_SWORD))
+            }
+
+            runSync {
+                val main = player.inventory.itemInMainHand
+                applyConsumableComponent(main)
+                player.inventory.setItemInMainHand(main)
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+
+            withSwordBlockingDisabled {
+                runSync {
+                    setModeset(player, "new")
+                    ModuleLoader.getModules().forEach { it.onModesetChange(player) }
+                }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+
+                runSync {
+                    setModeset(player, "old")
+                    ModuleLoader.getModules().forEach { it.onModesetChange(player) }
+                }
+
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe false
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
             }
         }
 

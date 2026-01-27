@@ -71,6 +71,20 @@ public class ModuleSwordBlocking extends OCMModule {
     @Override
     public void reload() {
         restoreDelay = module().getInt("restoreDelay", 40);
+        if (!paperSupported || paperAdapter == null) return;
+        if (isEnabled()) return;
+
+        final Runnable cleanup = () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                onModesetChange(player);
+            }
+        };
+
+        if (Bukkit.isPrimaryThread()) {
+            cleanup.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, cleanup);
+        }
     }
 
     @Override

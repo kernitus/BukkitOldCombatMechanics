@@ -189,6 +189,9 @@ This file captures repo-specific context discovered while working on this branch
 - Added `ConsumableComponentIntegrationTest` coverage to assert the Paper sword-blocking consumable cleaner leaves swords untouched when the module is disabled (modeset/world) and does not mutate swords when no component change is required.
 - `ConsumableComponentIntegrationTest` now seeds and asserts the CONSUMABLE component via NMS reflection (not Paper API) and uses standalone CraftItemStacks for cursor/current items to avoid classloader mismatches and fake-player cursor side effects.
 - `ModuleSwordBlocking#onModesetChange` now strips the Paper CONSUMABLE component from the player’s main hand/offhand and stored swords when sword-blocking is disabled for that player, preventing component “taint” lingering after mode changes.
+- `ModuleSwordBlocking#reload` now strips Paper sword-blocking consumable components from online players when the module is disabled globally (disabled_modules) to avoid lingering taint after config reloads.
+- Added `ConsumableComponentIntegrationTest` coverage for disabling sword-blocking via `disabled_modules` and asserting the consumable component is cleared after config reload.
+- Extended `ConsumableComponentIntegrationTest` to cover disabled-module right-click suppression, reload toggling, stored-inventory cleanup, offhand stability, and modeset-change behaviour after a disabled reload.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.
