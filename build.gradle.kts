@@ -30,8 +30,6 @@ plugins {
     kotlin("jvm") version "2.3.0"
     id("com.gradleup.shadow") version "9.3.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
-    // For ingametesting
-    //id("io.papermc.paperweight.userdev") version "1.5.10"
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.4"
 }
@@ -63,7 +61,7 @@ repositories {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.3.0" // x-release-please-version
+version = "2.3.1-beta" // x-release-please-version
 description = "OldCombatMechanics"
 
 java {

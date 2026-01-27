@@ -186,6 +186,8 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordSweep` now uses a one-shot next-tick clear (single scheduled task guarded by `pendingClearTask`) instead of a repeating every-tick task, to avoid doing any work on ticks where no sword hits occurred.
 - `ModuleSwordBlocking` legacy (offhand shield) path no longer schedules per-player repeating tasks; it now uses a single shared tick runner with per-player tick deadlines (10-tick warmup + 2-tick poll + restoreDelay), which reduces task churn under heavy right-click spam.
 - `ModuleLoader` now clears the static module list on initialise to prevent duplicate registrations after hot reloads.
+- Added `ConsumableComponentIntegrationTest` coverage to assert the Paper sword-blocking consumable cleaner leaves swords untouched when the module is disabled (modeset/world) and does not mutate swords when no component change is required.
+- `ConsumableComponentIntegrationTest` now seeds and asserts the CONSUMABLE component via NMS reflection (not Paper API) and uses standalone CraftItemStacks for cursor/current items to avoid classloader mismatches and fake-player cursor side effects.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

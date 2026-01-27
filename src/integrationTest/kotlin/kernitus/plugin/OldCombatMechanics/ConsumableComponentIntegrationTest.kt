@@ -10,6 +10,9 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking
+import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -34,6 +37,10 @@ import java.util.concurrent.Callable
 class ConsumableComponentIntegrationTest :
     FunSpec({
         val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+        val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
+        val swordBlocking =
+            ModuleLoader.getModules().filterIsInstance<ModuleSwordBlocking>().firstOrNull()
+                ?: error("ModuleSwordBlocking not registered")
         extensions(MainThreadDispatcherExtension(testPlugin))
 
         fun <T> runSync(action: () -> T): T =
@@ -74,6 +81,25 @@ class ConsumableComponentIntegrationTest :
 
         fun nmsItemStack(stack: ItemStack?): Any? {
             if (stack == null) return null
+            var handle: Any? = null
+            try {
+                var type: Class<*>? = stack.javaClass
+                while (type != null && type != Any::class.java) {
+                    val field =
+                        try {
+                            type.getDeclaredField("handle")
+                        } catch (_: NoSuchFieldException) {
+                            type = type.superclass
+                            continue
+                        }
+                    field.isAccessible = true
+                    handle = runCatching { field.get(stack) }.getOrNull()
+                    break
+                }
+            } catch (_: Throwable) {
+                handle = null
+            }
+            if (handle != null) return handle
             return try {
                 val craftItemStack = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
                 val asNmsCopy = craftItemStack.getMethod("asNMSCopy", ItemStack::class.java)
@@ -84,6 +110,15 @@ class ConsumableComponentIntegrationTest :
                     t,
                 )
             }
+        }
+
+        fun craftMirrorStack(type: Material): ItemStack {
+            val craftItemStack = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
+            val nmsItemStackClass = Class.forName("net.minecraft.world.item.ItemStack")
+            val asNmsCopy = craftItemStack.getMethod("asNMSCopy", ItemStack::class.java)
+            val asCraftMirror = craftItemStack.getMethod("asCraftMirror", nmsItemStackClass)
+            val nms = asNmsCopy.invoke(null, ItemStack(type))
+            return asCraftMirror.invoke(null, nms) as ItemStack
         }
 
         fun consumablePatchEntry(stack: ItemStack?): Optional<*>? {
@@ -108,6 +143,52 @@ class ConsumableComponentIntegrationTest :
             return !entry.isPresent
         }
 
+        fun nmsConsumableType(): Any = Class.forName("net.minecraft.core.component.DataComponents").getField("CONSUMABLE").get(null)
+
+        fun nmsConsumableComponent(): Any {
+            val nmsConsumable = Class.forName("net.minecraft.world.item.component.Consumable")
+            val builder = nmsConsumable.getMethod("builder").invoke(null)
+            val nmsUseAnim = Class.forName("net.minecraft.world.item.ItemUseAnimation")
+            val blockAnim = nmsUseAnim.getField("BLOCK").get(null)
+            val withSeconds = builder.javaClass.getMethod("consumeSeconds", Float::class.javaPrimitiveType).invoke(builder, 1.6f)
+            val withAnim = withSeconds.javaClass.getMethod("animation", nmsUseAnim).invoke(withSeconds, blockAnim)
+            return withAnim.javaClass.getMethod("build").invoke(withAnim)
+        }
+
+        fun hasConsumableComponent(stack: ItemStack?): Boolean {
+            val nmsStack = nmsItemStack(stack) ?: return false
+            return try {
+                val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
+                val consumableType = nmsConsumableType()
+                val hasMethod = nmsStack.javaClass.getMethod("has", dataComponentType)
+                val result = hasMethod.invoke(nmsStack, consumableType)
+                result is Boolean && result
+            } catch (_: Throwable) {
+                false
+            }
+        }
+
+        fun applyConsumableComponent(stack: ItemStack?) {
+            val nmsStack = nmsItemStack(stack) ?: return
+            try {
+                val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
+                val consumableType = nmsConsumableType()
+                val consumableComponent = nmsConsumableComponent()
+                val setMethod =
+                    nmsStack.javaClass.methods.firstOrNull { m ->
+                        m.name == "set" &&
+                            m.parameterCount == 2 &&
+                            m.parameterTypes[0] == dataComponentType
+                    } ?: error("NMS ItemStack#set(DataComponentType, value) not found")
+                setMethod.invoke(nmsStack, consumableType, consumableComponent)
+            } catch (t: Throwable) {
+                throw IllegalStateException(
+                    "Failed to apply NMS consumable component (${t::class.java.simpleName}: ${t.message})",
+                    t,
+                )
+            }
+        }
+
         fun assertNoConsumableRemoval(
             stack: ItemStack?,
             label: String,
@@ -115,6 +196,67 @@ class ConsumableComponentIntegrationTest :
             val entry = consumablePatchEntry(stack)
             if (entry != null && !entry.isPresent) {
                 error("$label gained !minecraft:consumable")
+            }
+        }
+
+        fun setModeset(
+            player: Player,
+            modeset: String?,
+        ) {
+            val data = getPlayerData(player.uniqueId)
+            val worldId = player.world.uid
+            if (modeset == null) {
+                data.modesetByWorld.remove(worldId)
+            } else {
+                data.setModesetForWorld(worldId, modeset)
+            }
+            setPlayerData(player.uniqueId, data)
+        }
+
+        fun snapshotSection(path: String): Any? {
+            val section = ocm.config.getConfigurationSection(path)
+            return section?.getValues(false) ?: ocm.config.get(path)
+        }
+
+        fun restoreSection(
+            path: String,
+            value: Any?,
+        ) {
+            ocm.config.set(path, null)
+            when (value) {
+                null -> {
+                    Unit
+                }
+
+                is Map<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    ocm.config.createSection(path, value as Map<String, Any?>)
+                }
+
+                else -> {
+                    ocm.config.set(path, value)
+                }
+            }
+        }
+
+        suspend fun withWorldModesets(
+            worldModesets: List<String>,
+            block: suspend () -> Unit,
+        ) {
+            val originalWorlds = runSync { snapshotSection("worlds") }
+            try {
+                runSync {
+                    ocm.config.set("worlds.world", worldModesets)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+                block()
+            } finally {
+                runSync {
+                    restoreSection("worlds", originalWorlds)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
             }
         }
 
@@ -143,6 +285,7 @@ class ConsumableComponentIntegrationTest :
 
         beforeTest {
             runSync {
+                setModeset(player, "old")
                 player.inventory.clear()
                 player.inventory.setItemInOffHand(ItemStack(Material.AIR))
                 player.setItemOnCursor(ItemStack(Material.AIR))
@@ -218,6 +361,190 @@ class ConsumableComponentIntegrationTest :
                 hasConsumableRemoval(afterCursor) shouldBe false
             } finally {
                 runSync { player.closeInventory() }
+            }
+        }
+
+        test("inventory click does not alter swords when no consumable change is needed") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.inventory.setItem(0, ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItem(1, ItemStack(Material.STONE))
+                player.inventory.heldItemSlot = 1
+                player.setItemOnCursor(ItemStack(Material.IRON_SWORD))
+            }
+
+            val view = runSync { player.openInventory(player.inventory) } ?: error("inventory view missing")
+            try {
+                val slotItem = runSync { craftMirrorStack(Material.DIAMOND_SWORD) }
+                val cursorItem = runSync { craftMirrorStack(Material.IRON_SWORD) }
+                applyConsumableComponent(slotItem)
+                applyConsumableComponent(cursorItem)
+                assertNoConsumableRemoval(slotItem, "slot sword (before)")
+                assertNoConsumableRemoval(cursorItem, "cursor sword (before)")
+
+                val event =
+                    runSync {
+                        val click =
+                            InventoryClickEvent(
+                                view,
+                                InventoryType.SlotType.CONTAINER,
+                                0,
+                                ClickType.LEFT,
+                                InventoryAction.PICKUP_ALL,
+                            )
+                        click.currentItem = slotItem
+                        click.cursor = cursorItem
+                        click
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(event) }
+                delayTicks(1)
+
+                val afterSlot = runSync { player.inventory.getItem(0) }
+                val afterCursor = runSync { player.itemOnCursor }
+                hasConsumableRemoval(afterSlot) shouldBe false
+                hasConsumableRemoval(afterCursor) shouldBe false
+            } finally {
+                runSync { player.closeInventory() }
+            }
+        }
+
+        test("inventory click does not strip consumable component when sword-blocking disabled for player modeset") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "new")
+            }
+
+            runSync {
+                swordBlocking.isEnabled(player) shouldBe false
+            }
+
+            val view = runSync { player.openInventory(player.inventory) } ?: error("inventory view missing")
+            try {
+                val slotItem = runSync { craftMirrorStack(Material.DIAMOND_SWORD) }
+                val cursorItem = runSync { craftMirrorStack(Material.IRON_SWORD) }
+                applyConsumableComponent(slotItem)
+                applyConsumableComponent(cursorItem)
+                assertNoConsumableRemoval(slotItem, "slot sword (before)")
+                assertNoConsumableRemoval(cursorItem, "cursor sword (before)")
+
+                val event =
+                    runSync {
+                        val click =
+                            InventoryClickEvent(
+                                view,
+                                InventoryType.SlotType.CONTAINER,
+                                0,
+                                ClickType.LEFT,
+                                InventoryAction.PICKUP_ALL,
+                            )
+                        click.currentItem = slotItem
+                        click.cursor = cursorItem
+                        click
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(event) }
+
+                // Assert the same objects we supplied to the event were not mutated.
+                hasConsumableComponent(slotItem) shouldBe true
+                hasConsumableComponent(cursorItem) shouldBe true
+            } finally {
+                runSync { player.closeInventory() }
+            }
+        }
+
+        test("inventory click does not strip consumable component when sword-blocking disabled in world defaults") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            withWorldModesets(listOf("new")) {
+                runSync {
+                    setModeset(player, null)
+                }
+
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe false
+                }
+
+                val view = runSync { player.openInventory(player.inventory) } ?: error("inventory view missing")
+                try {
+                    val slotItem = runSync { craftMirrorStack(Material.DIAMOND_SWORD) }
+                    val cursorItem = runSync { craftMirrorStack(Material.IRON_SWORD) }
+                    applyConsumableComponent(slotItem)
+                    applyConsumableComponent(cursorItem)
+                    assertNoConsumableRemoval(slotItem, "slot sword (before)")
+                    assertNoConsumableRemoval(cursorItem, "cursor sword (before)")
+
+                    val event =
+                        runSync {
+                            val click =
+                                InventoryClickEvent(
+                                    view,
+                                    InventoryType.SlotType.CONTAINER,
+                                    0,
+                                    ClickType.LEFT,
+                                    InventoryAction.PICKUP_ALL,
+                                )
+                            click.currentItem = slotItem
+                            click.cursor = cursorItem
+                            click
+                        }
+
+                    runSync { Bukkit.getPluginManager().callEvent(event) }
+
+                    // Assert the same objects we supplied to the event were not mutated.
+                    hasConsumableComponent(slotItem) shouldBe true
+                    hasConsumableComponent(cursorItem) shouldBe true
+                } finally {
+                    runSync { player.closeInventory() }
+                }
+            }
+        }
+
+        test("modeset change to disabled strips sword consumable component from hand") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(craftMirrorStack(Material.DIAMOND_SWORD))
+            }
+
+            // Seed the component on the actual hand item.
+            runSync {
+                val main = player.inventory.itemInMainHand
+                applyConsumableComponent(main)
+                player.inventory.setItemInMainHand(main)
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+
+            // Change modeset so sword-blocking is disabled for this player.
+            runSync {
+                setModeset(player, "new")
+                swordBlocking.isEnabled(player) shouldBe false
+                // Simulate the plugin's modeset-change hook.
+                ModuleLoader.getModules().forEach { it.onModesetChange(player) }
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
             }
         }
 
