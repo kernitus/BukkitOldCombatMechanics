@@ -190,8 +190,13 @@ This file captures repo-specific context discovered while working on this branch
 - `ConsumableComponentIntegrationTest` now seeds and asserts the CONSUMABLE component via NMS reflection (not Paper API) and uses standalone CraftItemStacks for cursor/current items to avoid classloader mismatches and fake-player cursor side effects.
 - `ModuleSwordBlocking#onModesetChange` now strips the Paper CONSUMABLE component from the player’s main hand/offhand and stored swords when sword-blocking is disabled for that player, preventing component “taint” lingering after mode changes.
 - `ModuleSwordBlocking#reload` now strips Paper sword-blocking consumable components from online players when the module is disabled globally (disabled_modules) to avoid lingering taint after config reloads.
+- `ModuleSwordBlocking` now gates the Paper consumable animation by PacketEvents client version (>=1.20.5); older clients fall back to the offhand shield and unknown versions default to the animation path.
+- `config.yml` now documents that Paper 1.20.5+ uses the consumable-based sword-blocking animation, with older/Paperless servers falling back to an offhand shield.
+- `config.yml` now notes that ViaVersion clients older than 1.20.5 also fall back to the shield behaviour.
 - Added `ConsumableComponentIntegrationTest` coverage for disabling sword-blocking via `disabled_modules` and asserting the consumable component is cleared after config reload.
 - Extended `ConsumableComponentIntegrationTest` to cover disabled-module right-click suppression, reload toggling, stored-inventory cleanup, offhand stability, and modeset-change behaviour after a disabled reload.
+- Added `ConsumableComponentIntegrationTest` coverage for forcing an older client version and asserting sword-blocking falls back to an offhand shield without applying consumable components.
+- `ConsumableComponentIntegrationTest` now uses PacketEvents reflection to seed a User/client version for fake players when PacketEvents has not registered one yet.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

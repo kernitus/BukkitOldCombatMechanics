@@ -35,6 +35,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.Optional
+import java.util.UUID
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
@@ -95,6 +96,121 @@ class ConsumableComponentIntegrationTest :
                 supportedField.getBoolean(module) && adapterField.get(module) != null
             } catch (_: Throwable) {
                 false
+            }
+        }
+
+        fun packetEventsClass(name: String): Class<*> = Class.forName(name, true, ocm.javaClass.classLoader)
+
+        fun packetEventsClientVersionClass(): Class<*> =
+            packetEventsClass("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.ClientVersion")
+
+        fun packetEventsUserClass(): Class<*> =
+            packetEventsClass("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.User")
+
+        fun packetEventsUserProfileClass(): Class<*> =
+            packetEventsClass("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.UserProfile")
+
+        fun packetEventsConnectionStateClass(): Class<*> =
+            packetEventsClass("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.ConnectionState")
+
+        fun packetEventsApi(): Any {
+            val packetEventsClass =
+                packetEventsClass("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.PacketEvents")
+            return packetEventsClass.getMethod("getAPI").invoke(null)
+                ?: error("PacketEvents API not available")
+        }
+
+        fun packetEventsPlayerManager(): Any {
+            val api = packetEventsApi()
+            val method = api.javaClass.getDeclaredMethod("getPlayerManager")
+            method.isAccessible = true
+            return method.invoke(api)
+                ?: error("PacketEvents PlayerManager not available")
+        }
+
+        fun packetEventsProtocolManager(): Any {
+            val api = packetEventsApi()
+            val method = api.javaClass.getDeclaredMethod("getProtocolManager")
+            method.isAccessible = true
+            return method.invoke(api)
+                ?: error("PacketEvents ProtocolManager not available")
+        }
+
+        suspend fun requirePacketEventsUser(player: Player): Any {
+            val playerManager = packetEventsPlayerManager()
+            val getUserMethod = playerManager.javaClass.getDeclaredMethod("getUser", Any::class.java)
+            getUserMethod.isAccessible = true
+            repeat(10) {
+                val user = runSync { getUserMethod.invoke(playerManager, player) }
+                if (user != null) return user
+                delayTicks(1)
+            }
+            val getChannelMethod = playerManager.javaClass.getDeclaredMethod("getChannel", Any::class.java)
+            getChannelMethod.isAccessible = true
+            val channel =
+                runSync { getChannelMethod.invoke(playerManager, player) }
+                    ?: error("PacketEvents channel missing for ${player.name}")
+            val protocolManager = packetEventsProtocolManager()
+            val setChannel = protocolManager.javaClass.getMethod("setChannel", UUID::class.java, Any::class.java)
+            runSync { setChannel.invoke(protocolManager, player.uniqueId, channel) }
+
+            val connectionStateClass = packetEventsConnectionStateClass()
+
+            @Suppress("UNCHECKED_CAST")
+            val connectionStateEnum = connectionStateClass as Class<out Enum<*>>
+            val playState = java.lang.Enum.valueOf(connectionStateEnum, "PLAY")
+
+            val profileClass = packetEventsUserProfileClass()
+            val profile =
+                profileClass
+                    .getConstructor(UUID::class.java, String::class.java)
+                    .newInstance(player.uniqueId, player.name)
+
+            val clientVersionClass = packetEventsClientVersionClass()
+
+            @Suppress("UNCHECKED_CAST")
+            val clientVersionEnum = clientVersionClass as Class<out Enum<*>>
+            val defaultVersion = java.lang.Enum.valueOf(clientVersionEnum, "V_1_21_11")
+
+            val userClass = packetEventsUserClass()
+            val user =
+                userClass
+                    .getConstructor(Any::class.java, connectionStateClass, clientVersionClass, profileClass)
+                    .newInstance(channel, playState, defaultVersion, profile)
+
+            val setUser = protocolManager.javaClass.getMethod("setUser", Any::class.java, userClass)
+            runSync { setUser.invoke(protocolManager, channel, user) }
+            return user
+        }
+
+        fun packetEventsClientVersion(versionName: String): Any {
+            val versionClass = packetEventsClientVersionClass()
+
+            @Suppress("UNCHECKED_CAST")
+            val enumClass = versionClass as Class<out Enum<*>>
+            return java.lang.Enum.valueOf(enumClass, versionName)
+        }
+
+        suspend fun withPacketEventsClientVersion(
+            player: Player,
+            versionName: String,
+            block: suspend () -> Unit,
+        ) {
+            val user = requirePacketEventsUser(player)
+            val versionClass = packetEventsClientVersionClass()
+            val getVersion = user.javaClass.getDeclaredMethod("getClientVersion")
+            val setVersion = user.javaClass.getDeclaredMethod("setClientVersion", versionClass)
+            getVersion.isAccessible = true
+            setVersion.isAccessible = true
+            val original = runSync { getVersion.invoke(user) }
+            val target = packetEventsClientVersion(versionName)
+            runSync { setVersion.invoke(user, target) }
+            try {
+                block()
+            } finally {
+                if (original != null) {
+                    runSync { setVersion.invoke(user, original) }
+                }
             }
         }
 
@@ -760,6 +876,30 @@ class ConsumableComponentIntegrationTest :
                 runSync {
                     player.inventory.itemInOffHand.type shouldBe Material.APPLE
                     hasConsumableRemoval(player.inventory.itemInOffHand) shouldBe false
+                }
+            }
+        }
+
+        test("old client uses offhand shield instead of consumable animation") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+            }
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
                 }
             }
         }

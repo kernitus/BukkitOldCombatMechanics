@@ -51,6 +51,11 @@ public class ModuleSwordBlocking extends OCMModule {
     private boolean startUsingItemMethodResolved;
     private Method craftPlayerGetHandleMethod;
     private final Map<Class<?>, Method> nmsStartUsingItemCache = new HashMap<>();
+    private Object minClientVersion;
+    private Method packetEventsGetAPI;
+    private Method packetEventsGetPlayerManager;
+    private Method packetEventsGetClientVersion;
+    private Method packetEventsIsOlderThan;
     private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
@@ -65,6 +70,7 @@ public class ModuleSwordBlocking extends OCMModule {
         }
 
         initialisePaperAdapter();
+        initialisePacketEventsClientVersion();
         Bukkit.getPluginManager().registerEvents(new ConsumableCleaner(), plugin);
     }
 
@@ -95,11 +101,28 @@ public class ModuleSwordBlocking extends OCMModule {
 
         final PlayerInventory inv = player.getInventory();
         final boolean enabled = isEnabled(player);
+        final boolean supportsAnimation = supportsPaperAnimation(player);
 
         // Offhand should never carry the component.
         final ItemStack off = inv.getItemInOffHand();
         if (stripConsumable(off)) {
             inv.setItemInOffHand(off);
+        }
+
+        if (!supportsAnimation) {
+            final ItemStack main = inv.getItemInMainHand();
+            if (stripConsumable(main)) {
+                inv.setItemInMainHand(main);
+            }
+
+            final ItemStack[] storage = inv.getStorageContents();
+            for (int i = 0; i < storage.length; i++) {
+                final ItemStack item = storage[i];
+                if (stripConsumable(item)) {
+                    inv.setItem(i, item);
+                }
+            }
+            return;
         }
 
         if (enabled) {
@@ -172,6 +195,49 @@ public class ModuleSwordBlocking extends OCMModule {
         }
     }
 
+    private void initialisePacketEventsClientVersion() {
+        try {
+            final ClassLoader loader = plugin.getClass().getClassLoader();
+            final Class<?> packetEventsClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.PacketEvents", true, loader);
+            final Class<?> packetEventsApiClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.PacketEventsAPI", true, loader);
+            final Class<?> playerManagerClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.manager.player.PlayerManager", true, loader);
+            final Class<?> clientVersionClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.ClientVersion", true, loader);
+            packetEventsGetAPI = packetEventsClass.getMethod("getAPI");
+            packetEventsGetPlayerManager = packetEventsApiClass.getMethod("getPlayerManager");
+            packetEventsGetClientVersion = playerManagerClass.getMethod("getClientVersion", Object.class);
+            packetEventsIsOlderThan = clientVersionClass.getMethod("isOlderThan", clientVersionClass);
+            minClientVersion = Enum.valueOf((Class<? extends Enum>) clientVersionClass, "V_1_20_5");
+        } catch (Throwable ignored) {
+            minClientVersion = null;
+            packetEventsGetAPI = null;
+            packetEventsGetPlayerManager = null;
+            packetEventsGetClientVersion = null;
+            packetEventsIsOlderThan = null;
+        }
+    }
+
+    private boolean supportsPaperAnimation(Player player) {
+        if (!paperSupported || paperAdapter == null) return false;
+        if (player == null) return false;
+        if (minClientVersion == null) return true;
+        try {
+            if (packetEventsGetAPI == null || packetEventsGetPlayerManager == null || packetEventsGetClientVersion == null || packetEventsIsOlderThan == null) {
+                return true;
+            }
+            final Object api = packetEventsGetAPI.invoke(null);
+            if (api == null) return true;
+            final Object playerManager = packetEventsGetPlayerManager.invoke(api);
+            if (playerManager == null) return true;
+            final Object clientVersion = packetEventsGetClientVersion.invoke(playerManager, player);
+            if (clientVersion == null) return true;
+            if (isUnknownClientVersion(clientVersion)) return true;
+            final Object older = packetEventsIsOlderThan.invoke(clientVersion, minClientVersion);
+            return !(older instanceof Boolean && (Boolean) older);
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
     private boolean isPaperDataComponentApiPresent() {
         try {
             Class.forName("io.papermc.paper.datacomponent.DataComponentTypes");
@@ -234,7 +300,7 @@ public class ModuleSwordBlocking extends OCMModule {
         if (module().getBoolean("use-permission") &&
                 !player.hasPermission("oldcombatmechanics.swordblock")) return;
 
-        if (paperSupported && paperAdapter != null) {
+        if (supportsPaperAnimation(player)) {
             // Modern Paper path: we can provide a sword blocking animation via components, without swapping an
             // offhand shield. This avoids the legacy polling/restore tasks and avoids interfering with offhand
             // gameplay items (totems, food, etc.).
@@ -247,6 +313,10 @@ public class ModuleSwordBlocking extends OCMModule {
             }
             startUsingMainHandIfSupported(player);
             return;
+        }
+
+        if (stripConsumable(mainHandItem)) {
+            inventory.setItemInMainHand(mainHandItem);
         }
 
         final UUID id = player.getUniqueId();
@@ -450,7 +520,7 @@ public class ModuleSwordBlocking extends OCMModule {
     /* ---------- Paper consumable component (animation-only) ---------- */
 
     private boolean applyConsumableComponent(Player player, ItemStack item) {
-        if (!paperSupported || paperAdapter == null || paperApply == null) return false;
+        if (!supportsPaperAnimation(player) || paperApply == null) return false;
         if (item == null || item.getType() == Material.AIR || !isHoldingSword(item.getType())) return false;
         if (!isEnabled(player)) return false;
         if (hasConsumableComponent(item)) return false;
@@ -610,12 +680,18 @@ public class ModuleSwordBlocking extends OCMModule {
         return paperSupported && paperAdapter != null && player != null && isEnabled(player);
     }
 
+    private boolean isUnknownClientVersion(Object clientVersion) {
+        if (!(clientVersion instanceof Enum)) return false;
+        final String name = ((Enum<?>) clientVersion).name();
+        return "UNKNOWN".equals(name) || "HIGHER_THAN_SUPPORTED_VERSIONS".equals(name);
+    }
+
     private class ConsumableCleaner implements Listener {
         @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
         public void onInventoryClickPre(InventoryClickEvent event) {
             if (!(event.getWhoClicked() instanceof Player)) return;
             final Player player = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(player)) return;
+            if (!shouldHandleConsumable(player) || !supportsPaperAnimation(player)) return;
 
             // Avoid mutating cursor/current items on normal clicks; this has been observed to cause client-side
             // inventory visual glitches on some server builds.
@@ -640,7 +716,7 @@ public class ModuleSwordBlocking extends OCMModule {
         public void onInventoryClickPost(InventoryClickEvent event) {
             if (!(event.getWhoClicked() instanceof Player)) return;
             final Player p = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(p)) return;
+            if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
 
             // Ensure the (possibly new) main-hand item has the component after the click resolves.
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -656,7 +732,7 @@ public class ModuleSwordBlocking extends OCMModule {
         public void onInventoryDrag(InventoryDragEvent event) {
             if (!(event.getWhoClicked() instanceof Player)) return;
             final Player p = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(p)) return;
+            if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
 
             // Dragging can place items into multiple slots; strip only the slots affected by this event (no sweep),
             // then re-apply to the actual main-hand item.
@@ -679,7 +755,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onHeld(PlayerItemHeldEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer())) return;
+            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
             final PlayerInventory inv = event.getPlayer().getInventory();
             final ItemStack prev = inv.getItem(event.getPreviousSlot());
             if (stripConsumable(prev)) {
@@ -694,7 +770,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onSwap(PlayerSwapHandItemsEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer())) return;
+            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
             // Apply/strip against the actual inventory after the swap has taken place.
             Bukkit.getScheduler().runTask(plugin, () -> {
                 final PlayerInventory inv = event.getPlayer().getInventory();
@@ -714,19 +790,19 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onDrop(PlayerDropItemEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer())) return;
+            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
             stripConsumable(event.getItemDrop().getItemStack());
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onDeath(PlayerDeathEvent event) {
-            if (!shouldHandleConsumable(event.getEntity())) return;
+            if (!shouldHandleConsumable(event.getEntity()) || !supportsPaperAnimation(event.getEntity())) return;
             event.getDrops().forEach(ModuleSwordBlocking.this::stripConsumable);
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onQuit(PlayerQuitEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer())) return;
+            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
             final PlayerInventory inv = event.getPlayer().getInventory();
             final ItemStack main = inv.getItemInMainHand();
             final ItemStack off = inv.getItemInOffHand();
@@ -742,7 +818,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onWorldChange(PlayerChangedWorldEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer())) return;
+            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
             final PlayerInventory inv = event.getPlayer().getInventory();
             final ItemStack main = inv.getItemInMainHand();
             final ItemStack off = inv.getItemInOffHand();

@@ -222,6 +222,8 @@ shield-damage-reduction:
 
 sword-blocking:
   # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
+  # Paper 1.20.5+ uses a consumable-based blocking animation. Older/Paperless servers fall back to an offhand shield.
+  # With ViaVersion, clients older than 1.20.5 will also fall back to the shield behaviour.
   # How often, in ticks, OCM should check if the player is still blocking with a shield, and remove it if not
   # If this is too fast, the player will have their shield disappear before they're able to block again causing a slight delay
   # If this is too slow, players will have a shield in their hand well after they've stopped blocking
