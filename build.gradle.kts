@@ -117,7 +117,7 @@ dependencies {
     // JSR-305 annotations (javax.annotation.Nullable)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     // PacketEvents
-    implementation("com.github.retrooper:packetevents-spigot:2.11.2-SNAPSHOT")
+    implementation("com.github.retrooper:packetevents-spigot:2.11.2")
     // XSeries
     implementation("com.github.cryptomorin:XSeries:13.6.0")
 
