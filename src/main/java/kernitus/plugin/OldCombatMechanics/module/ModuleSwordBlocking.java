@@ -419,8 +419,8 @@ public class ModuleSwordBlocking extends OCMModule {
 
         if (!areItemsStored(id)) return;
 
-        // Paper path does not store/restore offhand shields.
-        if (paperSupported && paperAdapter != null) return;
+        // This method only runs when a legacy offhand item has been stored, so restore unconditionally.
+        // Do not gate this by generic Paper support: older clients on Paper still use the legacy shield fallback.
 
         // If they are still blocking with the shield, postpone restoring
         if (!force && isPlayerBlocking(p)) {

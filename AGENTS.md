@@ -197,6 +197,8 @@ This file captures repo-specific context discovered while working on this branch
 - Extended `ConsumableComponentIntegrationTest` to cover disabled-module right-click suppression, reload toggling, stored-inventory cleanup, offhand stability, and modeset-change behaviour after a disabled reload.
 - Added `ConsumableComponentIntegrationTest` coverage for forcing an older client version and asserting sword-blocking falls back to an offhand shield without applying consumable components.
 - `ConsumableComponentIntegrationTest` now uses PacketEvents reflection to seed a User/client version for fake players when PacketEvents has not registered one yet.
+- `ModuleSwordBlocking#restore` no longer skips offhand restoration just because Paper support is present; older clients using the shield fallback now restore their original offhand item correctly.
+- Added `ConsumableComponentIntegrationTest` coverage asserting the older-client shield fallback restores the offhand item on hotbar change.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

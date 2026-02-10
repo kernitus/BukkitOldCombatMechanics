@@ -904,6 +904,41 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
+        test("old client shield fallback restores offhand item on hotbar change") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItem(0, ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItem(1, ItemStack(Material.STONE))
+                player.inventory.heldItemSlot = 0
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+            }
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                }
+
+                runSync {
+                    player.inventory.heldItemSlot = 1
+                    Bukkit.getPluginManager().callEvent(PlayerItemHeldEvent(player, 0, 1))
+                }
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.APPLE
+                }
+            }
+        }
+
         test("modeset change after disabled reload does not reapply sword consumable component") {
             if (!paperConsumablePathAvailable()) {
                 println("Skipping: Paper consumable component path unavailable")
