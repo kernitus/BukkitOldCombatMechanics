@@ -23,6 +23,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -54,6 +55,7 @@ public class ModuleSwordBlocking extends OCMModule {
     private Object minClientVersion;
     private Method packetEventsGetAPI;
     private Method packetEventsGetPlayerManager;
+    private Method packetEventsGetUser;
     private Method packetEventsGetClientVersion;
     private Method packetEventsIsOlderThan;
     private static ModuleSwordBlocking INSTANCE;
@@ -204,6 +206,7 @@ public class ModuleSwordBlocking extends OCMModule {
             final Class<?> clientVersionClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.ClientVersion", true, loader);
             packetEventsGetAPI = packetEventsClass.getMethod("getAPI");
             packetEventsGetPlayerManager = packetEventsApiClass.getMethod("getPlayerManager");
+            packetEventsGetUser = playerManagerClass.getMethod("getUser", Object.class);
             packetEventsGetClientVersion = playerManagerClass.getMethod("getClientVersion", Object.class);
             packetEventsIsOlderThan = clientVersionClass.getMethod("isOlderThan", clientVersionClass);
             minClientVersion = Enum.valueOf((Class<? extends Enum>) clientVersionClass, "V_1_20_5");
@@ -211,6 +214,7 @@ public class ModuleSwordBlocking extends OCMModule {
             minClientVersion = null;
             packetEventsGetAPI = null;
             packetEventsGetPlayerManager = null;
+            packetEventsGetUser = null;
             packetEventsGetClientVersion = null;
             packetEventsIsOlderThan = null;
         }
@@ -230,7 +234,15 @@ public class ModuleSwordBlocking extends OCMModule {
             if (playerManager == null) return true;
             final Object clientVersion = packetEventsGetClientVersion.invoke(playerManager, player);
             if (clientVersion == null) return true;
-            if (isUnknownClientVersion(clientVersion)) return true;
+            if (isUnknownClientVersion(clientVersion)) {
+                // During very early login or synthetic test players, PacketEvents may not have a User yet.
+                // Keep animation support in that case to avoid regressing normal modern-client behaviour.
+                if (packetEventsGetUser != null) {
+                    final Object user = packetEventsGetUser.invoke(playerManager, player);
+                    if (user == null) return true;
+                }
+                return false;
+            }
             final Object older = packetEventsIsOlderThan.invoke(clientVersion, minClientVersion);
             return !(older instanceof Boolean && (Boolean) older);
         } catch (Throwable ignored) {
@@ -717,6 +729,7 @@ public class ModuleSwordBlocking extends OCMModule {
             if (!(event.getWhoClicked() instanceof Player)) return;
             final Player p = (Player) event.getWhoClicked();
             if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
+            if (!shouldReapplyMainHandAfterClick(event, p)) return;
 
             // Ensure the (possibly new) main-hand item has the component after the click resolves.
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -738,11 +751,21 @@ public class ModuleSwordBlocking extends OCMModule {
             // then re-apply to the actual main-hand item.
             Bukkit.getScheduler().runTask(plugin, () -> {
                 final org.bukkit.inventory.InventoryView view = p.getOpenInventory();
+                final int topSize = view.getTopInventory().getSize();
+                boolean touchedBottomInventory = false;
                 for (Integer rawSlot : event.getRawSlots()) {
+                    if (rawSlot < topSize) {
+                        continue;
+                    }
+                    touchedBottomInventory = true;
                     final ItemStack item = view.getItem(rawSlot);
                     if (stripConsumable(item)) {
                         view.setItem(rawSlot, item);
                     }
+                }
+
+                if (!touchedBottomInventory) {
+                    return;
                 }
 
                 final PlayerInventory inv = p.getInventory();
@@ -831,6 +854,23 @@ public class ModuleSwordBlocking extends OCMModule {
             if (offStripped) {
                 inv.setItemInOffHand(off);
             }
+        }
+
+        private boolean shouldReapplyMainHandAfterClick(InventoryClickEvent event, Player player) {
+            if (event.getClick() == ClickType.MIDDLE) {
+                return false;
+            }
+
+            if (event.getClick() == ClickType.NUMBER_KEY) {
+                return event.getHotbarButton() == player.getInventory().getHeldItemSlot();
+            }
+
+            final org.bukkit.inventory.Inventory clicked = event.getClickedInventory();
+            if (clicked == null || clicked.getType() != InventoryType.PLAYER) {
+                return false;
+            }
+
+            return event.getSlot() == player.getInventory().getHeldItemSlot();
         }
     }
 

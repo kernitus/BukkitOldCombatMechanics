@@ -24,6 +24,7 @@ import org.bukkit.event.block.Action
 import org.bukkit.event.inventory.ClickType
 import org.bukkit.event.inventory.InventoryAction
 import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.inventory.InventoryDragEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerDropItemEvent
@@ -189,6 +190,19 @@ class ConsumableComponentIntegrationTest :
             @Suppress("UNCHECKED_CAST")
             val enumClass = versionClass as Class<out Enum<*>>
             return java.lang.Enum.valueOf(enumClass, versionName)
+        }
+
+        fun unknownPacketEventsClientVersionName(): String? {
+            val versionClass = packetEventsClientVersionClass()
+
+            @Suppress("UNCHECKED_CAST")
+            val enumClass = versionClass as Class<out Enum<*>>
+            val names = enumClass.enumConstants.map { it.name }
+            return when {
+                names.contains("UNKNOWN") -> "UNKNOWN"
+                names.contains("HIGHER_THAN_SUPPORTED_VERSIONS") -> "HIGHER_THAN_SUPPORTED_VERSIONS"
+                else -> null
+            }
         }
 
         suspend fun withPacketEventsClientVersion(
@@ -901,6 +915,132 @@ class ConsumableComponentIntegrationTest :
                     player.inventory.itemInOffHand.type shouldBe Material.SHIELD
                     hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
                 }
+            }
+        }
+
+        test("unknown client version uses offhand shield fallback instead of consumable animation") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            val unknownVersion =
+                runCatching { unknownPacketEventsClientVersionName() }.getOrNull()
+                    ?: run {
+                        println("Skipping: PacketEvents unknown client version enum constant unavailable")
+                        return@test
+                    }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+            }
+
+            withPacketEventsClientVersion(player, unknownVersion) {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+        }
+
+        test("middle-click in custom GUI does not mutate held sword components") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+            }
+
+            val gui = runSync { Bukkit.createInventory(null, 9, "OCM Test GUI") }
+            runSync {
+                gui.setItem(0, ItemStack(Material.STONE))
+            }
+
+            val view = runSync { player.openInventory(gui) } ?: error("inventory view missing")
+            try {
+                val event =
+                    runSync {
+                        val click =
+                            InventoryClickEvent(
+                                view,
+                                InventoryType.SlotType.CONTAINER,
+                                0,
+                                ClickType.MIDDLE,
+                                InventoryAction.CLONE_STACK,
+                            )
+                        click.currentItem = gui.getItem(0)
+                        click
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(event) }
+                delayTicks(1)
+
+                runSync {
+                    event.isCancelled shouldBe false
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            } finally {
+                runSync { player.closeInventory() }
+            }
+        }
+
+        test("inventory drag in custom GUI does not rewrite top-inventory swords") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.STONE))
+            }
+
+            val gui = runSync { Bukkit.createInventory(null, 9, "OCM Drag GUI") }
+            val topSword = runSync { craftMirrorStack(Material.DIAMOND_SWORD) }
+            applyConsumableComponent(topSword)
+            runSync {
+                hasConsumableComponent(topSword) shouldBe true
+                gui.setItem(0, topSword)
+            }
+
+            val view = runSync { player.openInventory(gui) } ?: error("inventory view missing")
+            try {
+                val drag =
+                    runSync {
+                        InventoryDragEvent(
+                            view,
+                            ItemStack(Material.CARROT),
+                            ItemStack(Material.CARROT),
+                            false,
+                            mapOf(0 to ItemStack(Material.CARROT)),
+                        )
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(drag) }
+                delayTicks(1)
+
+                val afterTop = runSync { gui.getItem(0) }
+                runSync {
+                    drag.isCancelled shouldBe false
+                    hasConsumableComponent(afterTop) shouldBe true
+                }
+            } finally {
+                runSync { player.closeInventory() }
             }
         }
 
