@@ -57,6 +57,7 @@ public class ModuleSwordBlocking extends OCMModule {
     private Method packetEventsGetPlayerManager;
     private Method packetEventsGetUser;
     private Method packetEventsGetClientVersion;
+    private Method packetEventsUserGetClientVersion;
     private Method packetEventsIsOlderThan;
     private static ModuleSwordBlocking INSTANCE;
 
@@ -204,10 +205,12 @@ public class ModuleSwordBlocking extends OCMModule {
             final Class<?> packetEventsApiClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.PacketEventsAPI", true, loader);
             final Class<?> playerManagerClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.manager.player.PlayerManager", true, loader);
             final Class<?> clientVersionClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.ClientVersion", true, loader);
+            final Class<?> userClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.protocol.player.User", true, loader);
             packetEventsGetAPI = packetEventsClass.getMethod("getAPI");
             packetEventsGetPlayerManager = packetEventsApiClass.getMethod("getPlayerManager");
             packetEventsGetUser = playerManagerClass.getMethod("getUser", Object.class);
             packetEventsGetClientVersion = playerManagerClass.getMethod("getClientVersion", Object.class);
+            packetEventsUserGetClientVersion = userClass.getMethod("getClientVersion");
             packetEventsIsOlderThan = clientVersionClass.getMethod("isOlderThan", clientVersionClass);
             minClientVersion = Enum.valueOf((Class<? extends Enum>) clientVersionClass, "V_1_20_5");
         } catch (Throwable ignored) {
@@ -216,6 +219,7 @@ public class ModuleSwordBlocking extends OCMModule {
             packetEventsGetPlayerManager = null;
             packetEventsGetUser = null;
             packetEventsGetClientVersion = null;
+            packetEventsUserGetClientVersion = null;
             packetEventsIsOlderThan = null;
         }
     }
@@ -232,7 +236,13 @@ public class ModuleSwordBlocking extends OCMModule {
             if (api == null) return true;
             final Object playerManager = packetEventsGetPlayerManager.invoke(api);
             if (playerManager == null) return true;
-            final Object clientVersion = packetEventsGetClientVersion.invoke(playerManager, player);
+            Object clientVersion = packetEventsGetClientVersion.invoke(playerManager, player);
+            if (clientVersion == null && packetEventsGetUser != null && packetEventsUserGetClientVersion != null) {
+                final Object user = packetEventsGetUser.invoke(playerManager, player);
+                if (user != null) {
+                    clientVersion = packetEventsUserGetClientVersion.invoke(user);
+                }
+            }
             if (clientVersion == null) return true;
             if (isUnknownClientVersion(clientVersion)) {
                 // During very early login or synthetic test players, PacketEvents may not have a User yet.
@@ -396,14 +406,13 @@ public class ModuleSwordBlocking extends OCMModule {
             return;
         }
         final Player player = (Player) e.getWhoClicked();
-        if (areItemsStored(player.getUniqueId())) {
-            final ItemStack cursor = e.getCursor();
-            final ItemStack current = e.getCurrentItem();
-            if (cursor != null && cursor.getType() == Material.SHIELD ||
-                    current != null && current.getType() == Material.SHIELD) {
-                e.setCancelled(true);
-                restore(player, true);
-            }
+        if (!areItemsStored(player.getUniqueId())) {
+            return;
+        }
+
+        if (isSwapOffhandClick(e) || isTemporaryOffhandShieldClick(e)) {
+            e.setCancelled(true);
+            restore(player, true);
         }
     }
 
@@ -413,8 +422,26 @@ public class ModuleSwordBlocking extends OCMModule {
         final Player p = e.getPlayer();
 
         if (areItemsStored(p.getUniqueId()) && is.getItemStack().getType() == Material.SHIELD) {
-            e.setCancelled(true);
-            restore(p);
+            // Do not cancel here: this event can represent unrelated shield drops from inventory/hotbar.
+            // We only need to end legacy temporary-shield state immediately.
+            restore(p, true);
+        }
+    }
+
+    private boolean isTemporaryOffhandShieldClick(InventoryClickEvent event) {
+        if (event.getClickedInventory() == null) return false;
+        if (event.getClickedInventory().getType() != InventoryType.PLAYER) return false;
+        if (event.getSlot() != 40) return false;
+
+        final ItemStack current = event.getCurrentItem();
+        return current != null && current.getType() == Material.SHIELD;
+    }
+
+    private boolean isSwapOffhandClick(InventoryClickEvent event) {
+        try {
+            return event.getClick() == ClickType.SWAP_OFFHAND;
+        } catch (NoSuchFieldError ignored) {
+            return false;
         }
     }
 
@@ -472,10 +499,10 @@ public class ModuleSwordBlocking extends OCMModule {
      * Checks whether player is blocking or they have just begun to and shield is not fully up yet.
      */
     private boolean isPlayerBlocking(Player player) {
+        if (!hasShield(player.getInventory())) return false;
+
         return player.isBlocking() ||
-                (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised()
-                        && hasShield(player.getInventory())
-                );
+                (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
     }
 
     private boolean hasShield(PlayerInventory inventory) {

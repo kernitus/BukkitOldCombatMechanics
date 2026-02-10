@@ -200,10 +200,17 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordBlocking#restore` no longer skips offhand restoration just because Paper support is present; older clients using the shield fallback now restore their original offhand item correctly.
 - Added `ConsumableComponentIntegrationTest` coverage asserting the older-client shield fallback restores the offhand item on hotbar change.
 - Added `ConsumableComponentIntegrationTest` coverage for inventory-glitch regressions: unknown PacketEvents client versions should use shield fallback, middle-clicking custom GUIs should not mutate held sword components, and custom-GUI drag events should not rewrite top-inventory swords.
-- On 1.21.11 these new regression tests currently fail: unknown client versions still use consumable animation (offhand stays AIR), middle-click applies the consumable component to the held sword, and drag handling strips consumable components from affected GUI top slots.
+- Those inventory-glitch regressions now pass on 1.21.11 after the unknown-client fallback + click/drag scope fixes.
 - `ModuleSwordBlocking#supportsPaperAnimation` now treats unknown PacketEvents client versions as shield-fallback only when a PacketEvents `User` exists; if no user is registered yet (early login/synthetic test player), it keeps animation support to avoid regressing normal modern-client behaviour.
 - `ModuleSwordBlocking.ConsumableCleaner#onInventoryClickPost` now re-applies the main-hand consumable component only for click paths that can actually affect the selected hotbar slot (selected NUMBER_KEY swaps or direct selected-slot player-inventory clicks), and ignores middle-clicks.
 - `ModuleSwordBlocking.ConsumableCleaner#onInventoryDrag` now ignores top-inventory raw slots and skips main-hand re-application when the drag only touched top inventory slots, preventing custom-GUI slot rewrites.
+- Added `ConsumableComponentIntegrationTest` coverage for legacy fallback shield-guard scope: custom GUI shield-icon clicks and unrelated shield drops should not be cancelled while fallback is active; temporary offhand shield swap blocking should remain enforced.
+- `ModuleSwordBlocking#onInventoryClick` legacy shield-guard scope now only cancels direct offhand temporary-shield interactions (player inventory slot 40), avoiding cancellation of unrelated custom-GUI shield clicks.
+- `ModuleSwordBlocking#onInventoryClick` also blocks `ClickType.SWAP_OFFHAND` while temporary legacy shield state is active, preventing offhand shield extraction via inventory swap-clicks.
+- `ModuleSwordBlocking#onItemDrop` no longer cancels shield drops while legacy fallback state is active; it now force-restores the temporary shield state immediately to avoid trapping unrelated shield drops.
+- `ModuleSwordBlocking#isPlayerBlocking` now requires an actual offhand shield before treating `isBlocking`/`isHandRaised` as legacy shield-blocking, preventing stale hand-use state from suppressing fallback shield injection.
+- `ModuleSwordBlocking#supportsPaperAnimation` now falls back to `User#getClientVersion` when `PlayerManager#getClientVersion` is null, improving old-client fallback stability in synthetic/integration scenarios.
+- The new legacy-scope regressions now pass on 1.19.2 and 1.21.11.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

@@ -1079,6 +1079,142 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
+        test("legacy fallback does not cancel custom GUI shield-icon clicks") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+            }
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                }
+
+                val gui = runSync { Bukkit.createInventory(null, 9, "Shield GUI") }
+                runSync {
+                    gui.setItem(0, ItemStack(Material.SHIELD))
+                }
+
+                val view = runSync { player.openInventory(gui) } ?: error("inventory view missing")
+                try {
+                    val click =
+                        runSync {
+                            val event =
+                                InventoryClickEvent(
+                                    view,
+                                    InventoryType.SlotType.CONTAINER,
+                                    0,
+                                    ClickType.LEFT,
+                                    InventoryAction.PICKUP_ALL,
+                                )
+                            event.currentItem = gui.getItem(0)
+                            event
+                        }
+
+                    runSync { Bukkit.getPluginManager().callEvent(click) }
+                    delayTicks(1)
+
+                    runSync {
+                        click.isCancelled shouldBe false
+                    }
+                } finally {
+                    runSync { player.closeInventory() }
+                }
+            }
+        }
+
+        test("legacy fallback does not cancel dropping unrelated shield items") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+            }
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                }
+
+                val dropped =
+                    runSync {
+                        player.world.dropItem(
+                            player.location,
+                            ItemStack(Material.SHIELD).apply {
+                                itemMeta = itemMeta?.apply { setDisplayName("Unrelated Shield") }
+                            },
+                        )
+                    }
+
+                try {
+                    val dropEvent = runSync { PlayerDropItemEvent(player, dropped) }
+                    runSync { Bukkit.getPluginManager().callEvent(dropEvent) }
+
+                    runSync {
+                        dropEvent.isCancelled shouldBe false
+                    }
+                } finally {
+                    runSync { dropped.remove() }
+                }
+            }
+        }
+
+        test("legacy fallback still blocks swapping temporary offhand shield") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+            }
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                }
+
+                val swapEvent =
+                    runSync {
+                        PlayerSwapHandItemsEvent(
+                            player,
+                            player.inventory.itemInMainHand,
+                            player.inventory.itemInOffHand,
+                        )
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(swapEvent) }
+
+                runSync {
+                    swapEvent.isCancelled shouldBe true
+                }
+            }
+        }
+
         test("modeset change after disabled reload does not reapply sword consumable component") {
             if (!paperConsumablePathAvailable()) {
                 println("Skipping: Paper consumable component path unavailable")
