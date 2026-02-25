@@ -98,69 +98,15 @@ public class ModuleSwordBlocking extends OCMModule {
 
     @Override
     public void onModesetChange(Player player) {
+        if (player == null) return;
+
+        if (!isEnabled(player)) {
+            restore(player, true);
+        }
+
         // Paper component path: when sword-blocking becomes disabled for a player, strip the consumable component
         // from their items so swords do not remain tainted after mode/world changes.
-        if (!paperSupported || paperAdapter == null || player == null) return;
-
-        final PlayerInventory inv = player.getInventory();
-        final boolean enabled = isEnabled(player);
-        final boolean supportsAnimation = supportsPaperAnimation(player);
-
-        // Offhand should never carry the component.
-        final ItemStack off = inv.getItemInOffHand();
-        if (stripConsumable(off)) {
-            inv.setItemInOffHand(off);
-        }
-
-        if (!supportsAnimation) {
-            final ItemStack main = inv.getItemInMainHand();
-            if (stripConsumable(main)) {
-                inv.setItemInMainHand(main);
-            }
-
-            final ItemStack[] storage = inv.getStorageContents();
-            for (int i = 0; i < storage.length; i++) {
-                final ItemStack item = storage[i];
-                if (stripConsumable(item)) {
-                    inv.setItem(i, item);
-                }
-            }
-            return;
-        }
-
-        if (enabled) {
-            // Ensure the main-hand item is set up correctly.
-            final ItemStack main = inv.getItemInMainHand();
-            if (applyConsumableComponent(player, main)) {
-                inv.setItemInMainHand(main);
-            }
-
-            // Strip from stored items (excluding the held slot).
-            final int held = inv.getHeldItemSlot();
-            final ItemStack[] storage = inv.getStorageContents();
-            for (int i = 0; i < storage.length; i++) {
-                if (i == held) continue;
-                final ItemStack item = storage[i];
-                if (stripConsumable(item)) {
-                    inv.setItem(i, item);
-                }
-            }
-            return;
-        }
-
-        // Disabled: strip from the main hand and entire storage.
-        final ItemStack main = inv.getItemInMainHand();
-        if (stripConsumable(main)) {
-            inv.setItemInMainHand(main);
-        }
-
-        final ItemStack[] storage = inv.getStorageContents();
-        for (int i = 0; i < storage.length; i++) {
-            final ItemStack item = storage[i];
-            if (stripConsumable(item)) {
-                inv.setItem(i, item);
-            }
-        }
+        sweepConsumableState(player, true);
     }
 
     private void initialisePaperAdapter() {
@@ -371,6 +317,12 @@ public class ModuleSwordBlocking extends OCMModule {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onWorldChange(PlayerChangedWorldEvent e) {
         restore(e.getPlayer(), true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerJoin(PlayerJoinEvent e) {
+        restore(e.getPlayer(), true);
+        stripConsumableState(e.getPlayer(), true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -726,6 +678,86 @@ public class ModuleSwordBlocking extends OCMModule {
         return paperSupported && paperAdapter != null && player != null && isEnabled(player);
     }
 
+    private void sweepConsumableState(Player player, boolean includeStorage) {
+        if (!paperSupported || paperAdapter == null || player == null) return;
+
+        final PlayerInventory inv = player.getInventory();
+        final boolean enabled = isEnabled(player);
+        final boolean supportsAnimation = supportsPaperAnimation(player);
+
+        // Offhand should never carry the component.
+        final ItemStack off = inv.getItemInOffHand();
+        if (stripConsumable(off)) {
+            inv.setItemInOffHand(off);
+        }
+
+        final ItemStack main = inv.getItemInMainHand();
+        if (supportsAnimation && enabled) {
+            if (applyConsumableComponent(player, main)) {
+                inv.setItemInMainHand(main);
+            }
+            if (!includeStorage) {
+                return;
+            }
+
+            // Keep only the held slot eligible for the component.
+            final int held = inv.getHeldItemSlot();
+            final ItemStack[] storage = inv.getStorageContents();
+            for (int i = 0; i < storage.length; i++) {
+                if (i == held) continue;
+                final ItemStack item = storage[i];
+                if (stripConsumable(item)) {
+                    inv.setItem(i, item);
+                }
+            }
+            return;
+        }
+
+        if (stripConsumable(main)) {
+            inv.setItemInMainHand(main);
+        }
+
+        if (!includeStorage) {
+            return;
+        }
+
+        final ItemStack[] storage = inv.getStorageContents();
+        for (int i = 0; i < storage.length; i++) {
+            final ItemStack item = storage[i];
+            if (stripConsumable(item)) {
+                inv.setItem(i, item);
+            }
+        }
+    }
+
+    private void stripConsumableState(Player player, boolean includeStorage) {
+        if (!paperSupported || paperAdapter == null || player == null) return;
+
+        final PlayerInventory inv = player.getInventory();
+
+        final ItemStack main = inv.getItemInMainHand();
+        if (stripConsumable(main)) {
+            inv.setItemInMainHand(main);
+        }
+
+        final ItemStack off = inv.getItemInOffHand();
+        if (stripConsumable(off)) {
+            inv.setItemInOffHand(off);
+        }
+
+        if (!includeStorage) {
+            return;
+        }
+
+        final ItemStack[] storage = inv.getStorageContents();
+        for (int i = 0; i < storage.length; i++) {
+            final ItemStack item = storage[i];
+            if (stripConsumable(item)) {
+                inv.setItem(i, item);
+            }
+        }
+    }
+
     private boolean isUnknownClientVersion(Object clientVersion) {
         if (!(clientVersion instanceof Enum)) return false;
         final String name = ((Enum<?>) clientVersion).name();
@@ -735,105 +767,17 @@ public class ModuleSwordBlocking extends OCMModule {
     private class ConsumableCleaner implements Listener {
         @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
         public void onInventoryClickPre(InventoryClickEvent event) {
-            if (!(event.getWhoClicked() instanceof Player)) return;
-            final Player player = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(player) || !supportsPaperAnimation(player)) return;
-
-            // Avoid mutating cursor/current items on normal clicks; this has been observed to cause client-side
-            // inventory visual glitches on some server builds.
-            //
-            // We only strip for number-key hotbar swaps, where the involved hotbar stack is not part of the
-            // InventoryClickEvent's current/cursor pair.
-            if (event.getClick() != ClickType.NUMBER_KEY) {
-                return;
-            }
-
-            // Number-key hotbar swap: the hotbar item is involved even if it isn't the clicked slot.
-            final int hotbarButton = event.getHotbarButton();
-            if (hotbarButton >= 0 && hotbarButton <= 8) {
-                final ItemStack hotbar = player.getInventory().getItem(hotbarButton);
-                if (stripConsumable(hotbar)) {
-                    player.getInventory().setItem(hotbarButton, hotbar);
-                }
-            }
+            // Intentionally no-op for minimal-mutation policy on click paths.
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onInventoryClickPost(InventoryClickEvent event) {
-            if (!(event.getWhoClicked() instanceof Player)) return;
-            final Player p = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
-            if (!shouldReapplyMainHandAfterClick(event, p)) return;
-
-            final int heldSlotAtEvent = p.getInventory().getHeldItemSlot();
-            final org.bukkit.inventory.InventoryView eventView = event.getView();
-            final org.bukkit.inventory.Inventory eventTop = eventView.getTopInventory();
-            final org.bukkit.inventory.Inventory eventBottom = eventView.getBottomInventory();
-
-            // Ensure the (possibly new) main-hand item has the component after the click resolves.
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
-                final PlayerInventory inv = p.getInventory();
-                if (inv.getHeldItemSlot() != heldSlotAtEvent) return;
-
-                final org.bukkit.inventory.InventoryView currentView = p.getOpenInventory();
-                if (currentView == null) return;
-                if (currentView.getTopInventory() != eventTop || currentView.getBottomInventory() != eventBottom) return;
-
-                final ItemStack main = inv.getItemInMainHand();
-                if (applyConsumableComponent(p, main)) {
-                    inv.setItemInMainHand(main);
-                }
-            });
+            // Intentionally no-op for minimal-mutation policy on click paths.
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onInventoryDrag(InventoryDragEvent event) {
-            if (!(event.getWhoClicked() instanceof Player)) return;
-            final Player p = (Player) event.getWhoClicked();
-            if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
-
-            final int heldSlotAtEvent = p.getInventory().getHeldItemSlot();
-            final org.bukkit.inventory.InventoryView eventView = event.getView();
-            final org.bukkit.inventory.Inventory eventTop = eventView.getTopInventory();
-            final org.bukkit.inventory.Inventory eventBottom = eventView.getBottomInventory();
-
-            // Dragging can place items into multiple slots; strip only the slots affected by this event (no sweep),
-            // then re-apply to the actual main-hand item.
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
-
-                final PlayerInventory inv = p.getInventory();
-                final org.bukkit.inventory.InventoryView view = p.getOpenInventory();
-                if (view == null) return;
-                if (view.getTopInventory() != eventTop || view.getBottomInventory() != eventBottom) return;
-
-                final int topSize = view.getTopInventory().getSize();
-                boolean touchedBottomInventory = false;
-                for (Integer rawSlot : event.getRawSlots()) {
-                    if (rawSlot < topSize) {
-                        continue;
-                    }
-                    touchedBottomInventory = true;
-                    final ItemStack item = view.getItem(rawSlot);
-                    if (stripConsumable(item)) {
-                        view.setItem(rawSlot, item);
-                    }
-                }
-
-                if (!touchedBottomInventory) {
-                    return;
-                }
-
-                if (inv.getHeldItemSlot() != heldSlotAtEvent) {
-                    return;
-                }
-
-                final ItemStack main = inv.getItemInMainHand();
-                if (applyConsumableComponent(p, main)) {
-                    inv.setItemInMainHand(main);
-                }
-            });
+            // Intentionally no-op for minimal-mutation policy on drag paths.
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -898,52 +842,12 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onQuit(PlayerQuitEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
-            final PlayerInventory inv = event.getPlayer().getInventory();
-            final ItemStack main = inv.getItemInMainHand();
-            final ItemStack off = inv.getItemInOffHand();
-            final boolean mainStripped = stripConsumable(main);
-            final boolean offStripped = stripConsumable(off);
-            if (mainStripped) {
-                inv.setItemInMainHand(main);
-            }
-            if (offStripped) {
-                inv.setItemInOffHand(off);
-            }
+            stripConsumableState(event.getPlayer(), true);
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onWorldChange(PlayerChangedWorldEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
-            final PlayerInventory inv = event.getPlayer().getInventory();
-            final ItemStack main = inv.getItemInMainHand();
-            final ItemStack off = inv.getItemInOffHand();
-            final boolean mainStripped = stripConsumable(main);
-            final boolean offStripped = stripConsumable(off);
-            final boolean mainApplied = applyConsumableComponent(event.getPlayer(), main);
-            if (mainStripped || mainApplied) {
-                inv.setItemInMainHand(main);
-            }
-            if (offStripped) {
-                inv.setItemInOffHand(off);
-            }
-        }
-
-        private boolean shouldReapplyMainHandAfterClick(InventoryClickEvent event, Player player) {
-            if (event.getClick() == ClickType.MIDDLE) {
-                return false;
-            }
-
-            if (event.getClick() == ClickType.NUMBER_KEY) {
-                return event.getHotbarButton() == player.getInventory().getHeldItemSlot();
-            }
-
-            final org.bukkit.inventory.Inventory clicked = event.getClickedInventory();
-            if (clicked == null || clicked.getType() != InventoryType.PLAYER) {
-                return false;
-            }
-
-            return event.getSlot() == player.getInventory().getHeldItemSlot();
+            stripConsumableState(event.getPlayer(), true);
         }
     }
 

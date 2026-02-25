@@ -21,6 +21,7 @@ import org.bukkit.Material
 import org.bukkit.block.BlockFace
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
+import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.ClickType
 import org.bukkit.event.inventory.InventoryAction
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -30,6 +31,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
+import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.EquipmentSlot
@@ -360,6 +362,57 @@ class ConsumableComponentIntegrationTest :
                 data.setModesetForWorld(worldId, modeset)
             }
             setPlayerData(player.uniqueId, data)
+        }
+
+        fun syntheticPlayerDeathEvent(
+            player: Player,
+            drops: MutableList<ItemStack>,
+        ): PlayerDeathEvent {
+            for (ctor in PlayerDeathEvent::class.java.constructors) {
+                val args = arrayOfNulls<Any>(ctor.parameterCount)
+                var supported = true
+                for ((index, paramType) in ctor.parameterTypes.withIndex()) {
+                    val value: Any? =
+                        when {
+                            Player::class.java.isAssignableFrom(paramType) -> {
+                                player
+                            }
+
+                            MutableList::class.java.isAssignableFrom(paramType) || List::class.java.isAssignableFrom(paramType) -> {
+                                drops
+                            }
+
+                            paramType == Int::class.javaPrimitiveType || paramType == Int::class.java -> {
+                                0
+                            }
+
+                            paramType == Boolean::class.javaPrimitiveType || paramType == Boolean::class.java -> {
+                                false
+                            }
+
+                            paramType == String::class.java -> {
+                                ""
+                            }
+
+                            else -> {
+                                if (paramType.isPrimitive) {
+                                    supported = false
+                                    null
+                                } else {
+                                    null
+                                }
+                            }
+                        }
+                    if (!supported) break
+                    args[index] = value
+                }
+                if (!supported) continue
+                val instance = runCatching { ctor.newInstance(*args) }.getOrNull() ?: continue
+                if (instance is PlayerDeathEvent) {
+                    return instance
+                }
+            }
+            error("Failed to create PlayerDeathEvent reflectively")
         }
 
         fun snapshotSection(path: String): Any? {
@@ -1197,7 +1250,7 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
-        test("stale deferred drag context still strips consumable from dragged bottom slot") {
+        test("stale deferred drag context does not mutate dragged bottom slot") {
             if (!paperConsumablePathAvailable()) {
                 println("Skipping: Paper consumable component path unavailable")
                 return@test
@@ -1247,7 +1300,7 @@ class ConsumableComponentIntegrationTest :
                 runSync {
                     player.inventory.heldItemSlot shouldBe 1
                     hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
-                    hasConsumableComponent(slotAfter) shouldBe false
+                    hasConsumableComponent(slotAfter) shouldBe true
                 }
             } finally {
                 runSync { player.closeInventory() }
@@ -1828,5 +1881,249 @@ class ConsumableComponentIntegrationTest :
             val afterOff = runSync { player.inventory.itemInOffHand }
             hasConsumableRemoval(afterMain) shouldBe false
             hasConsumableRemoval(afterOff) shouldBe false
+        }
+
+        test("world change strips consumable component from hand and stored swords") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                val main = craftMirrorStack(Material.DIAMOND_SWORD)
+                val off = craftMirrorStack(Material.IRON_SWORD)
+                val stored = craftMirrorStack(Material.GOLDEN_SWORD)
+                applyConsumableComponent(main)
+                applyConsumableComponent(off)
+                applyConsumableComponent(stored)
+                player.inventory.setItemInMainHand(main)
+                player.inventory.setItemInOffHand(off)
+                player.inventory.setItem(2, stored)
+                player.updateInventory()
+            }
+
+            withPacketEventsClientVersion(player, "V_1_21_11") {
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe true
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe true
+                }
+
+                runSync { Bukkit.getPluginManager().callEvent(PlayerChangedWorldEvent(player, player.world)) }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe false
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe false
+                }
+            }
+        }
+
+        test("dropping sword strips consumable component from dropped stack") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            val drop =
+                runSync {
+                    val droppedSword = craftMirrorStack(Material.DIAMOND_SWORD)
+                    applyConsumableComponent(droppedSword)
+                    player.world.dropItem(player.location, droppedSword)
+                }
+            try {
+                withPacketEventsClientVersion(player, "V_1_21_11") {
+                    runSync {
+                        hasConsumableComponent(drop.itemStack) shouldBe true
+                    }
+
+                    runSync { Bukkit.getPluginManager().callEvent(PlayerDropItemEvent(player, drop)) }
+
+                    runSync {
+                        hasConsumableComponent(drop.itemStack) shouldBe false
+                    }
+                }
+            } finally {
+                runSync { drop.remove() }
+            }
+        }
+
+        test("death event strips consumable component from sword drops") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            val drops = mutableListOf(runSync { craftMirrorStack(Material.DIAMOND_SWORD) })
+            runSync {
+                applyConsumableComponent(drops[0])
+                hasConsumableComponent(drops[0]) shouldBe true
+            }
+
+            withPacketEventsClientVersion(player, "V_1_21_11") {
+                val deathEvent = runSync { syntheticPlayerDeathEvent(player, drops) }
+                runSync { Bukkit.getPluginManager().callEvent(deathEvent) }
+
+                runSync {
+                    hasConsumableComponent(drops[0]) shouldBe false
+                }
+            }
+        }
+
+        test("held-slot transition strips previous sword and applies new sword consumable") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                val previous = craftMirrorStack(Material.DIAMOND_SWORD)
+                val next = craftMirrorStack(Material.IRON_SWORD)
+                applyConsumableComponent(previous)
+                player.inventory.setItem(0, previous)
+                player.inventory.setItem(1, next)
+                player.inventory.heldItemSlot = 0
+                player.updateInventory()
+            }
+
+            withPacketEventsClientVersion(player, "V_1_21_11") {
+                runSync {
+                    hasConsumableComponent(player.inventory.getItem(0)) shouldBe true
+                    hasConsumableComponent(player.inventory.getItem(1)) shouldBe false
+                }
+
+                runSync { Bukkit.getPluginManager().callEvent(PlayerItemHeldEvent(player, 0, 1)) }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.getItem(0)) shouldBe false
+                    hasConsumableComponent(player.inventory.getItem(1)) shouldBe true
+                }
+            }
+        }
+
+        test("quit event strips consumable component from hand and stored swords") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                val main = craftMirrorStack(Material.DIAMOND_SWORD)
+                val off = craftMirrorStack(Material.IRON_SWORD)
+                val stored = craftMirrorStack(Material.GOLDEN_SWORD)
+                applyConsumableComponent(main)
+                applyConsumableComponent(off)
+                applyConsumableComponent(stored)
+                player.inventory.setItemInMainHand(main)
+                player.inventory.setItemInOffHand(off)
+                player.inventory.setItem(2, stored)
+                player.updateInventory()
+            }
+
+            withPacketEventsClientVersion(player, "V_1_21_11") {
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe true
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe true
+                }
+
+                runSync { Bukkit.getPluginManager().callEvent(PlayerQuitEvent(player, "test")) }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe false
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe false
+                }
+            }
+        }
+
+        test("join event strips consumable component from hand and stored swords") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                val main = craftMirrorStack(Material.DIAMOND_SWORD)
+                val off = craftMirrorStack(Material.IRON_SWORD)
+                val stored = craftMirrorStack(Material.GOLDEN_SWORD)
+                applyConsumableComponent(main)
+                applyConsumableComponent(off)
+                applyConsumableComponent(stored)
+                player.inventory.setItemInMainHand(main)
+                player.inventory.setItemInOffHand(off)
+                player.inventory.setItem(2, stored)
+                player.updateInventory()
+            }
+
+            withPacketEventsClientVersion(player, "V_1_21_11") {
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe true
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe true
+                }
+
+                runSync { Bukkit.getPluginManager().callEvent(PlayerJoinEvent(player, "test")) }
+
+                runSync {
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                    hasConsumableComponent(player.inventory.itemInOffHand) shouldBe false
+                    hasConsumableComponent(player.inventory.getItem(2)) shouldBe false
+                }
+            }
+        }
+
+        test("modeset disable clears stale legacy fallback shield state") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                player.updateInventory()
+            }
+
+            val storedItemsField = ModuleSwordBlocking::class.java.getDeclaredField("storedItems")
+            val legacyStatesField = ModuleSwordBlocking::class.java.getDeclaredField("legacyStates")
+            storedItemsField.isAccessible = true
+            legacyStatesField.isAccessible = true
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                @Suppress("UNCHECKED_CAST")
+                val storedItems = runSync { storedItemsField.get(swordBlocking) as MutableMap<UUID, ItemStack> }
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    storedItems.containsKey(player.uniqueId) shouldBe true
+                }
+
+                runSync {
+                    setModeset(player, "new")
+                    swordBlocking.isEnabled(player) shouldBe false
+                    ModuleLoader.getModules().forEach { it.onModesetChange(player) }
+                }
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.APPLE
+                    storedItems.containsKey(player.uniqueId) shouldBe false
+                    val legacyStates = legacyStatesField.get(swordBlocking) as Map<*, *>
+                    legacyStates.containsKey(player.uniqueId) shouldBe false
+                }
+            }
         }
     })
