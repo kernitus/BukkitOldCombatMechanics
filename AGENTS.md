@@ -176,6 +176,7 @@ This file captures repo-specific context discovered while working on this branch
 - Added `DisableOffhandReflectionIntegrationTest` (in `KotestRunner` list) to ensure reflective access to `InventoryView#getBottomInventory`/`getTopInventory` works on non-public CraftBukkit view implementations.
 - `Reflector.getMethod` overloads now include declared methods and call `setAccessible(true)` to avoid `IllegalAccessException` when CraftBukkit uses non-public view classes (e.g. `CraftContainer$1` on 1.20.1).
 - Added `AttackRangeIntegrationTest` (1.21.11+) to assert vanilla hits at ~3.6 blocks and 1.8-style attack_range reduces reach so the same hit misses; registered in `KotestRunner`.
+- Removed the cancelled S3-only `AttackRangeIntegrationTest` case `swap hand keeps attack-range off offhand sword (Paper 1.21.11+)` so ongoing S6 validation is not blocked by a parked slice artefact.
 - InvulnerabilityDamageIntegrationTest adds a case asserting environmental damage above the baseline applies during invulnerability (manual EntityDamageEvent).
 - `gradle.properties` gameVersions list now includes 1.21.11 down to 1.21.1 (plus 1.21) ahead of existing entries.
 - GitHub release asset now keeps a stable filename `OldCombatMechanics.jar` (no version suffix); the CurseForge upload uses the same path.
@@ -211,8 +212,14 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordBlocking#isPlayerBlocking` now requires an actual offhand shield before treating `isBlocking`/`isHandRaised` as legacy shield-blocking, preventing stale hand-use state from suppressing fallback shield injection.
 - `ModuleSwordBlocking#supportsPaperAnimation` now falls back to `User#getClientVersion` when `PlayerManager#getClientVersion` is null, improving old-client fallback stability in synthetic/integration scenarios.
 - `ModuleSwordBlocking#supportsPaperAnimation` now fails safe to legacy shield fallback when PacketEvents client-version resolution is unavailable (resolver initialisation missing, resolver methods/objects null, or reflection errors), while preserving existing behaviour for normal early-login/synthetic-player cases.
+- `ModuleSwordBlocking#onPlayerSwapHandItems` now treats stale legacy stored-shield state as non-authoritative for Paper-animation players: it clears stale legacy entries instead of cancelling swaps, so synthetic swap listeners still run.
+- `ModuleSwordBlocking#onPlayerSwapHandItems` now restores any stale legacy stored offhand item (via `restore(..., true)`) before clearing legacy state on the Paper-animation path, so stale entries are not silently discarded.
+- `ConsumableCleaner#onSwap` now snapshots the held hotbar slot and only reapplies the Paper consumable component when the slot is unchanged on the deferred tick; offhand stripping remains deferred as before.
 - The new legacy-scope regressions now pass on 1.19.2 and 1.21.11.
 - `ModuleSwordBlocking.ConsumableCleaner#onInventoryClickPost` now snapshots click context (held slot and open inventory top/bottom) and skips next-tick reapply when that context is stale, preventing deferred reapply from tainting a newly selected main-hand sword.
+- Added `ConsumableComponentIntegrationTest` coverage for stale `PlayerSwapHandItemsEvent` deferred reapply: if held slot changes before next tick, the newly selected main-hand sword must not gain a consumable component, while swapped-offhand sword cleanup still occurs.
+- Added `ConsumableComponentIntegrationTest` regression coverage for stale `PlayerSwapHandItemsEvent` deferred reapply when the open inventory view changes before next tick: the new main-hand context must not be tainted, while swapped-offhand consumable cleanup must still run.
+- `ModuleSwordBlocking.ConsumableCleaner#onSwap` now snapshots open-inventory top/bottom identity at swap time and requires a view match only for deferred main-hand reapply; deferred offhand consumable cleanup still runs even when the view changed.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

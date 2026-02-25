@@ -396,8 +396,15 @@ public class ModuleSwordBlocking extends OCMModule {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent e) {
-        if (areItemsStored(e.getPlayer().getUniqueId()))
-            e.setCancelled(true);
+        final UUID uuid = e.getPlayer().getUniqueId();
+        if (!areItemsStored(uuid)) return;
+
+        if (supportsPaperAnimation(e.getPlayer())) {
+            restore(e.getPlayer(), true);
+            return;
+        }
+
+        e.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -786,10 +793,21 @@ public class ModuleSwordBlocking extends OCMModule {
             final Player p = (Player) event.getWhoClicked();
             if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
 
+            final int heldSlotAtEvent = p.getInventory().getHeldItemSlot();
+            final org.bukkit.inventory.InventoryView eventView = event.getView();
+            final org.bukkit.inventory.Inventory eventTop = eventView.getTopInventory();
+            final org.bukkit.inventory.Inventory eventBottom = eventView.getBottomInventory();
+
             // Dragging can place items into multiple slots; strip only the slots affected by this event (no sweep),
             // then re-apply to the actual main-hand item.
             Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
+
+                final PlayerInventory inv = p.getInventory();
                 final org.bukkit.inventory.InventoryView view = p.getOpenInventory();
+                if (view == null) return;
+                if (view.getTopInventory() != eventTop || view.getBottomInventory() != eventBottom) return;
+
                 final int topSize = view.getTopInventory().getSize();
                 boolean touchedBottomInventory = false;
                 for (Integer rawSlot : event.getRawSlots()) {
@@ -807,7 +825,10 @@ public class ModuleSwordBlocking extends OCMModule {
                     return;
                 }
 
-                final PlayerInventory inv = p.getInventory();
+                if (inv.getHeldItemSlot() != heldSlotAtEvent) {
+                    return;
+                }
+
                 final ItemStack main = inv.getItemInMainHand();
                 if (applyConsumableComponent(p, main)) {
                     inv.setItemInMainHand(main);
@@ -832,15 +853,28 @@ public class ModuleSwordBlocking extends OCMModule {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onSwap(PlayerSwapHandItemsEvent event) {
-            if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
+            final Player player = event.getPlayer();
+            if (!shouldHandleConsumable(player) || !supportsPaperAnimation(player)) return;
+            final int heldSlotAtEvent = player.getInventory().getHeldItemSlot();
+            final org.bukkit.inventory.InventoryView viewAtEvent = player.getOpenInventory();
+            final org.bukkit.inventory.Inventory eventTop = viewAtEvent == null ? null : viewAtEvent.getTopInventory();
+            final org.bukkit.inventory.Inventory eventBottom = viewAtEvent == null ? null : viewAtEvent.getBottomInventory();
             // Apply/strip against the actual inventory after the swap has taken place.
             Bukkit.getScheduler().runTask(plugin, () -> {
-                final PlayerInventory inv = event.getPlayer().getInventory();
+                final PlayerInventory inv = player.getInventory();
                 final ItemStack main = inv.getItemInMainHand();
                 final ItemStack off = inv.getItemInOffHand();
                 final boolean mainStripped = stripConsumable(main);
                 final boolean offStripped = stripConsumable(off);
-                final boolean mainApplied = applyConsumableComponent(event.getPlayer(), main);
+                final org.bukkit.inventory.InventoryView currentView = player.getOpenInventory();
+                final boolean viewMatches = currentView != null
+                        && currentView.getTopInventory() == eventTop
+                        && currentView.getBottomInventory() == eventBottom;
+                final boolean mainApplied = shouldHandleConsumable(player)
+                        && supportsPaperAnimation(player)
+                        && inv.getHeldItemSlot() == heldSlotAtEvent
+                        && viewMatches
+                        && applyConsumableComponent(player, main);
                 if (mainStripped || mainApplied) {
                     inv.setItemInMainHand(main);
                 }

@@ -26,6 +26,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Predicate;
 import java.lang.reflect.Method;
 
 /**
@@ -96,11 +97,37 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSwap(PlayerSwapHandItemsEvent event) {
-        // strip both hands, then re-apply according to enablement
-        stripComponent(event.getMainHandItem());
-        stripComponent(event.getOffHandItem());
-        applyToItem(event.getPlayer(), event.getOffHandItem()); // new main hand after swap
-        applyToItem(event.getPlayer(), event.getMainHandItem()); // new offhand (kept clean)
+        normaliseSwapEvent(event);
+        reconcileSwapInventory(event.getPlayer());
+    }
+
+    private void normaliseSwapEvent(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        if (!supported) return;
+
+        ItemStack postSwapMainHand = event.getOffHandItem();
+        ItemStack postSwapOffHand = event.getMainHandItem();
+        stripComponent(postSwapOffHand);
+        applyToItem(player, postSwapMainHand);
+
+        // Persist adjusted stacks into event payload for synthetic/manual swap flows.
+        event.setOffHandItem(postSwapMainHand);
+        event.setMainHandItem(postSwapOffHand);
+    }
+
+    private void reconcileSwapInventory(Player player) {
+        if (!supported) return;
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+
+            ItemStack mainHand = player.getInventory().getItemInMainHand();
+            ItemStack offHand = player.getInventory().getItemInOffHand();
+
+            stripComponent(mainHand);
+            stripComponent(offHand);
+            applyToItem(player, mainHand);
+        });
     }
 
     private void applyToHeld(Player player) {
@@ -119,7 +146,6 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             stripComponent(item);
             return;
         }
-        if (paperAdapter.hasComponent(item)) return;
         applyAttackRange(item);
     }
 
@@ -158,8 +184,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onSwap(PlayerSwapHandItemsEvent event) {
-            stripComponent(event.getMainHandItem());
-            stripComponent(event.getOffHandItem());
+            // Handled by the module listener; avoid clobbering its swap normalisation.
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -190,6 +215,9 @@ public class ModuleAttackRange extends OCMModule implements Listener {
      * Paper-only adapter to avoid reflection in hot paths.
      */
     private static class PaperAttackRangeAdapter {
+        @SuppressWarnings("unchecked")
+        private static final Predicate<Object> COPY_ALL_COMPONENTS = ignored -> true;
+
         private final Object attackRangeType;
         private final java.lang.reflect.Method attackRangeFactory;
         private final java.lang.reflect.Method minReachSetter;
@@ -202,6 +230,8 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         private final java.lang.reflect.Method itemSetData;
         private final java.lang.reflect.Method itemHasData;
         private final java.lang.reflect.Method itemUnsetData;
+        private final java.lang.reflect.Method itemEnsureServerConversions;
+        private final java.lang.reflect.Method itemCopyDataFrom;
         private boolean warned;
 
         PaperAttackRangeAdapter() throws Exception {
@@ -221,6 +251,17 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             itemSetData = findSetDataMethod(dctClass, ar);
             itemHasData = ItemStack.class.getMethod("hasData", dctClass);
             itemUnsetData = ItemStack.class.getMethod("unsetData", dctClass);
+
+            Method ensureMethod = null;
+            Method copyMethod = null;
+            try {
+                ensureMethod = ItemStack.class.getMethod("ensureServerConversions");
+                copyMethod = ItemStack.class.getMethod("copyDataFrom", ItemStack.class, Predicate.class);
+            } catch (NoSuchMethodException ignored) {
+                // Older/newer API shape; keep as best-effort no-op.
+            }
+            itemEnsureServerConversions = ensureMethod;
+            itemCopyDataFrom = copyMethod;
         }
 
         private Method findSetDataMethod(Class<?> dctClass, Class<?> valueClass) throws NoSuchMethodException {
@@ -239,19 +280,28 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         void apply(ItemStack stack, float min, float max, float minCreative, float maxCreative, float margin, float mobFactor) {
             try {
                 Object builder = attackRangeFactory.invoke(null);
-                builder = minReachSetter.invoke(builder, min);
-                builder = maxReachSetter.invoke(builder, max);
-                builder = minCreativeSetter.invoke(builder, minCreative);
-                builder = maxCreativeSetter.invoke(builder, maxCreative);
-                builder = hitboxSetter.invoke(builder, margin);
-                builder = mobFactorSetter.invoke(builder, mobFactor);
+                invokeSetter(minReachSetter, builder, min);
+                invokeSetter(maxReachSetter, builder, max);
+                invokeSetter(minCreativeSetter, builder, minCreative);
+                invokeSetter(maxCreativeSetter, builder, maxCreative);
+                invokeSetter(hitboxSetter, builder, margin);
+                invokeSetter(mobFactorSetter, builder, mobFactor);
                 Object arObj = buildMethod.invoke(builder);
                 itemSetData.invoke(stack, attackRangeType, arObj);
+                ensureServerConversions(stack);
             } catch (Throwable t) {
                 if (!warned) {
                     Messenger.warn("Attack range component application failed; leaving item unchanged. (" + t.getClass().getSimpleName() + ": " + t.getMessage() + ")");
                     warned = true;
                 }
+            }
+        }
+
+        private void invokeSetter(Method setter, Object builder, float value) throws Exception {
+            Object result = setter.invoke(builder, value);
+            if (result != null && !setter.getReturnType().equals(void.class) && !setter.getReturnType().equals(Void.class)) {
+                // Some Paper versions return the builder for chaining; others mutate in place.
+                // We do not need to capture the returned value because all calls target the same instance.
             }
         }
 
@@ -267,9 +317,22 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             try {
                 if (hasComponent(stack)) {
                     itemUnsetData.invoke(stack, attackRangeType);
+                    ensureServerConversions(stack);
                 }
             } catch (Throwable ignored) {
                 // ignore
+            }
+        }
+
+        private void ensureServerConversions(ItemStack stack) {
+            if (stack == null || itemEnsureServerConversions == null || itemCopyDataFrom == null) return;
+            try {
+                Object converted = itemEnsureServerConversions.invoke(stack);
+                if (!(converted instanceof ItemStack)) return;
+                if (converted == stack) return;
+                itemCopyDataFrom.invoke(stack, converted, COPY_ALL_COMPONENTS);
+            } catch (Throwable ignored) {
+                // no-op: best-effort sync only
             }
         }
     }
