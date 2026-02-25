@@ -210,7 +210,9 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordBlocking#onItemDrop` no longer cancels shield drops while legacy fallback state is active; it now force-restores the temporary shield state immediately to avoid trapping unrelated shield drops.
 - `ModuleSwordBlocking#isPlayerBlocking` now requires an actual offhand shield before treating `isBlocking`/`isHandRaised` as legacy shield-blocking, preventing stale hand-use state from suppressing fallback shield injection.
 - `ModuleSwordBlocking#supportsPaperAnimation` now falls back to `User#getClientVersion` when `PlayerManager#getClientVersion` is null, improving old-client fallback stability in synthetic/integration scenarios.
+- `ModuleSwordBlocking#supportsPaperAnimation` now fails safe to legacy shield fallback when PacketEvents client-version resolution is unavailable (resolver initialisation missing, resolver methods/objects null, or reflection errors), while preserving existing behaviour for normal early-login/synthetic-player cases.
 - The new legacy-scope regressions now pass on 1.19.2 and 1.21.11.
+- `ModuleSwordBlocking.ConsumableCleaner#onInventoryClickPost` now snapshots click context (held slot and open inventory top/bottom) and skips next-tick reapply when that context is stale, preventing deferred reapply from tainting a newly selected main-hand sword.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

@@ -227,15 +227,15 @@ public class ModuleSwordBlocking extends OCMModule {
     private boolean supportsPaperAnimation(Player player) {
         if (!paperSupported || paperAdapter == null) return false;
         if (player == null) return false;
-        if (minClientVersion == null) return true;
+        if (minClientVersion == null) return false;
         try {
             if (packetEventsGetAPI == null || packetEventsGetPlayerManager == null || packetEventsGetClientVersion == null || packetEventsIsOlderThan == null) {
-                return true;
+                return false;
             }
             final Object api = packetEventsGetAPI.invoke(null);
-            if (api == null) return true;
+            if (api == null) return false;
             final Object playerManager = packetEventsGetPlayerManager.invoke(api);
-            if (playerManager == null) return true;
+            if (playerManager == null) return false;
             Object clientVersion = packetEventsGetClientVersion.invoke(playerManager, player);
             if (clientVersion == null && packetEventsGetUser != null && packetEventsUserGetClientVersion != null) {
                 final Object user = packetEventsGetUser.invoke(playerManager, player);
@@ -256,7 +256,7 @@ public class ModuleSwordBlocking extends OCMModule {
             final Object older = packetEventsIsOlderThan.invoke(clientVersion, minClientVersion);
             return !(older instanceof Boolean && (Boolean) older);
         } catch (Throwable ignored) {
-            return true;
+            return false;
         }
     }
 
@@ -758,9 +758,21 @@ public class ModuleSwordBlocking extends OCMModule {
             if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
             if (!shouldReapplyMainHandAfterClick(event, p)) return;
 
+            final int heldSlotAtEvent = p.getInventory().getHeldItemSlot();
+            final org.bukkit.inventory.InventoryView eventView = event.getView();
+            final org.bukkit.inventory.Inventory eventTop = eventView.getTopInventory();
+            final org.bukkit.inventory.Inventory eventBottom = eventView.getBottomInventory();
+
             // Ensure the (possibly new) main-hand item has the component after the click resolves.
             Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!shouldHandleConsumable(p) || !supportsPaperAnimation(p)) return;
                 final PlayerInventory inv = p.getInventory();
+                if (inv.getHeldItemSlot() != heldSlotAtEvent) return;
+
+                final org.bukkit.inventory.InventoryView currentView = p.getOpenInventory();
+                if (currentView == null) return;
+                if (currentView.getTopInventory() != eventTop || currentView.getBottomInventory() != eventBottom) return;
+
                 final ItemStack main = inv.getItemInMainHand();
                 if (applyConsumableComponent(p, main)) {
                     inv.setItemInMainHand(main);

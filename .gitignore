@@ -30,3 +30,4 @@ kls-classpath
 kls_database.db
 /run/
 /bin/
+.opencode/

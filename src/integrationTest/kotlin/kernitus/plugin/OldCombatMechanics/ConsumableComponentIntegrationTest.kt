@@ -611,6 +611,60 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
+        test("stale deferred click reapply does not taint newly selected main-hand sword") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItem(0, ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItem(1, ItemStack(Material.IRON_SWORD))
+                player.inventory.heldItemSlot = 0
+                player.updateInventory()
+            }
+
+            runSync {
+                hasConsumableComponent(player.inventory.getItem(0)) shouldBe false
+                hasConsumableComponent(player.inventory.getItem(1)) shouldBe false
+            }
+
+            val view = runSync { player.openInventory(player.inventory) } ?: error("inventory view missing")
+            try {
+                val click =
+                    runSync {
+                        InventoryClickEvent(
+                            view,
+                            InventoryType.SlotType.CONTAINER,
+                            0,
+                            ClickType.NUMBER_KEY,
+                            InventoryAction.HOTBAR_SWAP,
+                            0,
+                        )
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(click) }
+
+                // Change selection directly before deferred next-tick reapply runs.
+                runSync {
+                    player.inventory.heldItemSlot = 1
+                    player.updateInventory()
+                }
+
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.heldItemSlot shouldBe 1
+                    player.inventory.itemInMainHand.type shouldBe Material.IRON_SWORD
+                    hasConsumableComponent(player.inventory.getItem(1)) shouldBe false
+                }
+            } finally {
+                runSync { player.closeInventory() }
+            }
+        }
+
         test("inventory click does not strip consumable component when sword-blocking disabled for player modeset") {
             if (!paperConsumablePathAvailable()) {
                 println("Skipping: Paper consumable component path unavailable")
@@ -945,6 +999,51 @@ class ConsumableComponentIntegrationTest :
                 runSync {
                     player.inventory.itemInOffHand.type shouldBe Material.SHIELD
                     hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+        }
+
+        test("missing PacketEvents client-version resolver fails safe to offhand shield fallback") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+            }
+
+            val moduleClass = ModuleSwordBlocking::class.java
+            val packetEventsGetClientVersionField = moduleClass.getDeclaredField("packetEventsGetClientVersion")
+            val minClientVersionField = moduleClass.getDeclaredField("minClientVersion")
+            packetEventsGetClientVersionField.isAccessible = true
+            minClientVersionField.isAccessible = true
+
+            val originalGetClientVersion = runSync { packetEventsGetClientVersionField.get(swordBlocking) }
+            val originalMinClientVersion = runSync { minClientVersionField.get(swordBlocking) }
+
+            try {
+                runSync {
+                    packetEventsGetClientVersionField.set(swordBlocking, null)
+                    if (minClientVersionField.get(swordBlocking) == null) {
+                        minClientVersionField.set(swordBlocking, packetEventsClientVersion("V_1_20_5"))
+                    }
+                }
+
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            } finally {
+                runSync {
+                    packetEventsGetClientVersionField.set(swordBlocking, originalGetClientVersion)
+                    minClientVersionField.set(swordBlocking, originalMinClientVersion)
                 }
             }
         }
