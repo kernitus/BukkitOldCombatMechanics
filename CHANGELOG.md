@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.3.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.3.0...v2.3.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* don't overwrite swords on every click [#843](https://github.com/kernitus/BukkitOldCombatMechanics/issues/843) ([4323853](https://github.com/kernitus/BukkitOldCombatMechanics/commit/432385320c418c0e46df6869e56af051629bfdab))
+* **inventory:** harden stale deferred item mutation paths ([a92664d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a92664d293af0dd5fd445ca7db47e078386affd7))
+* **reflection:** tighten chooser compatibility fallback ([f383340](https://github.com/kernitus/BukkitOldCombatMechanics/commit/f3833406e4b471a3d89f5e1c5ed8ada9d1d3e1ae))
+* strip sword consumable component ([4624ac0](https://github.com/kernitus/BukkitOldCombatMechanics/commit/4624ac0c422d7f05835cd511b701026769917292))
+* **sword-blocking:** clear sword consumable components on reload when disabled ([b887a28](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b887a28a95b07efa5ec641660aee590207a0d50d)), closes [#845](https://github.com/kernitus/BukkitOldCombatMechanics/issues/845)
+* **sword-blocking:** fall back to shield for pre-1.20.5 clients ([388bee5](https://github.com/kernitus/BukkitOldCombatMechanics/commit/388bee573169a45a27c41558a946e493880677e7)), closes [#842](https://github.com/kernitus/BukkitOldCombatMechanics/issues/842)
+* **sword-blocking:** harden inventory fail-safes to prevent ghosting ([8889bfe](https://github.com/kernitus/BukkitOldCombatMechanics/commit/8889bfeb467c9f64f4d35a2d35e8456f179c35d1))
+* **sword-blocking:** harden legacy death shield drop reconciliation ([2bb730e](https://github.com/kernitus/BukkitOldCombatMechanics/commit/2bb730e5c223da5c1cd73c91a093c86d3dedefbb))
+* **sword-blocking:** prevent GUI click/drag item rewrites & fallback unknown clients to shield ([cfc596c](https://github.com/kernitus/BukkitOldCombatMechanics/commit/cfc596c3d674fd99a9c07b4c7c07c354d58fc755))
+* **sword-blocking:** prevent legacy fallback from cancelling unrelated shield interactions ([727fa97](https://github.com/kernitus/BukkitOldCombatMechanics/commit/727fa97b4e904ac06514170aae27ba1bc91dbb8b))
+* **sword-blocking:** restore offhand item for pre-1.20.5 fallback clients ([68073e8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/68073e876dffa853329c414d156086fe1c76b3fd))
+* **sword-blocking:** sweep stale consumable state on join/quit/world ([96d6981](https://github.com/kernitus/BukkitOldCombatMechanics/commit/96d698145e9d8f1543b272adf87d5026076de927))
+
 ## [2.3.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.2.0...v2.3.0) (2026-01-24)
 
 
