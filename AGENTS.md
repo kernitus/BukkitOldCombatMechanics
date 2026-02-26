@@ -89,6 +89,7 @@ This file captures repo-specific context discovered while working on this branch
   - `ORG_GRADLE_JAVA_INSTALLATIONS_PATHS=/path/to/jdk8:/path/to/jdk17:/path/to/jdk25 ./gradlew integrationTest`
 
 ## Notes
+- `SpigotFunctionChooser` now only falls back for compatibility-style failures (LinkageError family, missing-method/class reflection failures, and explicit compatibility-signalled `UnsupportedOperationException` via `compat`/`compatibility` markers), and rethrows ordinary runtime logic failures instead of silently selecting fallback (for example generic "incompatible" wording does not trigger fallback).
 - `AttackCompat` now only treats Bukkit `Player#attack` as success when it yields an observable living-target hit (health/lastDamage/noDamageTicks signal); otherwise it falls back to NMS attack candidates.
 - `AttackCompat` now treats boolean-return NMS attack methods that return `false` as failed attempts and continues trying other candidates, with expanded failure diagnostics including false-result and exception counts.
 - Entity-click dedupe in `ModuleSwordBlocking` now uses a taskless lazy-prune timestamp map (`System.nanoTime`) instead of a one-tick scheduled set clear, with a short dedupe window and periodic/size-triggered expiry pruning.

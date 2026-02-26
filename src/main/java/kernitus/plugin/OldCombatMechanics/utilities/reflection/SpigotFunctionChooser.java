@@ -98,10 +98,63 @@ public class SpigotFunctionChooser<T, U, R> {
                         action.apply(t, u);
                         return true;
                     } catch (ExceptionalFunction.WrappedException e) {
-                        return false;
+                        final Throwable failureCause = rootCause(e);
+                        if (isCompatibilityFailure(failureCause)) {
+                            return false;
+                        }
+                        throw propagate(failureCause);
                     }
                 },
                 success, failure);
+    }
+
+    private static Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static RuntimeException propagate(Throwable throwable) {
+        if (throwable instanceof RuntimeException) {
+            throw (RuntimeException) throwable;
+        }
+        if (throwable instanceof Error) {
+            throw (Error) throwable;
+        }
+        throw new RuntimeException(throwable);
+    }
+
+    private static boolean isCompatibilityFailure(Throwable throwable) {
+        if (throwable == null) {
+            return false;
+        }
+        if (throwable instanceof LinkageError) {
+            return true;
+        }
+        if (throwable instanceof NoSuchMethodException || throwable instanceof ClassNotFoundException) {
+            return true;
+        }
+        if (throwable instanceof UnsupportedOperationException) {
+            return isApprovedUnsupportedOperation((UnsupportedOperationException) throwable);
+        }
+        return false;
+    }
+
+    private static boolean isApprovedUnsupportedOperation(UnsupportedOperationException exception) {
+        final String className = exception.getClass().getSimpleName();
+        if (className != null && className.toLowerCase().startsWith("compat")) {
+            return true;
+        }
+
+        final String message = exception.getMessage();
+        if (message == null) {
+            return false;
+        }
+
+        final String normalised = message.toLowerCase();
+        return normalised.matches(".*(^|[^a-z])compat(ibility)?([^a-z]|$).*");
     }
 
     /**
@@ -148,8 +201,13 @@ public class SpigotFunctionChooser<T, U, R> {
 
     @FunctionalInterface
     public interface ExceptionalFunction<T, U, R> extends BiFunction<T, U, R> {
-        // TODO might want to only check for NoSuchMethodException,
-        // cause what if the method is there and the exception is for some other reason?
+        // Compatibility policy: API-compat fallbacks must only trigger for missing/binary-incompatible API
+        // failures (for example LinkageError and reflection discovery failures) plus explicit
+        // compatibility-style UnsupportedOperationException signals (for example class names beginning with
+        // "compat" or message tokens "compat"/"compatibility", but not generic wording like
+        // "incompatible"). Ordinary runtime logic failures are
+        // rethrown and must not
+        // silently select the fallback branch.
 
         /**
          * Called by {@link #apply(Object, Object)}, this method is the target of the

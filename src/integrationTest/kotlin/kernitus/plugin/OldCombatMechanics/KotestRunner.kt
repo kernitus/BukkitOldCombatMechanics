@@ -164,6 +164,7 @@ object KotestRunner {
                             SwordSweepIntegrationTest::class,
                             PacketCancellationIntegrationTest::class,
                             EnderpearlCooldownIntegrationTest::class,
+                            SpigotFunctionChooserIntegrationTest::class,
                             ChorusFruitIntegrationTest::class,
                             CustomWeaponDamageIntegrationTest::class,
                             ToolDamageTooltipIntegrationTest::class,
