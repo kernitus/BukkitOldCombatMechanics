@@ -5,7 +5,6 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.type.ClassType;
 import org.bukkit.Bukkit;
 
 import java.lang.reflect.*;
@@ -67,10 +66,6 @@ public class Reflector {
 
     private static int getPatchVersion() {
         return patchVersion;
-    }
-
-    public static Class<?> getClass(ClassType type, String name) {
-        return getClass(type.qualifyClassName(name));
     }
 
     public static Class<?> getClass(String fqn) {

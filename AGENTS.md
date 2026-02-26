@@ -89,6 +89,7 @@ This file captures repo-specific context discovered while working on this branch
   - `ORG_GRADLE_JAVA_INSTALLATIONS_PATHS=/path/to/jdk8:/path/to/jdk17:/path/to/jdk25 ./gradlew integrationTest`
 
 ## Notes
+- Removed the dead reflection utility `ClassType` and the unused `Reflector#getClass(ClassType, String)` overload; `Reflector#getClass(String)` remains the supported class-resolution helper.
 - `SpigotFunctionChooser` now only falls back for compatibility-style failures (LinkageError family, missing-method/class reflection failures, and explicit compatibility-signalled `UnsupportedOperationException` via `compat`/`compatibility` markers), and rethrows ordinary runtime logic failures instead of silently selecting fallback (for example generic "incompatible" wording does not trigger fallback).
 - `AttackCompat` now only treats Bukkit `Player#attack` as success when it yields an observable living-target hit (health/lastDamage/noDamageTicks signal); otherwise it falls back to NMS attack candidates.
 - `AttackCompat` now treats boolean-return NMS attack methods that return `false` as failed attempts and continues trying other candidates, with expanded failure diagnostics including false-result and exception counts.
@@ -112,7 +113,7 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordBlocking` no longer version-gates Paper support; it feature-detects Paper data component APIs and avoids ConcurrentModificationException by iterating legacy tick state over a snapshot.
 - Do not gate behaviour on hard-coded Minecraft version numbers; use feature detection (class/method presence) because some servers backport APIs.
 - Weapon/armour unknown-enchantment warnings only fire for non-`minecraft` namespaces; legacy servers fall back to a known vanilla-enchantment list to avoid warning on built-ins.
-- For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector` + `ClassType`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
+- For NMS access, prefer the project Reflector helpers (`utilities.reflection.Reflector`) over ad-hoc reflection, and avoid hard-coded versioned class names where heuristics (signatures/fields) can locate methods safely.
 - Added integration tests in `OldPotionEffectsIntegrationTest` for strength addend scaling (Strength II and III), a distinct modifier value check, and strength multiplier scaling.
 - Added integration test ensuring vanilla strength addend applies when `old-potion-effects` is disabled.
 - Strength modifier in `OCMEntityDamageByEntityEvent` now stores per-level value (3) and applies level when reconstructing base damage.
