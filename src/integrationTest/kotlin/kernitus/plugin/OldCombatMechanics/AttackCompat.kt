@@ -21,9 +21,19 @@ fun attackCompat(attacker: Player, target: Entity) {
     }
     val useApiAttack = Reflector.versionIsNewerOrEqualTo(1, 12, 0)
     if (useApiAttack && apiAttack != null) {
+        val beforeApiAttack = captureLivingAttackSignal(target)
         try {
-            apiAttack.invoke(attacker, target)
-            return
+            val apiResult = apiAttack.invoke(attacker, target)
+            if (apiAttack.returnType == java.lang.Boolean.TYPE && apiResult == false) {
+                // Explicit attack failure; continue with NMS candidates.
+            } else if (beforeApiAttack == null) {
+                return
+            } else {
+                val afterApiAttack = captureLivingAttackSignal(target)
+                if (hasObservableHit(beforeApiAttack, afterApiAttack)) {
+                    return
+                }
+            }
         } catch (ignored: Exception) {
             // Fall through to NMS-based attack.
         }
@@ -42,11 +52,21 @@ fun attackCompat(attacker: Player, target: Entity) {
     }?.invoke(target) ?: error("Failed to resolve CraftEntity#getHandle for ${target.javaClass.name}")
 
     val nmsAttackMethods = resolveNmsAttackMethods(attackerHandle.javaClass, targetHandle.javaClass)
+    var falseResultCount = 0
+    var exceptionCount = 0
+    val attemptedMethods = ArrayList<String>(nmsAttackMethods.size)
+
     for (method in nmsAttackMethods) {
+        attemptedMethods += "${method.declaringClass.simpleName}#${method.name}:${method.returnType.simpleName}"
         try {
-            method.invoke(attackerHandle, targetHandle)
+            val result = method.invoke(attackerHandle, targetHandle)
+            if (method.returnType == java.lang.Boolean.TYPE && result == false) {
+                falseResultCount++
+                continue
+            }
             return
         } catch (ignored: Exception) {
+            exceptionCount++
             // Try the next candidate.
         }
     }
@@ -58,8 +78,32 @@ fun attackCompat(attacker: Player, target: Entity) {
 
     error(
         "Failed to invoke NMS attack for attacker=${attackerHandle.javaClass.name} " +
-            "target=${targetHandle.javaClass.name} (candidates=${nmsAttackMethods.size})"
+            "target=${targetHandle.javaClass.name} (candidates=${nmsAttackMethods.size}, " +
+            "falseResults=$falseResultCount, exceptions=$exceptionCount, attempted=$attemptedMethods)"
     )
+}
+
+
+private data class LivingAttackSignal(
+    val health: Double,
+    val lastDamage: Double,
+    val noDamageTicks: Int,
+)
+
+private fun captureLivingAttackSignal(entity: Entity): LivingAttackSignal? {
+    val living = entity as? LivingEntity ?: return null
+    return LivingAttackSignal(
+        health = living.health,
+        lastDamage = living.lastDamage,
+        noDamageTicks = living.noDamageTicks,
+    )
+}
+
+private fun hasObservableHit(before: LivingAttackSignal, after: LivingAttackSignal?): Boolean {
+    if (after == null) return false
+    if (after.health < before.health) return true
+    if (after.noDamageTicks > before.noDamageTicks) return true
+    return after.lastDamage > 0.0 && after.lastDamage != before.lastDamage
 }
 
 private val attackMethodCache = ConcurrentHashMap<Class<*>, List<Method>>()

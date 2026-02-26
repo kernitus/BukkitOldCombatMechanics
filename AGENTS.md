@@ -89,8 +89,10 @@ This file captures repo-specific context discovered while working on this branch
   - `ORG_GRADLE_JAVA_INSTALLATIONS_PATHS=/path/to/jdk8:/path/to/jdk17:/path/to/jdk25 ./gradlew integrationTest`
 
 ## Notes
+- `AttackCompat` now only treats Bukkit `Player#attack` as success when it yields an observable living-target hit (health/lastDamage/noDamageTicks signal); otherwise it falls back to NMS attack candidates.
+- `AttackCompat` now treats boolean-return NMS attack methods that return `false` as failed attempts and continues trying other candidates, with expanded failure diagnostics including false-result and exception counts.
 - Entity-click dedupe in `ModuleSwordBlocking` now uses a taskless lazy-prune timestamp map (`System.nanoTime`) instead of a one-tick scheduled set clear, with a short dedupe window and periodic/size-triggered expiry pruning.
-- `ModuleSwordBlocking` now handles `PlayerInteractEntityEvent` and `PlayerInteractAtEntityEvent` for main-hand sword blocking, with a one-tick dedupe guard to prevent duplicate side effects when both events fire for the same click.
+- `ModuleSwordBlocking` now handles `PlayerInteractEntityEvent` and `PlayerInteractAtEntityEvent` for main-hand sword blocking, with short time-window dedupe to prevent duplicate side effects when both events fire for the same click.
 - Removed the unused main-source Java tester package (`kernitus.plugin.OldCombatMechanics.tester`), deleted stale commented test-command code from `OCMCommandHandler`, and dropped the now-obsolete Gradle source-set exclusion for that package.
 - Paper 1.12 sometimes fails to download legacy vanilla jar from old Mojang endpoint. The custom `downloadVanilla` task fixes that by using the v2 manifest.
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
