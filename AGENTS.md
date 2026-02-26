@@ -225,6 +225,11 @@ This file captures repo-specific context discovered while working on this branch
 - `ModuleSwordBlocking.ConsumableCleaner#onWorldChange` now strips consumable components from main hand, offhand, and stored swords without re-applying, so world changes clear stale consumable state consistently.
 - `ModuleSwordBlocking.ConsumableCleaner#onQuit` now uses the same strip-only full sweep as world-change cleanup (main hand, offhand, and stored swords), ensuring logout clears stale consumable state from storage as well.
 - `ModuleSwordBlocking` now handles `PlayerJoinEvent` with a force legacy restore (`restore(..., true)`) followed by strip-only consumable cleanup (main hand, offhand, and stored swords), so join clears stale state without re-applying consumable components.
+- `ModuleSwordBlocking` inner listener `ConsumableCleaner` was renamed to `ConsumableLifecycleHandler` (registration updated; behaviour unchanged).
+- Legacy sword-blocking now marks injected temporary offhand shields when marker APIs are available so death handling can identify the temporary drop path reliably.
+- `ModuleSwordBlocking#onPlayerDeath` now pops stored offhand exactly once, clears legacy state deterministically, respects `keepInventory` without rewriting drops, rewrites at most one temporary shield drop, and adds the stored offhand drop when no temporary shield drop is found.
+- Legacy shield-drop reconciliation now uses a strict safety-first fallback when marker APIs are unavailable: it does not guess temporary shields from plain shield shape, avoiding accidental replacement of legitimate shields (stored offhand is appended instead).
+- For synthetic/manual death events where drop metadata may not preserve the temporary-shield marker, `ModuleSwordBlocking#onPlayerDeath` allows a single shield-drop rewrite only when the player offhand was verified as marker-tagged at death time.
 
 ## Fire aspect / fire tick test notes
 - `FireAspectOverdamageIntegrationTest` now uses a Zombie victim for real fire tick sampling, with max health boosted (via MAX_HEALTH attribute) to survive rapid clicking.

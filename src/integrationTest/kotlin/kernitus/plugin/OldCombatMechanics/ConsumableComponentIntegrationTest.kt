@@ -1529,6 +1529,114 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
+        test("legacy death replaces only temporary shield drop and clears legacy state once") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                player.updateInventory()
+            }
+
+            val storedItemsField = ModuleSwordBlocking::class.java.getDeclaredField("storedItems")
+            val legacyStatesField = ModuleSwordBlocking::class.java.getDeclaredField("legacyStates")
+            storedItemsField.isAccessible = true
+            legacyStatesField.isAccessible = true
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                @Suppress("UNCHECKED_CAST")
+                val storedItems = runSync { storedItemsField.get(swordBlocking) as MutableMap<UUID, ItemStack> }
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    storedItems.containsKey(player.uniqueId) shouldBe true
+                    val legacyStates = legacyStatesField.get(swordBlocking) as Map<*, *>
+                    legacyStates.containsKey(player.uniqueId) shouldBe true
+                }
+
+                val drops =
+                    mutableListOf(
+                        ItemStack(Material.SHIELD),
+                        ItemStack(Material.SHIELD),
+                    )
+                val deathEvent = runSync { syntheticPlayerDeathEvent(player, drops) }
+
+                runSync { Bukkit.getPluginManager().callEvent(deathEvent) }
+
+                @Suppress("UNCHECKED_CAST")
+                val dropsAfter = runSync { (deathEvent.drops as MutableList<ItemStack?>).toList() }
+
+                runSync {
+                    dropsAfter.any { it == null } shouldBe false
+                    dropsAfter.count { it?.type == Material.APPLE } shouldBe 1
+                    dropsAfter.count { it?.type == Material.SHIELD } shouldBe 1
+                    storedItems.containsKey(player.uniqueId) shouldBe false
+                    val legacyStates = legacyStatesField.get(swordBlocking) as Map<*, *>
+                    legacyStates.containsKey(player.uniqueId) shouldBe false
+                }
+            }
+        }
+
+        test("legacy death with keepInventory does not rewrite drops and still clears state") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                player.updateInventory()
+            }
+
+            val storedItemsField = ModuleSwordBlocking::class.java.getDeclaredField("storedItems")
+            val legacyStatesField = ModuleSwordBlocking::class.java.getDeclaredField("legacyStates")
+            storedItemsField.isAccessible = true
+            legacyStatesField.isAccessible = true
+
+            withPacketEventsClientVersion(player, "V_1_20_3") {
+                rightClickMainHand(player)
+                delayTicks(1)
+
+                @Suppress("UNCHECKED_CAST")
+                val storedItems = runSync { storedItemsField.get(swordBlocking) as MutableMap<UUID, ItemStack> }
+
+                runSync {
+                    player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    storedItems.containsKey(player.uniqueId) shouldBe true
+                }
+
+                val drops = mutableListOf(ItemStack(Material.SHIELD), ItemStack(Material.STONE))
+                val deathEvent = runSync { syntheticPlayerDeathEvent(player, drops) }
+                runSync {
+                    deathEvent.keepInventory = true
+                }
+
+                runSync { Bukkit.getPluginManager().callEvent(deathEvent) }
+
+                @Suppress("UNCHECKED_CAST")
+                val dropsAfter = runSync { (deathEvent.drops as MutableList<ItemStack?>).toList() }
+
+                runSync {
+                    dropsAfter.map { it?.type } shouldBe listOf(Material.SHIELD, Material.STONE)
+                    player.inventory.itemInOffHand.type shouldBe Material.APPLE
+                    storedItems.containsKey(player.uniqueId) shouldBe false
+                    val legacyStates = legacyStatesField.get(swordBlocking) as Map<*, *>
+                    legacyStates.containsKey(player.uniqueId) shouldBe false
+                }
+            }
+        }
+
         test("paper-animation swap restores stale stored offhand item before clearing legacy state") {
             if (!paperConsumablePathAvailable()) {
                 println("Skipping: Paper consumable component path unavailable")

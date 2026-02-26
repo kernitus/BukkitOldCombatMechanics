@@ -6,7 +6,6 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -28,6 +27,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.lang.reflect.Method;
@@ -35,7 +35,6 @@ import java.util.*;
 
 public class ModuleSwordBlocking extends OCMModule {
 
-    private static final ItemStack SHIELD = new ItemStack(Material.SHIELD);
     // Not using WeakHashMaps here, for extra reliability
     private final Map<UUID, ItemStack> storedItems = new HashMap<>();
     private final Map<UUID, LegacySwordBlockState> legacyStates = new HashMap<>();
@@ -59,6 +58,11 @@ public class ModuleSwordBlocking extends OCMModule {
     private Method packetEventsGetClientVersion;
     private Method packetEventsUserGetClientVersion;
     private Method packetEventsIsOlderThan;
+    private Object legacyShieldMarkerKey;
+    private Object legacyShieldMarkerByteType;
+    private Method itemMetaGetPersistentDataContainer;
+    private Method persistentDataContainerSet;
+    private Method persistentDataContainerHas;
     private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
@@ -74,7 +78,8 @@ public class ModuleSwordBlocking extends OCMModule {
 
         initialisePaperAdapter();
         initialisePacketEventsClientVersion();
-        Bukkit.getPluginManager().registerEvents(new ConsumableCleaner(), plugin);
+        initialiseLegacyShieldMarker();
+        Bukkit.getPluginManager().registerEvents(new ConsumableLifecycleHandler(), plugin);
     }
 
     @Override
@@ -167,6 +172,39 @@ public class ModuleSwordBlocking extends OCMModule {
             packetEventsGetClientVersion = null;
             packetEventsUserGetClientVersion = null;
             packetEventsIsOlderThan = null;
+        }
+    }
+
+    private void initialiseLegacyShieldMarker() {
+        try {
+            final Class<?> namespacedKeyClass = Class.forName("org.bukkit.NamespacedKey");
+            final Class<?> pluginClass = Class.forName("org.bukkit.plugin.Plugin");
+            final Class<?> itemMetaClass = Class.forName("org.bukkit.inventory.meta.ItemMeta");
+            final Class<?> persistentDataContainerClass = Class.forName("org.bukkit.persistence.PersistentDataContainer");
+            final Class<?> persistentDataTypeClass = Class.forName("org.bukkit.persistence.PersistentDataType");
+
+            legacyShieldMarkerKey = namespacedKeyClass
+                    .getConstructor(pluginClass, String.class)
+                    .newInstance(plugin, "temporary_legacy_shield");
+            legacyShieldMarkerByteType = persistentDataTypeClass.getField("BYTE").get(null);
+            itemMetaGetPersistentDataContainer = itemMetaClass.getMethod("getPersistentDataContainer");
+            persistentDataContainerSet = persistentDataContainerClass.getMethod(
+                    "set",
+                    namespacedKeyClass,
+                    persistentDataTypeClass,
+                    Object.class
+            );
+            persistentDataContainerHas = persistentDataContainerClass.getMethod(
+                    "has",
+                    namespacedKeyClass,
+                    persistentDataTypeClass
+            );
+        } catch (Throwable ignored) {
+            legacyShieldMarkerKey = null;
+            legacyShieldMarkerByteType = null;
+            itemMetaGetPersistentDataContainer = null;
+            persistentDataContainerSet = null;
+            persistentDataContainerHas = null;
         }
     }
 
@@ -294,7 +332,7 @@ public class ModuleSwordBlocking extends OCMModule {
             debug("Storing " + offHandItem, player);
             storedItems.put(id, offHandItem);
 
-            inventory.setItemInOffHand(SHIELD);
+            inventory.setItemInOffHand(createTemporaryLegacyShield());
             // Force an inventory update to avoid ghost items
             player.updateInventory();
             // Best-effort: ask the server to start using the offhand item so blocking becomes visible immediately
@@ -334,16 +372,59 @@ public class ModuleSwordBlocking extends OCMModule {
     public void onPlayerDeath(PlayerDeathEvent e) {
         final Player p = e.getEntity();
         final UUID id = p.getUniqueId();
-        if (!areItemsStored(id)) return;
+        final boolean hadMarkedTemporaryOffhand = hasTemporaryLegacyShieldMarker(p.getInventory().getItemInOffHand());
+        final ItemStack storedOffhand = storedItems.remove(id);
+        final LegacySwordBlockState removedLegacyState = legacyStates.remove(id);
+        if (storedOffhand == null && removedLegacyState == null) return;
 
-        //TODO what if they legitimately had a shield?
-        e.getDrops().replaceAll(item ->
-                item.getType() == Material.SHIELD ?
-                        storedItems.remove(id) : item
-        );
+        stopLegacyTaskIfIdle();
 
-        // Handle keepInventory = true
-        restore(p, true);
+        if (storedOffhand == null) {
+            return;
+        }
+
+        if (e.getKeepInventory()) {
+            p.getInventory().setItemInOffHand(storedOffhand);
+            return;
+        }
+
+        final List<ItemStack> drops = e.getDrops();
+        int temporaryShieldDropIndex = -1;
+        for (int i = 0; i < drops.size(); i++) {
+            if (isTemporaryLegacyShieldDrop(drops.get(i))) {
+                temporaryShieldDropIndex = i;
+                break;
+            }
+        }
+
+        // Synthetic/manual death events may construct shield drops without preserving item metadata.
+        // If we know the player had our marked temporary shield in offhand, allow a single shield rewrite.
+        if (temporaryShieldDropIndex < 0 && hadMarkedTemporaryOffhand && canMarkTemporaryLegacyShield()) {
+            temporaryShieldDropIndex = firstShieldDropIndex(drops);
+        }
+
+        if (temporaryShieldDropIndex >= 0) {
+            if (storedOffhand.getType() == Material.AIR) {
+                drops.remove(temporaryShieldDropIndex);
+            } else {
+                drops.set(temporaryShieldDropIndex, storedOffhand);
+            }
+            return;
+        }
+
+        if (storedOffhand.getType() != Material.AIR) {
+            drops.add(storedOffhand);
+        }
+    }
+
+    private int firstShieldDropIndex(List<ItemStack> drops) {
+        for (int i = 0; i < drops.size(); i++) {
+            final ItemStack item = drops.get(i);
+            if (item != null && item.getType() == Material.SHIELD) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -400,6 +481,67 @@ public class ModuleSwordBlocking extends OCMModule {
         try {
             return event.getClick() == ClickType.SWAP_OFFHAND;
         } catch (NoSuchFieldError ignored) {
+            return false;
+        }
+    }
+
+    private ItemStack createTemporaryLegacyShield() {
+        final ItemStack shield = new ItemStack(Material.SHIELD);
+        markTemporaryLegacyShield(shield);
+        return shield;
+    }
+
+    private void markTemporaryLegacyShield(ItemStack item) {
+        if (!canMarkTemporaryLegacyShield()) return;
+        if (item == null || item.getType() != Material.SHIELD) return;
+        try {
+            final ItemMeta meta = item.getItemMeta();
+            if (meta == null) return;
+            final Object persistentDataContainer = itemMetaGetPersistentDataContainer.invoke(meta);
+            if (persistentDataContainer == null) return;
+            persistentDataContainerSet.invoke(
+                    persistentDataContainer,
+                    legacyShieldMarkerKey,
+                    legacyShieldMarkerByteType,
+                    Byte.valueOf((byte) 1)
+            );
+            item.setItemMeta(meta);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private boolean canMarkTemporaryLegacyShield() {
+        return legacyShieldMarkerKey != null
+                && legacyShieldMarkerByteType != null
+                && itemMetaGetPersistentDataContainer != null
+                && persistentDataContainerSet != null
+                && persistentDataContainerHas != null;
+    }
+
+    private boolean isTemporaryLegacyShieldDrop(ItemStack item) {
+        if (item == null || item.getType() != Material.SHIELD) return false;
+        if (!canMarkTemporaryLegacyShield()) {
+            // Safety-first fallback: without marker support we cannot reliably distinguish temporary shields from
+            // legitimate plain shields, so avoid rewriting any shield drops.
+            return false;
+        }
+        return hasTemporaryLegacyShieldMarker(item);
+    }
+
+    private boolean hasTemporaryLegacyShieldMarker(ItemStack item) {
+        if (!canMarkTemporaryLegacyShield()) return false;
+        try {
+            final ItemMeta meta = item.getItemMeta();
+            if (meta == null) return false;
+            final Object persistentDataContainer = itemMetaGetPersistentDataContainer.invoke(meta);
+            if (persistentDataContainer == null) return false;
+            final Object marked = persistentDataContainerHas.invoke(
+                    persistentDataContainer,
+                    legacyShieldMarkerKey,
+                    legacyShieldMarkerByteType
+            );
+            return marked instanceof Boolean && (Boolean) marked;
+        } catch (Throwable ignored) {
             return false;
         }
     }
@@ -764,22 +906,7 @@ public class ModuleSwordBlocking extends OCMModule {
         return "UNKNOWN".equals(name) || "HIGHER_THAN_SUPPORTED_VERSIONS".equals(name);
     }
 
-    private class ConsumableCleaner implements Listener {
-        @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-        public void onInventoryClickPre(InventoryClickEvent event) {
-            // Intentionally no-op for minimal-mutation policy on click paths.
-        }
-
-        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-        public void onInventoryClickPost(InventoryClickEvent event) {
-            // Intentionally no-op for minimal-mutation policy on click paths.
-        }
-
-        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-        public void onInventoryDrag(InventoryDragEvent event) {
-            // Intentionally no-op for minimal-mutation policy on drag paths.
-        }
-
+    private class ConsumableLifecycleHandler implements Listener {
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onHeld(PlayerItemHeldEvent event) {
             if (!shouldHandleConsumable(event.getPlayer()) || !supportsPaperAnimation(event.getPlayer())) return;
