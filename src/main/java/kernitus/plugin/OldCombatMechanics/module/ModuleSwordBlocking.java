@@ -63,6 +63,11 @@ public class ModuleSwordBlocking extends OCMModule {
     private Method itemMetaGetPersistentDataContainer;
     private Method persistentDataContainerSet;
     private Method persistentDataContainerHas;
+    private static final long ENTITY_INTERACTION_DEDUPE_WINDOW_NANOS = 75_000_000L;
+    private static final long ENTITY_INTERACTION_PRUNE_INTERVAL_NANOS = 250_000_000L;
+    private static final int ENTITY_INTERACTION_FORCE_PRUNE_SIZE = 128;
+    private final Map<EntityInteractionKey, Long> handledEntityInteractions = new HashMap<>();
+    private long nextEntityInteractionPruneAtNanos;
     private static ModuleSwordBlocking INSTANCE;
 
     // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
@@ -85,6 +90,8 @@ public class ModuleSwordBlocking extends OCMModule {
     @Override
     public void reload() {
         restoreDelay = module().getInt("restoreDelay", 40);
+        handledEntityInteractions.clear();
+        nextEntityInteractionPruneAtNanos = 0L;
         if (!paperSupported || paperAdapter == null) return;
         if (isEnabled()) return;
 
@@ -281,7 +288,6 @@ public class ModuleSwordBlocking extends OCMModule {
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
         // If they clicked on an interactive block, the 2nd event with the offhand won't fire
         // This is also the case if the main hand item was used, e.g. a bow
-        // TODO right-clicking on a mob also only fires one hand
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
         if (e.isBlockInHand()) {
             if (lastInteractedBlocks != null) {
@@ -293,6 +299,51 @@ public class ModuleSwordBlocking extends OCMModule {
         }
 
         doShieldBlock(player);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRightClickEntity(PlayerInteractEntityEvent event) {
+        handleEntityRightClick(event.getPlayer(), event.getRightClicked(), event.getHand());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRightClickEntityAt(PlayerInteractAtEntityEvent event) {
+        handleEntityRightClick(event.getPlayer(), event.getRightClicked(), event.getHand());
+    }
+
+    private void handleEntityRightClick(Player player, org.bukkit.entity.Entity clickedEntity, EquipmentSlot hand) {
+        if (player == null || clickedEntity == null) return;
+        if (!isEnabled(player)) return;
+        if (hand != EquipmentSlot.HAND) return;
+        if (!markEntityInteractionHandled(player, clickedEntity, hand)) return;
+        doShieldBlock(player);
+    }
+
+    private boolean markEntityInteractionHandled(Player player, org.bukkit.entity.Entity clickedEntity, EquipmentSlot hand) {
+        final long now = System.nanoTime();
+        lazyPruneHandledEntityInteractions(now, false);
+
+        final EntityInteractionKey key = new EntityInteractionKey(player.getUniqueId(), clickedEntity.getUniqueId(), hand);
+        final Long expiresAt = handledEntityInteractions.get(key);
+        if (expiresAt != null && expiresAt > now) {
+            return false;
+        }
+
+        handledEntityInteractions.put(key, now + ENTITY_INTERACTION_DEDUPE_WINDOW_NANOS);
+        lazyPruneHandledEntityInteractions(now, handledEntityInteractions.size() >= ENTITY_INTERACTION_FORCE_PRUNE_SIZE);
+        return true;
+    }
+
+    private void lazyPruneHandledEntityInteractions(long nowNanos, boolean force) {
+        if (!force && nowNanos < nextEntityInteractionPruneAtNanos) return;
+
+        final Iterator<Map.Entry<EntityInteractionKey, Long>> it = handledEntityInteractions.entrySet().iterator();
+        while (it.hasNext()) {
+            if (it.next().getValue() <= nowNanos) {
+                it.remove();
+            }
+        }
+        nextEntityInteractionPruneAtNanos = nowNanos + ENTITY_INTERACTION_PRUNE_INTERVAL_NANOS;
     }
 
     private void doShieldBlock(Player player) {
@@ -1040,5 +1091,32 @@ public class ModuleSwordBlocking extends OCMModule {
     private static final class LegacySwordBlockState {
         private long restoreAtTick;
         private long nextBlockingCheckTick;
+    }
+
+    private static final class EntityInteractionKey {
+        private final UUID playerId;
+        private final UUID entityId;
+        private final EquipmentSlot hand;
+
+        private EntityInteractionKey(UUID playerId, UUID entityId, EquipmentSlot hand) {
+            this.playerId = playerId;
+            this.entityId = entityId;
+            this.hand = hand;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final EntityInteractionKey that = (EntityInteractionKey) o;
+            return Objects.equals(playerId, that.playerId)
+                    && Objects.equals(entityId, that.entityId)
+                    && hand == that.hand;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(playerId, entityId, hand);
+        }
     }
 }
