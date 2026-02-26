@@ -89,6 +89,7 @@ This file captures repo-specific context discovered while working on this branch
   - `ORG_GRADLE_JAVA_INSTALLATIONS_PATHS=/path/to/jdk8:/path/to/jdk17:/path/to/jdk25 ./gradlew integrationTest`
 
 ## Notes
+- Removed the unused main-source Java tester package (`kernitus.plugin.OldCombatMechanics.tester`), deleted stale commented test-command code from `OCMCommandHandler`, and dropped the now-obsolete Gradle source-set exclusion for that package.
 - Paper 1.12 sometimes fails to download legacy vanilla jar from old Mojang endpoint. The custom `downloadVanilla` task fixes that by using the v2 manifest.
 - 1.21.11 servers log hostname warnings and Unsafe warnings; tests still pass.
 - 1.9 integration tests are currently on hold per user request.

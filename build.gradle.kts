@@ -14,16 +14,16 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
 import java.io.ByteArrayOutputStream
+import java.io.Closeable
 import java.io.Serializable
 import java.net.URI
-import java.security.MessageDigest
 import java.nio.file.Files
-import java.io.Closeable
+import java.security.MessageDigest
 
-val paperVersion: List<String> = (property("gameVersions") as String)
+val paperVersion: List<String> =
+    (property("gameVersions") as String)
         .split(",")
         .map { it.trim() }
-
 
 plugins {
     `java-library`
@@ -73,12 +73,6 @@ java {
 }
 
 sourceSets {
-    main {
-        java {
-            exclude("kernitus/plugin/OldCombatMechanics/tester/**")
-        }
-    }
-
     val integrationTest by creating {
         kotlin.setSrcDirs(listOf("src/integrationTest/kotlin"))
         resources.setSrcDirs(listOf("src/integrationTest/resources"))
@@ -121,7 +115,7 @@ dependencies {
     // XSeries
     implementation("com.github.cryptomorin:XSeries:13.6.0")
 
-     //For ingametesting
+    // For ingametesting
     // Mojang mappings for NMS
     /*
     compileOnly("com.mojang:authlib:6.0.54")
@@ -145,7 +139,10 @@ dependencies {
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
-class ExpandPluginVersionAction(private val version: String) : Action<FileCopyDetails>, Serializable {
+class ExpandPluginVersionAction(
+    private val version: String,
+) : Action<FileCopyDetails>,
+    Serializable {
     override fun execute(details: FileCopyDetails) {
         details.expand(mapOf("pluginVersion" to version))
     }
@@ -163,17 +160,18 @@ tasks.withType<JavaCompile> {
     options.release.set(8)
 }
 
-val shadowJarTask = tasks.named<ShadowJar>("shadowJar") {
-    dependsOn("jar")
-    archiveFileName.set("${project.name}.jar")
-    dependencies {
-        exclude(dependency("org.jetbrains.kotlin:.*"))
-        relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
-        relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
-        relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
-        relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
+val shadowJarTask =
+    tasks.named<ShadowJar>("shadowJar") {
+        dependsOn("jar")
+        archiveFileName.set("${project.name}.jar")
+        dependencies {
+            exclude(dependency("org.jetbrains.kotlin:.*"))
+            relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
+            relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
+            relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
+            relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
+        }
     }
-}
 
 // For ingametesting
 /*
@@ -184,7 +182,7 @@ tasks.reobfJar {
 
 tasks.assemble {
     // For ingametesting
-    //dependsOn("reobfJar")
+    // dependsOn("reobfJar")
     dependsOn("shadowJar")
 }
 
@@ -196,51 +194,55 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 }
 
-val relocateIntegrationTestClasses = tasks.register<ShadowJar>("relocateIntegrationTestClasses") {
-    archiveClassifier.set("tests-relocated")
-    dependsOn("compileIntegrationTestKotlin")
-    configurations = emptyList()
-    from(sourceSets["integrationTest"].output)
-    relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
-    relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
-}
-
-val integrationTestJarTask = tasks.register<Jar>("integrationTestJar") {
-    archiveClassifier.set("tests")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    dependsOn(relocateIntegrationTestClasses)
-
-    from(relocateIntegrationTestClasses.flatMap { it.archiveFile }.map { zipTree(it.asFile) })
-
-    project.configurations["integrationTestRuntimeClasspath"].forEach { file: File ->
-        if (file.name.contains("packetevents", ignoreCase = true)) {
-            return@forEach
-        }
-        from(if (file.isDirectory) file else zipTree(file))
+val relocateIntegrationTestClasses =
+    tasks.register<ShadowJar>("relocateIntegrationTestClasses") {
+        archiveClassifier.set("tests-relocated")
+        dependsOn("compileIntegrationTestKotlin")
+        configurations = emptyList()
+        from(sourceSets["integrationTest"].output)
+        relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
+        relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
     }
 
-    exclude("META-INF/*.SF")
-    exclude("META-INF/*.DSA")
-    exclude("META-INF/*.RSA")
-    exclude("META-INF/*.EC")
-    exclude("META-INF/*.MF")
-    exclude("module-info.class")
-    exclude("META-INF/versions/**/module-info.class")
-}
+val integrationTestJarTask =
+    tasks.register<Jar>("integrationTestJar") {
+        archiveClassifier.set("tests")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        dependsOn(relocateIntegrationTestClasses)
+
+        from(relocateIntegrationTestClasses.flatMap { it.archiveFile }.map { zipTree(it.asFile) })
+
+        project.configurations["integrationTestRuntimeClasspath"].forEach { file: File ->
+            if (file.name.contains("packetevents", ignoreCase = true)) {
+                return@forEach
+            }
+            from(if (file.isDirectory) file else zipTree(file))
+        }
+
+        exclude("META-INF/*.SF")
+        exclude("META-INF/*.DSA")
+        exclude("META-INF/*.RSA")
+        exclude("META-INF/*.EC")
+        exclude("META-INF/*.MF")
+        exclude("module-info.class")
+        exclude("META-INF/versions/**/module-info.class")
+    }
 
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
-val defaultIntegrationTestVersions = listOf(integrationTestMinecraftVersion, "1.21.11", "1.12", "1.9.4")
-    .distinct()
+val defaultIntegrationTestVersions =
+    listOf(integrationTestMinecraftVersion, "1.21.11", "1.12", "1.9.4")
+        .distinct()
 
-val integrationTestVersions: List<String> = (findProperty("integrationTestVersions") as String?)
-    ?.split(",")
-    ?.map { it.trim() }
-    ?.filter { it.isNotEmpty() }
-    ?.ifEmpty { defaultIntegrationTestVersions }
-    ?: defaultIntegrationTestVersions
+val integrationTestVersions: List<String> =
+    (findProperty("integrationTestVersions") as String?)
+        ?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.ifEmpty { defaultIntegrationTestVersions }
+        ?: defaultIntegrationTestVersions
 
 val integrationTestJavaVersionLegacy =
     (findProperty("integrationTestJavaVersionLegacy") as String?)?.toInt() ?: 17
@@ -287,7 +289,7 @@ data class KotestSummary(
     val testsIgnored: Int?,
     val testsTotal: Int?,
     val failures: List<String>,
-    val failureDetails: List<String>
+    val failureDetails: List<String>,
 )
 
 fun parseKotestSummary(logFile: File): KotestSummary? {
@@ -392,17 +394,21 @@ fun parseKotestSummary(logFile: File): KotestSummary? {
                 if (match != null) {
                     val value = match.groupValues[1].toInt()
                     when (blockContext) {
-                        "specs" -> when (match.groupValues[2]) {
-                            "passed" -> specsPassed = value
-                            "failed" -> specsFailed = value
-                            "total" -> specsTotal = value
+                        "specs" -> {
+                            when (match.groupValues[2]) {
+                                "passed" -> specsPassed = value
+                                "failed" -> specsFailed = value
+                                "total" -> specsTotal = value
+                            }
                         }
 
-                        "tests" -> when (match.groupValues[2]) {
-                            "passed" -> testsPassed = value
-                            "failed" -> testsFailed = value
-                            "ignored" -> testsIgnored = value
-                            "total" -> testsTotal = value
+                        "tests" -> {
+                            when (match.groupValues[2]) {
+                                "passed" -> testsPassed = value
+                                "failed" -> testsFailed = value
+                                "ignored" -> testsIgnored = value
+                                "total" -> testsTotal = value
+                            }
                         }
                     }
                 }
@@ -427,7 +433,7 @@ fun parseKotestSummary(logFile: File): KotestSummary? {
         testsIgnored,
         testsTotal,
         failures,
-        failureDetails.distinct()
+        failureDetails.distinct(),
     )
 }
 
@@ -465,178 +471,188 @@ var previousMatrixTask: TaskProvider<Task>? = null
 val kotestSpecFilterProvider = providers.systemProperty("kotest.filter.specs")
 val kotestTestFilterProvider = providers.systemProperty("kotest.filter.tests")
 
-fun versionTaskSuffix(version: String): String {
-    return version.replace(Regex("[^A-Za-z0-9]"), "_")
-}
+fun versionTaskSuffix(version: String): String = version.replace(Regex("[^A-Za-z0-9]"), "_")
 
 for (version in integrationTestVersions) {
     val suffix = versionTaskSuffix(version)
     val runDir = file("run/$version")
     val resultFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-results.txt")
     val failuresFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-failures.txt")
-    val vanillaCacheFile = runDir.resolve("cache/mojang_${version}.jar")
+    val vanillaCacheFile = runDir.resolve("cache/mojang_$version.jar")
     val logFile = layout.buildDirectory.file("integration-test-logs/$suffix.log")
 
-    val writePropsTask = tasks.register<WriteProperties>("writeProperties${suffix}") {
-        encoding = "UTF-8"
-        property("online-mode", false)
-        destinationFile.set(runDir.resolve("server.properties"))
-    }
-
-    val downloadVanillaTask = if (needsLegacyVanillaJar(version)) {
-        tasks.register("downloadVanilla${suffix}") {
-            outputs.file(vanillaCacheFile)
-            notCompatibleWithConfigurationCache("Downloads vanilla server jar for legacy Paper versions.")
-            doLast {
-                val slurper = JsonSlurper()
-                val manifestText = URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
-                    .toURL()
-                    .readText()
-                val manifest = slurper.parseText(manifestText) as Map<*, *>
-                val versionsList = manifest["versions"] as? List<Map<*, *>>
-                    ?: throw GradleException("Invalid Mojang manifest format: missing 'versions' list.")
-                val versionEntry = versionsList.firstOrNull { it["id"] == version }
-                    ?: throw GradleException("Minecraft version '$version' not found in Mojang manifest.")
-                val versionUrl = versionEntry["url"] as String
-                val versionMetaText = URI(versionUrl).toURL().readText()
-                val versionMeta = slurper.parseText(versionMetaText) as Map<*, *>
-                val downloads = versionMeta["downloads"] as Map<*, *>
-                val serverInfo = downloads["server"] as Map<*, *>
-                val serverUrl = serverInfo["url"] as String
-                val serverSha1 = serverInfo["sha1"] as String
-
-                if (vanillaCacheFile.exists()) {
-                    val existingSha1 = sha1(vanillaCacheFile)
-                    if (existingSha1.equals(serverSha1, ignoreCase = true)) {
-                        return@doLast
-                    }
-                } else {
-                    vanillaCacheFile.parentFile.mkdirs()
-                }
-
-                val tmpFile = Files.createTempFile("mc-server-${version}-", ".jar").toFile()
-                URI(serverUrl).toURL().openStream().use { input ->
-                    tmpFile.outputStream().use { output -> input.copyTo(output) }
-                }
-                val downloadedSha1 = sha1(tmpFile)
-                if (!downloadedSha1.equals(serverSha1, ignoreCase = true)) {
-                    tmpFile.delete()
-                    throw GradleException(
-                        "Downloaded Minecraft server jar hash mismatch for $version. Expected $serverSha1, got $downloadedSha1."
-                    )
-                }
-                tmpFile.copyTo(vanillaCacheFile, overwrite = true)
-                tmpFile.delete()
-            }
+    val writePropsTask =
+        tasks.register<WriteProperties>("writeProperties$suffix") {
+            encoding = "UTF-8"
+            property("online-mode", false)
+            destinationFile.set(runDir.resolve("server.properties"))
         }
-    } else {
-        null
-    }
 
-    val runServerTask = tasks.register<RunServer>("runServer${suffix}") {
-        dependsOn(writePropsTask)
-        downloadVanillaTask?.let { dependsOn(it) }
-        runDirectory.set(runDir)
-        minecraftVersion(version)
-        jvmArgs("-Dcom.mojang.eula.agree=true")
-        kotestSpecFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
-            jvmArgs("-Dkotest.filter.specs=$it")
-        }
-        kotestTestFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
-            jvmArgs("-Dkotest.filter.tests=$it")
-        }
+    val downloadVanillaTask =
         if (needsLegacyVanillaJar(version)) {
-            // Skip the legacy Paper "outdated build" startup sleep.
-            jvmArgs("-DIReallyKnowWhatIAmDoingISwear=true")
+            tasks.register("downloadVanilla$suffix") {
+                outputs.file(vanillaCacheFile)
+                notCompatibleWithConfigurationCache("Downloads vanilla server jar for legacy Paper versions.")
+                doLast {
+                    val slurper = JsonSlurper()
+                    val manifestText =
+                        URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+                            .toURL()
+                            .readText()
+                    val manifest = slurper.parseText(manifestText) as Map<*, *>
+                    val versionsList =
+                        manifest["versions"] as? List<Map<*, *>>
+                            ?: throw GradleException("Invalid Mojang manifest format: missing 'versions' list.")
+                    val versionEntry =
+                        versionsList.firstOrNull { it["id"] == version }
+                            ?: throw GradleException("Minecraft version '$version' not found in Mojang manifest.")
+                    val versionUrl = versionEntry["url"] as String
+                    val versionMetaText = URI(versionUrl).toURL().readText()
+                    val versionMeta = slurper.parseText(versionMetaText) as Map<*, *>
+                    val downloads = versionMeta["downloads"] as Map<*, *>
+                    val serverInfo = downloads["server"] as Map<*, *>
+                    val serverUrl = serverInfo["url"] as String
+                    val serverSha1 = serverInfo["sha1"] as String
+
+                    if (vanillaCacheFile.exists()) {
+                        val existingSha1 = sha1(vanillaCacheFile)
+                        if (existingSha1.equals(serverSha1, ignoreCase = true)) {
+                            return@doLast
+                        }
+                    } else {
+                        vanillaCacheFile.parentFile.mkdirs()
+                    }
+
+                    val tmpFile = Files.createTempFile("mc-server-$version-", ".jar").toFile()
+                    URI(serverUrl).toURL().openStream().use { input ->
+                        tmpFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    val downloadedSha1 = sha1(tmpFile)
+                    if (!downloadedSha1.equals(serverSha1, ignoreCase = true)) {
+                        tmpFile.delete()
+                        throw GradleException(
+                            "Downloaded Minecraft server jar hash mismatch for $version. Expected $serverSha1, got $downloadedSha1.",
+                        )
+                    }
+                    tmpFile.copyTo(vanillaCacheFile, overwrite = true)
+                    tmpFile.delete()
+                }
+            }
+        } else {
+            null
         }
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(version)))
-        })
 
-        pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
-        pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
-        pluginJars.from(configurations["integrationTestServerPlugins"])
+    val runServerTask =
+        tasks.register<RunServer>("runServer$suffix") {
+            dependsOn(writePropsTask)
+            downloadVanillaTask?.let { dependsOn(it) }
+            runDirectory.set(runDir)
+            minecraftVersion(version)
+            jvmArgs("-Dcom.mojang.eula.agree=true")
+            kotestSpecFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
+                jvmArgs("-Dkotest.filter.specs=$it")
+            }
+            kotestTestFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
+                jvmArgs("-Dkotest.filter.tests=$it")
+            }
+            if (needsLegacyVanillaJar(version)) {
+                // Skip the legacy Paper "outdated build" startup sleep.
+                jvmArgs("-DIReallyKnowWhatIAmDoingISwear=true")
+            }
+            javaLauncher.set(
+                javaToolchains.launcherFor {
+                    languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(version)))
+                },
+            )
 
-        doFirst {
-            val log = logFile.get().asFile
-            log.parentFile.mkdirs()
-            val stream = log.outputStream()
-            standardOutput = stream
-            errorOutput = stream
+            pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
+            pluginJars.from(integrationTestJarTask.flatMap { it.archiveFile })
+            pluginJars.from(configurations["integrationTestServerPlugins"])
+
+            doFirst {
+                val log = logFile.get().asFile
+                log.parentFile.mkdirs()
+                val stream = log.outputStream()
+                standardOutput = stream
+                errorOutput = stream
+            }
+
+            doLast {
+                (standardOutput as? Closeable)?.close()
+            }
+
+            doFirst {
+                if (resultFile.exists()) {
+                    resultFile.delete()
+                }
+                if (failuresFile.exists()) {
+                    failuresFile.delete()
+                }
+                val ocmConfigFile = runDir.resolve("plugins/OldCombatMechanics/config.yml")
+                if (ocmConfigFile.exists()) {
+                    ocmConfigFile.delete()
+                }
+            }
         }
 
-        doLast {
-            (standardOutput as? Closeable)?.close()
+    val checkTask =
+        tasks.register("checkTestResults$suffix") {
+            doLast {
+                if (!resultFile.exists()) {
+                    throw GradleException("Test results file not found for $version. Tests may not have run correctly.")
+                }
+                val result = resultFile.readText().trim()
+                val log = logFile.get().asFile
+                val summary = parseKotestSummary(log)
+                summary?.let {
+                    val parts = mutableListOf<String>()
+                    if (it.specsTotal != null) {
+                        parts.add("Specs: ${it.specsPassed ?: "?"} passed, ${it.specsFailed ?: "?"} failed, ${it.specsTotal} total")
+                    }
+                    if (it.testsTotal != null) {
+                        parts.add(
+                            "Tests: ${it.testsPassed ?: "?"} passed, ${it.testsFailed ?: "?"} failed, ${it.testsIgnored ?: 0} ignored, ${it.testsTotal} total",
+                        )
+                    }
+                    if (it.failures.isNotEmpty()) {
+                        parts.add("Failures: ${it.failures.joinToString(", ")}")
+                    }
+                    if (it.failureDetails.isNotEmpty()) {
+                        parts.add("Reasons: ${it.failureDetails.take(2).joinToString("; ")}")
+                    }
+                    if (parts.isNotEmpty()) {
+                        logger.lifecycle("[$version] ${parts.joinToString(" | ")}")
+                    }
+                } ?: run {
+                    val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
+                    logger.lifecycle("[$version] No Kotest summary parsed. Full log: $rel")
+                }
+                run {
+                    val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
+                    logger.lifecycle("[$version] Log: $rel")
+                }
+                if (failuresFile.exists()) {
+                    val lines = failuresFile.readLines().map { it.trim() }.filter { it.isNotEmpty() }
+                    if (lines.isNotEmpty()) {
+                        logger.lifecycle("[$version] Failure details: ${lines.take(5).joinToString(" | ")}")
+                    }
+                }
+                if (result == "FAIL") {
+                    throw GradleException("Integration tests failed for $version.")
+                } else if (result != "PASS") {
+                    throw GradleException("Unknown test result for $version: $result")
+                }
+                logger.lifecycle("Integration tests passed for $version.")
+            }
         }
 
-        doFirst {
-            if (resultFile.exists()) {
-                resultFile.delete()
-            }
-            if (failuresFile.exists()) {
-                failuresFile.delete()
-            }
-            val ocmConfigFile = runDir.resolve("plugins/OldCombatMechanics/config.yml")
-            if (ocmConfigFile.exists()) {
-                ocmConfigFile.delete()
-            }
+    val testTask =
+        tasks.register("integrationTest$suffix") {
+            group = "verification"
+            description = "Runs integration tests with a live Paper server ($version)."
+            dependsOn(shadowJarTask, integrationTestJarTask, runServerTask)
+            finalizedBy(checkTask)
         }
-    }
-
-    val checkTask = tasks.register("checkTestResults${suffix}") {
-        doLast {
-            if (!resultFile.exists()) {
-                throw GradleException("Test results file not found for $version. Tests may not have run correctly.")
-            }
-            val result = resultFile.readText().trim()
-            val log = logFile.get().asFile
-            val summary = parseKotestSummary(log)
-            summary?.let {
-                val parts = mutableListOf<String>()
-                if (it.specsTotal != null) {
-                    parts.add("Specs: ${it.specsPassed ?: "?"} passed, ${it.specsFailed ?: "?"} failed, ${it.specsTotal} total")
-                }
-                if (it.testsTotal != null) {
-                    parts.add("Tests: ${it.testsPassed ?: "?"} passed, ${it.testsFailed ?: "?"} failed, ${it.testsIgnored ?: 0} ignored, ${it.testsTotal} total")
-                }
-                if (it.failures.isNotEmpty()) {
-                    parts.add("Failures: ${it.failures.joinToString(", ")}")
-                }
-                if (it.failureDetails.isNotEmpty()) {
-                    parts.add("Reasons: ${it.failureDetails.take(2).joinToString("; ")}")
-                }
-                if (parts.isNotEmpty()) {
-                    logger.lifecycle("[${version}] ${parts.joinToString(" | ")}")
-                }
-            } ?: run {
-                val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
-                logger.lifecycle("[${version}] No Kotest summary parsed. Full log: $rel")
-            }
-            run {
-                val rel = log.relativeToOrNull(project.layout.projectDirectory.asFile)?.path ?: log.absolutePath
-                logger.lifecycle("[${version}] Log: $rel")
-            }
-            if (failuresFile.exists()) {
-                val lines = failuresFile.readLines().map { it.trim() }.filter { it.isNotEmpty() }
-                if (lines.isNotEmpty()) {
-                    logger.lifecycle("[${version}] Failure details: ${lines.take(5).joinToString(" | ")}")
-                }
-            }
-            if (result == "FAIL") {
-                throw GradleException("Integration tests failed for $version.")
-            } else if (result != "PASS") {
-                throw GradleException("Unknown test result for $version: $result")
-            }
-            logger.lifecycle("Integration tests passed for $version.")
-        }
-    }
-
-    val testTask = tasks.register("integrationTest${suffix}") {
-        group = "verification"
-        description = "Runs integration tests with a live Paper server ($version)."
-        dependsOn(shadowJarTask, integrationTestJarTask, runServerTask)
-        finalizedBy(checkTask)
-    }
 
     val priorTask = previousMatrixTask
     if (priorTask != null) {
@@ -656,22 +672,29 @@ tasks.register("integrationTestMatrix") {
 val versionStringProvider = providers.provider { project.version.toString() }
 val isReleaseProvider = versionStringProvider.map { !it.contains('-') }
 
-val gitShortHashProvider = providers.exec {
-    commandLine("git", "rev-parse", "--short", "HEAD")
-}.standardOutput.asText.map { it.trim() }
+val gitShortHashProvider =
+    providers
+        .exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText
+        .map { it.trim() }
 
-val gitChangelogProvider = providers.exec {
-    commandLine("git", "log", "-1", "--pretty=%B")
-}.standardOutput.asText.map { it.trim() }
+val gitChangelogProvider =
+    providers
+        .exec {
+            commandLine("git", "log", "-1", "--pretty=%B")
+        }.standardOutput.asText
+        .map { it.trim() }
 
-val suffixedVersionProvider = providers.provider {
-    val version = project.version.toString()
-    if (!version.contains('-')) {
-        version
-    } else {
-        "$version+${gitShortHashProvider.get()}"
+val suffixedVersionProvider =
+    providers.provider {
+        val version = project.version.toString()
+        if (!version.contains('-')) {
+            version
+        } else {
+            "$version+${gitShortHashProvider.get()}"
+        }
     }
-}
 
 val changelogProvider = providers.environmentVariable("HANGAR_CHANGELOG").orElse(gitChangelogProvider)
 
