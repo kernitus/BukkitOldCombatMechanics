@@ -510,6 +510,27 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
+        suspend fun withSwordBlockingPaperAnimation(
+            enabled: Boolean,
+            block: suspend () -> Unit,
+        ) {
+            val original = runSync { snapshotSection("sword-blocking.paper-animation") }
+            try {
+                runSync {
+                    ocm.config.set("sword-blocking.paper-animation", enabled)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+                block()
+            } finally {
+                runSync {
+                    restoreSection("sword-blocking.paper-animation", original)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+            }
+        }
+
         lateinit var fake: FakePlayer
         lateinit var player: Player
 
@@ -942,6 +963,67 @@ class ConsumableComponentIntegrationTest :
 
             runSync {
                 hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+        }
+
+        test("paper-animation config false clears stale sword consumable component after reload") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(craftMirrorStack(Material.DIAMOND_SWORD))
+            }
+
+            runSync {
+                val main = player.inventory.itemInMainHand
+                applyConsumableComponent(main)
+                player.inventory.setItemInMainHand(main)
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe true
+            }
+
+            withSwordBlockingPaperAnimation(false) {
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe true
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
+            }
+        }
+
+        test("paper-animation config false prevents swap lifecycle from re-applying sword consumable component") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+            }
+
+            withSwordBlockingPaperAnimation(false) {
+                val event =
+                    runSync {
+                        PlayerSwapHandItemsEvent(
+                            player,
+                            player.inventory.itemInMainHand.clone(),
+                            player.inventory.itemInOffHand.clone(),
+                        )
+                    }
+
+                runSync { Bukkit.getPluginManager().callEvent(event) }
+                delayTicks(1)
+
+                runSync {
+                    swordBlocking.isEnabled(player) shouldBe true
+                    hasConsumableComponent(player.inventory.itemInMainHand) shouldBe false
+                }
             }
         }
 

@@ -93,7 +93,7 @@ public class ModuleSwordBlocking extends OCMModule {
         handledEntityInteractions.clear();
         nextEntityInteractionPruneAtNanos = 0L;
         if (!paperSupported || paperAdapter == null) return;
-        if (isEnabled()) return;
+        if (isEnabled() && isPaperAnimationEnabled()) return;
 
         final Runnable cleanup = () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -218,6 +218,7 @@ public class ModuleSwordBlocking extends OCMModule {
     private boolean supportsPaperAnimation(Player player) {
         if (!paperSupported || paperAdapter == null) return false;
         if (player == null) return false;
+        if (!isPaperAnimationEnabled()) return false;
         if (minClientVersion == null) return false;
         try {
             if (packetEventsGetAPI == null || packetEventsGetPlayerManager == null || packetEventsGetClientVersion == null || packetEventsIsOlderThan == null) {
@@ -680,6 +681,7 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!paperSupported || paperAdapter == null) return 0;
         if (!(event.getEntity() instanceof Player)) return 0;
         final Player player = (Player) event.getEntity();
+        if (!isPaperAnimationEnabled()) return 0;
         if (!isEnabled(event.getDamager(), player)) return 0;
         if (!isHoldingSword(player.getInventory().getItemInMainHand().getType())) return 0;
         if (!isPaperSwordBlocking(player)) return 0;
@@ -695,6 +697,7 @@ public class ModuleSwordBlocking extends OCMModule {
     public boolean isPaperSwordBlocking(Player player) {
         if (!paperSupported || paperAdapter == null) return false;
         if (player == null) return false;
+        if (!isPaperAnimationEnabled()) return false;
         try {
             if (paperIsBlockingSword != null) {
                 final Object result = paperIsBlockingSword.invoke(paperAdapter, player);
@@ -868,7 +871,11 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private boolean shouldHandleConsumable(Player player) {
-        return paperSupported && paperAdapter != null && player != null && isEnabled(player);
+        return paperSupported && paperAdapter != null && player != null && isEnabled(player) && isPaperAnimationEnabled();
+    }
+
+    private boolean isPaperAnimationEnabled() {
+        return module().getBoolean("paper-animation", true);
     }
 
     private void sweepConsumableState(Player player, boolean includeStorage) {

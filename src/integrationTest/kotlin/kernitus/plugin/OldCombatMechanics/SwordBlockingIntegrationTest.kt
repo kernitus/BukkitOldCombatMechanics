@@ -11,6 +11,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.TestScope
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking
+import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -128,8 +129,41 @@ class SwordBlockingIntegrationTest :
                 player.inventory.heldItemSlot = previous
             }
 
+        fun paperConsumablePathAvailable(): Boolean =
+            try {
+                Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                val supportedField = ModuleSwordBlocking::class.java.getDeclaredField("paperSupported")
+                supportedField.isAccessible = true
+                val adapterField = ModuleSwordBlocking::class.java.getDeclaredField("paperAdapter")
+                adapterField.isAccessible = true
+                supportedField.getBoolean(module) && adapterField.get(module) != null
+            } catch (_: Throwable) {
+                false
+            }
+
         suspend fun delayTicks(ticks: Long) {
             delay(ticks * 50L)
+        }
+
+        suspend fun TestScope.withPaperAnimationEnabled(
+            enabled: Boolean,
+            block: suspend TestScope.() -> Unit,
+        ) {
+            val original = runSync { ocm.config.get("sword-blocking.paper-animation") }
+            runSync {
+                ocm.config.set("sword-blocking.paper-animation", enabled)
+                ocm.saveConfig()
+                Config.reload()
+            }
+            try {
+                block()
+            } finally {
+                runSync {
+                    ocm.config.set("sword-blocking.paper-animation", original)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
+            }
         }
 
         suspend fun TestScope.withUsePermission(
@@ -192,6 +226,26 @@ class SwordBlockingIntegrationTest :
                 (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
                 // Legacy path injects shield; paper path keeps offhand intact
                 setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
+            }
+        }
+
+        "paper-animation config false forces legacy shield fallback on Paper" {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+            } else {
+                withPaperAnimationEnabled(enabled = false) {
+                    runSync {
+                        player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                        player.inventory.setItemInOffHand(ItemStack(Material.AIR))
+                    }
+
+                    rightClickWithMainHand()
+                    delayTicks(1)
+
+                    runSync {
+                        player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                    }
+                }
             }
         }
 
