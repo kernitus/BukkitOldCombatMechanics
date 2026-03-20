@@ -49,14 +49,14 @@ jobs:
     - name: Read game versions from gradle.properties
       run: |
         RAW=$(grep ^gameVersions gradle.properties | cut -d'=' -f2-)
-        # Convert "1.21, 1.20.6" -> "Minecraft 1.21:1.21,Minecraft 1.20.6:1.20.6" to disambiguate Bukkit versions
+        # Convert "1.21, 1.20.6" -> "1:1.21,1:1.20.6" to select Bukkit-compatible typeId 1 entries via the minecraft endpoint
         GAME_VERSIONS=$(echo "$RAW" | tr -d ' ' | awk -F',' '{
           out="";
           for (i=1; i<=NF; i++) {
             v=$i;
             if (v!= "") {
               if (out!= "") out=out ",";
-              out=out "Minecraft " v ":" v;
+              out=out "1:" v;
             }
           }
           print out;
@@ -69,7 +69,7 @@ jobs:
       with:
         token: ${{ secrets.DBO_UPLOAD_API_TOKEN }}
         project_id: '98233'
-        game_endpoint: 'bukkit'
+        game_endpoint: 'minecraft'
         file_path: './build/libs/OldCombatMechanics.jar'
         changelog: ${{ github.event.release.body }}
         changelog_type: 'markdown'
