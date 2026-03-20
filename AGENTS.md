@@ -145,6 +145,7 @@ This file captures repo-specific context discovered while working on this branch
 - `OldPotionEffectsIntegrationTest` now disables the module by moving `old-potion-effects` into `disabled_modules` (and removing it from modesets/always lists), then uses `Config.reload()`; the `withConfig` helper restores module lists/modesets and saves+reloads config to keep state consistent.
 - `FireAspectOverdamageIntegrationTest` includes afterburn-vs-environmental fire-tick checks for both player and zombie victims, with and without Protection IV armour (mirrors issue 707 MRE).
 - Release workflow (`.github/workflows/build-upload-release.yml`) now uploads Bukkit files via `itsmeow/curseforge-upload@v3` with `game_endpoint=bukkit`, reusing `DBO_UPLOAD_API_TOKEN`, and namespaces `GAME_VERSIONS` as `Minecraft <ver>:<ver>` to avoid Bukkit version ambiguity.
+- Release workflow also includes a temporary authenticated CurseForge debug step that queries both `bukkit` and `minecraft` version APIs and prints how each requested `gameVersions` entry resolves before upload.
 
 ## Test harness shortcuts (known non-realistic paths)
 - Several integration tests manually construct and fire Bukkit events rather than triggering real in-world actions:
