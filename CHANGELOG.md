@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.4.0...v2.5.0) (2026-03-23)
+
+
+### Features
+
+* per-item cooldown ([890c41f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/890c41f442ed2ba5570096856b206829c1159ea8)), closes [#856](https://github.com/kernitus/BukkitOldCombatMechanics/issues/856)
+
 ## [2.4.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.3.0...v2.4.0) (2026-03-08)
 
 
