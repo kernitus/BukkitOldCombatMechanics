@@ -85,6 +85,22 @@ disable-attack-cooldown:
   # This is to disable the attack cooldown
   # What to set the attack speed to. Default for 1.9 is 4, at least 40 is needed for no cooldown.
   generic-attack-speed: 40
+  # Optional per-material override for the item in the player's main hand.
+  # Materials not listed here fall back to generic-attack-speed.
+  # The bundled defaults keep most items at no cooldown, while trident, mace,
+  # and spears retain more vanilla-like attack speeds.
+  # Newer-version material keys that are unavailable on the current server are
+  # ignored safely.
+  held-item-attack-speeds:
+    TRIDENT: 1.1
+    MACE: 0.6
+    WOODEN_SPEAR: 1.54
+    GOLDEN_SPEAR: 1.05
+    STONE_SPEAR: 1.33
+    COPPER_SPEAR: 1.18
+    IRON_SPEAR: 1.05
+    DIAMOND_SPEAR: 0.95
+    NETHERITE_SPEAR: 0.87
 
 attack-frequency:
   # Allows changing the player invulnerability between hits
@@ -580,4 +596,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 72
+config-version: 73
