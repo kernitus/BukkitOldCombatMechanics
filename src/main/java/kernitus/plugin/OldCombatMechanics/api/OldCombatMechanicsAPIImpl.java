@@ -11,36 +11,36 @@ import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerModuleOverrides;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public final class OldCombatMechanicsAPIImpl implements OldCombatMechanicsAPI {
+public class OldCombatMechanicsAPIImpl implements OldCombatMechanicsAPI {
 
     private final OCMMain plugin;
 
-    public OldCombatMechanicsAPIImpl(@NotNull OCMMain plugin) {
+    public OldCombatMechanicsAPIImpl(OCMMain plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void forceEnableModuleForPlayer(@NotNull UUID playerId, @NotNull String moduleName) {
+    public void forceEnableModuleForPlayer(UUID playerId, String moduleName) {
         validateModuleName(moduleName);
         PlayerModuleOverrides.setOverride(playerId, moduleName, PlayerModuleOverride.FORCE_ENABLED);
         notifyPlayerStateChanged(playerId);
     }
 
     @Override
-    public void forceDisableModuleForPlayer(@NotNull UUID playerId, @NotNull String moduleName) {
+    public void forceDisableModuleForPlayer(UUID playerId, String moduleName) {
         validateModuleName(moduleName);
         PlayerModuleOverrides.setOverride(playerId, moduleName, PlayerModuleOverride.FORCE_DISABLED);
         notifyPlayerStateChanged(playerId);
     }
 
     @Override
-    public void clearModuleOverrideForPlayer(@NotNull UUID playerId, @NotNull String moduleName) {
+    public void clearModuleOverrideForPlayer(UUID playerId, String moduleName) {
         validateModuleName(moduleName);
         if (PlayerModuleOverrides.clearOverride(playerId, moduleName)) {
             notifyPlayerStateChanged(playerId);
@@ -48,42 +48,77 @@ public final class OldCombatMechanicsAPIImpl implements OldCombatMechanicsAPI {
     }
 
     @Override
-    public void clearAllModuleOverridesForPlayer(@NotNull UUID playerId) {
+    public void clearAllModuleOverridesForPlayer(UUID playerId) {
         if (PlayerModuleOverrides.clearAll(playerId)) {
             notifyPlayerStateChanged(playerId);
         }
     }
 
     @Override
-    public @NotNull PlayerModuleOverride getModuleOverrideForPlayer(@NotNull UUID playerId, @NotNull String moduleName) {
+    public PlayerModuleOverride getModuleOverrideForPlayer(UUID playerId, String moduleName) {
         validateModuleName(moduleName);
         return PlayerModuleOverrides.getOverride(playerId, moduleName);
     }
 
     @Override
-    public boolean isModuleEnabledForPlayer(@NotNull Player player, @NotNull String moduleName) {
-        return Objects.requireNonNull(getConfigurableModule(moduleName)).isEnabled(player);
+    public Map<String, PlayerModuleOverride> getModuleOverridesForPlayer(UUID playerId) {
+        return ModuleLoader.getConfigurableModuleNames().stream()
+                .collect(Collectors.toMap(
+                        name -> name,
+                        name -> PlayerModuleOverrides.getOverride(playerId, name)
+                ))
+                .entrySet().stream()
+                .filter(e -> e.getValue() != PlayerModuleOverride.DEFAULT)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
-    public @NotNull Set<String> getConfigurableModules() {
+    public void setModuleOverridesForPlayer(UUID playerId, Map<String, PlayerModuleOverride> overrides) {
+        overrides.keySet().forEach(this::validateModuleName);
+        overrides.forEach((moduleName, override) -> {
+            if (override == PlayerModuleOverride.DEFAULT) {
+                PlayerModuleOverrides.clearOverride(playerId, moduleName);
+            } else {
+                PlayerModuleOverrides.setOverride(playerId, moduleName, override);
+            }
+        });
+        notifyPlayerStateChanged(playerId);
+    }
+
+    @Override
+    public boolean isModuleEnabledForPlayer(UUID playerId, String moduleName) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null) {
+            return getModuleOverrideForPlayer(playerId, moduleName) == PlayerModuleOverride.FORCE_ENABLED;
+        }
+        return getConfigurableModule(moduleName).isEnabled(player);
+    }
+
+    @Override
+    public boolean hasAnyOverrideForPlayer(UUID playerId) {
+        return ModuleLoader.getConfigurableModuleNames().stream()
+                .anyMatch(name -> PlayerModuleOverrides.getOverride(playerId, name) != PlayerModuleOverride.DEFAULT);
+    }
+
+    @Override
+    public Set<String> getModuleNames() {
         return ModuleLoader.getConfigurableModuleNames();
     }
 
-    private @NotNull OCMModule getConfigurableModule(@NotNull String moduleName) {
-        final OCMModule module = ModuleLoader.getConfigurableModule(moduleName);
+    private OCMModule getConfigurableModule(String moduleName) {
+        OCMModule module = ModuleLoader.getConfigurableModule(moduleName);
         if (module == null) {
             throw new IllegalArgumentException("Unknown or non-configurable module: " + moduleName);
         }
         return module;
     }
 
-    private void validateModuleName(@NotNull String moduleName) {
+    private void validateModuleName(String moduleName) {
         getConfigurableModule(moduleName);
     }
 
-    private void notifyPlayerStateChanged(@NotNull UUID playerId) {
-        final Player onlinePlayer = Bukkit.getPlayer(playerId);
+    private void notifyPlayerStateChanged(UUID playerId) {
+        Player onlinePlayer = Bukkit.getPlayer(playerId);
         if (onlinePlayer == null) return;
 
         if (Bukkit.isPrimaryThread()) {
