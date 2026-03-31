@@ -61,7 +61,7 @@ class PlayerModuleOverrideApiIntegrationTest : FunSpec({
 
     afterSpec {
         runSync {
-            api.clearAllModuleOverridesForPlayer(player.uniqueId)
+            api.clearAllModuleOverridesForPlayer(player)
             fakePlayer.removePlayer()
         }
     }
@@ -78,13 +78,13 @@ class PlayerModuleOverrideApiIntegrationTest : FunSpec({
 
             val baseline = module.isEnabled(player)
 
-            api.forceEnableModuleForPlayer(player.uniqueId, moduleName)
+            api.forceEnableModuleForPlayer(player, moduleName)
             module.isEnabled(player) shouldBe true
 
-            api.forceDisableModuleForPlayer(player.uniqueId, moduleName)
+            api.forceDisableModuleForPlayer(player, moduleName)
             module.isEnabled(player) shouldBe false
 
-            api.clearModuleOverrideForPlayer(player.uniqueId, moduleName)
+            api.clearModuleOverrideForPlayer(player, moduleName)
             module.isEnabled(player) shouldBe baseline
         }
     }

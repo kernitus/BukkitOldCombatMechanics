@@ -69,7 +69,7 @@ public abstract class OCMModule implements Listener {
      * Whether this module should be enabled for this player given his current modeset
      */
     public boolean isEnabled(@NotNull HumanEntity humanEntity) {
-        final PlayerModuleOverride playerOverride = PlayerModuleOverrides.getOverride(humanEntity.getUniqueId(), configName);
+        final PlayerModuleOverride playerOverride = PlayerModuleOverrides.getOverride(humanEntity, configName);
         if (playerOverride == PlayerModuleOverride.FORCE_ENABLED) {
             return true;
         }

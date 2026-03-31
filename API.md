@@ -7,8 +7,8 @@ The OldCombatMechanics API allows other plugins to manage per-player module over
 ## Getting the API instance
 ```java
 OldCombatMechanicsAPI api = Bukkit.getServicesManager()
-    .getRegistration(OldCombatMechanicsAPI.class)
-    .getProvider();
+        .getRegistration(OldCombatMechanicsAPI.class)
+        .getProvider();
 ```
 
 > Always null-check the result — the API is only available if OldCombatMechanics is loaded and enabled.
@@ -33,13 +33,12 @@ All methods that accept a `moduleName` parameter expect a value from the set ret
 
 Forces a module on for a player, overriding the global config. Persists until explicitly cleared.
 ```java
-void forceEnableModuleForPlayer(UUID playerId, String moduleName)
 void forceEnableModuleForPlayer(Player player, String moduleName)
 ```
 
 **Throws:** `IllegalArgumentException` if `moduleName` is unknown.
 ```java
-api.forceEnableModuleForPlayer(player, "old-attack-speed");
+api.forceEnableModuleForPlayer(player, "attack-frequency");
 ```
 
 ---
@@ -48,13 +47,12 @@ api.forceEnableModuleForPlayer(player, "old-attack-speed");
 
 Forces a module off for a player, overriding the global config. Persists until explicitly cleared.
 ```java
-void forceDisableModuleForPlayer(UUID playerId, String moduleName)
 void forceDisableModuleForPlayer(Player player, String moduleName)
 ```
 
 **Throws:** `IllegalArgumentException` if `moduleName` is unknown.
 ```java
-api.forceDisableModuleForPlayer(player.getUniqueId(), "old-damage");
+api.forceDisableModuleForPlayer(player, "sword-blocking");
 ```
 
 ---
@@ -63,13 +61,12 @@ api.forceDisableModuleForPlayer(player.getUniqueId(), "old-damage");
 
 Clears the override for a single module, reverting the player to the global config for that module. No-op if no override is set.
 ```java
-void clearModuleOverrideForPlayer(UUID playerId, String moduleName)
 void clearModuleOverrideForPlayer(Player player, String moduleName)
 ```
 
 **Throws:** `IllegalArgumentException` if `moduleName` is unknown.
 ```java
-api.clearModuleOverrideForPlayer(player, "old-attack-speed");
+api.clearModuleOverrideForPlayer(player, "attack-frequency");
 ```
 
 ---
@@ -78,7 +75,6 @@ api.clearModuleOverrideForPlayer(player, "old-attack-speed");
 
 Clears all module overrides for a player at once, reverting them to the global config for every module. No-op if no overrides are set.
 ```java
-void clearAllModuleOverridesForPlayer(UUID playerId)
 void clearAllModuleOverridesForPlayer(Player player)
 ```
 ```java
@@ -91,13 +87,12 @@ api.clearAllModuleOverridesForPlayer(player);
 
 Returns the current override state for a single module for a player. Returns `PlayerModuleOverride.DEFAULT` if no override is set.
 ```java
-PlayerModuleOverride getModuleOverrideForPlayer(UUID playerId, String moduleName)
 PlayerModuleOverride getModuleOverrideForPlayer(Player player, String moduleName)
 ```
 
 **Throws:** `IllegalArgumentException` if `moduleName` is unknown.
 ```java
-PlayerModuleOverride override = api.getModuleOverrideForPlayer(player, "old-attack-speed");
+PlayerModuleOverride override = api.getModuleOverrideForPlayer(player, "sword-blocking");
 if (override == PlayerModuleOverride.FORCE_ENABLED) {
     player.sendMessage("Forced ON");
 } else if (override == PlayerModuleOverride.FORCE_DISABLED) {
@@ -113,7 +108,6 @@ if (override == PlayerModuleOverride.FORCE_ENABLED) {
 
 Returns all active overrides for a player as a map of module name to `PlayerModuleOverride`. Only modules with a non-`DEFAULT` override are included.
 ```java
-Map<String, PlayerModuleOverride> getModuleOverridesForPlayer(UUID playerId)
 Map<String, PlayerModuleOverride> getModuleOverridesForPlayer(Player player)
 ```
 ```java
@@ -129,16 +123,15 @@ overrides.forEach((module, override) ->
 
 Sets multiple module overrides for a player at once. Entries with `PlayerModuleOverride.DEFAULT` are treated as clears. All module names are validated before any state is changed.
 ```java
-void setModuleOverridesForPlayer(UUID playerId, Map<String, PlayerModuleOverride> overrides)
 void setModuleOverridesForPlayer(Player player, Map<String, PlayerModuleOverride> overrides)
 ```
 
 **Throws:** `IllegalArgumentException` if any module name is unknown.
 ```java
 Map<String, PlayerModuleOverride> overrides = new HashMap<>();
-overrides.put("old-attack-speed", PlayerModuleOverride.FORCE_ENABLED);
-overrides.put("old-damage",       PlayerModuleOverride.FORCE_ENABLED);
-overrides.put("old-knockback",    PlayerModuleOverride.FORCE_DISABLED);
+overrides.put("attack-frequency", PlayerModuleOverride.FORCE_ENABLED);
+overrides.put("sword-blocking",   PlayerModuleOverride.FORCE_ENABLED);
+overrides.put("disable-offhand",  PlayerModuleOverride.FORCE_DISABLED);
 api.setModuleOverridesForPlayer(player, overrides);
 ```
 
@@ -146,15 +139,14 @@ api.setModuleOverridesForPlayer(player, overrides);
 
 ### `isModuleEnabledForPlayer`
 
-Returns whether a module is effectively active for a player, accounting for both the global config and any per-player override. If the player is offline, falls back to checking the override state directly.
+Returns whether a module is effectively active for a player, accounting for both the global config and any per-player override.
 ```java
-boolean isModuleEnabledForPlayer(UUID playerId, String moduleName)
 boolean isModuleEnabledForPlayer(Player player, String moduleName)
 ```
 
 **Throws:** `IllegalArgumentException` if `moduleName` is unknown.
 ```java
-if (api.isModuleEnabledForPlayer(player, "old-attack-speed")) {
+if (api.isModuleEnabledForPlayer(player, "attack-frequency")) {
     // module is active for this player
 }
 ```
@@ -165,7 +157,6 @@ if (api.isModuleEnabledForPlayer(player, "old-attack-speed")) {
 
 Returns whether a player has any non-default override set.
 ```java
-boolean hasAnyOverrideForPlayer(UUID playerId)
 boolean hasAnyOverrideForPlayer(Player player)
 ```
 ```java
@@ -209,9 +200,9 @@ public class ArenaCombatManager {
     private static final Map<String, PlayerModuleOverride> ARENA_OVERRIDES;
     static {
         ARENA_OVERRIDES = new HashMap<>();
-        ARENA_OVERRIDES.put("old-attack-speed", PlayerModuleOverride.FORCE_ENABLED);
-        ARENA_OVERRIDES.put("old-damage",       PlayerModuleOverride.FORCE_ENABLED);
-        ARENA_OVERRIDES.put("old-knockback",    PlayerModuleOverride.FORCE_ENABLED);
+        ARENA_OVERRIDES.put("attack-frequency", PlayerModuleOverride.FORCE_ENABLED);
+        ARENA_OVERRIDES.put("sword-blocking",   PlayerModuleOverride.FORCE_ENABLED);
+        ARENA_OVERRIDES.put("disable-offhand",  PlayerModuleOverride.FORCE_ENABLED);
     }
 
     public ArenaCombatManager(OldCombatMechanicsAPI api) {
