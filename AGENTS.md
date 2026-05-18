@@ -70,6 +70,7 @@ This file captures repo-specific context discovered while working on this branch
 - run-paper plugin: 3.0.2
 - Hangar publish plugin: 0.1.4
 - Other deps updated (bstats, netty, BSON, XSeries, authlib, reflection-remapper, adventure).
+- XSeries is now 13.7.0 for MC/Paper 26.x version parsing support (#862).
 - PacketEvents is now used for packet interception (shaded and relocated in the main jar).
 - PacketEvents dependency moved to `2.11.2-SNAPSHOT` (CodeMC snapshots) for 1.21.11 support.
 - JSR-305 added for `javax.annotation.Nullable` (compileOnly).

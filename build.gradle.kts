@@ -113,7 +113,7 @@ dependencies {
     // PacketEvents
     implementation("com.github.retrooper:packetevents-spigot:2.12.1")
     // XSeries
-    implementation("com.github.cryptomorin:XSeries:13.6.0")
+    implementation("com.github.cryptomorin:XSeries:13.7.0")
 
     // For ingametesting
     // Mojang mappings for NMS
