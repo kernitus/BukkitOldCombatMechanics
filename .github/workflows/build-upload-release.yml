@@ -40,7 +40,7 @@ jobs:
         
     - name: Upload Artifact to GitHub Release
       if: ${{ github.event_name == 'release' }}
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         # The 'files' input takes a path to the asset(s) you want to upload.
         # Keep a stable filename for external download links.
