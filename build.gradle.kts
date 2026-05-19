@@ -280,6 +280,14 @@ fun requiredJavaVersion(version: String): Int {
     return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
 }
 
+fun supportsDamageTypeIntegrationDatapack(version: String): Boolean {
+    val (major, minor, patch) = parseMinecraftVersion(version)
+    if (major > 1) return true
+    if (major < 1) return false
+    if (minor > 21) return true
+    return minor == 21 && patch >= 11
+}
+
 data class KotestSummary(
     val specsPassed: Int?,
     val specsFailed: Int?,
@@ -480,6 +488,7 @@ for (version in integrationTestVersions) {
     val failuresFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-failures.txt")
     val vanillaCacheFile = runDir.resolve("cache/mojang_$version.jar")
     val logFile = layout.buildDirectory.file("integration-test-logs/$suffix.log")
+    val datapackSourceDir = layout.projectDirectory.dir("src/integrationTest/datapacks")
 
     val writePropsTask =
         tasks.register<WriteProperties>("writeProperties$suffix") {
@@ -570,6 +579,16 @@ for (version in integrationTestVersions) {
             pluginJars.from(configurations["integrationTestServerPlugins"])
 
             doFirst {
+                val damageTypeDatapackDir = runDir.resolve("world/datapacks/ocmtest-bypasses-cooldown")
+                if (supportsDamageTypeIntegrationDatapack(version)) {
+                    copy {
+                        from(datapackSourceDir)
+                        into(runDir.resolve("world/datapacks"))
+                    }
+                } else if (damageTypeDatapackDir.exists()) {
+                    delete(damageTypeDatapackDir)
+                }
+
                 val log = logFile.get().asFile
                 log.parentFile.mkdirs()
                 val stream = log.outputStream()
