@@ -8,7 +8,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 - Use British English spelling and phraseology at all times.
 - Do **not** use American English spelling or phraseology.
-- Do **not** open or read `build/integration-test-logs/*.log` unless the user explicitly asks for log inspection. Prefer compact console summaries and `plugins/OldCombatMechanicsTest/test-failures.txt`.
+- Root and user-facing agents must not open or read `build/integration-test-logs/*.log` directly. Log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested. Prefer compact console summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` first.
 - Never hard-code absolute filesystem paths in tests or production code; resolve locations relative to the repo root, plugin data folder, or server run directory.
 - Prefer feature detection over hard-coded Minecraft version gates because server implementations may backport APIs.
 - For NMS/reflection access, prefer the project `utilities.reflection.Reflector` helpers over ad-hoc reflection where practical.
@@ -62,7 +62,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 ## Integration test essentials
 
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
-- RunServer output is redirected to `build/integration-test-logs/<version>.log`; avoid reading those logs without explicit user approval.
+- RunServer output is redirected to `build/integration-test-logs/<version>.log`; root and user-facing agents must leave any needed log inspection to subagents after compact summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` prove insufficient.
 - Kotlin tests use Kotest 6 for Java 11+ server targets (`KotestRunner`, `KotestProjectConfig`).
 - Java 8 targets use `LegacyTestRunner`, currently a smoke-test path rather than the full Kotest suite.
 - Several integration tests intentionally use synthetic Bukkit events or direct module handler calls. Consult `integration-test-verification` before assuming a test represents a real in-world action.

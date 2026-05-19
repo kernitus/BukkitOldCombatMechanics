@@ -23,8 +23,8 @@ Use this skill for the repository's Paper-backed integration-test harness and fo
 
 ## Non-negotiable rules
 
-- Do not read `build/integration-test-logs/*.log` unless the user explicitly asks for log inspection.
-- Prefer compact console output and `plugins/OldCombatMechanicsTest/test-failures.txt` for failure triage.
+- Root and user-facing agents must not read `build/integration-test-logs/*.log` directly; log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested.
+- Prefer compact console output and `plugins/OldCombatMechanicsTest/test-failures.txt` first for failure triage.
 - New integration specs must be added to `KotestRunner.withClasses(...)`; autoscan is disabled.
 - Keep paths relative to the repository root, plugin data folder, or server run directory.
 - Avoid starting servers for documentation-only or opencode-config-only changes.
@@ -56,7 +56,7 @@ Example recommendation:
 ```text
 Run: ./gradlew integrationTest -PintegrationTestVersions=1.19.2,1.21.11
 Reason: covers modern Paper plus the PacketEvents path affected by the change.
-Avoid: opening build/integration-test-logs unless compact failure output is insufficient and the user approves.
+Avoid: opening build/integration-test-logs from a root or user-facing agent; use a subagent only when compact failure output is insufficient or log inspection is explicitly requested.
 ```
 
 ## Known shortcut patterns
