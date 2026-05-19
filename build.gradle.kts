@@ -101,7 +101,7 @@ configurations.named("integrationTestCompileClasspath") {
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.1.0")
     // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.130.Final")
+    compileOnly("io.netty:netty-all:4.2.13.Final")
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.11.6")
     // For BSON file serialisation
@@ -135,7 +135,7 @@ dependencies {
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
     add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
-    add("integrationTestCompileOnly", "io.netty:netty-all:4.1.130.Final")
+    add("integrationTestCompileOnly", "io.netty:netty-all:4.2.13.Final")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
