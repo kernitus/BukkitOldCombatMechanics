@@ -125,10 +125,10 @@ dependencies {
      */
 
     // Integration test dependencies
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.21")
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
