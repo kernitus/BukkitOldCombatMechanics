@@ -6,7 +6,7 @@
 package kernitus.plugin.OldCombatMechanics;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -36,8 +36,8 @@ public class OCMConfigHandler {
         final File backup = getFile("config-backup.yml");
         if (backup.exists()) backup.delete();
 
-        // Keeping YAML comments not available in lower versions
-        if (Reflector.versionIsNewerOrEqualTo(1, 18, 1) ||
+        // Only auto-upgrade when Bukkit can parse and save YAML comments without stripping the default config.
+        if (CompatibilityCapabilities.canPreserveYamlComments() ||
                 Config.getConfig().getBoolean("force-below-1-18-1-config-upgrade", false)
         ) {
             plugin.getLogger().warning("Config version does not match, upgrading old config");
@@ -54,8 +54,8 @@ public class OCMConfigHandler {
             plugin.saveResource(CONFIG_NAME, true);
 
             // Now, load the old values from the backup and the new config from the fresh file
-            final YamlConfiguration oldConfig = YamlConfiguration.loadConfiguration(backup);
-            final YamlConfiguration newConfig = YamlConfiguration.loadConfiguration(configFile);
+            final YamlConfiguration oldConfig = CompatibilityCapabilities.loadCommentPreservingYaml(backup);
+            final YamlConfiguration newConfig = CompatibilityCapabilities.loadCommentPreservingYaml(configFile);
 
             // Copy user's values for keys that still exist
             for (String key : newConfig.getKeys(true)) {

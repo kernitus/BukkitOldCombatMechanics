@@ -12,6 +12,7 @@ import io.kotest.core.test.TestScope
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
 import kernitus.plugin.OldCombatMechanics.module.ModuleChorusFruit
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -103,9 +104,8 @@ class ChorusFruitIntegrationTest : FunSpec({
         val feet = block
         val head = feet.getRelative(BlockFace.UP)
         val below = feet.getRelative(BlockFace.DOWN)
-        val legacy = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo(1, 13, 0)
-        val feetPassable = if (legacy) !feet.type.isSolid else feet.isPassable
-        val headPassable = if (legacy) !head.type.isSolid else head.isPassable
+        val feetPassable = CompatibilityCapabilities.isBlockPassable(feet)
+        val headPassable = CompatibilityCapabilities.isBlockPassable(head)
         return feetPassable && headPassable && below.type.isSolid
     }
 
