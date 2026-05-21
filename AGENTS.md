@@ -13,6 +13,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Prefer feature detection over hard-coded Minecraft version gates because server implementations may backport APIs.
 - For NMS/reflection access, prefer the project `utilities.reflection.Reflector` helpers over ad-hoc reflection where practical.
 - Reflection should be a compatibility fallback, not the first choice on hot paths.
+- For optional methods on already-present Bukkit types, especially in hot paths, prefer direct calls with cached `NoSuchMethodError` or narrow linkage fallbacks over reflective invocation. Use reflection when classes, parameter or return types, signatures, NMS shapes, or cross-version linkage would make direct calls unsafe.
 - Do not gate plugin behaviour on assumptions from one Paper/Spigot version without checking compatible API presence.
 - Agents must not disable, skip, weaken, or version-gate tests as a way to make validation pass. Fix failing tests at the root cause, or report the failure as a blocker unless the user explicitly approves a coverage reduction.
 

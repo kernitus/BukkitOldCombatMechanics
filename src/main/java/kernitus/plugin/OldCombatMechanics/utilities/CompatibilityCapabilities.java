@@ -23,23 +23,30 @@ import java.lang.reflect.Method;
  * Runtime API capability checks shared by compatibility-sensitive call sites.
  */
 public final class CompatibilityCapabilities {
-    private static final Method BLOCK_IS_PASSABLE_METHOD = findMethod(Block.class, "isPassable");
     private static final Method PLAYER_ATTACK_METHOD = findMethod(Player.class, "attack", Entity.class);
     private static final Method YAML_PARSE_COMMENTS_METHOD = findYamlParseCommentsMethod();
+    private static volatile boolean blockIsPassableAvailable = true;
 
     private CompatibilityCapabilities() {
     }
 
     public static boolean isBlockPassable(Block block) {
-        if (BLOCK_IS_PASSABLE_METHOD == null) {
-            return !block.getType().isSolid();
+        if (!blockIsPassableAvailable) {
+            return legacyBlockPassable(block);
         }
 
         try {
-            return Boolean.TRUE.equals(BLOCK_IS_PASSABLE_METHOD.invoke(block));
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodError ignored) {
-            return !block.getType().isSolid();
+            // Chorus-fruit safe-location checks may call passability several times per teleport attempt;
+            // direct calls with a cached linkage fallback avoid repeated reflective invocation on supported runtimes.
+            return block.isPassable();
+        } catch (IncompatibleClassChangeError ignored) {
+            blockIsPassableAvailable = false;
+            return legacyBlockPassable(block);
         }
+    }
+
+    private static boolean legacyBlockPassable(Block block) {
+        return !block.getType().isSolid();
     }
 
     public static boolean canPreserveYamlComments() {
