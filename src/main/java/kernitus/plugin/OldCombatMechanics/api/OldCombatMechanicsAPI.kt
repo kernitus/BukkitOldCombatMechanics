@@ -99,8 +99,10 @@ interface OldCombatMechanicsAPI {
     /**
      * Sets multiple module overrides for [player] at once.
      * Entries with [PlayerModuleOverride.DEFAULT] are treated as clears.
+     * All entries are validated before any override state changes are applied.
      *
-     * @throws IllegalArgumentException if any module name is unknown or non-configurable.
+     * @throws IllegalArgumentException if any module name is unknown, non-configurable, or null,
+     * or if any override value is null.
      */
     fun setModuleOverridesForPlayer(player: Player, overrides: Map<String, PlayerModuleOverride>)
 

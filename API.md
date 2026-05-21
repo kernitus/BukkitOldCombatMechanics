@@ -188,12 +188,12 @@ api.getModuleOverridesForPlayer(player).forEach { (module, override) ->
 
 ### `setModuleOverridesForPlayer`
 
-Sets multiple module overrides for a player at once. Entries with `PlayerModuleOverride.DEFAULT` are treated as clears.
+Sets multiple module overrides for a player at once. Entries with `PlayerModuleOverride.DEFAULT` are treated as clears. All module names and override values are validated before any override state changes, so an invalid entry leaves existing overrides unchanged.
 ```java
 void setModuleOverridesForPlayer(Player player, Map<String, PlayerModuleOverride> overrides)
 ```
 
-**Throws:** `IllegalArgumentException` if any module name is unknown or non-configurable.
+**Throws:** `IllegalArgumentException` if any module name is unknown or non-configurable, or if a Java caller supplies a null module name or override value.
 ```java
 Map<String, PlayerModuleOverride> overrides = new HashMap<>();
 overrides.put("attack-frequency", PlayerModuleOverride.FORCE_ENABLED);

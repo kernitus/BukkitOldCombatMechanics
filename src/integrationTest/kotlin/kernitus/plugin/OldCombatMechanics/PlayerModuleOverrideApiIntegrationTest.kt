@@ -8,8 +8,10 @@ package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverride
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
@@ -88,4 +90,35 @@ class PlayerModuleOverrideApiIntegrationTest : FunSpec({
             module.isEnabled(player) shouldBe baseline
         }
     }
+
+    test("Java null bulk override value is rejected before mutating overrides") {
+        runSync {
+            val moduleName = module.configName
+            api.forceEnableModuleForPlayer(player, moduleName)
+            api.getModuleOverrideForPlayer(player, moduleName) shouldBe PlayerModuleOverride.FORCE_ENABLED
+
+            shouldThrow<IllegalArgumentException> {
+                callJavaNullBulkOverrideValue(api, player, moduleName)
+            }
+
+            api.getModuleOverrideForPlayer(player, moduleName) shouldBe PlayerModuleOverride.FORCE_ENABLED
+            api.clearModuleOverrideForPlayer(player, moduleName)
+        }
+    }
 })
+
+private fun callJavaNullBulkOverrideValue(api: OldCombatMechanicsAPI, player: Player, moduleName: String) {
+    val helper = Class.forName("kernitus.plugin.OldCombatMechanics.PlayerModuleOverrideJavaInterop")
+    val method = helper.getDeclaredMethod(
+        "setOverridesWithNullValue",
+        OldCombatMechanicsAPI::class.java,
+        Player::class.java,
+        String::class.java,
+    )
+    method.isAccessible = true
+    try {
+        method.invoke(null, api, player, moduleName)
+    } catch (exception: java.lang.reflect.InvocationTargetException) {
+        throw exception.cause ?: exception
+    }
+}

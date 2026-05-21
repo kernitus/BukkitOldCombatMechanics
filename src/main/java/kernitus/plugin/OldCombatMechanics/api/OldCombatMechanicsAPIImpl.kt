@@ -50,8 +50,8 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
             .filter { (_, override) -> override != PlayerModuleOverride.DEFAULT }
 
     override fun setModuleOverridesForPlayer(player: Player, overrides: Map<String, PlayerModuleOverride>) {
-        overrides.keys.forEach(::validateModuleName)
-        overrides.forEach { (moduleName, override) ->
+        val validatedOverrides = validateModuleOverrides(overrides)
+        validatedOverrides.forEach { (moduleName, override) ->
             if (override == PlayerModuleOverride.DEFAULT) {
                 PlayerModuleOverrides.clearOverride(player, moduleName)
             } else {
@@ -77,6 +77,16 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
     private fun validateModuleName(moduleName: String) {
         getConfigurableModule(moduleName)
     }
+
+    private fun validateModuleOverrides(overrides: Map<String, PlayerModuleOverride>): List<Pair<String, PlayerModuleOverride>> =
+        (overrides as Map<*, *>).map { (moduleName, override) ->
+            val validatedModuleName = moduleName as? String
+                ?: throw IllegalArgumentException("Module override name must not be null")
+            val validatedOverride = override as? PlayerModuleOverride
+                ?: throw IllegalArgumentException("Module override value for $validatedModuleName must not be null")
+            validateModuleName(validatedModuleName)
+            validatedModuleName to validatedOverride
+        }
 
     private fun notifyPlayerStateChanged(player: Player) {
         if (Bukkit.isPrimaryThread()) {
