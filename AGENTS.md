@@ -38,6 +38,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Skill selection guide
 
+- **Mandatory trigger:** Use `dependabot-pr-review` for Dependabot PRs, dependency bumps, Gradle/Maven dependency updates, GitHub Actions version updates, dependency changelog/licence/release-note review, and dependency validation recommendations. Other skills remain relevant for deeper integration-test selection (`integration-test-verification`), compatibility strategy (`compatibility-strategy`), and release-readiness concerns (`release-readiness-review`).
 - **Mandatory trigger:** Use `integration-test-verification` for integration-test runs, matrix selection, compact failure triage, Kotlin integration test authoring, or `KotestRunner` registration questions. Do not use it for ordinary unit-free source edits with no test-harness impact.
 - **Mandatory trigger:** Use `compatibility-strategy` for Java 8 compatibility, Bukkit/Paper version differences, NMS/reflection, fake players, PacketEvents compatibility, feature detection, or legacy-server fallbacks. Do not use it for release notes or configuration-only routing.
 - **Mandatory trigger:** Use `module-config-change` for `config.yml`, module enablement, modesets, migrations, configurable module assignment, or per-module settings such as tool damage, attack cooldown, attack range, or sword blocking options. Do not use it for pure test execution or release publishing.
@@ -72,6 +73,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 ## Historical notes index
 
 - Detailed relocated history from the former long `AGENTS.md` lives in `.agents/skills/integration-test-verification/references/relocated-agents-notes.md`.
+- Dependabot, dependency bump, changelog, licence, JVM/classfile, GitHub Actions, and validation recommendation reviews: `dependabot-pr-review`.
 - Integration harness, fake-player, PacketEvents, and test-shortcut details: `integration-test-verification` and its references.
 - Compatibility, Java 8, reflection, NMS, and version strategy details: `compatibility-strategy`.
 - Module configuration, modeset, migration, and option-change details: `module-config-change`.

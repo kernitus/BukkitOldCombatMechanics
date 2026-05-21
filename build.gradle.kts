@@ -134,7 +134,6 @@ dependencies {
     add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.21")
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
-    add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
     add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
