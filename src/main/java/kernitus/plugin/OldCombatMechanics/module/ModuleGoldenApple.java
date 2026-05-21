@@ -203,6 +203,8 @@ public class ModuleGoldenApple extends OCMModule {
     }
 
     private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {
+        // Semantic gate: pre-1.13 Bukkit potion replacement needs the explicit override path to preserve the
+        // legacy apple-effect split; capability detection would change behaviour on compatible-looking APIs.
         final boolean forceOverride = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
                 .versionIsNewerOrEqualTo(1, 13, 0);
         for (PotionEffect newEffect : newEffects) {

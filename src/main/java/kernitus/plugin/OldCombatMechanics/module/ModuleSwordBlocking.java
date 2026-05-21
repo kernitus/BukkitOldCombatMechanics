@@ -49,6 +49,8 @@ public class ModuleSwordBlocking extends OCMModule {
     private java.lang.reflect.Method paperIsBlockingSword;
     private Method startUsingItemMethod;
     private boolean startUsingItemMethodResolved;
+    private Method playerIsHandRaisedMethod;
+    private boolean playerIsHandRaisedMethodResolved;
     private Method craftPlayerGetHandleMethod;
     private final Map<Class<?>, Method> nmsStartUsingItemCache = new HashMap<>();
     private Object minClientVersion;
@@ -69,15 +71,19 @@ public class ModuleSwordBlocking extends OCMModule {
     private final Map<EntityInteractionKey, Long> handledEntityInteractions = new HashMap<>();
     private long nextEntityInteractionPruneAtNanos;
     private static ModuleSwordBlocking INSTANCE;
+    private final boolean blockCanBuildEventHasPlayer;
 
-    // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
+    // Only used on legacy Bukkit APIs where BlockCanBuildEvent.getPlayer() is not available.
     private Map<Location, UUID> lastInteractedBlocks;
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
         INSTANCE = this;
 
-        if (!Reflector.versionIsNewerOrEqualTo(1, 13, 0)) {
+        blockCanBuildEventHasPlayer = hasBlockCanBuildEventPlayer();
+        if (!blockCanBuildEventHasPlayer) {
+            // Legacy semantic/API bridge: older servers expose failed block placement without the player, so keep
+            // the last clicked block to preserve old sword-blocking behaviour around placeable blocks.
             lastInteractedBlocks = new WeakHashMap<>();
         }
 
@@ -261,14 +267,22 @@ public class ModuleSwordBlocking extends OCMModule {
         }
     }
 
+    private boolean hasBlockCanBuildEventPlayer() {
+        try {
+            BlockCanBuildEvent.class.getMethod("getPlayer");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockCanBuildEvent e) {
         if (e.isBuildable()) return;
 
         Player player;
 
-        // If <1.13 get player who last interacted with block
-        if (lastInteractedBlocks != null) {
+        if (!blockCanBuildEventHasPlayer) {
             final Location blockLocation = e.getBlock().getLocation();
             final UUID uuid = lastInteractedBlocks.remove(blockLocation);
             player = Bukkit.getServer().getPlayer(uuid);
@@ -655,7 +669,29 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!hasShield(player.getInventory())) return false;
 
         return player.isBlocking() ||
-                (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
+                isHandRaisedIfSupported(player);
+    }
+
+    private boolean isHandRaisedIfSupported(Player player) {
+        if (player == null) return false;
+
+        if (!playerIsHandRaisedMethodResolved) {
+            playerIsHandRaisedMethodResolved = true;
+            try {
+                playerIsHandRaisedMethod = Player.class.getMethod("isHandRaised");
+            } catch (Throwable ignored) {
+                playerIsHandRaisedMethod = null;
+            }
+        }
+
+        final Method m = playerIsHandRaisedMethod;
+        if (m == null) return false;
+        try {
+            final Object result = m.invoke(player);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private boolean hasShield(PlayerInventory inventory) {
@@ -708,7 +744,7 @@ public class ModuleSwordBlocking extends OCMModule {
         } catch (Throwable ignored) {
         }
         // Fallback: may work on some combinations, but is not reliable for consumable-based sword blocking.
-        return player.isBlocking() || (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
+        return player.isBlocking() || isHandRaisedIfSupported(player);
     }
 
     /* ---------- Paper consumable component (animation-only) ---------- */
