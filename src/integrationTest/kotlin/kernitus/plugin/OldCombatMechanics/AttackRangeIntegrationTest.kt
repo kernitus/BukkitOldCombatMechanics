@@ -11,7 +11,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackRange
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -39,6 +38,7 @@ class AttackRangeIntegrationTest :
         val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
         val attackRangeModule = ModuleLoader.getModules().filterIsInstance<ModuleAttackRange>().firstOrNull()
+        val attackRangeApiAvailable = ModuleAttackRange.isAttackRangeApiAvailable()
         val applyMethod =
             attackRangeModule?.javaClass?.getDeclaredMethod("applyToHeld", Player::class.java)?.apply {
                 isAccessible = true
@@ -206,8 +206,8 @@ class AttackRangeIntegrationTest :
             }
         }
 
-        test("extended reach hits just outside vanilla range when module enabled (Paper 1.21.11+)") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        test("extended reach hits just outside vanilla range when module enabled (AttackRange API available)") {
+            if (!attackRangeApiAvailable) return@test
             if (attackRangeModule == null) return@test
 
             withModuleState(enabled = true, maxRange = 5.0, margin = 0.1) {
@@ -230,8 +230,8 @@ class AttackRangeIntegrationTest :
             }
         }
 
-        test("reach boost is removed after disabling while holding the same item (Paper 1.21.11+)") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        test("reach boost is removed after disabling while holding the same item (AttackRange API available)") {
+            if (!attackRangeApiAvailable) return@test
             if (attackRangeModule == null) return@test
 
             val actors = spawnActors()
@@ -262,8 +262,8 @@ class AttackRangeIntegrationTest :
             cleanup(actors)
         }
 
-        test("dropped items do not retain reach boost (Paper 1.21.11+)") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        test("dropped items do not retain reach boost (AttackRange API available)") {
+            if (!attackRangeApiAvailable) return@test
             if (attackRangeModule == null) return@test
 
             val actors = spawnActors()
@@ -306,8 +306,8 @@ class AttackRangeIntegrationTest :
             cleanup(actors)
         }
 
-        test("extended reach does not apply when module disabled; close swing still hits (Paper 1.21.11+)") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) return@test
+        test("extended reach does not apply when module disabled; close swing still hits (AttackRange API available)") {
+            if (!attackRangeApiAvailable) return@test
             if (attackRangeModule == null) return@test
 
             withModuleState(enabled = false) {
