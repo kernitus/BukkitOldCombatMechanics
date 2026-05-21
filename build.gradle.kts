@@ -99,7 +99,7 @@ configurations.named("integrationTestCompileClasspath") {
 }
 
 dependencies {
-    implementation("org.bstats:bstats-bukkit:3.1.0")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
     // Server-provided: intentionally pinned to the oldest supported runtime baseline
     // (Minecraft 1.9.4 / Netty 4.0.23.Final) so compile-only code cannot use newer Netty APIs unavailable on legacy servers.
     compileOnly("io.netty:netty-all:4.0.23.Final")
