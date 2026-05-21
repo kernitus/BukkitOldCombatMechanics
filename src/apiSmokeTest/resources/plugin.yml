@@ -1,0 +1,4 @@
+main: kernitus.plugin.OldCombatMechanics.apiSmokeTest.ApiSmokeTestPlugin
+name: OldCombatMechanicsApiSmokeTest
+version: 1.0.0
+depend: [OldCombatMechanics]

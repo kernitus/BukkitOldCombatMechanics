@@ -79,6 +79,12 @@ sourceSets {
         compileClasspath += main.get().output
         runtimeClasspath += output + main.get().output
     }
+    val apiSmokeTest by creating {
+        java.setSrcDirs(listOf("src/apiSmokeTest/java"))
+        resources.setSrcDirs(listOf("src/apiSmokeTest/resources"))
+        compileClasspath += main.get().output
+        runtimeClasspath += output + main.get().output
+    }
 }
 
 configurations {
@@ -95,6 +101,9 @@ configurations.named("compileClasspath") {
     attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
 }
 configurations.named("integrationTestCompileClasspath") {
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+}
+configurations.named("apiSmokeTestCompileClasspath") {
     attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
 }
 
@@ -136,6 +145,10 @@ dependencies {
     add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.1.130.Final")
+
+    // Java-only API smoke plugin dependencies
+    add("apiSmokeTestCompileOnly", sourceSets.main.get().output)
+    add("apiSmokeTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
@@ -219,6 +232,24 @@ val integrationTestJarTask =
             }
             from(if (file.isDirectory) file else zipTree(file))
         }
+
+        exclude("META-INF/*.SF")
+        exclude("META-INF/*.DSA")
+        exclude("META-INF/*.RSA")
+        exclude("META-INF/*.EC")
+        exclude("META-INF/*.MF")
+        exclude("module-info.class")
+        exclude("META-INF/versions/**/module-info.class")
+    }
+
+val apiSmokeTestJarTask =
+    tasks.register<Jar>("apiSmokeTestJar") {
+        archiveClassifier.set("api-smoke-test")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        dependsOn("apiSmokeTestClasses")
+
+        from(sourceSets["apiSmokeTest"].output)
 
         exclude("META-INF/*.SF")
         exclude("META-INF/*.DSA")
