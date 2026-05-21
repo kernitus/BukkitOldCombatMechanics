@@ -109,6 +109,8 @@ dependencies {
     implementation("org.mongodb:bson:5.6.2")
     // Spigot
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // JSR-305 annotations (javax.annotation.Nullable)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     // PacketEvents
@@ -159,6 +161,10 @@ tasks.named<Copy>("processResources") {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(8)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 val shadowJarTask =
