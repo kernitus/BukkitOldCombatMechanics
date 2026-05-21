@@ -11,23 +11,49 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
 public final class ApiSmokeTestPlugin extends JavaPlugin {
 
     private static final String KNOWN_CONFIGURABLE_MODULE = "sword-blocking";
 
     @Override
     public void onEnable() {
-        RegisteredServiceProvider<OldCombatMechanicsAPI> registration =
-            Bukkit.getServicesManager().getRegistration(OldCombatMechanicsAPI.class);
-        if (registration == null) {
-            throw new IllegalStateException("OldCombatMechanicsAPI service is not registered");
-        }
+        try {
+            RegisteredServiceProvider<OldCombatMechanicsAPI> registration =
+                Bukkit.getServicesManager().getRegistration(OldCombatMechanicsAPI.class);
+            if (registration == null) {
+                throw new IllegalStateException("OldCombatMechanicsAPI service is not registered");
+            }
 
-        OldCombatMechanicsAPI api = registration.getProvider();
-        if (!api.getModuleNames().contains(KNOWN_CONFIGURABLE_MODULE)) {
-            throw new IllegalStateException("OldCombatMechanicsAPI is missing known configurable module "
-                + KNOWN_CONFIGURABLE_MODULE);
+            OldCombatMechanicsAPI api = registration.getProvider();
+            if (!api.getModuleNames().contains(KNOWN_CONFIGURABLE_MODULE)) {
+                throw new IllegalStateException("OldCombatMechanicsAPI is missing known configurable module "
+                    + KNOWN_CONFIGURABLE_MODULE);
+            }
+            writeResult("PASS");
+        } catch (Throwable throwable) {
+            getLogger().severe("API smoke test failed: " + throwable.getMessage());
+            try {
+                writeResult("FAIL");
+            } catch (IOException ioException) {
+                getLogger().severe("Could not write API smoke test result: " + ioException.getMessage());
+            }
+        } finally {
+            Bukkit.getScheduler().runTask(this, Bukkit::shutdown);
         }
+    }
+
+    private void writeResult(String result) throws IOException {
+        File resultFile = new File(getDataFolder(), "test-results.txt");
+        File parent = resultFile.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+        Files.write(resultFile.toPath(), result.getBytes(StandardCharsets.UTF_8));
     }
 
     @SuppressWarnings("unused")
