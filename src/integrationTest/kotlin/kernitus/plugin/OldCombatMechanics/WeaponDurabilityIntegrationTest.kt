@@ -55,6 +55,17 @@ class WeaponDurabilityIntegrationTest :
             delay(ticks * 50L)
         }
 
+        suspend fun waitUntilTicks(
+            maxTicks: Long,
+            condition: () -> Boolean,
+        ): Boolean {
+            repeat(maxTicks.toInt()) {
+                if (condition()) return true
+                delayTicks(1)
+            }
+            return condition()
+        }
+
         fun scoreAttackMethodLocal(method: java.lang.reflect.Method): Int {
             var score = 0
             val name = method.name
@@ -524,10 +535,13 @@ class WeaponDurabilityIntegrationTest :
                         }
                         delayTicks(1)
                         appendDebug("expire:afterManualEvent allDamageEvents=${allDamageEventCount.get()}")
-                        runSync { attackNms(attacker, victim) }
-                        delayTicks(12)
-                        runSync { attackNms(attacker, victim) }
-                        delayTicks(2)
+                        repeat(2) { attempt ->
+                            runSync { attackNms(attacker, victim) }
+                            waitUntilTicks(4) { hitCount.get() > attempt }
+                            waitUntilTicks((victim.maximumNoDamageTicks + 2).toLong()) {
+                                !victim.isValid || victim.noDamageTicks <= 0
+                            }
+                        }
                     } finally {
                         runSync { HandlerList.unregisterAll(listener) }
                     }
@@ -558,7 +572,9 @@ class WeaponDurabilityIntegrationTest :
                     if (hits < 2) {
                         repeat(4) {
                             runSync { attackNms(attacker, victim) }
-                            delayTicks(2)
+                            waitUntilTicks((victim.maximumNoDamageTicks + 2).toLong()) {
+                                hitCount.get() >= 2 || !victim.isValid || victim.noDamageTicks <= 0
+                            }
                         }
                     }
 

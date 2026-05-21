@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities;
 import kernitus.plugin.OldCombatMechanics.utilities.compatibility.MythicMobsKnockbackBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -73,8 +74,7 @@ public class ModulePlayerKnockback extends OCMModule {
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false)
-                && Material.matchMaterial("NETHERITE_BOOTS") != null
-                && knockbackResistanceAttribute != null;
+                && CompatibilityCapabilities.isKnockbackResistanceAvailable();
     }
 
     @EventHandler

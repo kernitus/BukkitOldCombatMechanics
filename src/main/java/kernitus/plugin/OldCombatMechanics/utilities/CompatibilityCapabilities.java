@@ -5,9 +5,14 @@
  */
 package kernitus.plugin.OldCombatMechanics.utilities;
 
+import com.cryptomorin.xseries.XAttribute;
+import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +24,7 @@ import java.lang.reflect.Method;
  */
 public final class CompatibilityCapabilities {
     private static final Method BLOCK_IS_PASSABLE_METHOD = findMethod(Block.class, "isPassable");
+    private static final Method PLAYER_ATTACK_METHOD = findMethod(Player.class, "attack", Entity.class);
     private static final Method YAML_PARSE_COMMENTS_METHOD = findYamlParseCommentsMethod();
 
     private CompatibilityCapabilities() {
@@ -40,6 +46,28 @@ public final class CompatibilityCapabilities {
         return YAML_PARSE_COMMENTS_METHOD != null;
     }
 
+    public static boolean isMaterialAvailable(String materialName) {
+        return Material.matchMaterial(materialName) != null;
+    }
+
+    public static boolean isBukkitClassAvailable(String className) {
+        try {
+            Class.forName(className, false, CompatibilityCapabilities.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    public static boolean isPlayerAttackApiAvailable(Class<?> playerClass) {
+        return PLAYER_ATTACK_METHOD != null && findMethod(playerClass, "attack", Entity.class) != null;
+    }
+
+    public static boolean isKnockbackResistanceAvailable() {
+        final Attribute knockbackResistanceAttribute = XAttribute.KNOCKBACK_RESISTANCE.get();
+        return isMaterialAvailable("NETHERITE_BOOTS") && knockbackResistanceAttribute != null;
+    }
+
     public static YamlConfiguration loadCommentPreservingYaml(File file) {
         final YamlConfiguration configuration = new YamlConfiguration();
         if (YAML_PARSE_COMMENTS_METHOD != null) {
@@ -57,6 +85,14 @@ public final class CompatibilityCapabilities {
     private static Method findMethod(Class<?> clazz, String name) {
         try {
             return clazz.getMethod(name);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
+    }
+
+    private static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes) {
+        try {
+            return clazz.getMethod(name, parameterTypes);
         } catch (NoSuchMethodException ignored) {
             return null;
         }

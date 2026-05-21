@@ -282,9 +282,10 @@ fun requiresModernJava(version: String): Boolean {
 
 fun requiredJavaVersion(version: String): Int {
     if (needsLegacyVanillaJar(version)) return integrationTestJavaVersionLegacyPre13
+    if (requiresModernJava(version)) return integrationTestJavaVersionModern
     val (_, minor, _) = parseMinecraftVersion(version)
     if (minor <= 16) return integrationTestJavaVersionLegacy16
-    return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
+    return integrationTestJavaVersionLegacy
 }
 
 fun supportsDamageTypeIntegrationDatapack(version: String): Boolean {

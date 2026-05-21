@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics
 
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
@@ -19,12 +20,13 @@ fun attackCompat(attacker: Player, target: Entity) {
             method.parameterCount == 1 &&
             Entity::class.java.isAssignableFrom(method.parameterTypes[0])
     }
-    val useApiAttack = Reflector.versionIsNewerOrEqualTo(1, 12, 0)
-    if (useApiAttack && apiAttack != null) {
+    val useApiAttack = apiAttack != null && CompatibilityCapabilities.isPlayerAttackApiAvailable(attacker.javaClass)
+    if (useApiAttack) {
+        val attackMethod = apiAttack
         val beforeApiAttack = captureLivingAttackSignal(target)
         try {
-            val apiResult = apiAttack.invoke(attacker, target)
-            if (apiAttack.returnType == java.lang.Boolean.TYPE && apiResult == false) {
+            val apiResult = attackMethod.invoke(attacker, target)
+            if (attackMethod.returnType == java.lang.Boolean.TYPE && apiResult == false) {
                 // Explicit attack failure; continue with NMS candidates.
             } else if (beforeApiAttack == null) {
                 return
@@ -39,7 +41,7 @@ fun attackCompat(attacker: Player, target: Entity) {
         }
     }
 
-    // Fall back to NMS attack on legacy servers.
+    // Fall back to NMS attack when the Bukkit API attack path is absent or unobservable.
     val handleMethod = attacker.javaClass.methods.firstOrNull { method ->
         method.name == "getHandle" && method.parameterCount == 0
     } ?: error("Failed to resolve CraftPlayer#getHandle for ${attacker.javaClass.name}")
@@ -71,7 +73,7 @@ fun attackCompat(attacker: Player, target: Entity) {
         }
     }
 
-    // Legacy fallback: try Bukkit API even if we prefer NMS (helps 1.12 fake players)
+    // Last-resort fallback: try Bukkit API even when the capability probe was inconclusive.
     if (!useApiAttack && apiAttack != null) {
         runCatching { apiAttack.invoke(attacker, target); return }
     }
