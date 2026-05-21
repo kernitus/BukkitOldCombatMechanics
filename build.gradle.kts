@@ -108,7 +108,7 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.6.2")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // JSR-305 annotations (javax.annotation.Nullable)
@@ -136,7 +136,7 @@ dependencies {
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
-    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.0.23.Final")
 }
