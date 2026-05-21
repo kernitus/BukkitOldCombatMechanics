@@ -240,17 +240,20 @@ class AttackCooldownHeldItemIntegrationTest :
                     }
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (19.0 plusOrMinus 0.01)
 
+                    var currentPlayer = spawned.player
                     runSync {
-                        spawned.player.teleport(Location(otherWorld, 0.0, 100.0, 0.0, 0f, 0f))
-                        Bukkit.getPluginManager().callEvent(PlayerChangedWorldEvent(spawned.player, world))
+                        spawned.fake.teleport(Location(otherWorld, 0.0, 100.0, 0.0, 0f, 0f)) shouldBe true
+                        currentPlayer = spawned.fake.requireBukkitPlayer()
+                        Bukkit.getPluginManager().callEvent(PlayerChangedWorldEvent(currentPlayer, world))
                     }
-                    runSync { currentAttackSpeed(spawned.player) } shouldBe (4.0 plusOrMinus 0.01)
+                    runSync { currentAttackSpeed(currentPlayer) } shouldBe (4.0 plusOrMinus 0.01)
 
                     runSync {
-                        spawned.player.teleport(Location(world, 0.0, 100.0, 0.0, 0f, 0f))
-                        Bukkit.getPluginManager().callEvent(PlayerChangedWorldEvent(spawned.player, otherWorld))
+                        spawned.fake.teleport(Location(world, 0.0, 100.0, 0.0, 0f, 0f)) shouldBe true
+                        currentPlayer = spawned.fake.requireBukkitPlayer()
+                        Bukkit.getPluginManager().callEvent(PlayerChangedWorldEvent(currentPlayer, otherWorld))
                     }
-                    runSync { currentAttackSpeed(spawned.player) } shouldBe (19.0 plusOrMinus 0.01)
+                    runSync { currentAttackSpeed(currentPlayer) } shouldBe (19.0 plusOrMinus 0.01)
                 } finally {
                     cleanup(spawned)
                 }

@@ -25,6 +25,7 @@ Use this skill for the repository's Paper-backed integration-test harness and fo
 
 - Root and user-facing agents must not read `build/integration-test-logs/*.log` directly; log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested.
 - Prefer compact console output and `plugins/OldCombatMechanicsTest/test-failures.txt` first for failure triage.
+- Do not disable, skip, weaken, or version-gate tests as a way to make validation pass. Fix the root cause, or report the failure as a blocker unless the user explicitly approves a coverage reduction.
 - New integration specs must be added to `KotestRunner.withClasses(...)`; autoscan is disabled.
 - Keep paths relative to the repository root, plugin data folder, or server run directory.
 - Avoid starting servers for documentation-only or opencode-config-only changes.

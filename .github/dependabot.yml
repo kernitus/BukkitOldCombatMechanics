@@ -6,6 +6,8 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "io.netty:netty-all"
 
   - package-ecosystem: "github-actions"
     directory: "/"

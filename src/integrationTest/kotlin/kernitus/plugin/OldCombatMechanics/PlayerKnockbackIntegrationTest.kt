@@ -124,9 +124,16 @@ class PlayerKnockbackIntegrationTest : FunSpec({
         val pendingClass = ModulePlayerKnockback::class.java.declaredClasses
             .firstOrNull { it.simpleName == "PendingKnockback" }
             ?: error("PendingKnockback inner class not found")
-        val ctor = pendingClass.getDeclaredConstructor(Vector::class.java, Long::class.javaPrimitiveType)
+        val ctor = pendingClass.declaredConstructors.firstOrNull { constructor ->
+            val parameterTypes = constructor.parameterTypes.toList()
+            parameterTypes == listOf(Vector::class.java, UUID::class.java, Long::class.javaPrimitiveType) ||
+                parameterTypes == listOf(Vector::class.java, Long::class.javaPrimitiveType)
+        } ?: error("No supported PendingKnockback constructor found")
         ctor.isAccessible = true
-        val pending = ctor.newInstance(vector, Long.MAX_VALUE)
+        val pending = when (ctor.parameterTypes.size) {
+            3 -> ctor.newInstance(vector, attacker.uniqueId, Long.MAX_VALUE)
+            else -> ctor.newInstance(vector, Long.MAX_VALUE)
+        }
         pendingKnockbackMap()[uuid] = pending
     }
 
