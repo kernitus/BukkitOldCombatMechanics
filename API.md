@@ -1,29 +1,60 @@
 # OldCombatMechanics API
 
-The OldCombatMechanics API allows other plugins to manage per-player module overrides at runtime, without touching the global `config.yml`. Overrides persist across sessions and are resolved on top of the global configuration when determining a module's effective state for a player.
+The OldCombatMechanics API allows other plugins to manage per-player module overrides at runtime, without touching the global `config.yml`. Overrides are online-session-only, in-memory state for currently online players. They are cleared when the player quits, when OldCombatMechanics is disabled, or when a plugin explicitly clears them through the API.
+
+Overrides are shared runtime state. If multiple plugins set an override for the same player and module, the last write wins. Any plugin that clears that override clears the same shared state for that player and module.
 
 ---
 
 ## Getting the API instance
+
+Always null-check the Bukkit service registration before using the API. The service is only available while OldCombatMechanics is loaded and enabled.
+
 ```java
-OldCombatMechanicsAPI api = Bukkit.getServicesManager()
-        .getRegistration(OldCombatMechanicsAPI.class)
-        .getProvider();
+RegisteredServiceProvider<OldCombatMechanicsAPI> registration = Bukkit.getServicesManager()
+        .getRegistration(OldCombatMechanicsAPI.class);
+if (registration == null) {
+    return;
+}
+
+OldCombatMechanicsAPI api = registration.getProvider();
 ```
 
-> Always null-check the result — the API is only available if OldCombatMechanics is loaded and enabled.
+Kotlin callers should use the same service lookup and null-check the registration:
+
+```kotlin
+val api = Bukkit.getServicesManager()
+    .getRegistration(OldCombatMechanicsAPI::class.java)
+    ?.provider
+    ?: return
+```
 
 ---
 
-## Thread safety
+## Threading
 
-All methods are thread-safe. State-change notifications are automatically dispatched to the main thread when called from an async context.
+Call API methods from the Bukkit main server thread. The current contract does not guarantee async-safe access to Bukkit `Player` state, module state-change notifications, or future implementation details unless a future method explicitly documents different threading behaviour.
 
 ---
 
 ## Module names
 
-All methods that accept a `moduleName` parameter expect a value from the set returned by [`getModuleNames()`](#getmodulenames). Passing an unknown name throws `IllegalArgumentException`.
+All methods that accept a `moduleName` parameter expect a value from the set returned by [`getModuleNames()`](#getmodulenames). Only configurable modules are valid. Internal modules, such as listener/helper modules, cannot be overridden and are not returned by `getModuleNames()`.
+
+Passing an unknown or non-configurable module name throws `IllegalArgumentException`.
+
+---
+
+## Effective module precedence
+
+When OldCombatMechanics determines whether a configurable module is enabled for a player, it resolves state in this order:
+
+1. per-player `FORCE_ENABLED` or `FORCE_DISABLED` override;
+2. configured disabled modules;
+3. configured always-enabled modules;
+4. player modeset and world configuration.
+
+`PlayerModuleOverride.DEFAULT` means no per-player override is set, so the configured rules above continue to decide the module state.
 
 ---
 
@@ -31,49 +62,64 @@ All methods that accept a `moduleName` parameter expect a value from the set ret
 
 ### `forceEnableModuleForPlayer`
 
-Forces a module on for a player, overriding the global config. Persists until explicitly cleared.
+Forces a configurable module on for an online player until the override is cleared, the player quits, or OldCombatMechanics is disabled.
 ```java
 void forceEnableModuleForPlayer(Player player, String moduleName)
 ```
 
-**Throws:** `IllegalArgumentException` if `moduleName` is unknown.
+**Throws:** `IllegalArgumentException` if `moduleName` is unknown or non-configurable.
 ```java
 api.forceEnableModuleForPlayer(player, "attack-frequency");
+```
+
+Kotlin:
+```kotlin
+api.forceEnableModuleForPlayer(player, "attack-frequency")
 ```
 
 ---
 
 ### `forceDisableModuleForPlayer`
 
-Forces a module off for a player, overriding the global config. Persists until explicitly cleared.
+Forces a configurable module off for an online player until the override is cleared, the player quits, or OldCombatMechanics is disabled.
 ```java
 void forceDisableModuleForPlayer(Player player, String moduleName)
 ```
 
-**Throws:** `IllegalArgumentException` if `moduleName` is unknown.
+**Throws:** `IllegalArgumentException` if `moduleName` is unknown or non-configurable.
 ```java
 api.forceDisableModuleForPlayer(player, "sword-blocking");
+```
+
+Kotlin:
+```kotlin
+api.forceDisableModuleForPlayer(player, "sword-blocking")
 ```
 
 ---
 
 ### `clearModuleOverrideForPlayer`
 
-Clears the override for a single module, reverting the player to the global config for that module. No-op if no override is set.
+Clears the override for a single configurable module, reverting the player to configured module behaviour. No-op if no override is set.
 ```java
 void clearModuleOverrideForPlayer(Player player, String moduleName)
 ```
 
-**Throws:** `IllegalArgumentException` if `moduleName` is unknown.
+**Throws:** `IllegalArgumentException` if `moduleName` is unknown or non-configurable.
 ```java
 api.clearModuleOverrideForPlayer(player, "attack-frequency");
+```
+
+Kotlin:
+```kotlin
+api.clearModuleOverrideForPlayer(player, "attack-frequency")
 ```
 
 ---
 
 ### `clearAllModuleOverridesForPlayer`
 
-Clears all module overrides for a player at once, reverting them to the global config for every module. No-op if no overrides are set.
+Clears all module overrides for a player at once, reverting them to configured module behaviour for every module. No-op if no overrides are set.
 ```java
 void clearAllModuleOverridesForPlayer(Player player)
 ```
@@ -81,24 +127,38 @@ void clearAllModuleOverridesForPlayer(Player player)
 api.clearAllModuleOverridesForPlayer(player);
 ```
 
+Kotlin:
+```kotlin
+api.clearAllModuleOverridesForPlayer(player)
+```
+
 ---
 
 ### `getModuleOverrideForPlayer`
 
-Returns the current override state for a single module for a player. Returns `PlayerModuleOverride.DEFAULT` if no override is set.
+Returns the current override state for a single configurable module for a player. Returns `PlayerModuleOverride.DEFAULT` if no override is set.
 ```java
 PlayerModuleOverride getModuleOverrideForPlayer(Player player, String moduleName)
 ```
 
-**Throws:** `IllegalArgumentException` if `moduleName` is unknown.
+**Throws:** `IllegalArgumentException` if `moduleName` is unknown or non-configurable.
 ```java
 PlayerModuleOverride override = api.getModuleOverrideForPlayer(player, "sword-blocking");
 if (override == PlayerModuleOverride.FORCE_ENABLED) {
-    player.sendMessage("Forced ON");
+    player.sendMessage("Forced on");
 } else if (override == PlayerModuleOverride.FORCE_DISABLED) {
-    player.sendMessage("Forced OFF");
+    player.sendMessage("Forced off");
 } else {
-    player.sendMessage("Following global config");
+    player.sendMessage("Following configured rules");
+}
+```
+
+Kotlin:
+```kotlin
+when (api.getModuleOverrideForPlayer(player, "sword-blocking")) {
+    PlayerModuleOverride.FORCE_ENABLED -> player.sendMessage("Forced on")
+    PlayerModuleOverride.FORCE_DISABLED -> player.sendMessage("Forced off")
+    PlayerModuleOverride.DEFAULT -> player.sendMessage("Following configured rules")
 }
 ```
 
@@ -117,35 +177,61 @@ overrides.forEach((module, override) ->
 );
 ```
 
+Kotlin:
+```kotlin
+api.getModuleOverridesForPlayer(player).forEach { (module, override) ->
+    player.sendMessage("$module: $override")
+}
+```
+
 ---
 
 ### `setModuleOverridesForPlayer`
 
-Sets multiple module overrides for a player at once. Entries with `PlayerModuleOverride.DEFAULT` are treated as clears. All module names are validated before any state is changed.
+Sets multiple module overrides for a player at once. Entries with `PlayerModuleOverride.DEFAULT` are treated as clears.
 ```java
 void setModuleOverridesForPlayer(Player player, Map<String, PlayerModuleOverride> overrides)
 ```
 
-**Throws:** `IllegalArgumentException` if any module name is unknown.
+**Throws:** `IllegalArgumentException` if any module name is unknown or non-configurable.
 ```java
 Map<String, PlayerModuleOverride> overrides = new HashMap<>();
 overrides.put("attack-frequency", PlayerModuleOverride.FORCE_ENABLED);
-overrides.put("sword-blocking",   PlayerModuleOverride.FORCE_ENABLED);
-overrides.put("disable-offhand",  PlayerModuleOverride.FORCE_DISABLED);
+overrides.put("sword-blocking", PlayerModuleOverride.FORCE_ENABLED);
+overrides.put("disable-offhand", PlayerModuleOverride.FORCE_DISABLED);
 api.setModuleOverridesForPlayer(player, overrides);
+```
+
+Kotlin:
+```kotlin
+api.setModuleOverridesForPlayer(
+    player,
+    mapOf(
+        "attack-frequency" to PlayerModuleOverride.FORCE_ENABLED,
+        "sword-blocking" to PlayerModuleOverride.FORCE_ENABLED,
+        "disable-offhand" to PlayerModuleOverride.FORCE_DISABLED,
+    ),
+)
 ```
 
 ---
 
 ### `isModuleEnabledForPlayer`
 
-Returns whether a module is effectively active for a player, accounting for both the global config and any per-player override.
+Returns whether a configurable module is effectively active for a player, accounting for configured rules and any per-player override.
 ```java
 boolean isModuleEnabledForPlayer(Player player, String moduleName)
 ```
 
-**Throws:** `IllegalArgumentException` if `moduleName` is unknown.
+**Throws:** `IllegalArgumentException` if `moduleName` is unknown or non-configurable.
 ```java
+if (api.isModuleEnabledForPlayer(player, "attack-frequency")) {
+    // module is active for this player
+}
+```
+
+Kotlin:
+```kotlin
 if (api.isModuleEnabledForPlayer(player, "attack-frequency")) {
     // module is active for this player
 }
@@ -165,11 +251,18 @@ if (api.hasAnyOverrideForPlayer(player)) {
 }
 ```
 
+Kotlin:
+```kotlin
+if (api.hasAnyOverrideForPlayer(player)) {
+    player.sendMessage("You have active overrides.")
+}
+```
+
 ---
 
 ### `getModuleNames`
 
-Returns the names of all modules that support per-player overrides. Only names in this set are valid inputs for the other API methods.
+Returns the names of all configurable modules that support per-player overrides. Only names in this set are valid inputs for the other API methods.
 ```java
 Set<String> getModuleNames()
 ```
@@ -179,19 +272,26 @@ for (String name : api.getModuleNames()) {
 }
 ```
 
+Kotlin:
+```kotlin
+api.getModuleNames().forEach { name ->
+    player.sendMessage(name)
+}
+```
+
 ---
 
 ## `PlayerModuleOverride`
 
-| Value            | Description                                            |
-|------------------|--------------------------------------------------------|
-| `DEFAULT`        | No override set; the player follows the global config. |
-| `FORCE_ENABLED`  | Module is forced on regardless of the global config.   |
-| `FORCE_DISABLED` | Module is forced off regardless of the global config.  |
+| Value            | Description                                                                            |
+|------------------|----------------------------------------------------------------------------------------|
+| `DEFAULT`        | No per-player override; the player follows configured module and modeset rules.        |
+| `FORCE_ENABLED`  | Module is forced on for the player before configured disabled modules are considered.  |
+| `FORCE_DISABLED` | Module is forced off for the player before configured enabled modules are considered.  |
 
 ---
 
-## Example
+## Java example
 ```java
 public class ArenaCombatManager {
 
@@ -201,8 +301,8 @@ public class ArenaCombatManager {
     static {
         ARENA_OVERRIDES = new HashMap<>();
         ARENA_OVERRIDES.put("attack-frequency", PlayerModuleOverride.FORCE_ENABLED);
-        ARENA_OVERRIDES.put("sword-blocking",   PlayerModuleOverride.FORCE_ENABLED);
-        ARENA_OVERRIDES.put("disable-offhand",  PlayerModuleOverride.FORCE_ENABLED);
+        ARENA_OVERRIDES.put("sword-blocking", PlayerModuleOverride.FORCE_ENABLED);
+        ARENA_OVERRIDES.put("disable-offhand", PlayerModuleOverride.FORCE_ENABLED);
     }
 
     public ArenaCombatManager(OldCombatMechanicsAPI api) {
@@ -215,6 +315,26 @@ public class ArenaCombatManager {
 
     public void onPlayerLeaveArena(Player player) {
         api.clearAllModuleOverridesForPlayer(player);
+    }
+}
+```
+
+## Kotlin example
+```kotlin
+class ArenaCombatManager(private val api: OldCombatMechanicsAPI) {
+
+    private val arenaOverrides = mapOf(
+        "attack-frequency" to PlayerModuleOverride.FORCE_ENABLED,
+        "sword-blocking" to PlayerModuleOverride.FORCE_ENABLED,
+        "disable-offhand" to PlayerModuleOverride.FORCE_ENABLED,
+    )
+
+    fun onPlayerJoinArena(player: Player) {
+        api.setModuleOverridesForPlayer(player, arenaOverrides)
+    }
+
+    fun onPlayerLeaveArena(player: Player) {
+        api.clearAllModuleOverridesForPlayer(player)
     }
 }
 ```
