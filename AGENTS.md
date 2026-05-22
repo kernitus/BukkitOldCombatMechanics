@@ -8,6 +8,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 - Use British English spelling and phraseology at all times.
 - Do **not** use American English spelling or phraseology.
+- Commits should be subject-only conventional commits unless the user explicitly asks for a body.
 - Root and user-facing agents must not open or read `build/integration-test-logs/*.log` directly. Log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested. Prefer compact console summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` first.
 - Never hard-code absolute filesystem paths in tests or production code; resolve locations relative to the repo root, plugin data folder, or server run directory.
 - Prefer feature detection over hard-coded Minecraft version gates because server implementations may backport APIs.
