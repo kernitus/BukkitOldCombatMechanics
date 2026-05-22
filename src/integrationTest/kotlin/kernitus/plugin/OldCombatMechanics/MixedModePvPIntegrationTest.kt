@@ -14,6 +14,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
+import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
@@ -24,6 +25,7 @@ import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.EnumMap
@@ -40,6 +42,11 @@ class MixedModePvPIntegrationTest :
                 .getModules()
                 .filterIsInstance<ModuleOldArmourStrength>()
                 .firstOrNull() ?: error("ModuleOldArmourStrength not registered")
+        val shieldDamageReductionModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleShieldDamageReduction>()
+                .firstOrNull() ?: error("ModuleShieldDamageReduction not registered")
 
         lateinit var attacker: Player
         lateinit var defender: Player
@@ -116,6 +123,7 @@ class MixedModePvPIntegrationTest :
             Config.reload()
             ModuleLoader.toggleModules()
             oldArmourStrengthModule.reload()
+            shieldDamageReductionModule.reload()
         }
 
         fun applyMixedModeConfig(moduleUnderTest: String) {
@@ -195,6 +203,58 @@ class MixedModePvPIntegrationTest :
             )
         }
 
+        @Suppress("DEPRECATION")
+        fun createShieldBlockedPvPDamageEvent(baseDamage: Double): EntityDamageByEntityEvent {
+            val modifiers =
+                EnumMap<EntityDamageEvent.DamageModifier, Double>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers[EntityDamageEvent.DamageModifier.BASE] = baseDamage
+            modifiers[EntityDamageEvent.DamageModifier.HARD_HAT] = 0.0
+            modifiers[EntityDamageEvent.DamageModifier.BLOCKING] = -baseDamage
+            modifiers[EntityDamageEvent.DamageModifier.ARMOR] = 0.0
+            modifiers[EntityDamageEvent.DamageModifier.MAGIC] = 0.0
+
+            val identity =
+                object : Function<Double, Double> {
+                    override fun apply(input: Double): Double = input
+                }
+            val modifierFunctions =
+                EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers.keys.forEach { modifierFunctions[it] = identity }
+
+            return EntityDamageByEntityEvent(
+                attacker,
+                defender,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                modifiers,
+                modifierFunctions
+            )
+        }
+
+        fun createItemDamageEvent(
+            player: Player,
+            item: ItemStack,
+            damage: Int
+        ): PlayerItemDamageEvent {
+            val constructor =
+                PlayerItemDamageEvent::class.java.constructors.firstOrNull { candidate ->
+                    val params = candidate.parameterTypes
+                    params.size == 4 &&
+                        Player::class.java.isAssignableFrom(params[0]) &&
+                        ItemStack::class.java.isAssignableFrom(params[1]) &&
+                        params[2] == Int::class.javaPrimitiveType &&
+                        params[3] == Int::class.javaPrimitiveType
+                }
+            return if (constructor != null) {
+                constructor.newInstance(player, item, damage, damage) as PlayerItemDamageEvent
+            } else {
+                PlayerItemDamageEvent(player, item, damage)
+            }
+        }
+
         beforeSpec {
             runSync {
                 val world = checkNotNull(Bukkit.getServer().getWorld("world"))
@@ -267,6 +327,67 @@ class MixedModePvPIntegrationTest :
                         event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
                         event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
                         event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                    }
+                }
+            }
+        }
+
+        context("shield damage reduction direct PvP") {
+            test("shield damage reduction keeps vanilla blocking when only the attacker is old-mode") {
+                withMixedModeConfig("shield-damage-reduction") {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+
+                        val event = createShieldBlockedPvPDamageEvent(baseDamage = 20.0)
+
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.isCancelled shouldBe false
+                        event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) shouldBe (-20.0 plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+                    }
+                }
+            }
+
+            test(
+                "shield damage reduction uses old shield maths and armour suppression when only the defender is old-mode"
+            ) {
+                withMixedModeConfig("shield-damage-reduction") {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+                        val originalAmount =
+                            ocm.config.get("shield-damage-reduction.generalDamageReductionAmount")
+                        val originalPercentage =
+                            ocm.config.get("shield-damage-reduction.generalDamageReductionPercentage")
+                        ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 0)
+                        ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 100)
+                        shieldDamageReductionModule.reload()
+
+                        try {
+                            val event = createShieldBlockedPvPDamageEvent(baseDamage = 20.0)
+
+                            Bukkit.getPluginManager().callEvent(event)
+
+                            event.isCancelled shouldBe false
+                            event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) shouldBe
+                                (-20.0 plusOrMinus 0.0001)
+                            event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+
+                            val chestplate = checkNotNull(defender.inventory.chestplate)
+                            val itemDamageEvent = createItemDamageEvent(defender, chestplate, 1)
+                            Bukkit.getPluginManager().callEvent(itemDamageEvent)
+
+                            itemDamageEvent.isCancelled shouldBe true
+                        } finally {
+                            ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", originalAmount)
+                            ocm.config.set(
+                                "shield-damage-reduction.generalDamageReductionPercentage",
+                                originalPercentage
+                            )
+                            shieldDamageReductionModule.reload()
+                        }
                     }
                 }
             }

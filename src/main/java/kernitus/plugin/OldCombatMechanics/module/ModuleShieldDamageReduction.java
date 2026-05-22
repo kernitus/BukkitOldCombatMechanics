@@ -82,7 +82,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
         final Player player = (Player) entity;
 
-        if (!isEnabled(e.getDamager(), player)) return;
+        if (!isEnabled(player)) return;
 
         // Paper sword blocking sets the BLOCKING modifier to emulate 1.8 sword blocking. This module is for
         // shield blocking only; do not double-apply a second reduction when the player is blocking with a sword.
