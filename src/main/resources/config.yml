@@ -57,15 +57,16 @@ modesets:
     - "old-golden-apples"
 
 worlds:
-  # These are the modesets available in each world.
-  # If player has no modeset when moving worlds they'll be assigned first mode in list,
-  # unless the mode from the world they are coming from is also available in the new world.
-  # Worlds not specified below will have all modesets available.
-  world: [ "old", "new" ]
-  world_nether: [ "old", "new" ]
-  world_the_end: [ "old", "new" ]
-  # old_world: ["old"]
-  # brave_new_world: ["new"]
+  # Controls which modesets are allowed in each world.
+  # __default__ is used for worlds not listed by name.
+  # The first modeset in each list is the default for players in that world.
+  # If you create a new modeset, add it to __default__ or to each world where it should be available.
+  __default__: [ "old", "new" ]
+  # world: [ "old", "new" ]
+  # world_nether: [ "old", "new" ]
+  # world_the_end: [ "old", "new" ]
+  # old_world: [ "old" ]
+  # brave_new_world: [ "new" ]
 
 mode-messages:
   # Messages used when changing player mode
