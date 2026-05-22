@@ -17,7 +17,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
@@ -38,11 +37,9 @@ public class OCMCommandHandler implements CommandExecutor {
     }
 
     private void help(OCMMain plugin, CommandSender sender) {
-        final PluginDescriptionFile description = plugin.getDescription();
-
         Messenger.sendNoPrefix(sender, ChatColor.DARK_GRAY + Messenger.HORIZONTAL_BAR);
         Messenger.sendNoPrefix(sender, "&6&lOldCombatMechanics&e by &ckernitus&e and &cRayzr522&e version &6%s",
-                description.getVersion());
+                plugin.getDisplayVersion());
 
         if (checkPermissions(sender, Subcommand.reload))
             Messenger.sendNoPrefix(sender, "&eYou can use &c/ocm reload&e to reload the config file");
