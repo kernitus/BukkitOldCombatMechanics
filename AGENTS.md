@@ -48,6 +48,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - **Mandatory trigger:** Use `integration-test-verification` for integration-test runs, matrix selection, compact failure triage, Kotlin integration test authoring, or `KotestRunner` registration questions. Do not use it for ordinary unit-free source edits with no test-harness impact.
 - **Mandatory trigger:** Use `compatibility-strategy` for Java 8 compatibility, Bukkit/Paper version differences, NMS/reflection, fake players, PacketEvents compatibility, feature detection, or legacy-server fallbacks. Do not use it for release notes or configuration-only routing.
 - **Mandatory trigger:** Use `module-config-change` for `config.yml`, module enablement, modesets, migrations, configurable module assignment, or per-module settings such as tool damage, attack cooldown, attack range, or sword blocking options. Do not use it for pure test execution or release publishing.
+- **Mandatory trigger:** Use `commit-preparation` for preparing commits, pre-commit hooks, Spotless, formatting or linting, validation before commit, staging files, and conventional commit messages. Do not use it for implementation design or PR prose unless commit readiness is also in scope.
 - **Mandatory trigger:** Use `release-readiness-review` for GitHub release, Hangar, CurseForge/BukkitDev, licence, workflow, supported-version, or release asset checks. Do not use it for feature implementation unless the change affects release packaging.
 - **Mandatory trigger:** Use `pr-draft-summary` when drafting PR descriptions, change summaries, reviewer notes, or risk/test sections. Do not use it while still deciding implementation strategy.
 
@@ -84,6 +85,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Integration harness, fake-player, PacketEvents, and test-shortcut details: `integration-test-verification` and its references.
 - Compatibility, Java 8, reflection, NMS, and version strategy details: `compatibility-strategy`.
 - Module configuration, modeset, migration, and option-change details: `module-config-change`.
+- Commit preparation, pre-commit hooks, Spotless, staging, validation-before-commit, and conventional commit details: `commit-preparation`.
 - Publishing, release workflow, licence, and asset notes: `release-readiness-review`.
 - PR summary templates and reviewer-facing change grouping: `pr-draft-summary`.
 
