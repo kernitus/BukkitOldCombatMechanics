@@ -11,12 +11,13 @@
 
 ## by kernitus and Rayzr522
 
-Fine‑tune Minecraft combat, movement, and item balance without breaking your server. OldCombatMechanics is a free, open‑source toolkit for Spigot & Paper that lets you mix 1.8‑style snappiness with modern features, per world and per player.
+Fine‑tune Minecraft combat, movement, and item balance without breaking your server. OldCombatMechanics is a free, open‑source toolkit for Spigot & Paper that lets you mix 1.8‑style snappiness with modern features, per world and per player. It is built for PvP networks, minigames, BedWars/SkyWars-style games, duels, KitPvP, practice arenas, and mixed PvP/PvE worlds that need different combat rules in different places.
 
 **Why servers pick OCM** ✨
 - 🧩 **Modular:** enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
 - 🚀 **Performant:** lean listeners only enabled as needed; reflection lookups are cached and recurring tasks are minimised (shared where possible) to keep tick time low on busy PvP servers.
-- 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for mixed PvP/PvE, minigames, or duels.
+- 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for PvP networks, BedWars/SkyWars-style minigames, duels, KitPvP, FFA, practice arenas, and mixed PvP/PvE.
+- 🔌 **Plugin-friendly API:** integrate OCM with game logic by applying session-only per-player module overrides and checking whether modules are effectively enabled.
 - ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and PacketEvents.
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
@@ -44,6 +45,18 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 ## 🧰 Modesets
 - Per-player/per-world presets that decide which features are active; each world has an allowed list and a default modeset.
 - Let players pick ( `/ocm modeset <name>` ) to run, for example, 1.8-style PvP in an arena world while keeping vanilla rules in survival.
+
+## 🏟 Built for minigames and PvP networks
+- Run old-style combat in competitive arenas while keeping modern mechanics in lobbies, survival, or event worlds.
+- Tailor rules for BedWars, SkyWars, duels, KitPvP, FFA, practice arenas, tournaments, and temporary events without splitting your network across extra plugins.
+- Keep configuration readable for staff: combine world defaults, player-selected modesets, and targeted plugin overrides for special match phases.
+
+## 🔌 Developer API
+- OCM registers its API through Bukkit's services manager, so other plugins can look it up without depending on internal implementation classes.
+- The current API supports session-only per-player module overrides, useful for temporary states such as duel warm-ups, active or post-game phases, spectators, lobbies, practice queues, and event rules.
+- Plugins can also check whether a module is effectively enabled for a player after world rules, player choices, and overrides have been considered.
+- Overrides are not persisted across restarts or reconnects; reapply them from your game state when needed.
+- See [API.md](API.md) for setup instructions, method details, and Java/Kotlin examples.
 
 ## ⚙ Configurable Features
 Features are grouped in `module`s as listed below, and can be individually configured and disabled. Disabled modules will have no impact on server performance.
@@ -94,7 +107,7 @@ Features are grouped in `module`s as listed below, and can be individually confi
 ## 🔌 Compatibility & Testing
 - OCM targets Spigot 1.9+ and runs on Java 8 and up.
 - We stick to Spigot/Paper APIs for forward compatibility; NMS/reflection is used only when necessary.
-- Integration tests boot real servers on 1.9.4, 1.12, 1.19.2, and 1.21.11 each build to verify behaviour.
+- Integration tests boot real servers on 1.9.4, 1.12, 1.19.2, 1.21.11, and 26.1.2 each build to verify behaviour.
 - Most plugins work fine with OCM. Targeted compatibility includes PlaceholderAPI (see [wiki](https://github.com/kernitus/BukkitOldCombatMechanics/wiki/PlaceholderAPI)) and MythicMobs no-knockback damage skills with old-player-knockback.
 
 ## 🧾 Licence
