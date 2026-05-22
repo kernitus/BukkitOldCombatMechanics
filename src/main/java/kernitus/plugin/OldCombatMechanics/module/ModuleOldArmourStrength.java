@@ -52,6 +52,8 @@ public class ModuleOldArmourStrength extends OCMModule {
         if (e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && e instanceof EntityDamageByEntityEvent) {
             final Entity damager = ((EntityDamageByEntityEvent) e).getDamager();
             if(!isEnabled(damager, damagedEntity)) return;
+        } else if (!isEnabled(damagedEntity)) {
+            return;
         }
 
         final Map<EntityDamageEvent.DamageModifier, Double> damageModifiers =

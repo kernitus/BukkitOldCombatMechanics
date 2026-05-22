@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("ktlint:standard:package-name")
+
 package kernitus.plugin.OldCombatMechanics
 
 import com.github.ajalt.mordant.TermColors
@@ -19,12 +21,12 @@ import io.kotest.engine.TestEngineLauncher
 import io.kotest.engine.listener.AbstractTestEngineListener
 import io.kotest.engine.listener.CompositeTestEngineListener
 import io.kotest.engine.listener.EnhancedConsoleTestEngineListener
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 
 @OptIn(ExperimentalKotest::class)
 object KotestProjectConfig : AbstractProjectConfig() {
@@ -35,22 +37,22 @@ object KotestProjectConfig : AbstractProjectConfig() {
 }
 
 class BukkitMainThreadDispatcher(
-    private val plugin: JavaPlugin,
+    private val plugin: JavaPlugin
 ) : CoroutineDispatcher() {
     override fun dispatch(
         context: CoroutineContext,
-        block: Runnable,
+        block: Runnable
     ) {
         Bukkit.getScheduler().runTask(plugin, block)
     }
 }
 
 class MainThreadDispatcherExtension(
-    private val plugin: JavaPlugin,
+    private val plugin: JavaPlugin
 ) : TestCaseExtension {
     override suspend fun intercept(
         testCase: TestCase,
-        execute: suspend (TestCase) -> TestResult,
+        execute: suspend (TestCase) -> TestResult
     ): TestResult {
         val dispatcher = BukkitMainThreadDispatcher(plugin)
         val newContext = coroutineContext + dispatcher
@@ -79,10 +81,12 @@ object KotestRunner {
                                 "getErrorOrNull",
                                 "getCauseOrNull",
                                 "getThrowableOrNull",
-                                "getFailureOrNull",
+                                "getFailureOrNull"
                             )
                         for (getter in candidateGetters) {
-                            val m = result::class.java.methods.firstOrNull { it.name == getter && it.parameterCount == 0 } ?: continue
+                            val m =
+                                result::class.java.methods.firstOrNull { it.name == getter && it.parameterCount == 0 }
+                                    ?: continue
                             val t = runCatching { m.invoke(result) }.getOrNull() as? Throwable
                             if (t != null) return t
                         }
@@ -91,7 +95,7 @@ object KotestRunner {
 
                     fun formatFailure(
                         testCase: TestCase,
-                        result: TestResult,
+                        result: TestResult
                     ): String {
                         val specName = testCase.spec::class.qualifiedName ?: testCase.spec::class.java.name
                         val testName = testCase.displayName
@@ -104,9 +108,19 @@ object KotestRunner {
                                 ?.firstOrNull()
                                 ?.trim()
                                 .orEmpty()
-                        val head = if (message.isNotEmpty()) "${t::class.java.simpleName}: $message" else t::class.java.simpleName
+                        val head =
+                            if (message.isNotEmpty()) {
+                                "${t::class.java.simpleName}: $message"
+                            } else {
+                                t::class.java.simpleName
+                            }
                         val frame = t.stackTrace.firstOrNull()
-                        val at = if (frame != null) " (${frame.fileName}:${frame.lineNumber})" else ""
+                        val at =
+                            if (frame != null) {
+                                " (${frame.fileName}:${frame.lineNumber})"
+                            } else {
+                                ""
+                            }
                         return "$specName, $testName -- $head$at"
                     }
 
@@ -114,7 +128,7 @@ object KotestRunner {
                         object : AbstractTestEngineListener() {
                             override suspend fun testFinished(
                                 testCase: TestCase,
-                                result: TestResult,
+                                result: TestResult
                             ) {
                                 if (result.isFailure || result.isError) {
                                     hasFailures = true
@@ -135,8 +149,8 @@ object KotestRunner {
                         CompositeTestEngineListener(
                             listOf(
                                 EnhancedConsoleTestEngineListener(TermColors()),
-                                listener,
-                            ),
+                                listener
+                            )
                         )
 
                     TestEngineLauncher()
@@ -158,6 +172,7 @@ object KotestRunner {
                             WeaponDurabilityIntegrationTest::class,
                             GoldenAppleIntegrationTest::class,
                             OldArmourDurabilityIntegrationTest::class,
+                            OldArmourStrengthModesetIntegrationTest::class,
                             PlayerKnockbackIntegrationTest::class,
                             AttackCooldownTrackerIntegrationTest::class,
                             AttackCooldownHeldItemIntegrationTest::class,
@@ -173,13 +188,13 @@ object KotestRunner {
                             SwordBlockingIntegrationTest::class,
                             ConsumableComponentIntegrationTest::class,
                             PaperSwordBlockingDamageReductionIntegrationTest::class,
-                            AttackRangeIntegrationTest::class,
+                            AttackRangeIntegrationTest::class
                         ).launch()
                 } catch (e: Throwable) {
                     plugin.logger.severe("Failed to execute Kotest runner: ${e.message}")
                     TestResultWriter.writeAndShutdown(plugin, false, e)
                 }
-            },
+            }
         )
     }
 }
