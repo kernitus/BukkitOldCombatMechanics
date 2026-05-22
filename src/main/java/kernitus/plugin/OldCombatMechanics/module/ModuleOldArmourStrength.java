@@ -7,11 +7,9 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Arrays;
@@ -48,13 +46,8 @@ public class ModuleOldArmourStrength extends OCMModule {
 
         final LivingEntity damagedEntity = (LivingEntity) e.getEntity();
 
-        // If there was an attacker, and he does not have this module enabled, return
-        if (e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && e instanceof EntityDamageByEntityEvent) {
-            final Entity damager = ((EntityDamageByEntityEvent) e).getDamager();
-            if(!isEnabled(damager, damagedEntity)) return;
-        } else if (!isEnabled(damagedEntity)) {
-            return;
-        }
+        // Armour strength is defensive, so direct attacks and environmental damage are gated by the damaged entity.
+        if (!isEnabled(damagedEntity)) return;
 
         final Map<EntityDamageEvent.DamageModifier, Double> damageModifiers =
                 Arrays.stream(EntityDamageEvent.DamageModifier.values())
