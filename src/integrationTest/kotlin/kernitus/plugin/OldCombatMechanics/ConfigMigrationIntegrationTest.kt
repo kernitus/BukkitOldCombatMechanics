@@ -79,6 +79,7 @@ class ConfigMigrationIntegrationTest : FunSpec({
                         "alt" to listOf("old-golden-apples")
                     )
                 )
+                oldConfig.set("worlds.__default__", null)
                 oldConfig.set("worlds.world", listOf("custom", "alt"))
                 oldConfig.set("worlds.nether", listOf("alt"))
 
