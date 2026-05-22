@@ -74,12 +74,13 @@ class ConfigMigrationIntegrationTest : FunSpec({
 
                 oldConfig.set(
                     "modesets",
-                    mapOf(
+                    linkedMapOf(
                         "custom" to listOf("disable-offhand"),
                         "alt" to listOf("old-golden-apples")
                     )
                 )
                 oldConfig.set("worlds.world", listOf("custom", "alt"))
+                oldConfig.set("worlds.nether", listOf("alt"))
 
                 oldConfig.set("disable-offhand.enabled", false)
                 oldConfig.set("old-golden-apples.enabled", true)
@@ -109,6 +110,41 @@ class ConfigMigrationIntegrationTest : FunSpec({
                 upgradedConfig.getStringList("modesets.custom").shouldNotContain("disable-offhand")
                 upgradedConfig.getStringList("modesets.alt").shouldContain("old-golden-apples")
                 upgradedConfig.getStringList("worlds.world") shouldBe listOf("custom", "alt")
+                upgradedConfig.getStringList("worlds.nether") shouldBe listOf("alt")
+                upgradedConfig.getStringList("worlds.__default__") shouldBe listOf("custom", "alt")
+            }
+        }
+    }
+
+    test("config upgrade preserves existing default world modesets") {
+        runSync {
+            withConfigFile {
+                val configFile = File(ocm.dataFolder, "config.yml")
+                val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                val currentVersion = oldConfig.getInt("config-version")
+                val oldVersion = currentVersion - 1
+
+                oldConfig.set("config-version", oldVersion)
+                oldConfig.set("force-below-1-18-1-config-upgrade", true)
+
+                oldConfig.set(
+                    "modesets",
+                    linkedMapOf(
+                        "custom" to listOf("disable-offhand"),
+                        "alt" to listOf("old-golden-apples")
+                    )
+                )
+                oldConfig.set("worlds.__default__", listOf("legacy-default"))
+                oldConfig.set("worlds.world", listOf("custom"))
+
+                oldConfig.save(configFile)
+
+                Config.reload()
+
+                val upgradedConfig = ocm.config
+                upgradedConfig.getInt("config-version") shouldBe currentVersion
+                upgradedConfig.getStringList("worlds.__default__") shouldBe listOf("legacy-default")
+                upgradedConfig.getStringList("worlds.world") shouldBe listOf("custom")
             }
         }
     }

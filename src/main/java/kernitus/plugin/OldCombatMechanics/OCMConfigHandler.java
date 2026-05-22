@@ -197,9 +197,17 @@ public class OCMConfigHandler {
         }
 
         final ConfigurationSection oldWorlds = oldConfig.getConfigurationSection("worlds");
+        boolean hasDefaultWorld = false;
         if (oldWorlds != null) {
+            hasDefaultWorld = oldWorlds.contains("__default__");
             for (String worldName : oldWorlds.getKeys(false)) {
                 newConfig.set("worlds." + worldName, oldWorlds.getStringList(worldName));
+            }
+        }
+        if (!hasDefaultWorld) {
+            final ConfigurationSection upgradedModesets = newConfig.getConfigurationSection("modesets");
+            if (upgradedModesets != null) {
+                newConfig.set("worlds.__default__", new ArrayList<>(upgradedModesets.getKeys(false)));
             }
         }
     }
