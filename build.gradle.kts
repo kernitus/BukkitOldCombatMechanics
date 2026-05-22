@@ -28,10 +28,35 @@ val paperVersion: List<String> =
 plugins {
     `java-library`
     kotlin("jvm") version "2.3.21"
+    id("com.diffplug.spotless") version "8.5.1"
     id("com.gradleup.shadow") version "9.4.1"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.4"
+}
+
+spotless {
+    // Avoid a noisy first formatter rollout; enforce Spotless on changed files.
+    ratchetFrom("origin/master")
+
+    kotlin {
+        target("src/**/*.kt")
+        ktlint()
+    }
+
+    kotlinGradle {
+        target("*.gradle.kts", "gradle/**/*.gradle.kts")
+        ktlint()
+    }
+
+    format("misc") {
+        target("*.md", "*.yml", "*.yaml", "*.properties", ".editorconfig")
+        trimTrailingWhitespace()
+    }
+}
+
+tasks.named("check") {
+    dependsOn("spotlessCheck")
 }
 
 // Make sure javadocs are available to IDE
@@ -130,6 +155,7 @@ dependencies {
 
     // For ingametesting
     // Mojang mappings for NMS
+
     /*
     compileOnly("com.mojang:authlib:6.0.54")
     paperweight.paperDevBundle("1.19.2-R0.1-SNAPSHOT")
@@ -156,7 +182,7 @@ dependencies {
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
 class ExpandPluginVersionAction(
-    private val version: String,
+    private val version: String
 ) : Action<FileCopyDetails>,
     Serializable {
     override fun execute(details: FileCopyDetails) {
@@ -193,6 +219,7 @@ val shadowJarTask =
     }
 
 // For ingametesting
+
 /*
 tasks.reobfJar {
     outputJar.set(File(buildDir, "libs/${project.name}.jar"))
@@ -337,7 +364,7 @@ data class KotestSummary(
     val testsIgnored: Int?,
     val testsTotal: Int?,
     val failures: List<String>,
-    val failureDetails: List<String>,
+    val failureDetails: List<String>
 )
 
 fun parseKotestSummary(logFile: File): KotestSummary? {
@@ -481,7 +508,7 @@ fun parseKotestSummary(logFile: File): KotestSummary? {
         testsIgnored,
         testsTotal,
         failures,
-        failureDetails.distinct(),
+        failureDetails.distinct()
     )
 }
 
@@ -580,7 +607,7 @@ for (version in integrationTestVersions) {
                     if (!downloadedSha1.equals(serverSha1, ignoreCase = true)) {
                         tmpFile.delete()
                         throw GradleException(
-                            "Downloaded Minecraft server jar hash mismatch for $version. Expected $serverSha1, got $downloadedSha1.",
+                            "Downloaded Minecraft server jar hash mismatch for $version. Expected $serverSha1, got $downloadedSha1."
                         )
                     }
                     tmpFile.copyTo(vanillaCacheFile, overwrite = true)
@@ -611,7 +638,7 @@ for (version in integrationTestVersions) {
             javaLauncher.set(
                 javaToolchains.launcherFor {
                     languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(version)))
-                },
+                }
             )
 
             pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
@@ -666,11 +693,13 @@ for (version in integrationTestVersions) {
                 summary?.let {
                     val parts = mutableListOf<String>()
                     if (it.specsTotal != null) {
-                        parts.add("Specs: ${it.specsPassed ?: "?"} passed, ${it.specsFailed ?: "?"} failed, ${it.specsTotal} total")
+                        parts.add(
+                            "Specs: ${it.specsPassed ?: "?"} passed, ${it.specsFailed ?: "?"} failed, ${it.specsTotal} total"
+                        )
                     }
                     if (it.testsTotal != null) {
                         parts.add(
-                            "Tests: ${it.testsPassed ?: "?"} passed, ${it.testsFailed ?: "?"} failed, ${it.testsIgnored ?: 0} ignored, ${it.testsTotal} total",
+                            "Tests: ${it.testsPassed ?: "?"} passed, ${it.testsFailed ?: "?"} failed, ${it.testsIgnored ?: 0} ignored, ${it.testsTotal} total"
                         )
                     }
                     if (it.failures.isNotEmpty()) {
@@ -747,7 +776,7 @@ val runApiSmokeServerTask =
         javaLauncher.set(
             javaToolchains.launcherFor {
                 languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(apiSmokeTestMinecraftVersion)))
-            },
+            }
         )
 
         pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
@@ -774,7 +803,9 @@ val checkApiSmokeResultsTask =
         doLast {
             if (!apiSmokeResultFile.exists()) {
                 throw GradleException(
-                    "API smoke result file not found for $apiSmokeTestMinecraftVersion: ${apiSmokeResultFile.relativeTo(projectDir)}",
+                    "API smoke result file not found for $apiSmokeTestMinecraftVersion: ${apiSmokeResultFile.relativeTo(
+                        projectDir
+                    )}"
                 )
             }
             val result = apiSmokeResultFile.readText().trim()
