@@ -79,6 +79,12 @@ sourceSets {
         compileClasspath += main.get().output
         runtimeClasspath += output + main.get().output
     }
+    val apiSmokeTest by creating {
+        java.setSrcDirs(listOf("src/apiSmokeTest/java"))
+        resources.setSrcDirs(listOf("src/apiSmokeTest/resources"))
+        compileClasspath += main.get().output
+        runtimeClasspath += output + main.get().output
+    }
 }
 
 configurations {
@@ -95,6 +101,9 @@ configurations.named("compileClasspath") {
     attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
 }
 configurations.named("integrationTestCompileClasspath") {
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+}
+configurations.named("apiSmokeTestCompileClasspath") {
     attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
 }
 
@@ -139,6 +148,10 @@ dependencies {
     add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.0.23.Final")
+
+    // Java-only API smoke plugin dependencies
+    add("apiSmokeTestCompileOnly", sourceSets.main.get().output)
+    add("apiSmokeTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
@@ -172,7 +185,6 @@ val shadowJarTask =
         dependsOn("jar")
         archiveFileName.set("${project.name}.jar")
         dependencies {
-            exclude(dependency("org.jetbrains.kotlin:.*"))
             relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
             relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
             relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
@@ -236,6 +248,24 @@ val integrationTestJarTask =
         exclude("META-INF/versions/**/module-info.class")
     }
 
+val apiSmokeTestJarTask =
+    tasks.register<Jar>("apiSmokeTestJar") {
+        archiveClassifier.set("api-smoke-test")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        dependsOn("apiSmokeTestClasses")
+
+        from(sourceSets["apiSmokeTest"].output)
+
+        exclude("META-INF/*.SF")
+        exclude("META-INF/*.DSA")
+        exclude("META-INF/*.RSA")
+        exclude("META-INF/*.EC")
+        exclude("META-INF/*.MF")
+        exclude("module-info.class")
+        exclude("META-INF/versions/**/module-info.class")
+    }
+
 val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
@@ -259,6 +289,8 @@ val integrationTestJavaVersionLegacy16 =
     (findProperty("integrationTestJavaVersionLegacy16") as String?)?.toInt() ?: 11
 val integrationTestJavaVersionModern =
     (findProperty("integrationTestJavaVersionModern") as String?)?.toInt() ?: 25
+val apiSmokeTestMinecraftVersion =
+    (findProperty("apiSmokeTestMinecraftVersion") as String?) ?: "1.19.2"
 
 fun parseMinecraftVersion(version: String): Triple<Int, Int, Int> {
     val parts = version.split(".")
@@ -694,6 +726,70 @@ tasks.register("integrationTestMatrix") {
     group = "verification"
     description = "Runs integration tests against multiple Paper versions."
     dependsOn(integrationTestMatrixTasks)
+}
+
+val apiSmokeTestSuffix = versionTaskSuffix(apiSmokeTestMinecraftVersion)
+val apiSmokeRunDir = file("run/api-smoke-$apiSmokeTestMinecraftVersion")
+val apiSmokeResultFile = apiSmokeRunDir.resolve("plugins/OldCombatMechanicsApiSmokeTest/test-results.txt")
+val apiSmokeWritePropertiesTask =
+    tasks.register<WriteProperties>("writeApiSmokeProperties$apiSmokeTestSuffix") {
+        encoding = "UTF-8"
+        property("online-mode", false)
+        destinationFile.set(apiSmokeRunDir.resolve("server.properties"))
+    }
+
+val runApiSmokeServerTask =
+    tasks.register<RunServer>("runApiSmokeServer$apiSmokeTestSuffix") {
+        dependsOn(apiSmokeWritePropertiesTask, shadowJarTask, apiSmokeTestJarTask)
+        runDirectory.set(apiSmokeRunDir)
+        minecraftVersion(apiSmokeTestMinecraftVersion)
+        jvmArgs("-Dcom.mojang.eula.agree=true")
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(requiredJavaVersion(apiSmokeTestMinecraftVersion)))
+            },
+        )
+
+        pluginJars.from(shadowJarTask.flatMap { it.archiveFile })
+        pluginJars.from(apiSmokeTestJarTask.flatMap { it.archiveFile })
+
+        doFirst {
+            if (apiSmokeResultFile.exists()) {
+                apiSmokeResultFile.delete()
+            }
+            val ocmConfigFile = apiSmokeRunDir.resolve("plugins/OldCombatMechanics/config.yml")
+            if (ocmConfigFile.exists()) {
+                ocmConfigFile.delete()
+            }
+            val pluginNames = pluginJars.files.map { it.name }
+            if (pluginNames.any { it.contains("tests", ignoreCase = true) }) {
+                throw GradleException("apiSmokeTest must not load the integration-test plugin jar: $pluginNames")
+            }
+            logger.lifecycle("API smoke server plugins: ${pluginNames.joinToString(", ")}")
+        }
+    }
+
+val checkApiSmokeResultsTask =
+    tasks.register("checkApiSmokeResults$apiSmokeTestSuffix") {
+        doLast {
+            if (!apiSmokeResultFile.exists()) {
+                throw GradleException(
+                    "API smoke result file not found for $apiSmokeTestMinecraftVersion: ${apiSmokeResultFile.relativeTo(projectDir)}",
+                )
+            }
+            val result = apiSmokeResultFile.readText().trim()
+            logger.lifecycle("API smoke result for $apiSmokeTestMinecraftVersion: $result")
+            if (result != "PASS") {
+                throw GradleException("API smoke test failed for $apiSmokeTestMinecraftVersion: $result")
+            }
+        }
+    }
+
+tasks.register("apiSmokeTest") {
+    group = "verification"
+    description = "Runs the Java API smoke plugin against a live Paper server ($apiSmokeTestMinecraftVersion)."
+    dependsOn(runApiSmokeServerTask)
+    finalizedBy(checkApiSmokeResultsTask)
 }
 
 val versionStringProvider = providers.provider { project.version.toString() }

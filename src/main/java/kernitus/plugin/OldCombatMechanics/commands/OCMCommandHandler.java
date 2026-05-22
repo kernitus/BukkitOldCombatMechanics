@@ -142,8 +142,7 @@ public class OCMCommandHandler implements CommandExecutor {
                 modesetName);
 
         // Re-apply things like attack speed and collision team
-        final Player playerCopy = player;
-        ModuleLoader.getModules().forEach(module -> module.onModesetChange(playerCopy));
+        ModuleLoader.notifyPlayerStateChanged(player);
     }
 
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label,

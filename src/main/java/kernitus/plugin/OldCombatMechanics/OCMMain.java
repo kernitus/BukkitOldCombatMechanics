@@ -7,6 +7,8 @@ package kernitus.plugin.OldCombatMechanics;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI;
+import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPIImpl;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandHandler;
 import kernitus.plugin.OldCombatMechanics.hooks.PlaceholderAPIHook;
@@ -19,6 +21,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.AttackCooldownTracker
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.ModesetListener;
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerModuleOverrides;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimpleBarChart;
@@ -30,6 +33,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,6 +52,7 @@ public class OCMMain extends JavaPlugin {
     private final List<Runnable> disableListeners = new ArrayList<>();
     private final List<Runnable> enableListeners = new ArrayList<>();
     private final List<Hook> hooks = new ArrayList<>();
+    private OldCombatMechanicsAPI api;
     public OCMMain() {
         super();
     }
@@ -80,6 +85,10 @@ public class OCMMain extends JavaPlugin {
 
         // Register all the modules
         registerModules();
+
+        // Register public API service
+        api = new OldCombatMechanicsAPIImpl(this);
+        Bukkit.getServicesManager().register(OldCombatMechanicsAPI.class, api, this, ServicePriority.Normal);
 
         // Register all hooks for integrating with other plugins
         registerHooks();
@@ -190,6 +199,13 @@ public class OCMMain extends JavaPlugin {
         });
 
         PlayerStorage.instantSave();
+
+        PlayerModuleOverrides.clearAll();
+
+        if (api != null) {
+            Bukkit.getServicesManager().unregister(OldCombatMechanicsAPI.class, api);
+            api = null;
+        }
 
         PacketEvents.getAPI().terminate();
 

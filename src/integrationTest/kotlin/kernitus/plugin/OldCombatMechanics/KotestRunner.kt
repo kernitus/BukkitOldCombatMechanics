@@ -145,6 +145,7 @@ object KotestRunner {
                         .withClasses(
                             ConfigMigrationIntegrationTest::class,
                             ModesetRulesIntegrationTest::class,
+                            PlayerModuleOverrideApiIntegrationTest::class,
                             DisableOffhandIntegrationTest::class,
                             DisableOffhandReflectionIntegrationTest::class,
                             InGameTesterIntegrationTest::class,
