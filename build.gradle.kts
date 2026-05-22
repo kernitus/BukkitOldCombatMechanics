@@ -13,7 +13,6 @@ import org.gradle.api.file.FileCopyDetails
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import xyz.jpenilla.runpaper.task.RunServer
-import java.io.ByteArrayOutputStream
 import java.io.Closeable
 import java.io.Serializable
 import java.net.URI
@@ -190,11 +189,39 @@ class ExpandPluginVersionAction(
     }
 }
 
+class ExpandBuildCommitAction(
+    private val commit: String
+) : Action<FileCopyDetails>,
+    Serializable {
+    override fun execute(details: FileCopyDetails) {
+        details.expand(mapOf("buildCommit" to commit))
+    }
+}
+
 val pluginVersion = project.version.toString()
+val buildCommit =
+    runCatching {
+        val process =
+            ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                .directory(rootDir)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val exitValue = process.waitFor()
+
+        if (exitValue == 0) {
+            output.trim()
+        } else {
+            ""
+        }
+    }.getOrDefault("")
 val expandPluginVersionAction = ExpandPluginVersionAction(pluginVersion)
+val expandBuildCommitAction = ExpandBuildCommitAction(buildCommit)
 tasks.named<Copy>("processResources") {
     inputs.property("pluginVersion", pluginVersion)
+    inputs.property("buildCommit", buildCommit)
     filesMatching("plugin.yml", expandPluginVersionAction)
+    filesMatching("ocm-build.properties", expandBuildCommitAction)
 }
 
 tasks.withType<JavaCompile> {
