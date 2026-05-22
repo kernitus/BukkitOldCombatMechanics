@@ -104,7 +104,7 @@ public abstract class OCMModule implements Listener {
     }
 
     /**
-     * Returns if module should be enabled, giving priority to the attacker, if a human.
+     * Returns if an offensive direct PvP module should be enabled, giving priority to the attacker, if a human.
      * If neither entity is a human, checks if module should be enabled in the defender's world.
      *
      * @param attacker The entity that is performing the attack

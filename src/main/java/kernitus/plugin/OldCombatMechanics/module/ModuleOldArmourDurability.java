@@ -43,6 +43,7 @@ public class ModuleOldArmourDurability extends OCMModule {
     public void onItemDamage(PlayerItemDamageEvent e) {
         final Player player = e.getPlayer();
 
+        // Armour durability is defender-owned, so do not use the attacker/defender helper here.
         if (!isEnabled(player)) return;
         final ItemStack item = e.getItem();
         final Material itemType = item.getType();

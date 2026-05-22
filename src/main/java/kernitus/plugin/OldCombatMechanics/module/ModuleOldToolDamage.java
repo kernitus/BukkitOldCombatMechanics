@@ -181,6 +181,7 @@ public class ModuleOldToolDamage extends OCMModule {
     }
 
     private boolean isEnabledForAttacker(Entity damager) {
+        // Tool damage is offensive, so player attackers and projectile shooters own the modeset check.
         if (damager instanceof HumanEntity) {
             return isEnabled((HumanEntity) damager);
         }

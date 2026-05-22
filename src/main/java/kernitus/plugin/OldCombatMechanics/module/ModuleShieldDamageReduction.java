@@ -55,6 +55,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onItemDamage(PlayerItemDamageEvent e) {
         final Player player = e.getPlayer();
+        // Shield-blocked armour wear is defender-owned, even when a player attacker caused it.
         if (!isEnabled(player)) return;
         final UUID uuid = player.getUniqueId();
         final ItemStack item = e.getItem();
@@ -82,6 +83,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
         final Player player = (Player) entity;
 
+        // Shield reduction is defender-owned, even when the incoming hit has a player attacker.
         if (!isEnabled(player)) return;
 
         // Paper sword blocking sets the BLOCKING modifier to emulate 1.8 sword blocking. This module is for

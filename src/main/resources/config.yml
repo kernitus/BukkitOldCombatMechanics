@@ -38,8 +38,9 @@ disabled_modules:
 modesets:
   # Modesets are lists of modules that are enabled for a player in that mode.
   # You can create, remove, and rename as many modesets as you like by modifying the list below.
-  # When in PvP, the modeset of the attacker is checked first.
-  # If not PvP, the modeset of the defending entity is checked.
+  # Mixed-mode ownership: offensive direct PvP mechanics follow the attacker's mode.
+  # Armour and shields follow the defender's mode.
+  # Environmental damage follows the affected player or world mode.
   # PlaceholderAPI: %ocm_modeset%
   old:
     - "disable-attack-cooldown"
