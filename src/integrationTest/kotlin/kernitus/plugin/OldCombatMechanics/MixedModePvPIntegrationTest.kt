@@ -14,9 +14,11 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
+import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
@@ -26,15 +28,24 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityType
+import org.bukkit.entity.FishHook
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
+import org.bukkit.projectiles.ProjectileSource
+import org.bukkit.util.Vector
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Proxy
 import java.util.EnumMap
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
@@ -62,6 +73,16 @@ class MixedModePvPIntegrationTest :
                 .getModules()
                 .filterIsInstance<ModuleOldCriticalHits>()
                 .firstOrNull() ?: error("ModuleOldCriticalHits not registered")
+        val oldPlayerKnockbackModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModulePlayerKnockback>()
+                .firstOrNull() ?: error("ModulePlayerKnockback not registered")
+        val oldFishingKnockbackModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleFishingKnockback>()
+                .firstOrNull() ?: error("ModuleFishingKnockback not registered")
 
         lateinit var attacker: Player
         lateinit var defender: Player
@@ -141,6 +162,8 @@ class MixedModePvPIntegrationTest :
             shieldDamageReductionModule.reload()
             oldPotionEffectsModule.reload()
             oldCriticalHitsModule.reload()
+            oldPlayerKnockbackModule.reload()
+            oldFishingKnockbackModule.reload()
         }
 
         fun applyMixedModeConfig(moduleUnderTest: String) {
@@ -243,6 +266,59 @@ class MixedModePvPIntegrationTest :
                 runSync {
                     ocm.config.set("old-critical-hits.multiplier", originalMultiplier)
                     ocm.config.set("old-critical-hits.allow-sprinting", originalAllowSprinting)
+                    reloadConfigAndModules()
+                }
+            }
+        }
+
+        suspend fun withMixedModeOldPlayerKnockbackConfig(block: suspend () -> Unit) {
+            val originalHorizontal = ocm.config.get("old-player-knockback.knockback-horizontal")
+            val originalVertical = ocm.config.get("old-player-knockback.knockback-vertical")
+            val originalVerticalLimit = ocm.config.get("old-player-knockback.knockback-vertical-limit")
+            val originalExtraHorizontal = ocm.config.get("old-player-knockback.knockback-extra-horizontal")
+            val originalExtraVertical = ocm.config.get("old-player-knockback.knockback-extra-vertical")
+            val originalResistance = ocm.config.get("old-player-knockback.enable-knockback-resistance")
+
+            try {
+                withMixedModeConfig("old-player-knockback") {
+                    runSync {
+                        ocm.config.set("old-player-knockback.knockback-horizontal", 0.4)
+                        ocm.config.set("old-player-knockback.knockback-vertical", 0.4)
+                        ocm.config.set("old-player-knockback.knockback-vertical-limit", 0.4)
+                        ocm.config.set("old-player-knockback.knockback-extra-horizontal", 0.5)
+                        ocm.config.set("old-player-knockback.knockback-extra-vertical", 0.1)
+                        ocm.config.set("old-player-knockback.enable-knockback-resistance", false)
+                        reloadConfigAndModules()
+                    }
+                    block()
+                }
+            } finally {
+                runSync {
+                    ocm.config.set("old-player-knockback.knockback-horizontal", originalHorizontal)
+                    ocm.config.set("old-player-knockback.knockback-vertical", originalVertical)
+                    ocm.config.set("old-player-knockback.knockback-vertical-limit", originalVerticalLimit)
+                    ocm.config.set("old-player-knockback.knockback-extra-horizontal", originalExtraHorizontal)
+                    ocm.config.set("old-player-knockback.knockback-extra-vertical", originalExtraVertical)
+                    ocm.config.set("old-player-knockback.enable-knockback-resistance", originalResistance)
+                    reloadConfigAndModules()
+                }
+            }
+        }
+
+        suspend fun withMixedModeOldFishingKnockbackConfig(block: suspend () -> Unit) {
+            val originalDamage = ocm.config.get("old-fishing-knockback.damage")
+
+            try {
+                withMixedModeConfig("old-fishing-knockback") {
+                    runSync {
+                        ocm.config.set("old-fishing-knockback.damage", 0.0)
+                        reloadConfigAndModules()
+                    }
+                    block()
+                }
+            } finally {
+                runSync {
+                    ocm.config.set("old-fishing-knockback.damage", originalDamage)
                     reloadConfigAndModules()
                 }
             }
@@ -372,6 +448,152 @@ class MixedModePvPIntegrationTest :
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 rawDamage
             )
+
+        fun pendingKnockbackField(): java.lang.reflect.Field {
+            val names = listOf("pendingKnockback", "playerKnockbackHashMap")
+            for (name in names) {
+                val field =
+                    runCatching { ModulePlayerKnockback::class.java.getDeclaredField(name) }.getOrNull()
+                        ?: continue
+                field.isAccessible = true
+                return field
+            }
+            error("No pending knockback field found on ModulePlayerKnockback (tried: $names)")
+        }
+
+        fun pendingKnockbackMap(): MutableMap<UUID, Any> {
+            val field = pendingKnockbackField()
+            @Suppress("UNCHECKED_CAST")
+            return field.get(oldPlayerKnockbackModule) as MutableMap<UUID, Any>
+        }
+
+        fun getPendingKnockbackVector(uuid: UUID): Vector? {
+            val pending = pendingKnockbackMap()[uuid] ?: return null
+            return when (pending) {
+                is Vector -> {
+                    pending
+                }
+
+                else -> {
+                    val velocityField = pending.javaClass.getDeclaredField("velocity")
+                    velocityField.isAccessible = true
+                    velocityField.get(pending) as? Vector
+                }
+            }
+        }
+
+        fun removePendingKnockback(uuid: UUID) {
+            pendingKnockbackMap().remove(uuid)
+        }
+
+        fun createFakeHook(
+            rodder: Player,
+            location: Location
+        ): FishHook {
+            val id = UUID.randomUUID()
+            var velocity = Vector(0.0, 0.0, 0.0)
+            val handler =
+                InvocationHandler { _, method, args ->
+                    when (method.name) {
+                        "getUniqueId" -> {
+                            return@InvocationHandler id
+                        }
+
+                        "getVelocity" -> {
+                            return@InvocationHandler velocity
+                        }
+
+                        "setVelocity" -> {
+                            velocity = (args?.get(0) as? Vector) ?: velocity
+                            return@InvocationHandler null
+                        }
+
+                        "getShooter" -> {
+                            return@InvocationHandler rodder as ProjectileSource
+                        }
+
+                        "setShooter" -> {
+                            return@InvocationHandler null
+                        }
+
+                        "getType" -> {
+                            return@InvocationHandler EntityType.FISHING_BOBBER
+                        }
+
+                        "isValid" -> {
+                            return@InvocationHandler true
+                        }
+
+                        "remove" -> {
+                            return@InvocationHandler null
+                        }
+
+                        "getWorld" -> {
+                            return@InvocationHandler location.world
+                        }
+
+                        "getLocation" -> {
+                            return@InvocationHandler location.clone()
+                        }
+                    }
+
+                    return@InvocationHandler when (method.returnType) {
+                        java.lang.Boolean.TYPE -> false
+                        java.lang.Integer.TYPE -> 0
+                        java.lang.Long.TYPE -> 0L
+                        java.lang.Float.TYPE -> 0f
+                        java.lang.Double.TYPE -> 0.0
+                        java.lang.Void.TYPE -> null
+                        else -> null
+                    }
+                }
+
+            val interfaces = mutableListOf<Class<*>>(FishHook::class.java)
+            runCatching { Class.forName("org.bukkit.entity.Fish") }
+                .getOrNull()
+                ?.takeIf { it.isInterface }
+                ?.let { interfaces.add(it) }
+            return Proxy.newProxyInstance(
+                FishHook::class.java.classLoader,
+                interfaces.toTypedArray(),
+                handler
+            ) as FishHook
+        }
+
+        fun createProjectileHitEvent(
+            hook: FishHook,
+            hitEntity: Entity
+        ): ProjectileHitEvent {
+            for (constructor in ProjectileHitEvent::class.java.constructors) {
+                val params = constructor.parameterTypes
+                val args = arrayOfNulls<Any>(params.size)
+                var ok = true
+
+                for (index in params.indices) {
+                    args[index] =
+                        when {
+                            FishHook::class.java.isAssignableFrom(params[index]) -> hook
+                            org.bukkit.entity.Projectile::class.java.isAssignableFrom(params[index]) -> hook
+                            Entity::class.java.isAssignableFrom(params[index]) -> hitEntity
+                            params[index].name == "org.bukkit.block.Block" -> null
+                            params[index].name == "org.bukkit.block.BlockFace" -> null
+                            else -> null
+                        }
+                    if (args[index] == null && params[index].isPrimitive) {
+                        ok = false
+                        break
+                    }
+                }
+
+                if (!ok) continue
+                val event =
+                    runCatching { constructor.newInstance(*args) as ProjectileHitEvent }.getOrNull()
+                        ?: continue
+                if (event.entity.uniqueId == hook.uniqueId) return event
+            }
+
+            error("No compatible ProjectileHitEvent constructor found for this server version")
+        }
 
         beforeSpec {
             runSync {
@@ -616,6 +838,85 @@ class MixedModePvPIntegrationTest :
                         Bukkit.getPluginManager().callEvent(event)
 
                         event.criticalMultiplier shouldBe (1.0 plusOrMinus 0.0001)
+                    }
+                }
+            }
+        }
+
+        context("old player knockback direct PvP") {
+            test("old player knockback queues old knockback when only the attacker is old-mode") {
+                withMixedModeOldPlayerKnockbackConfig {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+                        attacker.teleport(attacker.location.apply { yaw = 0f })
+                        defender.velocity = Vector(0.0, 0.0, 0.0)
+
+                        val event = createDirectPvPToolDamageEvent(baseDamage = 4.0)
+                        oldPlayerKnockbackModule.onEntityDamageEntity(event)
+
+                        val vector = getPendingKnockbackVector(defender.uniqueId) ?: error("No knockback stored")
+                        vector.x shouldBe (0.4 plusOrMinus 0.0001)
+                        vector.y shouldBe (0.4 plusOrMinus 0.0001)
+                        vector.z shouldBe (0.0 plusOrMinus 0.0001)
+                        removePendingKnockback(defender.uniqueId)
+                    }
+                }
+            }
+
+            test("old player knockback does not queue old knockback when only the defender is old-mode") {
+                withMixedModeOldPlayerKnockbackConfig {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+                        defender.velocity = Vector(0.0, 0.0, 0.0)
+
+                        val event = createDirectPvPToolDamageEvent(baseDamage = 4.0)
+                        oldPlayerKnockbackModule.onEntityDamageEntity(event)
+
+                        getPendingKnockbackVector(defender.uniqueId) shouldBe null
+                    }
+                }
+            }
+        }
+
+        context("old fishing knockback direct PvP") {
+            test("old fishing knockback applies old velocity when only the rodder is old-mode") {
+                withMixedModeOldFishingKnockbackConfig {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+                        defender.velocity = Vector(0.0, 0.0, 0.0)
+                        defender.noDamageTicks = 0
+
+                        val hook = createFakeHook(attacker, defender.location.clone().add(1.0, 0.0, 0.0))
+                        val event = createProjectileHitEvent(hook, defender)
+                        oldFishingKnockbackModule.onRodLand(event)
+
+                        val velocity = defender.velocity
+                        velocity.x shouldBe (-0.4 plusOrMinus 0.0001)
+                        velocity.y shouldBe (0.4 plusOrMinus 0.0001)
+                        velocity.z shouldBe (0.0 plusOrMinus 0.0001)
+                    }
+                }
+            }
+
+            test("old fishing knockback does not apply old velocity when only the target is old-mode") {
+                withMixedModeOldFishingKnockbackConfig {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+                        val originalVelocity = Vector(0.0, 0.0, 0.0)
+                        defender.velocity = originalVelocity
+                        defender.noDamageTicks = 0
+
+                        val hook = createFakeHook(attacker, defender.location.clone().add(1.0, 0.0, 0.0))
+                        val event = createProjectileHitEvent(hook, defender)
+                        oldFishingKnockbackModule.onRodLand(event)
+
+                        defender.velocity.x shouldBe (originalVelocity.x plusOrMinus 0.0001)
+                        defender.velocity.y shouldBe (originalVelocity.y plusOrMinus 0.0001)
+                        defender.velocity.z shouldBe (originalVelocity.z plusOrMinus 0.0001)
                     }
                 }
             }
