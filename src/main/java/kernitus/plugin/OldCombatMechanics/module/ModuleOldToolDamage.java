@@ -15,13 +15,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.ProjectileSource;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -80,7 +83,7 @@ public class ModuleOldToolDamage extends OCMModule {
         final Entity damager = event.getDamager();
         if (event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
 
-        if (!isEnabled(damager, event.getDamagee())) return;
+        if (!isEnabledForAttacker(damager)) return;
 
         final ItemStack weapon = event.getWeapon();
         final Material weaponMaterial = weapon.getType();
@@ -109,8 +112,11 @@ public class ModuleOldToolDamage extends OCMModule {
                 } else {
                     // We check difference as calculation inaccuracies can make it not match
                     if (Math.abs(diff) > 0.0001) {
-                        debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
-                        return;
+                        if (Math.abs(event.getRawDamage() - expectedBaseDamage) > 0.0001 || event.getRawDamage() <= 0) {
+                            debug("Expected " + expectedBaseDamage + " got " + oldBaseDamage + " ignoring weapon...");
+                            return;
+                        }
+                        adjustedBase *= oldBaseDamage / event.getRawDamage();
                     }
                 }
             } else {
@@ -160,7 +166,7 @@ public class ModuleOldToolDamage extends OCMModule {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTridentProjectile(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
         if (!HAS_TRIDENT || !TRIDENT_CLASS.isInstance(event.getDamager())) return;
-        if (!isEnabled(event.getDamager(), event.getEntity())) return;
+        if (!isEnabledForAttacker(event.getDamager())) return;
 
         final double configured = WeaponDamages.getDamage("TRIDENT_THROWN");
         if (configured <= 0) return;
@@ -172,6 +178,19 @@ public class ModuleOldToolDamage extends OCMModule {
     private boolean shouldApplyTooltip(Player player) {
         if (!tooltipEnabled) return false;
         return isEnabled(player);
+    }
+
+    private boolean isEnabledForAttacker(Entity damager) {
+        if (damager instanceof HumanEntity) {
+            return isEnabled((HumanEntity) damager);
+        }
+        if (damager instanceof Projectile) {
+            final ProjectileSource shooter = ((Projectile) damager).getShooter();
+            if (shooter instanceof HumanEntity) {
+                return isEnabled((HumanEntity) shooter);
+            }
+        }
+        return isEnabled(damager.getWorld());
     }
 
     private String formatDamage(double value) {

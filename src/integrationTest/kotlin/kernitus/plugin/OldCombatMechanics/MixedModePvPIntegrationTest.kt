@@ -165,6 +165,25 @@ class MixedModePvPIntegrationTest :
             }
         }
 
+        suspend fun withMixedModeOldToolDamageConfig(block: suspend () -> Unit) {
+            val originalDamages = snapshotSection("old-tool-damage.damages")
+
+            try {
+                withMixedModeConfig("old-tool-damage") {
+                    runSync {
+                        ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 8)
+                        reloadConfigAndModules()
+                    }
+                    block()
+                }
+            } finally {
+                runSync {
+                    restoreSection("old-tool-damage.damages", originalDamages)
+                    reloadConfigAndModules()
+                }
+            }
+        }
+
         fun setModeset(
             player: Player,
             modeset: String
@@ -183,6 +202,33 @@ class MixedModePvPIntegrationTest :
             modifiers[EntityDamageEvent.DamageModifier.BASE] = 20.0
             modifiers[EntityDamageEvent.DamageModifier.ARMOR] = -8.0
             modifiers[EntityDamageEvent.DamageModifier.MAGIC] = -2.0
+
+            val identity =
+                object : Function<Double, Double> {
+                    override fun apply(input: Double): Double = input
+                }
+            val modifierFunctions =
+                EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers.keys.forEach { modifierFunctions[it] = identity }
+
+            return EntityDamageByEntityEvent(
+                attacker,
+                defender,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                modifiers,
+                modifierFunctions
+            )
+        }
+
+        @Suppress("DEPRECATION")
+        fun createDirectPvPToolDamageEvent(baseDamage: Double): EntityDamageByEntityEvent {
+            val modifiers =
+                EnumMap<EntityDamageEvent.DamageModifier, Double>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers[EntityDamageEvent.DamageModifier.BASE] = baseDamage
 
             val identity =
                 object : Function<Double, Double> {
@@ -388,6 +434,38 @@ class MixedModePvPIntegrationTest :
                             )
                             shieldDamageReductionModule.reload()
                         }
+                    }
+                }
+            }
+        }
+
+        context("old tool damage direct PvP") {
+            test("old tool damage applies old diamond sword damage when only the attacker is old-mode") {
+                withMixedModeOldToolDamageConfig {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+
+                        val event = createDirectPvPToolDamageEvent(baseDamage = 7.0)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.getDamage(EntityDamageEvent.DamageModifier.BASE) shouldBe (8.0 plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (8.0 plusOrMinus 0.0001)
+                    }
+                }
+            }
+
+            test("old tool damage keeps new diamond sword damage when only the defender is old-mode") {
+                withMixedModeOldToolDamageConfig {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+
+                        val event = createDirectPvPToolDamageEvent(baseDamage = 7.0)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.getDamage(EntityDamageEvent.DamageModifier.BASE) shouldBe (7.0 plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (7.0 plusOrMinus 0.0001)
                     }
                 }
             }
