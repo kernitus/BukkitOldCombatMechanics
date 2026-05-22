@@ -22,6 +22,7 @@ Use this skill whenever an agent is preparing a repository state for commit, val
 - Use conventional commits.
 - Keep commit messages subject-only unless the user explicitly asks for a body.
 - Make the subject release-note-friendly and comprehensible without the type prefix or body.
+- For issue, ticket, or bug-report driven work, include the ticket number in the commit subject, such as `fix(modesets): correct stale stored world modesets (#865)`.
 
 ## Reporting
 

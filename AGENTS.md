@@ -12,6 +12,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Keep commits subject-only unless the user explicitly asks for a body.
 - Release Please renders commit subjects into changelog entries, so subjects must be release-note-friendly and comprehensible without the type prefix or body.
 - Prefer scoped subjects where useful, such as `feat(config): add default modesets for unlisted worlds`.
+- For issue, ticket, or bug-report driven work, include the ticket number in the commit subject, such as `fix(modesets): correct stale stored world modesets (#865)`.
 - Avoid vague subjects such as `feat: support ...`, `feat: migrate ...`, or `test: cover ...` when a clearer user-facing summary is possible.
 - Root and user-facing agents must not open or read `build/integration-test-logs/*.log` directly. Log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested. Prefer compact console summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` first.
 - Never hard-code absolute filesystem paths in tests or production code; resolve locations relative to the repo root, plugin data folder, or server run directory.

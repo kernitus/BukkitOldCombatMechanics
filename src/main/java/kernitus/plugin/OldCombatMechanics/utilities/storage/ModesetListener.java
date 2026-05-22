@@ -7,6 +7,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
@@ -51,8 +52,8 @@ public class ModesetListener extends OCMModule {
         // Get modesets allowed in to world
         Set<String> allowedModesets = Config.getAllowedModesets(worldId);
 
-        // If they don't have a modeset in toWorld yet
-        if (modesetName == null) {
+        // If they don't have a modeset in toWorld yet, or the stored one is not allowed there
+        if (modesetName == null || !allowedModesets.contains(modesetName)) {
             // Try to use modeset of world they are coming from
             if (modesetFromName != null && allowedModesets.contains(modesetFromName))
                 modesetName = modesetFromName;
@@ -71,6 +72,9 @@ public class ModesetListener extends OCMModule {
                             "&4ERROR: &rmode-messages.mode-set string missing"),
                     modesetName
             );
+
+            // Re-apply things like attack speed and collision team
+            ModuleLoader.notifyPlayerStateChanged(player);
         }
     }
 
