@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -17,7 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.block.BlockFace;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -129,9 +129,8 @@ public class ModuleChorusFruit extends OCMModule {
         Block head = feet.getRelative(BlockFace.UP);
         Block below = feet.getRelative(BlockFace.DOWN);
 
-        boolean modern = Reflector.versionIsNewerOrEqualTo(1, 13, 0);
-        boolean feetPassable = modern ? feet.isPassable() : !feet.getType().isSolid();
-        boolean headPassable = modern ? head.isPassable() : !head.getType().isSolid();
+        boolean feetPassable = CompatibilityCapabilities.isBlockPassable(feet);
+        boolean headPassable = CompatibilityCapabilities.isBlockPassable(head);
 
         if (!feetPassable || !headPassable) return false;
         if (!below.getType().isSolid()) return false;

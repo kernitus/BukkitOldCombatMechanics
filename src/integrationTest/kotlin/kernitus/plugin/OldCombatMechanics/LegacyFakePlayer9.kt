@@ -234,6 +234,41 @@ internal class LegacyFakePlayer9(
         }
     }
 
+    fun teleport(location: Location): Boolean {
+        val ep = entityPlayer ?: return false
+        val bp = bukkitPlayer ?: return false
+        val targetWorld = location.world ?: return false
+
+        if (bp.world.uid == targetWorld.uid) {
+            return bp.teleport(location)
+        }
+
+        val craftWorld = craft("CraftWorld").cast(targetWorld)
+        val targetWorldServer = craftWorld.javaClass.getMethod("getHandle").invoke(craftWorld)
+        val dimension = targetWorldServer.javaClass.getField("dimension").getInt(targetWorldServer)
+
+        val craftServer = craft("CraftServer").cast(Bukkit.getServer())
+        val mcServer = craftServer.javaClass.getMethod("getServer").invoke(craftServer)
+        val playerList = mcServer.javaClass.getMethod("getPlayerList").invoke(mcServer)
+
+        val moveMethod =
+            playerList.javaClass.methods.firstOrNull {
+                it.name == "moveToWorld" &&
+                    it.parameterTypes.size == 5 &&
+                    it.parameterTypes[0].isAssignableFrom(ep.javaClass) &&
+                    it.parameterTypes[1] == Int::class.javaPrimitiveType &&
+                    it.parameterTypes[2] == Boolean::class.javaPrimitiveType &&
+                    it.parameterTypes[3].isAssignableFrom(Location::class.java) &&
+                    it.parameterTypes[4] == Boolean::class.javaPrimitiveType
+            } ?: return false
+
+        val moved = moveMethod.invoke(playerList, ep, dimension, false, location, true) ?: return false
+        entityPlayer = moved
+        bukkitPlayer = moved.javaClass.getMethod("getBukkitEntity").invoke(moved) as Player
+        updateCraftMaps(craftServer, bukkitPlayer!!)
+        return bukkitPlayer!!.world.uid == targetWorld.uid
+    }
+
     fun getConnection(serverPlayer: Any): Any {
         val field = serverPlayer.javaClass.getField("playerConnection")
         return field.get(serverPlayer)

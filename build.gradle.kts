@@ -27,8 +27,8 @@ val paperVersion: List<String> =
 
 plugins {
     `java-library`
-    kotlin("jvm") version "2.3.0"
-    id("com.gradleup.shadow") version "9.3.0"
+    kotlin("jvm") version "2.3.21"
+    id("com.gradleup.shadow") version "9.4.1"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.4"
@@ -61,7 +61,7 @@ repositories {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.4.1-beta" // x-release-please-version
+version = "2.5.0-beta" // x-release-please-version
 description = "OldCombatMechanics"
 
 java {
@@ -108,21 +108,25 @@ configurations.named("apiSmokeTestCompileClasspath") {
 }
 
 dependencies {
-    implementation("org.bstats:bstats-bukkit:3.1.0")
-    // Shaded in by Bukkit
-    compileOnly("io.netty:netty-all:4.1.130.Final")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
+    // Server-provided: intentionally pinned to the oldest supported runtime baseline
+    // (Minecraft 1.9.4 / Netty 4.0.23.Final) so compile-only code cannot use newer Netty APIs unavailable on legacy servers.
+    compileOnly("io.netty:netty-all:4.0.23.Final")
     // Placeholder API
-    compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("me.clip:placeholderapi:2.12.2")
     // For BSON file serialisation
-    implementation("org.mongodb:bson:5.6.2")
+    implementation("org.mongodb:bson:5.7.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:5.9.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // JSR-305 annotations (javax.annotation.Nullable)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     // PacketEvents
-    implementation("com.github.retrooper:packetevents-spigot:2.11.2")
+    implementation("com.github.retrooper:packetevents-spigot:2.12.1")
     // XSeries
-    implementation("com.github.cryptomorin:XSeries:13.6.0")
+    implementation("com.github.cryptomorin:XSeries:13.7.0")
 
     // For ingametesting
     // Mojang mappings for NMS
@@ -134,17 +138,16 @@ dependencies {
      */
 
     // Integration test dependencies
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.3.21")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.3.21")
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
-    add("integrationTestImplementation", "net.kyori:adventure-api:4.26.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
-    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
-    add("integrationTestCompileOnly", "io.netty:netty-all:4.1.130.Final")
+    add("integrationTestCompileOnly", "io.netty:netty-all:4.0.23.Final")
 
     // Java-only API smoke plugin dependencies
     add("apiSmokeTestCompileOnly", sourceSets.main.get().output)
@@ -171,6 +174,10 @@ tasks.named<Copy>("processResources") {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(8)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 val shadowJarTask =
@@ -263,7 +270,7 @@ val integrationTestMinecraftVersion =
     (findProperty("integrationTestMinecraftVersion") as String?) ?: "1.19.2"
 
 val defaultIntegrationTestVersions =
-    listOf(integrationTestMinecraftVersion, "1.21.11", "1.12", "1.9.4")
+    listOf(integrationTestMinecraftVersion, "26.1.2", "1.21.11", "1.12", "1.9.4")
         .distinct()
 
 val integrationTestVersions: List<String> =
@@ -307,9 +314,18 @@ fun requiresModernJava(version: String): Boolean {
 
 fun requiredJavaVersion(version: String): Int {
     if (needsLegacyVanillaJar(version)) return integrationTestJavaVersionLegacyPre13
+    if (requiresModernJava(version)) return integrationTestJavaVersionModern
     val (_, minor, _) = parseMinecraftVersion(version)
     if (minor <= 16) return integrationTestJavaVersionLegacy16
-    return if (requiresModernJava(version)) integrationTestJavaVersionModern else integrationTestJavaVersionLegacy
+    return integrationTestJavaVersionLegacy
+}
+
+fun supportsDamageTypeIntegrationDatapack(version: String): Boolean {
+    val (major, minor, patch) = parseMinecraftVersion(version)
+    if (major > 1) return true
+    if (major < 1) return false
+    if (minor > 21) return true
+    return minor == 21 && patch >= 11
 }
 
 data class KotestSummary(
@@ -512,6 +528,7 @@ for (version in integrationTestVersions) {
     val failuresFile = runDir.resolve("plugins/OldCombatMechanicsTest/test-failures.txt")
     val vanillaCacheFile = runDir.resolve("cache/mojang_$version.jar")
     val logFile = layout.buildDirectory.file("integration-test-logs/$suffix.log")
+    val datapackSourceDir = layout.projectDirectory.dir("src/integrationTest/datapacks")
 
     val writePropsTask =
         tasks.register<WriteProperties>("writeProperties$suffix") {
@@ -602,6 +619,16 @@ for (version in integrationTestVersions) {
             pluginJars.from(configurations["integrationTestServerPlugins"])
 
             doFirst {
+                val damageTypeDatapackDir = runDir.resolve("world/datapacks/ocmtest-bypasses-cooldown")
+                if (supportsDamageTypeIntegrationDatapack(version)) {
+                    copy {
+                        from(datapackSourceDir)
+                        into(runDir.resolve("world/datapacks"))
+                    }
+                } else if (damageTypeDatapackDir.exists()) {
+                    delete(damageTypeDatapackDir)
+                }
+
                 val log = logFile.get().asFile
                 log.parentFile.mkdirs()
                 val stream = log.outputStream()

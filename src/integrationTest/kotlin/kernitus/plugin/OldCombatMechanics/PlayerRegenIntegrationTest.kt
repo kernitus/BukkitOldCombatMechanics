@@ -11,13 +11,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityRegainHealthEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.concurrent.Callable
+import kotlin.coroutines.resume
 
 @OptIn(ExperimentalKotest::class)
 class PlayerRegenIntegrationTest : FunSpec({
@@ -40,6 +41,17 @@ class PlayerRegenIntegrationTest : FunSpec({
         playerData.setModesetForWorld(player.world.uid, modeset)
         kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData(player.uniqueId, playerData)
         ModuleLoader.toggleModules()
+    }
+
+    suspend fun waitServerTicks(ticks: Long) {
+        suspendCancellableCoroutine { continuation ->
+            val task = Bukkit.getScheduler().runTaskLater(testPlugin, Runnable {
+                if (continuation.isActive) {
+                    continuation.resume(Unit)
+                }
+            }, ticks)
+            continuation.invokeOnCancellation { task.cancel() }
+        }
     }
 
     suspend fun withConfig(intervalMs: Long, amount: Int, exhaustion: Double, block: suspend () -> Unit) {
@@ -154,7 +166,7 @@ class PlayerRegenIntegrationTest : FunSpec({
                 player.exhaustion = 2.0f
             }
 
-            delay(2 * 50L)
+            waitServerTicks(2L)
 
             runSync {
                 player.exhaustion.toDouble() shouldBe (4.0 plusOrMinus 0.0001) // previous(1.0) + config(3.0)
@@ -191,7 +203,7 @@ class PlayerRegenIntegrationTest : FunSpec({
                 player.exhaustion = 3.5f
             }
 
-            delay(2 * 50L)
+            waitServerTicks(2L)
 
             runSync {
                 player.exhaustion.toDouble() shouldBe (1.0 plusOrMinus 0.0001)

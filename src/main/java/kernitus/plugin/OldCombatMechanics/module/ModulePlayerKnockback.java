@@ -7,10 +7,12 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities;
+import kernitus.plugin.OldCombatMechanics.utilities.compatibility.MythicMobsKnockbackBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.entity.Entity;
@@ -53,11 +55,14 @@ public class ModulePlayerKnockback extends OCMModule {
     //   a later, unrelated velocity event (explosions, plugins, etc.).
     // - Avoid scheduling one task per hit: we run one shared cleanup task only while there is anything pending.
     private final Map<UUID, PendingKnockback> pendingKnockback = new HashMap<>();
+    private final MythicMobsKnockbackBridge mythicMobsKnockbackBridge;
     private BukkitTask pendingCleanupTask;
     private long pendingTickCounter;
+    private final Attribute knockbackResistanceAttribute = XAttribute.KNOCKBACK_RESISTANCE.get();
 
     public ModulePlayerKnockback(OCMMain plugin) {
         super(plugin, "old-player-knockback");
+        mythicMobsKnockbackBridge = new MythicMobsKnockbackBridge(plugin);
         reload();
     }
 
@@ -69,7 +74,7 @@ public class ModulePlayerKnockback extends OCMModule {
         knockbackExtraHorizontal = module().getDouble("knockback-extra-horizontal", 0.5);
         knockbackExtraVertical = module().getDouble("knockback-extra-vertical", 0.1);
         netheriteKnockbackResistance = module().getBoolean("enable-knockback-resistance", false)
-                && Reflector.versionIsNewerOrEqualTo(1, 16, 0);
+                && CompatibilityCapabilities.isKnockbackResistanceAvailable();
     }
 
     @EventHandler
@@ -86,6 +91,10 @@ public class ModulePlayerKnockback extends OCMModule {
         final UUID uuid = event.getPlayer().getUniqueId();
         final PendingKnockback pending = pendingKnockback.remove(uuid);
         if (pending == null) return;
+        if (mythicMobsKnockbackBridge.consumeNoKnockback(uuid, pending.sourceId)) {
+            stopCleanupTaskIfIdle();
+            return;
+        }
         event.setVelocity(pending.velocity);
         stopCleanupTaskIfIdle();
     }
@@ -110,7 +119,8 @@ public class ModulePlayerKnockback extends OCMModule {
                 return;
         }
 
-        final AttributeInstance attribute = damagee.getAttribute(XAttribute.KNOCKBACK_RESISTANCE.get());
+        final AttributeInstance attribute = knockbackResistanceAttribute == null ? null : damagee.getAttribute(knockbackResistanceAttribute);
+        if (attribute == null) return;
         attribute.getModifiers().forEach(attribute::removeModifier);
     }
 
@@ -191,15 +201,21 @@ public class ModulePlayerKnockback extends OCMModule {
         if (netheriteKnockbackResistance) {
             // Allow netherite to affect the horizontal knockback. Each piece of armour
             // yields 10% resistance
-            final double resistance = 1 - victim.getAttribute(XAttribute.KNOCKBACK_RESISTANCE.get()).getValue();
-            playerVelocity.multiply(new Vector(resistance, 1, resistance));
+            final AttributeInstance attribute = knockbackResistanceAttribute == null ? null : victim.getAttribute(knockbackResistanceAttribute);
+            if (attribute != null) {
+                final double resistance = 1 - attribute.getValue();
+                playerVelocity.multiply(new Vector(resistance, 1, resistance));
+            }
         }
 
         final UUID victimId = victim.getUniqueId();
+        if (mythicMobsKnockbackBridge.consumeNoKnockback(victimId, attacker.getUniqueId())) {
+            return;
+        }
 
         // Knockback is sent immediately in 1.8+, there is no reason to send packets
         // manually
-        pendingKnockback.put(victimId, new PendingKnockback(playerVelocity, pendingTickCounter + 1));
+        pendingKnockback.put(victimId, new PendingKnockback(playerVelocity, attacker.getUniqueId(), pendingTickCounter + 1));
         ensureCleanupTaskRunning();
     }
 
@@ -236,11 +252,13 @@ public class ModulePlayerKnockback extends OCMModule {
 
     private static final class PendingKnockback {
         private final Vector velocity;
+        private final UUID sourceId;
         private final long expiresAtTick;
 
-        private PendingKnockback(Vector velocity, long expiresAtTick) {
+        private PendingKnockback(Vector velocity, UUID sourceId, long expiresAtTick) {
             // Defensive clone: callers may re-use/mutate the Vector instance.
             this.velocity = velocity == null ? new Vector() : velocity.clone();
+            this.sourceId = sourceId;
             this.expiresAtTick = expiresAtTick;
         }
     }

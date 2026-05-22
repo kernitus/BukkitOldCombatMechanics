@@ -59,14 +59,13 @@ public class DefenceUtils {
     );
     private static final Set<String> warnedUnknownArmourEnchants = new HashSet<>();
     private static final Set<Enchantment> VANILLA_ENCHANTMENTS = initVanillaEnchantments();
+    private static final Material POINTED_DRIPSTONE = Material.matchMaterial("POINTED_DRIPSTONE");
 
     // Stalagmite ignores armour but other blocks under CONTACT do not, explicitly
     // checked below
     static {
-        if (Reflector.versionIsNewerOrEqualTo(1, 11, 0))
-            ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.CRAMMING);
-        if (Reflector.versionIsNewerOrEqualTo(1, 17, 0))
-            ARMOUR_IGNORING_CAUSES.add(EntityDamageEvent.DamageCause.FREEZE);
+        addDamageCauseIfPresent(ARMOUR_IGNORING_CAUSES, "CRAMMING");
+        addDamageCauseIfPresent(ARMOUR_IGNORING_CAUSES, "FREEZE");
     }
 
     // Method added in 1.15
@@ -106,9 +105,9 @@ public class DefenceUtils {
             // If the damage cause does not ignore armour
             // If the block they are in is a stalagmite, also ignore armour
             if (!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
-                    !(Reflector.versionIsNewerOrEqualTo(1, 19, 0) &&
+                    !(POINTED_DRIPSTONE != null &&
                             damageCause == EntityDamageEvent.DamageCause.CONTACT &&
-                            damagedEntity.getLocation().getBlock().getType() == Material.POINTED_DRIPSTONE)) {
+                            damagedEntity.getLocation().getBlock().getType() == POINTED_DRIPSTONE)) {
                 armourReduction = currentDamage * -armourReductionFactor;
             }
             damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
@@ -316,6 +315,21 @@ public class DefenceUtils {
         return false;
     }
 
+    private static void addDamageCauseIfPresent(Set<EntityDamageEvent.DamageCause> damageCauses, String name) {
+        final EntityDamageEvent.DamageCause cause = getDamageCause(name);
+        if (cause != null) {
+            damageCauses.add(cause);
+        }
+    }
+
+    private static EntityDamageEvent.DamageCause getDamageCause(String name) {
+        try {
+            return EntityDamageEvent.DamageCause.valueOf(name);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
     private enum EnchantmentType {
         // Data from https://minecraft.fandom.com/wiki/Armor#Mechanics
         PROTECTION(() -> {
@@ -335,10 +349,8 @@ public class DefenceUtils {
                     EntityDamageEvent.DamageCause.FALLING_BLOCK,
                     EntityDamageEvent.DamageCause.THORNS,
                     EntityDamageEvent.DamageCause.DRAGON_BREATH);
-            if (Reflector.versionIsNewerOrEqualTo(1, 10, 0))
-                damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
-            if (Reflector.versionIsNewerOrEqualTo(1, 12, 0))
-                damageCauses.add(EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK);
+            addDamageCauseIfPresent(damageCauses, "HOT_FLOOR");
+            addDamageCauseIfPresent(damageCauses, "ENTITY_SWEEP_ATTACK");
 
             return damageCauses;
         },
@@ -349,9 +361,7 @@ public class DefenceUtils {
                     EntityDamageEvent.DamageCause.FIRE_TICK,
                     EntityDamageEvent.DamageCause.LAVA);
 
-            if (Reflector.versionIsNewerOrEqualTo(1, 10, 0)) {
-                damageCauses.add(EntityDamageEvent.DamageCause.HOT_FLOOR);
-            }
+            addDamageCauseIfPresent(damageCauses, "HOT_FLOOR");
 
             return damageCauses;
         }, 1.25, XEnchantment.FIRE_PROTECTION.getEnchant()),

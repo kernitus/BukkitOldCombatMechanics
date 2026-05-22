@@ -13,7 +13,7 @@ import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
 import com.cryptomorin.xseries.XAttribute
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -124,9 +124,16 @@ class PlayerKnockbackIntegrationTest : FunSpec({
         val pendingClass = ModulePlayerKnockback::class.java.declaredClasses
             .firstOrNull { it.simpleName == "PendingKnockback" }
             ?: error("PendingKnockback inner class not found")
-        val ctor = pendingClass.getDeclaredConstructor(Vector::class.java, Long::class.javaPrimitiveType)
+        val ctor = pendingClass.declaredConstructors.firstOrNull { constructor ->
+            val parameterTypes = constructor.parameterTypes.toList()
+            parameterTypes == listOf(Vector::class.java, UUID::class.java, Long::class.javaPrimitiveType) ||
+                parameterTypes == listOf(Vector::class.java, Long::class.javaPrimitiveType)
+        } ?: error("No supported PendingKnockback constructor found")
         ctor.isAccessible = true
-        val pending = ctor.newInstance(vector, Long.MAX_VALUE)
+        val pending = when (ctor.parameterTypes.size) {
+            3 -> ctor.newInstance(vector, attacker.uniqueId, Long.MAX_VALUE)
+            else -> ctor.newInstance(vector, Long.MAX_VALUE)
+        }
         pendingKnockbackMap()[uuid] = pending
     }
 
@@ -284,7 +291,7 @@ class PlayerKnockbackIntegrationTest : FunSpec({
         }
 
         test("modifiers remain when resistance enabled and supported") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 16, 0)) return@test
+            if (!CompatibilityCapabilities.isKnockbackResistanceAvailable()) return@test
             withConfig {
                 ocm.config.set("old-player-knockback.enable-knockback-resistance", true)
                 module.reload()
@@ -302,7 +309,7 @@ class PlayerKnockbackIntegrationTest : FunSpec({
         }
 
         test("enabled resistance scales horizontal knockback") {
-            if (!Reflector.versionIsNewerOrEqualTo(1, 16, 0)) return@test
+            if (!CompatibilityCapabilities.isKnockbackResistanceAvailable()) return@test
             withConfig {
                 ocm.config.set("old-player-knockback.knockback-horizontal", 0.4)
                 ocm.config.set("old-player-knockback.knockback-vertical", 0.4)

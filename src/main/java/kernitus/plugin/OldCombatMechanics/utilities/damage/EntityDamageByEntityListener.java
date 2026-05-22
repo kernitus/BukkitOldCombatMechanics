@@ -9,6 +9,7 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
@@ -16,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
@@ -31,6 +33,9 @@ public class EntityDamageByEntityListener extends OCMModule {
     private int expirySweepTaskId = -1;
     private static final long EXPIRY_SWEEP_INTERVAL_TICKS = 20L;
     private static final long MIN_LAST_DAMAGE_TTL_TICKS = 20L;
+    private static final String[] DAMAGE_TYPE_REGISTRIES = {"damage_type", "damage_types"};
+    private static final String BYPASSES_COOLDOWN_TAG = "bypasses_cooldown";
+    private DamageSourceCooldownBypassSupport damageSourceCooldownBypassSupport;
 
     public EntityDamageByEntityListener(OCMMain plugin) {
         super(plugin, "entity-damage-listener");
@@ -305,6 +310,12 @@ public class EntityDamageByEntityListener extends OCMModule {
     }
 
     private double checkOverdamage(LivingEntity livingDamagee, EntityDamageEvent event, double newDamage) {
+        if (damageSourceBypassesCooldown(event)) {
+            debug("Damage source bypasses cooldown, skipping overdamage immunity", livingDamagee);
+            debug("Damage source bypasses cooldown, skipping overdamage immunity");
+            return newDamage;
+        }
+
         final double incomingDamage = newDamage; // base damage (before defence), used for baseline tracking
         final double newLastDamage = Math.max(0, incomingDamage);
 
@@ -370,6 +381,89 @@ public class EntityDamageByEntityListener extends OCMModule {
         final UUID uuid = damagee.getUniqueId();
         lastDamageExpiryTicks.remove(uuid);
         lastDamages.remove(uuid);
+    }
+
+    private boolean damageSourceBypassesCooldown(EntityDamageEvent event) {
+        if (damageSourceCooldownBypassSupport == null) {
+            damageSourceCooldownBypassSupport = DamageSourceCooldownBypassSupport.create();
+        }
+        return damageSourceCooldownBypassSupport.isBypassed(event);
+    }
+
+    private static final class DamageSourceCooldownBypassSupport {
+        private final Method getDamageSourceMethod;
+        private final Method getDamageTypeMethod;
+        private final Method isTaggedMethod;
+        private final Object bypassesCooldownTag;
+
+        private DamageSourceCooldownBypassSupport(
+                Method getDamageSourceMethod,
+                Method getDamageTypeMethod,
+                Method isTaggedMethod,
+                Object bypassesCooldownTag
+        ) {
+            this.getDamageSourceMethod = getDamageSourceMethod;
+            this.getDamageTypeMethod = getDamageTypeMethod;
+            this.isTaggedMethod = isTaggedMethod;
+            this.bypassesCooldownTag = bypassesCooldownTag;
+        }
+
+        private static DamageSourceCooldownBypassSupport create() {
+            try {
+                final Class<?> damageSourceClass = Class.forName("org.bukkit.damage.DamageSource");
+                final Class<?> damageTypeClass = Class.forName("org.bukkit.damage.DamageType");
+                final Method getDamageSourceMethod = EntityDamageEvent.class.getMethod("getDamageSource");
+                final Method getDamageTypeMethod = damageSourceClass.getMethod("getDamageType");
+                final Object tag = findBypassesCooldownTag(damageTypeClass);
+                if (tag == null) return unsupported();
+                final Method isTaggedMethod = findIsTaggedMethod(tag);
+                if (isTaggedMethod == null) return unsupported();
+                return new DamageSourceCooldownBypassSupport(getDamageSourceMethod, getDamageTypeMethod, isTaggedMethod, tag);
+            } catch (ClassNotFoundException | NoSuchMethodException ignored) {
+                return unsupported();
+            } catch (Exception ignored) {
+                return unsupported();
+            }
+        }
+
+        private static DamageSourceCooldownBypassSupport unsupported() {
+            return new DamageSourceCooldownBypassSupport(null, null, null, null);
+        }
+
+        private static Object findBypassesCooldownTag(Class<?> damageTypeClass) {
+            for (String registry : DAMAGE_TYPE_REGISTRIES) {
+                try {
+                    final Object tag = Bukkit.class
+                            .getMethod("getTag", String.class, NamespacedKey.class, Class.class)
+                            .invoke(null, registry, NamespacedKey.minecraft(BYPASSES_COOLDOWN_TAG), damageTypeClass);
+                    if (tag != null) return tag;
+                } catch (Exception ignored) {
+                    // Try the next registry spelling; older APIs may not expose damage-type tags at all.
+                }
+            }
+            return null;
+        }
+
+        private static Method findIsTaggedMethod(Object tag) {
+            for (Method method : tag.getClass().getMethods()) {
+                if (!"isTagged".equals(method.getName()) || method.getParameterTypes().length != 1) continue;
+                return method;
+            }
+            return null;
+        }
+
+        private boolean isBypassed(EntityDamageEvent event) {
+            if (bypassesCooldownTag == null) return false;
+            try {
+                final Object damageSource = getDamageSourceMethod.invoke(event);
+                if (damageSource == null) return false;
+                final Object damageType = getDamageTypeMethod.invoke(damageSource);
+                if (damageType == null) return false;
+                return Boolean.TRUE.equals(isTaggedMethod.invoke(bypassesCooldownTag, damageType));
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
     }
 
 }

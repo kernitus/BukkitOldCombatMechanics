@@ -7,6 +7,12 @@
 # Contributing
 All contributions should be in the form of [pull requests](https://github.com/kernitus/BukkitOldCombatMechanics/pulls), and should use the formatting profiles provided at the bottom of this page. All pull requests must be fully functional and able to compile, and should be fully tested. Please submit **monofocal** pull requests, i.e.if you're making unrelated changes to two different modules, or decide to also update the version of a dependency, *those should be separate pull requests*.
 
+## Testing expectations
+Contributions are expected to include automated test coverage within the existing test framework where practical. For behaviour changes, bug fixes, and new features, prefer adding or updating tests in the existing Kotlin integration-test harness rather than relying on manual testing alone.
+
+## Language expectations
+New classes should be written in Kotlin by default. If you are modifying an existing Java class, keep the surrounding file consistent unless there is a clear reason to migrate it as part of the same change.
+
 ## Module system
 OldCombatMechanics uses a modular system to make sure each feature is completely independent from any other, and can be toggled off and have no impact on server performance. This means each new module must extend the `Module` class, and implement a public constructor which takes an instance of the plugin and passes the module name to the superconstructor. The `Module` class also provides an overloadable `reload()` method which is called whenever the plugin is reloaded. If you are using any class-level variables they should probably be updated in here. This should also be used for any initialisation that might need to be done if the config section is changed and `ocm reload` is called. You may then call `reload()` from the constructor.
 

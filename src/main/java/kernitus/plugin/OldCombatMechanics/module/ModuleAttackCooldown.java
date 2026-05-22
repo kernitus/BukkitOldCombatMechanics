@@ -7,22 +7,32 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
-import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage;
+import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Disables the attack cooldown.
  */
 public class ModuleAttackCooldown extends OCMModule {
 
-    private final double NEW_ATTACK_SPEED = 4;
+    private static final double VANILLA_ATTACK_SPEED = 4.0;
+
+    private double genericAttackSpeed = 40.0;
+    private Map<Material, Double> heldItemAttackSpeeds = Collections.emptyMap();
 
     public ModuleAttackCooldown(OCMMain plugin) {
         super(plugin, "disable-attack-cooldown");
@@ -30,22 +40,47 @@ public class ModuleAttackCooldown extends OCMModule {
 
     @Override
     public void reload() {
+        genericAttackSpeed = module().getDouble("generic-attack-speed", 40.0);
+        heldItemAttackSpeeds = Collections.emptyMap();
+
+        if (module().isConfigurationSection("held-item-attack-speeds")) {
+            heldItemAttackSpeeds = ConfigUtils.loadMaterialDoubleMap(module().getConfigurationSection("held-item-attack-speeds"));
+        }
+
         Bukkit.getOnlinePlayers().forEach(this::adjustAttackSpeed);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerLogin(PlayerJoinEvent e) {
         adjustAttackSpeed(e.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onWorldChange(PlayerChangedWorldEvent e) {
         adjustAttackSpeed(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHotbarChange(PlayerItemHeldEvent e) {
+        if (e.isCancelled()) {
+            adjustAttackSpeed(e.getPlayer());
+        } else {
+            adjustAttackSpeed(e.getPlayer(), e.getPlayer().getInventory().getItem(e.getNewSlot()));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSwapHandItems(PlayerSwapHandItemsEvent e) {
+        if (e.isCancelled()) {
+            adjustAttackSpeed(e.getPlayer());
+        } else {
+            adjustAttackSpeed(e.getPlayer(), e.getOffHandItem());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerQuit(PlayerQuitEvent e) {
-        setAttackSpeed(e.getPlayer(), NEW_ATTACK_SPEED);
+        setAttackSpeed(e.getPlayer(), VANILLA_ATTACK_SPEED);
     }
 
     /**
@@ -55,9 +90,13 @@ public class ModuleAttackCooldown extends OCMModule {
      * @param player the player to set the attack speed for
      */
     private void adjustAttackSpeed(Player player) {
+        adjustAttackSpeed(player, player.getInventory().getItemInMainHand());
+    }
+
+    private void adjustAttackSpeed(Player player, ItemStack mainHand) {
         final double attackSpeed = isEnabled(player)
-                ? module().getDouble("generic-attack-speed")
-                : NEW_ATTACK_SPEED;
+                ? getConfiguredAttackSpeed(mainHand)
+                : VANILLA_ATTACK_SPEED;
 
         setAttackSpeed(player, attackSpeed);
     }
@@ -65,6 +104,14 @@ public class ModuleAttackCooldown extends OCMModule {
     @Override
     public void onModesetChange(Player player) {
         adjustAttackSpeed(player);
+    }
+
+    private double getConfiguredAttackSpeed(ItemStack itemStack) {
+        if (itemStack == null) {
+            return genericAttackSpeed;
+        }
+
+        return heldItemAttackSpeeds.getOrDefault(itemStack.getType(), genericAttackSpeed);
     }
 
     /**
@@ -80,16 +127,10 @@ public class ModuleAttackCooldown extends OCMModule {
 
         final double baseValue = attribute.getBaseValue();
 
-        final String modesetName = PlayerStorage.getPlayerData(player.getUniqueId())
-                .getModesetForWorld(player.getWorld().getUID());
-        debug(String.format("Setting attack speed to %.2f (was: %.2f) for %s in mode %s", attackSpeed, baseValue,
-                player.getName(), modesetName));
-
         if (baseValue != attackSpeed) {
             debug(String.format("Setting attack speed to %.2f (was: %.2f)", attackSpeed, baseValue), player);
 
             attribute.setBaseValue(attackSpeed);
-            player.saveData();
         }
     }
 }

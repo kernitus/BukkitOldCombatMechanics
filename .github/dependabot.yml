@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "io.netty:netty-all"
+      # Kotest 6 requires JDK/JVM 11+, while legacy integration-test servers still
+      # load the test plugin on Java 8; keep Kotest 5.x updates allowed until the
+      # harness is split or migrated.
+      - dependency-name: "io.kotest:kotest-runner-junit5-jvm"
+        versions: ["[6,)"]
+      - dependency-name: "io.kotest:kotest-assertions-core-jvm"
+        versions: ["[6,)"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"

@@ -13,8 +13,8 @@ import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.doubles.shouldBeExactly
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
+import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -108,6 +108,7 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
     }
 
     test("trident melee uses configured base damage") {
+        if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT")) return@test
         val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
         withWeaponConfig(tridentMelee = 12.0, tridentThrown = null, mace = null) {
             val world = checkNotNull(Bukkit.getWorld("world"))
@@ -139,8 +140,9 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
     }
 
     test("thrown trident uses configured damage") {
+        if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT") ||
+            !CompatibilityCapabilities.isBukkitClassAvailable("org.bukkit.entity.Trident")) return@test
         val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
-        if (!Reflector.versionIsNewerOrEqualTo(1, 13, 0)) return@test
         withWeaponConfig(tridentMelee = null, tridentThrown = 15.0, mace = null) {
             val world = checkNotNull(Bukkit.getWorld("world"))
             val victim = spawnFake(Location(world, 0.0, 100.0, 0.0))
@@ -177,6 +179,7 @@ class CustomWeaponDamageIntegrationTest : FunSpec({
     }
 
     test("mace melee uses configured base damage") {
+        if (!CompatibilityCapabilities.isMaterialAvailable("MACE")) return@test
         val maceMat = Material.matchMaterial("MACE") ?: return@test
         withWeaponConfig(tridentMelee = null, tridentThrown = null, mace = 10.0) {
             val world = checkNotNull(Bukkit.getWorld("world"))

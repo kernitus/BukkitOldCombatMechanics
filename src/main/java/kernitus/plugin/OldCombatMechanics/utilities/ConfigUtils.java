@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class ConfigUtils {
     private static final Set<String> warnedUnknownPotionDurationKeys = Collections.synchronizedSet(new HashSet<>());
     private static final Set<String> warnedUnknownMaterialListKeys = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> warnedUnknownMaterialMapKeys = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Safely loads all doubles from a configuration section, reading both double and integer values.
@@ -37,6 +38,35 @@ public class ConfigUtils {
         return section.getKeys(false).stream()
                 .filter(((Predicate<String>) section::isDouble).or(section::isInt))
                 .collect(Collectors.toMap(key -> key, section::getDouble));
+    }
+
+    /**
+     * Loads a material-to-double map from a configuration section.
+     * Safely ignores non-matching materials.
+     *
+     * @param section The section from which to load the values.
+     * @return The loaded material map.
+     */
+    public static Map<Material, Double> loadMaterialDoubleMap(ConfigurationSection section) {
+        Objects.requireNonNull(section, "section cannot be null!");
+
+        final String fullKey = section.getCurrentPath() == null ? "" : section.getCurrentPath();
+
+        return section.getKeys(false).stream()
+                .filter(((Predicate<String>) section::isDouble).or(section::isInt))
+                .map(key -> {
+                    Material material = matchMaterial(key);
+                    if (material == null && isUnknownMaterialKey(key)) {
+                        warnUnknownMaterialMap(fullKey, key);
+                        return null;
+                    }
+                    if (material == null) {
+                        return null;
+                    }
+                    return new AbstractMap.SimpleImmutableEntry<>(material, section.getDouble(key));
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> right));
     }
 
     /**
@@ -59,14 +89,10 @@ public class ConfigUtils {
         return section.getStringList(key).stream()
                 .map(String::trim)
                 .map(name -> {
-                    Optional<XMaterial> match = XMaterial.matchXMaterial(name);
-                    if (!match.isPresent()) {
+                    Material material = matchMaterial(name);
+                    if (material == null && isUnknownMaterialKey(name)) {
                         warnUnknownMaterial(fullKey, name);
                         return null;
-                    }
-                    Material material = match.get().parseMaterial();
-                    if (material == null) {
-                        warnUnknownMaterial(fullKey, name);
                     }
                     return material;
                 })
@@ -79,6 +105,26 @@ public class ConfigUtils {
         if (warnedUnknownMaterialListKeys.add(warnKey)) {
             Messenger.warn("Unknown material '%s' in config list '%s'; skipping", name, fullKey);
         }
+    }
+
+    private static void warnUnknownMaterialMap(String fullKey, String name) {
+        final String warnKey = fullKey + ":" + name.toUpperCase(Locale.ROOT);
+        if (warnedUnknownMaterialMapKeys.add(warnKey)) {
+            Messenger.warn("Unknown material '%s' in config section '%s'; skipping", name, fullKey);
+        }
+    }
+
+    private static Material matchMaterial(String name) {
+        Optional<XMaterial> match = XMaterial.matchXMaterial(name);
+        if (match.isPresent()) {
+            return match.get().parseMaterial();
+        }
+
+        return Material.matchMaterial(name);
+    }
+
+    private static boolean isUnknownMaterialKey(String name) {
+        return !XMaterial.matchXMaterial(name).isPresent() && Material.matchMaterial(name) == null;
     }
 
     /**

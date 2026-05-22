@@ -49,6 +49,7 @@ public class ModuleSwordBlocking extends OCMModule {
     private java.lang.reflect.Method paperIsBlockingSword;
     private Method startUsingItemMethod;
     private boolean startUsingItemMethodResolved;
+    private boolean playerIsHandRaisedUnavailable;
     private Method craftPlayerGetHandleMethod;
     private final Map<Class<?>, Method> nmsStartUsingItemCache = new HashMap<>();
     private Object minClientVersion;
@@ -69,17 +70,19 @@ public class ModuleSwordBlocking extends OCMModule {
     private final Map<EntityInteractionKey, Long> handledEntityInteractions = new HashMap<>();
     private long nextEntityInteractionPruneAtNanos;
     private static ModuleSwordBlocking INSTANCE;
+    private boolean blockCanBuildEventPlayerAvailable;
+    private boolean blockCanBuildEventPlayerUnavailable;
 
-    // Only used <1.13, where BlockCanBuildEvent.getPlayer() is not available
+    // Used until BlockCanBuildEvent#getPlayer() is confirmed available, and retained on legacy Bukkit APIs where it is not available.
     private Map<Location, UUID> lastInteractedBlocks;
 
     public ModuleSwordBlocking(OCMMain plugin) {
         super(plugin, "sword-blocking");
         INSTANCE = this;
 
-        if (!Reflector.versionIsNewerOrEqualTo(1, 13, 0)) {
-            lastInteractedBlocks = new WeakHashMap<>();
-        }
+        // Legacy semantic/API bridge: older servers expose failed block placement without the player, so keep
+        // the last clicked block until direct BlockCanBuildEvent#getPlayer() is known to work on this runtime.
+        lastInteractedBlocks = new WeakHashMap<>();
 
         initialisePaperAdapter();
         initialisePacketEventsClientVersion();
@@ -265,14 +268,12 @@ public class ModuleSwordBlocking extends OCMModule {
     public void onBlockPlace(BlockCanBuildEvent e) {
         if (e.isBuildable()) return;
 
-        Player player;
-
-        // If <1.13 get player who last interacted with block
-        if (lastInteractedBlocks != null) {
+        Player player = getBlockCanBuildEventPlayerIfSupported(e);
+        if (player == null && blockCanBuildEventPlayerUnavailable) {
             final Location blockLocation = e.getBlock().getLocation();
-            final UUID uuid = lastInteractedBlocks.remove(blockLocation);
-            player = Bukkit.getServer().getPlayer(uuid);
-        } else player = e.getPlayer();
+            final UUID uuid = lastInteractedBlocks == null ? null : lastInteractedBlocks.remove(blockLocation);
+            player = uuid == null ? null : Bukkit.getServer().getPlayer(uuid);
+        }
 
         if (player == null || !isEnabled(player)) return;
 
@@ -291,7 +292,7 @@ public class ModuleSwordBlocking extends OCMModule {
         // This is also the case if the main hand item was used, e.g. a bow
         if (action == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND) return;
         if (e.isBlockInHand()) {
-            if (lastInteractedBlocks != null) {
+            if (!blockCanBuildEventPlayerAvailable && lastInteractedBlocks != null) {
                 final Block clickedBlock = e.getClickedBlock();
                 if (clickedBlock != null)
                     lastInteractedBlocks.put(clickedBlock.getLocation(), player.getUniqueId());
@@ -655,7 +656,33 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!hasShield(player.getInventory())) return false;
 
         return player.isBlocking() ||
-                (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
+                isHandRaisedIfSupported(player);
+    }
+
+    private boolean isHandRaisedIfSupported(Player player) {
+        if (player == null || playerIsHandRaisedUnavailable) return false;
+        try {
+            return player.isHandRaised();
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            playerIsHandRaisedUnavailable = true;
+            return false;
+        }
+    }
+
+    private Player getBlockCanBuildEventPlayerIfSupported(BlockCanBuildEvent e) {
+        if (blockCanBuildEventPlayerUnavailable) return null;
+        try {
+            final Player player = e.getPlayer();
+            blockCanBuildEventPlayerAvailable = true;
+            lastInteractedBlocks = null;
+            return player;
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            blockCanBuildEventPlayerUnavailable = true;
+            if (lastInteractedBlocks == null) {
+                lastInteractedBlocks = new WeakHashMap<>();
+            }
+            return null;
+        }
     }
 
     private boolean hasShield(PlayerInventory inventory) {
@@ -708,7 +735,7 @@ public class ModuleSwordBlocking extends OCMModule {
         } catch (Throwable ignored) {
         }
         // Fallback: may work on some combinations, but is not reliable for consumable-based sword blocking.
-        return player.isBlocking() || (Reflector.versionIsNewerOrEqualTo(1, 11, 0) && player.isHandRaised());
+        return player.isBlocking() || isHandRaisedIfSupported(player);
     }
 
     /* ---------- Paper consumable component (animation-only) ---------- */

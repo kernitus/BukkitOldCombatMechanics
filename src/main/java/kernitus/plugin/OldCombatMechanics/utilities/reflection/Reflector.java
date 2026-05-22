@@ -51,9 +51,14 @@ public class Reflector {
      * @return true if the server version is newer or equal to the one provided
      */
     public static boolean versionIsNewerOrEqualTo(int major, int minor, int patch) {
-        if (getMajorVersion() < major) return false;
-        if (getMinorVersion() < minor) return false;
-        return getPatchVersion() >= patch;
+        return VersionComparator.isNewerOrEqualTo(
+                getMajorVersion(),
+                getMinorVersion(),
+                getPatchVersion(),
+                major,
+                minor,
+                patch
+        );
     }
 
     private static int getMajorVersion() {

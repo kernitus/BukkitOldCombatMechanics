@@ -7,7 +7,6 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -30,8 +29,9 @@ import java.util.function.Predicate;
 import java.lang.reflect.Method;
 
 /**
- * Applies the 1.8-style attack range (reach + hitbox margin) to melee weapons on 1.21.11+ Paper.
- * Gracefully disables itself on Spigot or older versions where the AttackRange data component is absent.
+ * Applies the 1.8-style attack range (reach + hitbox margin) to melee weapons when Paper exposes
+ * the required AttackRange data-component API.
+ * Gracefully disables itself on Spigot or other servers where the component API is absent.
  */
 public class ModuleAttackRange extends OCMModule implements Listener {
 
@@ -55,17 +55,21 @@ public class ModuleAttackRange extends OCMModule implements Listener {
     }
 
     private void initialiseReflection() {
-        if (!Reflector.versionIsNewerOrEqualTo(1, 21, 11)) {
-            supported = false;
-            return;
-        }
         try {
             paperAdapter = new PaperAttackRangeAdapter();
             supported = true;
         } catch (Throwable t) {
             supported = false;
-            Messenger.warn("Attack range component API not available (Paper 1.21.11+ required); module disabled. (" + t.getClass().getSimpleName() + ": " + t.getMessage() + ")");
+            Messenger.warn("Attack range data-component API not available; module disabled. Required Paper data-component classes or methods were not detected. (" + t.getClass().getSimpleName() + ": " + t.getMessage() + ")");
         }
+    }
+
+    /**
+     * Reports whether the runtime exposes the Paper AttackRange data-component API this module needs.
+     * Kept public so integration tests can use the same capability signal as production code.
+     */
+    public static boolean isAttackRangeApiAvailable() {
+        return PaperAttackRangeAdapter.isAvailable();
     }
 
     @Override
@@ -262,6 +266,15 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             }
             itemEnsureServerConversions = ensureMethod;
             itemCopyDataFrom = copyMethod;
+        }
+
+        private static boolean isAvailable() {
+            try {
+                new PaperAttackRangeAdapter();
+                return true;
+            } catch (Throwable ignored) {
+                return false;
+            }
         }
 
         private Method findSetDataMethod(Class<?> dctClass, Class<?> valueClass) throws NoSuchMethodException {

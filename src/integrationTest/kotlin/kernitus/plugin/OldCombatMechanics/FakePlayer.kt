@@ -139,6 +139,26 @@ class FakePlayer(private val plugin: JavaPlugin) {
         plugin.logger.info("Spawn: completed successfully")
     }
 
+    fun teleport(location: Location): Boolean {
+        if (isLegacy9) {
+            val teleported = legacyImpl9!!.teleport(location)
+            if (teleported) {
+                serverPlayer = legacyImpl9.entityPlayer ?: serverPlayer
+                bukkitPlayer = legacyImpl9.bukkitPlayer ?: Bukkit.getPlayer(uuid)
+            }
+            return teleported
+        }
+
+        val teleported = bukkitPlayer?.teleport(location) ?: false
+        if (teleported) {
+            bukkitPlayer = Bukkit.getPlayer(uuid) ?: bukkitPlayer
+        }
+        return teleported
+    }
+
+    fun requireBukkitPlayer(): Player = Bukkit.getPlayer(uuid) ?: bukkitPlayer
+        ?: error("Bukkit player with UUID $uuid not found!")
+
     private fun setupPlayerConnection(minecraftServer: Any, worldServer: Any) {
         // Access ServerGamePacketListenerImpl class
         val serverGamePacketListenerImplClass = getNMSClass("net.minecraft.server.network.ServerGamePacketListenerImpl")

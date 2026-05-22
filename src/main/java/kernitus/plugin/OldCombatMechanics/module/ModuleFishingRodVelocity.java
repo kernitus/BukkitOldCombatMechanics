@@ -49,7 +49,8 @@ public class ModuleFishingRodVelocity extends OCMModule {
     public void reload() {
         random = new Random();
 
-        // Versions 1.14+ have different gravity than previous versions
+        // Semantic gate: Bukkit/Minecraft changed fish-hook gravity in 1.14; there is no API capability that
+        // exposes the vanilla gravity constant, so this boundary deliberately models gameplay behaviour.
         hasDifferentGravity = Reflector.versionIsNewerOrEqualTo(1, 14, 0);
 
         if (gravityTask != null) {
