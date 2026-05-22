@@ -8,14 +8,18 @@
 
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XPotion
 import com.google.common.base.Function
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import org.bukkit.Bukkit
@@ -28,6 +32,7 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.potion.PotionEffect
 import java.util.EnumMap
 import java.util.Locale
 import java.util.concurrent.Callable
@@ -47,6 +52,16 @@ class MixedModePvPIntegrationTest :
                 .getModules()
                 .filterIsInstance<ModuleShieldDamageReduction>()
                 .firstOrNull() ?: error("ModuleShieldDamageReduction not registered")
+        val oldPotionEffectsModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleOldPotionEffects>()
+                .firstOrNull() ?: error("ModuleOldPotionEffects not registered")
+        val oldCriticalHitsModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleOldCriticalHits>()
+                .firstOrNull() ?: error("ModuleOldCriticalHits not registered")
 
         lateinit var attacker: Player
         lateinit var defender: Player
@@ -124,6 +139,8 @@ class MixedModePvPIntegrationTest :
             ModuleLoader.toggleModules()
             oldArmourStrengthModule.reload()
             shieldDamageReductionModule.reload()
+            oldPotionEffectsModule.reload()
+            oldCriticalHitsModule.reload()
         }
 
         fun applyMixedModeConfig(moduleUnderTest: String) {
@@ -179,6 +196,53 @@ class MixedModePvPIntegrationTest :
             } finally {
                 runSync {
                     restoreSection("old-tool-damage.damages", originalDamages)
+                    reloadConfigAndModules()
+                }
+            }
+        }
+
+        suspend fun withMixedModeOldPotionEffectsAttackConfig(block: suspend () -> Unit) {
+            val originalStrength = snapshotSection("old-potion-effects.strength")
+            val originalWeakness = snapshotSection("old-potion-effects.weakness")
+
+            try {
+                withMixedModeConfig("old-potion-effects") {
+                    runSync {
+                        ocm.config.set("old-potion-effects.strength.modifier", 2.4)
+                        ocm.config.set("old-potion-effects.strength.multiplier", false)
+                        ocm.config.set("old-potion-effects.strength.addend", true)
+                        ocm.config.set("old-potion-effects.weakness.modifier", -0.75)
+                        ocm.config.set("old-potion-effects.weakness.multiplier", true)
+                        reloadConfigAndModules()
+                    }
+                    block()
+                }
+            } finally {
+                runSync {
+                    restoreSection("old-potion-effects.strength", originalStrength)
+                    restoreSection("old-potion-effects.weakness", originalWeakness)
+                    reloadConfigAndModules()
+                }
+            }
+        }
+
+        suspend fun withMixedModeOldCriticalHitsConfig(block: suspend () -> Unit) {
+            val originalMultiplier = ocm.config.get("old-critical-hits.multiplier")
+            val originalAllowSprinting = ocm.config.get("old-critical-hits.allow-sprinting")
+
+            try {
+                withMixedModeConfig("old-critical-hits") {
+                    runSync {
+                        ocm.config.set("old-critical-hits.multiplier", 1.25)
+                        ocm.config.set("old-critical-hits.allow-sprinting", true)
+                        reloadConfigAndModules()
+                    }
+                    block()
+                }
+            } finally {
+                runSync {
+                    ocm.config.set("old-critical-hits.multiplier", originalMultiplier)
+                    ocm.config.set("old-critical-hits.allow-sprinting", originalAllowSprinting)
                     reloadConfigAndModules()
                 }
             }
@@ -300,6 +364,14 @@ class MixedModePvPIntegrationTest :
                 PlayerItemDamageEvent(player, item, damage)
             }
         }
+
+        fun createOCMDirectPvPDamageEvent(rawDamage: Double): OCMEntityDamageByEntityEvent =
+            OCMEntityDamageByEntityEvent(
+                attacker,
+                defender,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                rawDamage
+            )
 
         beforeSpec {
             runSync {
@@ -466,6 +538,84 @@ class MixedModePvPIntegrationTest :
 
                         event.getDamage(EntityDamageEvent.DamageModifier.BASE) shouldBe (7.0 plusOrMinus 0.0001)
                         event.finalDamage shouldBe (7.0 plusOrMinus 0.0001)
+                    }
+                }
+            }
+        }
+
+        context("old potion effects direct PvP") {
+            test("old potion effects apply old strength and weakness modifiers when only the attacker is old-mode") {
+                withMixedModeOldPotionEffectsAttackConfig {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+                        attacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0), true)
+                        attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 200, 0), true)
+
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 10.0)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.strengthModifier shouldBe (2.4 plusOrMinus 0.0001)
+                        event.isStrengthModifierMultiplier shouldBe false
+                        event.isStrengthModifierAddend shouldBe true
+                        event.weaknessModifier shouldBe (-0.75 plusOrMinus 0.0001)
+                        event.isWeaknessModifierMultiplier shouldBe true
+                        event.weaknessLevel shouldBe 1
+                    }
+                }
+            }
+
+            test("old potion effects keep new strength and weakness modifiers when only the defender is old-mode") {
+                withMixedModeOldPotionEffectsAttackConfig {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+                        attacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0), true)
+                        attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 200, 0), true)
+
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 10.0)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.strengthModifier shouldBe (3.0 plusOrMinus 0.0001)
+                        event.isStrengthModifierMultiplier shouldBe false
+                        event.isStrengthModifierAddend shouldBe true
+                        event.weaknessModifier shouldBe (-4.0 plusOrMinus 0.0001)
+                        event.isWeaknessModifierMultiplier shouldBe false
+                        event.weaknessLevel shouldBe 1
+                    }
+                }
+            }
+        }
+
+        context("old critical hits direct PvP") {
+            test("old critical hits apply the old critical multiplier when only the attacker is old-mode") {
+                withMixedModeOldCriticalHitsConfig {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 10.0)
+                        event.setWas1_8Crit(true)
+                        event.setWasSprinting(false)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.criticalMultiplier shouldBe (1.25 plusOrMinus 0.0001)
+                    }
+                }
+            }
+
+            test("old critical hits keep the new critical multiplier when only the defender is old-mode") {
+                withMixedModeOldCriticalHitsConfig {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 10.0)
+                        event.setWas1_8Crit(true)
+                        event.setWasSprinting(false)
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.criticalMultiplier shouldBe (1.0 plusOrMinus 0.0001)
                     }
                 }
             }
