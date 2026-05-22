@@ -86,6 +86,7 @@ class MixedModePvPIntegrationTest :
 
         lateinit var attacker: Player
         lateinit var defender: Player
+        lateinit var nonPlayerAttacker: Entity
         lateinit var fakeAttacker: FakePlayer
         lateinit var fakeDefender: FakePlayer
 
@@ -363,6 +364,35 @@ class MixedModePvPIntegrationTest :
         }
 
         @Suppress("DEPRECATION")
+        fun createNonPlayerDamageEvent(): EntityDamageByEntityEvent {
+            val modifiers =
+                EnumMap<EntityDamageEvent.DamageModifier, Double>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers[EntityDamageEvent.DamageModifier.BASE] = 20.0
+            modifiers[EntityDamageEvent.DamageModifier.ARMOR] = -8.0
+            modifiers[EntityDamageEvent.DamageModifier.MAGIC] = -2.0
+
+            val identity =
+                object : Function<Double, Double> {
+                    override fun apply(input: Double): Double = input
+                }
+            val modifierFunctions =
+                EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
+                    EntityDamageEvent.DamageModifier::class.java
+                )
+            modifiers.keys.forEach { modifierFunctions[it] = identity }
+
+            return EntityDamageByEntityEvent(
+                nonPlayerAttacker,
+                defender,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                modifiers,
+                modifierFunctions
+            )
+        }
+
+        @Suppress("DEPRECATION")
         fun createDirectPvPToolDamageEvent(baseDamage: Double): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
@@ -604,11 +634,17 @@ class MixedModePvPIntegrationTest :
                 fakeDefender.spawn(Location(world, 1.5, 100.0, 0.0))
                 attacker = checkNotNull(Bukkit.getPlayer(fakeAttacker.uuid))
                 defender = checkNotNull(Bukkit.getPlayer(fakeDefender.uuid))
+                nonPlayerAttacker =
+                    world.spawnEntity(
+                        Location(world, 3.0, 100.0, 0.0),
+                        EntityType.ZOMBIE
+                    )
             }
         }
 
         afterSpec {
             runSync {
+                nonPlayerAttacker.remove()
                 fakeAttacker.removePlayer()
                 fakeDefender.removePlayer()
             }
@@ -619,6 +655,7 @@ class MixedModePvPIntegrationTest :
                 val world = checkNotNull(Bukkit.getServer().getWorld("world"))
                 attacker.teleport(Location(world, 0.0, 100.0, 0.0))
                 defender.teleport(Location(world, 1.5, 100.0, 0.0))
+                nonPlayerAttacker.teleport(Location(world, 3.0, 100.0, 0.0))
                 listOf(attacker, defender).forEach { player ->
                     player.gameMode = GameMode.SURVIVAL
                     player.isInvulnerable = false
@@ -662,6 +699,47 @@ class MixedModePvPIntegrationTest :
                         setModeset(defender, "old")
 
                         val event = createDirectPvPDamageEvent()
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
+                        event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                    }
+                }
+            }
+        }
+
+        context("old armour strength environmental and non-player damage") {
+            test("environmental non-player damage keeps vanilla mitigation when only an unrelated player is old-mode") {
+                withMixedModeConfig("old-armour-strength") {
+                    runSync {
+                        setModeset(attacker, "old")
+                        setModeset(defender, "new")
+
+                        val event = createNonPlayerDamageEvent()
+                        val originalArmour = event.getDamage(EntityDamageEvent.DamageModifier.ARMOR)
+                        val originalMagic = event.getDamage(EntityDamageEvent.DamageModifier.MAGIC)
+                        val originalFinalDamage = event.finalDamage
+
+                        Bukkit.getPluginManager().callEvent(event)
+
+                        event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe
+                            (originalArmour plusOrMinus 0.0001)
+                        event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe
+                            (originalMagic plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (originalFinalDamage plusOrMinus 0.0001)
+                    }
+                }
+            }
+
+            test("environmental non-player damage uses old armour mitigation for an old-mode target") {
+                withMixedModeConfig("old-armour-strength") {
+                    runSync {
+                        setModeset(attacker, "new")
+                        setModeset(defender, "old")
+
+                        val event = createNonPlayerDamageEvent()
+
                         Bukkit.getPluginManager().callEvent(event)
 
                         event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)

@@ -226,4 +226,20 @@ class OldArmourStrengthModesetIntegrationTest :
                 }
             }
         }
+
+        test("old-armour-strength applies old armour modifiers to explosion damage in old modeset") {
+            withIssue861Config {
+                runSync {
+                    setModeset("old")
+
+                    val event = createExplosionDamageEvent()
+
+                    Bukkit.getPluginManager().callEvent(event)
+
+                    event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
+                    event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
+                    event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                }
+            }
+        }
     })
