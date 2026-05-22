@@ -8,9 +8,13 @@ package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
@@ -79,19 +83,34 @@ class ModesetRulesIntegrationTest : FunSpec({
         }
     }
 
+    fun applyConfigWithWorlds(
+        always: List<String>,
+        disabled: List<String>,
+        modesets: Map<String, List<String>>,
+        worlds: Map<String, List<String>>
+    ) {
+        ocm.config.set("always_enabled_modules", always)
+        ocm.config.set("disabled_modules", disabled)
+        ocm.config.set("modesets", null)
+        ocm.config.createSection("modesets", modesets)
+        ocm.config.set("worlds", null)
+        ocm.config.createSection("worlds", worlds)
+        ocm.saveConfig()
+        Config.reload()
+    }
+
     fun applyConfig(
         always: List<String>,
         disabled: List<String>,
         modesets: Map<String, List<String>>,
         worldModesets: List<String>
     ) {
-        ocm.config.set("always_enabled_modules", always)
-        ocm.config.set("disabled_modules", disabled)
-        ocm.config.set("modesets", null)
-        ocm.config.createSection("modesets", modesets)
-        ocm.config.set("worlds.world", worldModesets)
-        ocm.saveConfig()
-        Config.reload()
+        applyConfigWithWorlds(
+            always = always,
+            disabled = disabled,
+            modesets = modesets,
+            worlds = mapOf("world" to worldModesets)
+        )
     }
 
     fun completeAlways(
@@ -116,6 +135,23 @@ class ModesetRulesIntegrationTest : FunSpec({
             .filterNot { assigned.contains(it) }
             .forEach { filled.add(it) }
         return filled.toList()
+    }
+
+    fun applySimpleModesetWorlds(worlds: Map<String, List<String>>) {
+        val modesets = mapOf(
+            "old" to listOf("disable-offhand"),
+            "new" to listOf("old-potion-effects")
+        )
+        applyConfigWithWorlds(
+            always = completeAlways(
+                always = emptyList(),
+                disabled = emptyList(),
+                modesets = modesets
+            ),
+            disabled = emptyList(),
+            modesets = modesets,
+            worlds = worlds
+        )
     }
 
     suspend fun withConfig(block: suspend () -> Unit) {
@@ -236,6 +272,70 @@ class ModesetRulesIntegrationTest : FunSpec({
 
                 setModeset(player, "new")
                 module.isEnabled(player).shouldBeFalse()
+            }
+        }
+    }
+
+    test("listed world modesets override default world modesets") {
+        withConfig {
+            runSync {
+                applySimpleModesetWorlds(
+                    mapOf(
+                        "__default__" to listOf("old"),
+                        "world" to listOf("new", "old")
+                    )
+                )
+
+                Config.getAllowedModesets(player.world.uid).toList().shouldContainExactly("new", "old")
+                Config.getDefaultModeset(player.world.uid) shouldBe Config.getModesets()["new"]
+            }
+        }
+    }
+
+    test("unlisted worlds use default world modesets") {
+        withConfig {
+            runSync {
+                applySimpleModesetWorlds(mapOf("__default__" to listOf("old")))
+
+                Config.getAllowedModesets(player.world.uid).toList().shouldContainExactly("old")
+                Config.getDefaultModeset(player.world.uid) shouldBe Config.getModesets()["old"]
+            }
+        }
+    }
+
+    test("empty listed world modesets remain unrestricted despite default world modesets") {
+        withConfig {
+            runSync {
+                applySimpleModesetWorlds(
+                    mapOf(
+                        "__default__" to listOf("old"),
+                        "world" to emptyList()
+                    )
+                )
+
+                val allowedModesets = Config.getAllowedModesets(player.world.uid)
+                allowedModesets.shouldContain("old")
+                allowedModesets.shouldContain("new")
+                Config.getDefaultModeset(player.world.uid) shouldBe null
+            }
+        }
+    }
+
+    test("mode command and tab completion use default world modesets") {
+        withConfig {
+            runSync {
+                applySimpleModesetWorlds(mapOf("__default__" to listOf("old")))
+                player.addAttachment(ocm, "oldcombatmechanics.commands", true)
+                player.addAttachment(ocm, "oldcombatmechanics.mode", true)
+                player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
+
+                val command = checkNotNull(Bukkit.getPluginCommand("oldcombatmechanics"))
+                val completions = OCMCommandCompleter().onTabComplete(player, command, "ocm", arrayOf("mode", ""))
+                completions.shouldContainExactly("old")
+
+                setModeset(player, "old")
+                Bukkit.dispatchCommand(player, "ocm mode new")
+                getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
             }
         }
     }

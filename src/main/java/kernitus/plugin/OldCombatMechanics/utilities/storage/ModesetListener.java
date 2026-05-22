@@ -49,9 +49,7 @@ public class ModesetListener extends OCMModule {
         String modesetName = playerData.getModesetForWorld(worldId);
 
         // Get modesets allowed in to world
-        Set<String> allowedModesets = Config.getWorlds().get(worldId);
-        if (allowedModesets == null || allowedModesets.isEmpty())
-            allowedModesets = Config.getModesets().keySet();
+        Set<String> allowedModesets = Config.getAllowedModesets(worldId);
 
         // If they don't have a modeset in toWorld yet
         if (modesetName == null) {

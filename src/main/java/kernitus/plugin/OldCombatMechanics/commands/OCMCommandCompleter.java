@@ -45,9 +45,7 @@ public class OCMCommandCompleter implements TabCompleter {
                     if (sender instanceof Player) { // Get the modesets allowed in the world player is in
                         final World world = ((Player) sender).getWorld();
                         completions.addAll(
-                                Config.getWorlds()
-                                        // If world not in config, all modesets allowed
-                                        .getOrDefault(world.getUID(), Config.getModesets().keySet())
+                                Config.getAllowedModesets(world.getUID())
                                         .stream()
                                         .filter(ms -> ms.startsWith(args[1]))
                                         .collect(Collectors.toList()));

@@ -120,10 +120,10 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         final UUID worldId = player.getWorld().getUID();
-        final Set<String> worldModesets = Config.getWorlds().get(worldId);
+        final Set<String> worldModesets = Config.getAllowedModesets(worldId);
 
-        // If modesets null or empty it means not configured, so all are allowed
-        if (worldModesets != null && !worldModesets.isEmpty() && !worldModesets.contains(modesetName)) {
+        // Empty named world lists are resolved as unrestricted, so all are allowed
+        if (!worldModesets.contains(modesetName)) {
             // Modeset not allowed in current world
             Messenger.send(sender,
                     Config.getConfig().getString("mode-messages.invalid-modeset",

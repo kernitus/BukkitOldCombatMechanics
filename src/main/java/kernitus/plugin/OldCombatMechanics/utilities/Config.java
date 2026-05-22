@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class Config {
 
     private static final String CONFIG_NAME = "config.yml";
+    private static final String DEFAULT_WORLD_KEY = "__default__";
     private static OCMMain plugin;
     private static FileConfiguration config;
     private static final Map<String, Set<String>> modesets = new HashMap<>();
@@ -220,15 +221,26 @@ public class Config {
         worlds.clear();
 
         final ConfigurationSection worldsSection = config.getConfigurationSection("worlds");
+        if (worldsSection == null) return;
 
         // Iterate over each world
         for (String worldName : worldsSection.getKeys(false)) {
+            if (!worldsSection.isSet(worldName)) continue;
+            if (DEFAULT_WORLD_KEY.equals(worldName)) continue;
             final World world = Bukkit.getWorld(worldName);
             if(world == null){
                 Messenger.warn("Configured world " + worldName + " not found, skipping (might be loaded later?)...");
                 continue;
             }
             addWorld(world, worldsSection);
+        }
+
+        if (worldsSection.isSet(DEFAULT_WORLD_KEY)) {
+            for (World world : Bukkit.getWorlds()) {
+                if (!worlds.containsKey(world.getUID())) {
+                    addWorld(world, worldsSection);
+                }
+            }
         }
     }
 
@@ -238,12 +250,25 @@ public class Config {
     }
 
     public static void addWorld(World world, ConfigurationSection worldsSection) {
+        if (worldsSection == null) return;
+
+        final String worldKey = worldsSection.isSet(world.getName()) ? world.getName() : DEFAULT_WORLD_KEY;
+        if (!worldsSection.isSet(worldKey)) return;
+
         // Retrieve the list of modeset names for the current world
         // Using a linkedhashset to remove duplicates but retain insertion order (important for default modeset)
-        final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>(worldsSection.getStringList(world.getName()));
+        final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>(worldsSection.getStringList(worldKey));
 
         // Add the current world and its modesets to the map
         worlds.put(world.getUID(), modesetsSet);
+    }
+
+    public static Set<String> getAllowedModesets(UUID worldId) {
+        final Set<String> worldModesets = worlds.get(worldId);
+        if (worldModesets == null || worldModesets.isEmpty()) {
+            return modesets.keySet();
+        }
+        return worldModesets;
     }
 
     public static void removeWorld(World world){
