@@ -45,7 +45,8 @@ jobs:
       - name: Generate download stats
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          # Prefer the stats-specific secret, but reuse the existing BukkitDev upload token when absent.
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY || secrets.DBO_UPLOAD_API_TOKEN }}
         run: |
           args=(--output public --timeout 20)
           if [ -n "${{ steps.previous-stats.outputs.path }}" ]; then
