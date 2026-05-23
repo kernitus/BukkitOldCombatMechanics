@@ -32,7 +32,10 @@ DEFAULT_OUTPUT = "build/download-stats"
 # * Hangar: public PaperMC Hangar v1 project API. The project payload currently
 #   exposes aggregate downloads in ``stats.downloads``.
 # * BukkitDev/CurseForge: official CurseForge Core API search by slug. This is
-#   preferred over page scraping but requires a ``CURSEFORGE_API_KEY`` secret.
+#   preferred when a valid ``CURSEFORGE_API_KEY`` secret is available. Without a
+#   key, the CFWidget project JSON is used because it exposes project-level
+#   ``downloads.total``. The public BukkitDev project page is parsed only as a
+#   final fallback because it may reject unattended requests.
 # * Spigot: Spiget's public JSON API is used first because Spigot does not
 #   publish an official download-count API. If Spiget is unavailable, the
 #   resource page is fetched with conservative headers and parsed in one isolated
@@ -52,6 +55,8 @@ SOURCES = {
         "label": "BukkitDev/CurseForge",
         "slug": "oldcombatmechanics",
         "api": "https://api.curseforge.com/v1/mods/search?gameId=1&slug={slug}",
+        "cfwidget_api": "https://api.cfwidget.com/minecraft/bukkit-plugins/{slug}",
+        "page": "https://dev.bukkit.org/projects/{slug}",
     },
     "spigot": {
         "label": "Spigot",
@@ -132,18 +137,23 @@ def fetch_hangar_downloads(timeout):
 def fetch_curseforge_downloads(timeout):
     api_key = os.environ.get("CURSEFORGE_API_KEY") or os.environ.get("CF_API_KEY")
     if not api_key:
-        raise SourceError("CURSEFORGE_API_KEY is not set")
+        return fetch_cfwidget_downloads(timeout)
     slug = SOURCES["curseforge"]["slug"]
     url = SOURCES["curseforge"]["api"].format(slug=quote(slug, safe=""))
-    payload = request_json(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "BukkitOldCombatMechanics-download-stats",
-            "x-api-key": api_key,
-        },
-        timeout=timeout,
-    )
+    try:
+        payload = request_json(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "BukkitOldCombatMechanics-download-stats",
+                "x-api-key": api_key,
+            },
+            timeout=timeout,
+        )
+    except HTTPError as exc:
+        if exc.code in (401, 403):
+            return fetch_cfwidget_downloads(timeout)
+        raise
     matches = payload.get("data") or []
     if not matches:
         raise SourceError("CurseForge API returned no project for slug oldcombatmechanics")
@@ -152,6 +162,67 @@ def fetch_curseforge_downloads(timeout):
     if value is None:
         raise SourceError("CurseForge project did not include downloadCount")
     return int(value)
+
+
+def fetch_cfwidget_downloads(timeout):
+    slug = SOURCES["curseforge"]["slug"]
+    url = SOURCES["curseforge"]["cfwidget_api"].format(slug=quote(slug, safe=""))
+    try:
+        payload = request_json(
+            url,
+            headers={"User-Agent": "BukkitOldCombatMechanics-download-stats"},
+            timeout=timeout,
+        )
+        downloads = payload.get("downloads") or {}
+        value = downloads.get("total")
+        if value is None:
+            raise SourceError("CFWidget response did not include downloads.total")
+        return int(value)
+    except (HTTPError, URLError, ValueError, KeyError, TypeError, SourceError):
+        return fetch_bukkitdev_page_downloads(timeout)
+
+
+def parse_download_count_token(token):
+    cleaned = token.strip().replace(",", "")
+    match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)\s*([kKmMbB])?", cleaned)
+    if not match:
+        raise ValueError("unrecognised download count token: " + token)
+    value = float(match.group(1))
+    suffix = (match.group(2) or "").lower()
+    multipliers = {"": 1, "k": 1000, "m": 1000000, "b": 1000000000}
+    return int(value * multipliers[suffix])
+
+
+def parse_bukkitdev_downloads(html):
+    number = r"([0-9][0-9,]*(?:\.[0-9]+)?\s*[kKmMbB]?)"
+    patterns = [
+        r'"downloadCount"\s*:\s*"?' + number + r'"?',
+        r'"downloads"\s*:\s*"?' + number + r'"?',
+        r'"totalDownloads"\s*:\s*"?' + number + r'"?',
+        r'Downloads\s*</[^>]+>\s*<[^>]+>\s*' + number,
+        r'Downloads[^0-9]{0,160}' + number,
+        r'' + number + r'\s*</[^>]+>\s*<[^>]*>\s*Downloads',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+        if match:
+            return parse_download_count_token(match.group(1))
+    raise SourceError("BukkitDev page did not contain a recognised download count")
+
+
+def fetch_bukkitdev_page_downloads(timeout):
+    slug = SOURCES["curseforge"]["slug"]
+    url = SOURCES["curseforge"]["page"].format(slug=quote(slug, safe=""))
+    html = request_text(
+        url,
+        headers={
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-GB,en;q=0.8",
+            "User-Agent": "BukkitOldCombatMechanics-download-stats/1.0 (+https://github.com/kernitus/BukkitOldCombatMechanics)",
+        },
+        timeout=timeout,
+    )
+    return parse_bukkitdev_downloads(html)
 
 
 def parse_spigot_downloads(html):
