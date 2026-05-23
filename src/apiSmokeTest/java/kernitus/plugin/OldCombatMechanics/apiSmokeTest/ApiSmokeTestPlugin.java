@@ -6,6 +6,9 @@
 package kernitus.plugin.OldCombatMechanics.apiSmokeTest;
 
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverride;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverrideChangeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -73,9 +76,28 @@ public final class ApiSmokeTestPlugin extends JavaPlugin {
         api.forceEnableModuleForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
         api.isModuleEnabledForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
         api.clearModuleOverrideForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
+        api.setModuleOverridesForPlayer(player, java.util.Collections.singletonMap(
+            KNOWN_CONFIGURABLE_MODULE,
+            PlayerModuleOverride.FORCE_ENABLED
+        ));
         String currentModeset = api.getModesetForPlayer(player);
         if (currentModeset != null) {
             api.setModesetForPlayer(player, currentModeset);
         }
+        PlayerModesetChangeEvent modesetEvent = new PlayerModesetChangeEvent(
+            player,
+            player.getWorld(),
+            currentModeset,
+            currentModeset,
+            PlayerModesetChangeEvent.Reason.API
+        );
+        modesetEvent.getReason();
+        PlayerModuleOverrideChangeEvent overrideEvent = new PlayerModuleOverrideChangeEvent(
+            player,
+            KNOWN_CONFIGURABLE_MODULE,
+            PlayerModuleOverride.DEFAULT,
+            PlayerModuleOverride.FORCE_ENABLED
+        );
+        overrideEvent.getNewOverride();
     }
 }

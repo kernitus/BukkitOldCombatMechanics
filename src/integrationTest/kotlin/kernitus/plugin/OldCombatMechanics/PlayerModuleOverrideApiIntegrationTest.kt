@@ -13,6 +13,8 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverrideChangeEvent
 import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverride
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand
 import kernitus.plugin.OldCombatMechanics.module.OCMModule
@@ -22,6 +24,9 @@ import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPla
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -131,21 +136,194 @@ class PlayerModuleOverrideApiIntegrationTest : FunSpec({
         runSync {
             val moduleName = module.configName
             val alwaysEnabledModuleName = alwaysEnabledModule.configName
+            val events = mutableListOf<PlayerModuleOverrideChangeEvent>()
+            val listener = object : Listener {
+                @EventHandler
+                fun onOverrideChange(event: PlayerModuleOverrideChangeEvent) {
+                    if (event.player.uniqueId == player.uniqueId) {
+                        events += event
+                    }
+                }
+            }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
             api.forceEnableModuleForPlayer(player, moduleName)
+            events.clear()
 
-            shouldThrow<IllegalArgumentException> {
-                api.setModuleOverridesForPlayer(
-                    player,
-                    mapOf(
-                        moduleName to PlayerModuleOverride.FORCE_DISABLED,
-                        alwaysEnabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
-                        "missing-module" to PlayerModuleOverride.FORCE_ENABLED,
-                    ),
-                )
+            try {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    api.setModuleOverridesForPlayer(
+                        player,
+                        mapOf(
+                            moduleName to PlayerModuleOverride.FORCE_DISABLED,
+                            alwaysEnabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                            "missing-module" to PlayerModuleOverride.FORCE_ENABLED,
+                        ),
+                    )
+                }
+                exception.message shouldBe "Unknown or non-configurable module: missing-module"
+            } finally {
+                HandlerList.unregisterAll(listener)
             }
 
             api.getModuleOverridesForPlayer(player) shouldBe mapOf(moduleName to PlayerModuleOverride.FORCE_ENABLED)
             api.getModuleOverrideForPlayer(player, alwaysEnabledModuleName) shouldBe PlayerModuleOverride.DEFAULT
+            events shouldBe emptyList()
+        }
+    }
+
+    test("bulk override setter rejects duplicate normalised keys before mutating overrides") {
+        runSync {
+            val moduleName = module.configName
+            val alwaysEnabledModuleName = alwaysEnabledModule.configName
+            val events = mutableListOf<PlayerModuleOverrideChangeEvent>()
+            val listener = object : Listener {
+                @EventHandler
+                fun onOverrideChange(event: PlayerModuleOverrideChangeEvent) {
+                    if (event.player.uniqueId == player.uniqueId) {
+                        events += event
+                    }
+                }
+            }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            api.forceEnableModuleForPlayer(player, moduleName)
+            events.clear()
+
+            try {
+                shouldThrow<IllegalArgumentException> {
+                    api.setModuleOverridesForPlayer(
+                        player,
+                        mapOf(
+                            moduleName to PlayerModuleOverride.FORCE_DISABLED,
+                            " ${moduleName.replaceFirstChar { it.uppercase() }} " to PlayerModuleOverride.DEFAULT,
+                            alwaysEnabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                        ),
+                    )
+                }
+            } finally {
+                HandlerList.unregisterAll(listener)
+            }
+
+            api.getModuleOverridesForPlayer(player) shouldBe mapOf(moduleName to PlayerModuleOverride.FORCE_ENABLED)
+            api.getModuleOverrideForPlayer(player, alwaysEnabledModuleName) shouldBe PlayerModuleOverride.DEFAULT
+            events shouldBe emptyList()
+        }
+    }
+
+    test("module override API emits only changed override events in sorted bulk order") {
+        runSync {
+            val configDisabledModuleName = module.configName
+            val alwaysEnabledModuleName = alwaysEnabledModule.configName
+            val events = mutableListOf<PlayerModuleOverrideChangeEvent>()
+            val listener = object : Listener {
+                @EventHandler
+                fun onOverrideChange(event: PlayerModuleOverrideChangeEvent) {
+                    if (event.player.uniqueId == player.uniqueId) {
+                        events += event
+                    }
+                }
+            }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+
+            try {
+                api.forceEnableModuleForPlayer(player, configDisabledModuleName)
+                api.forceEnableModuleForPlayer(player, configDisabledModuleName)
+                events.map { it.moduleName } shouldBe listOf(configDisabledModuleName)
+                events.single().previousOverride shouldBe PlayerModuleOverride.DEFAULT
+                events.single().newOverride shouldBe PlayerModuleOverride.FORCE_ENABLED
+
+                events.clear()
+                api.setModuleOverridesForPlayer(
+                    player,
+                    mapOf(
+                        configDisabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                        alwaysEnabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                    ),
+                )
+                events.map { it.moduleName } shouldBe listOf(alwaysEnabledModuleName, configDisabledModuleName).sorted()
+                events.map { it.newOverride } shouldBe listOf(
+                    PlayerModuleOverride.FORCE_DISABLED,
+                    PlayerModuleOverride.FORCE_DISABLED,
+                )
+
+                events.clear()
+                api.setModuleOverridesForPlayer(
+                    player,
+                    mapOf(
+                        configDisabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                        alwaysEnabledModuleName to PlayerModuleOverride.FORCE_DISABLED,
+                    ),
+                )
+                events shouldBe emptyList()
+
+                events.clear()
+                api.clearAllModuleOverridesForPlayer(player)
+                events.map { it.moduleName } shouldBe listOf(alwaysEnabledModuleName, configDisabledModuleName).sorted()
+                events.map { it.newOverride } shouldBe listOf(
+                    PlayerModuleOverride.DEFAULT,
+                    PlayerModuleOverride.DEFAULT,
+                )
+
+                events.clear()
+                api.clearAllModuleOverridesForPlayer(player)
+                events shouldBe emptyList()
+            } finally {
+                HandlerList.unregisterAll(listener)
+            }
+        }
+    }
+
+    test("modeset API emits events only for stored changes") {
+        runSync {
+            setModeset(player, "old")
+            val events = mutableListOf<PlayerModesetChangeEvent>()
+            val listener = object : Listener {
+                @EventHandler
+                fun onModesetChange(event: PlayerModesetChangeEvent) {
+                    if (event.player.uniqueId == player.uniqueId) {
+                        events += event
+                    }
+                }
+            }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+
+            try {
+                api.setModesetForPlayer(player, "new")
+                events.size shouldBe 1
+                events.single().previousModeset shouldBe "old"
+                events.single().newModeset shouldBe "new"
+                events.single().reason shouldBe PlayerModesetChangeEvent.Reason.API
+
+                api.setModesetForPlayer(player, "new")
+                events.size shouldBe 1
+            } finally {
+                HandlerList.unregisterAll(listener)
+            }
+        }
+    }
+
+    test("modeset command emits command reason event") {
+        runSync {
+            setModeset(player, "old")
+            val events = mutableListOf<PlayerModesetChangeEvent>()
+            val listener = object : Listener {
+                @EventHandler
+                fun onModesetChange(event: PlayerModesetChangeEvent) {
+                    if (event.player.uniqueId == player.uniqueId) {
+                        events += event
+                    }
+                }
+            }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+
+            try {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ocm mode new ${player.name}") shouldBe true
+                events.size shouldBe 1
+                events.single().previousModeset shouldBe "old"
+                events.single().newModeset shouldBe "new"
+                events.single().reason shouldBe PlayerModesetChangeEvent.Reason.COMMAND
+            } finally {
+                HandlerList.unregisterAll(listener)
+            }
         }
     }
 

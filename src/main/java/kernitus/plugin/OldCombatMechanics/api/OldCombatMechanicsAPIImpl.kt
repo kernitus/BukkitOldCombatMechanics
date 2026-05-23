@@ -31,44 +31,48 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
 
         val worldId = player.world.uid
         val playerData = PlayerStorage.getPlayerData(player.uniqueId)
-        if (playerData.getModesetForWorld(worldId) == normalisedModesetName) {
+        val previousModeset = playerData.getModesetForWorld(worldId)
+        if (previousModeset == normalisedModesetName) {
             return
         }
 
         playerData.setModesetForWorld(worldId, normalisedModesetName)
         PlayerStorage.setPlayerData(player.uniqueId, playerData)
         PlayerStorage.scheduleSave()
+        fireModesetChangeEvent(player, previousModeset, normalisedModesetName, PlayerModesetChangeEvent.Reason.API)
         notifyPlayerStateChanged(player)
     }
 
     override fun forceEnableModuleForPlayer(player: Player, moduleName: String) {
-        validateModuleName(moduleName)
-        PlayerModuleOverrides.setOverride(player, moduleName, PlayerModuleOverride.FORCE_ENABLED)
-        notifyPlayerStateChanged(player)
+        setSingleModuleOverride(player, moduleName, PlayerModuleOverride.FORCE_ENABLED)
     }
 
     override fun forceDisableModuleForPlayer(player: Player, moduleName: String) {
-        validateModuleName(moduleName)
-        PlayerModuleOverrides.setOverride(player, moduleName, PlayerModuleOverride.FORCE_DISABLED)
-        notifyPlayerStateChanged(player)
+        setSingleModuleOverride(player, moduleName, PlayerModuleOverride.FORCE_DISABLED)
     }
 
     override fun clearModuleOverrideForPlayer(player: Player, moduleName: String) {
-        validateModuleName(moduleName)
-        if (PlayerModuleOverrides.clearOverride(player, moduleName)) {
+        val normalisedModuleName = validateModuleName(moduleName)
+        val previousOverride = PlayerModuleOverrides.getOverride(player, normalisedModuleName)
+        if (previousOverride != PlayerModuleOverride.DEFAULT && PlayerModuleOverrides.clearOverride(player, normalisedModuleName)) {
+            fireModuleOverrideChangeEvent(player, normalisedModuleName, previousOverride, PlayerModuleOverride.DEFAULT)
             notifyPlayerStateChanged(player)
         }
     }
 
     override fun clearAllModuleOverridesForPlayer(player: Player) {
-        if (PlayerModuleOverrides.clearAll(player)) {
+        val changedOverrides = getModuleOverridesForPlayer(player).toSortedMap()
+        if (changedOverrides.isNotEmpty() && PlayerModuleOverrides.clearAll(player)) {
+            changedOverrides.forEach { (moduleName, previousOverride) ->
+                fireModuleOverrideChangeEvent(player, moduleName, previousOverride, PlayerModuleOverride.DEFAULT)
+            }
             notifyPlayerStateChanged(player)
         }
     }
 
     override fun getModuleOverrideForPlayer(player: Player, moduleName: String): PlayerModuleOverride {
-        validateModuleName(moduleName)
-        return PlayerModuleOverrides.getOverride(player, moduleName)
+        val normalisedModuleName = validateModuleName(moduleName)
+        return PlayerModuleOverrides.getOverride(player, normalisedModuleName)
     }
 
     override fun getModuleOverridesForPlayer(player: Player): Map<String, PlayerModuleOverride> =
@@ -78,12 +82,26 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
 
     override fun setModuleOverridesForPlayer(player: Player, overrides: Map<String, PlayerModuleOverride>) {
         val validatedOverrides = validateModuleOverrides(overrides)
-        validatedOverrides.forEach { (moduleName, override) ->
+        val changes = validatedOverrides
+            .mapNotNull { (moduleName, override) ->
+                val previousOverride = PlayerModuleOverrides.getOverride(player, moduleName)
+                if (previousOverride == override) null else ModuleOverrideChange(moduleName, previousOverride, override)
+            }
+            .sortedBy { it.moduleName }
+
+        if (changes.isEmpty()) {
+            return
+        }
+
+        changes.forEach { (moduleName, _, override) ->
             if (override == PlayerModuleOverride.DEFAULT) {
                 PlayerModuleOverrides.clearOverride(player, moduleName)
             } else {
                 PlayerModuleOverrides.setOverride(player, moduleName, override)
             }
+        }
+        changes.forEach { (moduleName, previousOverride, newOverride) ->
+            fireModuleOverrideChangeEvent(player, moduleName, previousOverride, newOverride)
         }
         notifyPlayerStateChanged(player)
     }
@@ -110,19 +128,59 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
         ModuleLoader.getConfigurableModule(moduleName)
             ?: throw IllegalArgumentException("Unknown or non-configurable module: $moduleName")
 
-    private fun validateModuleName(moduleName: String) {
-        getConfigurableModule(moduleName)
+    private fun validateModuleName(moduleName: String): String {
+        val normalisedModuleName = ModuleLoader.normaliseModuleName(moduleName)
+        getConfigurableModule(normalisedModuleName)
+        return normalisedModuleName
     }
 
-    private fun validateModuleOverrides(overrides: Map<String, PlayerModuleOverride>): List<Pair<String, PlayerModuleOverride>> =
-        (overrides as Map<*, *>).map { (moduleName, override) ->
+    private fun validateModuleOverrides(overrides: Map<String, PlayerModuleOverride>): List<Pair<String, PlayerModuleOverride>> {
+        val seenModuleNames = mutableSetOf<String>()
+        return (overrides as Map<*, *>).map { (moduleName, override) ->
             val validatedModuleName = moduleName as? String
                 ?: throw IllegalArgumentException("Module override name must not be null")
             val validatedOverride = override as? PlayerModuleOverride
                 ?: throw IllegalArgumentException("Module override value for $validatedModuleName must not be null")
-            validateModuleName(validatedModuleName)
-            validatedModuleName to validatedOverride
+            val normalisedModuleName = validateModuleName(validatedModuleName)
+            if (!seenModuleNames.add(normalisedModuleName)) {
+                throw IllegalArgumentException("Duplicate module override name: $normalisedModuleName")
+            }
+            normalisedModuleName to validatedOverride
         }
+    }
+
+    private fun setSingleModuleOverride(player: Player, moduleName: String, newOverride: PlayerModuleOverride) {
+        val normalisedModuleName = validateModuleName(moduleName)
+        val previousOverride = PlayerModuleOverrides.getOverride(player, normalisedModuleName)
+        if (previousOverride == newOverride) {
+            return
+        }
+        PlayerModuleOverrides.setOverride(player, normalisedModuleName, newOverride)
+        fireModuleOverrideChangeEvent(player, normalisedModuleName, previousOverride, newOverride)
+        notifyPlayerStateChanged(player)
+    }
+
+    private fun fireModesetChangeEvent(
+        player: Player,
+        previousModeset: String?,
+        newModeset: String?,
+        reason: PlayerModesetChangeEvent.Reason,
+    ) {
+        Bukkit.getPluginManager().callEvent(
+            PlayerModesetChangeEvent(player, player.world, previousModeset, newModeset, reason),
+        )
+    }
+
+    private fun fireModuleOverrideChangeEvent(
+        player: Player,
+        moduleName: String,
+        previousOverride: PlayerModuleOverride,
+        newOverride: PlayerModuleOverride,
+    ) {
+        Bukkit.getPluginManager().callEvent(
+            PlayerModuleOverrideChangeEvent(player, moduleName, previousOverride, newOverride),
+        )
+    }
 
     private fun notifyPlayerStateChanged(player: Player) {
         if (Bukkit.isPrimaryThread()) {
@@ -131,4 +189,10 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
         }
         Bukkit.getScheduler().runTask(plugin, Runnable { ModuleLoader.notifyPlayerStateChanged(player) })
     }
+
+    private data class ModuleOverrideChange(
+        val moduleName: String,
+        val previousOverride: PlayerModuleOverride,
+        val newOverride: PlayerModuleOverride,
+    )
 }

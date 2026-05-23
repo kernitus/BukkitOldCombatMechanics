@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerData;
@@ -129,6 +130,11 @@ public class OCMCommandHandler implements CommandExecutor {
         }
 
         final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
+        final String previousModeset = playerData.getModesetForWorld(worldId);
+        if (modesetName.equals(previousModeset)) {
+            return;
+        }
+
         playerData.setModesetForWorld(worldId, modesetName);
         PlayerStorage.setPlayerData(player.getUniqueId(), playerData);
         PlayerStorage.scheduleSave();
@@ -137,6 +143,14 @@ public class OCMCommandHandler implements CommandExecutor {
                 Config.getConfig().getString("mode-messages.mode-set",
                         "&4ERROR: &rmode-messages.mode-set string missing"),
                 modesetName);
+
+        Bukkit.getPluginManager().callEvent(new PlayerModesetChangeEvent(
+                player,
+                player.getWorld(),
+                previousModeset,
+                modesetName,
+                PlayerModesetChangeEvent.Reason.COMMAND
+        ));
 
         // Re-apply things like attack speed and collision team
         ModuleLoader.notifyPlayerStateChanged(player);

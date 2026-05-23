@@ -8,9 +8,11 @@ package kernitus.plugin.OldCombatMechanics.utilities.storage;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.ModuleLoader;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent;
 import kernitus.plugin.OldCombatMechanics.module.OCMModule;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -40,10 +42,16 @@ public class ModesetListener extends OCMModule {
         final UUID playerId = player.getUniqueId();
         final PlayerData playerData = PlayerStorage.getPlayerData(playerId);
         final String modesetFromName = playerData.getModesetForWorld(event.getFrom().getUID());
-        updateModeset(player, player.getWorld().getUID(), modesetFromName);
+        updateModeset(player, player.getWorld(), modesetFromName, PlayerModesetChangeEvent.Reason.WORLD_CHANGE);
     }
 
-    private static void updateModeset(Player player, UUID worldId, String modesetFromName) {
+    private static void updateModeset(
+            Player player,
+            World world,
+            String modesetFromName,
+            PlayerModesetChangeEvent.Reason reason
+    ) {
+        final UUID worldId = world.getUID();
         final UUID playerId = player.getUniqueId();
         final PlayerData playerData = PlayerStorage.getPlayerData(playerId);
         final String originalModeset = playerData.getModesetForWorld(worldId);
@@ -73,6 +81,14 @@ public class ModesetListener extends OCMModule {
                     modesetName
             );
 
+            Bukkit.getPluginManager().callEvent(new PlayerModesetChangeEvent(
+                    player,
+                    world,
+                    originalModeset,
+                    modesetName,
+                    reason
+            ));
+
             // Re-apply things like attack speed and collision team
             ModuleLoader.notifyPlayerStateChanged(player);
         }
@@ -81,7 +97,7 @@ public class ModesetListener extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        updateModeset(player, player.getWorld().getUID(), null);
+        updateModeset(player, player.getWorld(), null, PlayerModesetChangeEvent.Reason.JOIN);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

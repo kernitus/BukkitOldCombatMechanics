@@ -17,6 +17,7 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking
@@ -28,6 +29,9 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.Locale
@@ -433,18 +437,78 @@ class ModesetRulesIntegrationTest :
             withConfig {
                 runSync {
                     applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    val events = mutableListOf<PlayerModesetChangeEvent>()
+                    val listener = object : Listener {
+                        @EventHandler
+                        fun onModesetChange(event: PlayerModesetChangeEvent) {
+                            if (event.player.uniqueId == player.uniqueId) {
+                                events += event
+                            }
+                        }
+                    }
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
 
+                    try {
+                        setModeset(player, "old")
+                        api.getModesetNames().toList().shouldContainExactly("old", "new")
+                        api.getAllowedModesets(player.world).toList().shouldContainExactly("old", "new")
+
+                        api.setModesetForPlayer(player, "new")
+                        api.getModesetForPlayer(player) shouldBe "new"
+                        getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+                        events.single().previousModeset shouldBe "old"
+                        events.single().newModeset shouldBe "new"
+                        events.single().reason shouldBe PlayerModesetChangeEvent.Reason.API
+
+                        events.clear()
+                        api.setModesetForPlayer(player, "new")
+                        events shouldBe emptyList()
+
+                        api.setModesetForPlayer(player, "OLD")
+                        api.getModesetForPlayer(player) shouldBe "old"
+                        getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                        events.single().previousModeset shouldBe "new"
+                        events.single().newModeset shouldBe "old"
+                        events.single().reason shouldBe PlayerModesetChangeEvent.Reason.API
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                }
+            }
+        }
+
+        test("mode command emits command-reason modeset change events") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    player.addAttachment(ocm, "oldcombatmechanics.commands", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
                     setModeset(player, "old")
-                    api.getModesetNames().toList().shouldContainExactly("old", "new")
-                    api.getAllowedModesets(player.world).toList().shouldContainExactly("old", "new")
+                    val events = mutableListOf<PlayerModesetChangeEvent>()
+                    val listener = object : Listener {
+                        @EventHandler
+                        fun onModesetChange(event: PlayerModesetChangeEvent) {
+                            if (event.player.uniqueId == player.uniqueId) {
+                                events += event
+                            }
+                        }
+                    }
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
 
-                    api.setModesetForPlayer(player, "new")
-                    api.getModesetForPlayer(player) shouldBe "new"
-                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+                    try {
+                        Bukkit.dispatchCommand(player, "ocm mode new") shouldBe true
+                        getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+                        events.single().previousModeset shouldBe "old"
+                        events.single().newModeset shouldBe "new"
+                        events.single().reason shouldBe PlayerModesetChangeEvent.Reason.COMMAND
 
-                    api.setModesetForPlayer(player, "OLD")
-                    api.getModesetForPlayer(player) shouldBe "old"
-                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                        events.clear()
+                        Bukkit.dispatchCommand(player, "ocm mode new") shouldBe true
+                        events shouldBe emptyList()
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
                 }
             }
         }
