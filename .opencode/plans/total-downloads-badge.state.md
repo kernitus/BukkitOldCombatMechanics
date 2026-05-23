@@ -2,7 +2,7 @@
 
 plan_path: `.opencode/plans/total-downloads-badge.md`
 state_path: `.opencode/plans/total-downloads-badge.state.md`
-execution_status: in_progress
+execution_status: done
 
 ## User decisions resolved for execution
 
@@ -18,11 +18,11 @@ execution_status: in_progress
 
 - Slice 1: Add the stats generator — completed.
 - Slice 2: Add the GitHub Actions Pages workflow — completed.
-- Slice 3: Add the README badge — pending.
+- Slice 3: Add the README badge — completed.
 
 ## Current target
 
-Slice 3: Add the README badge.
+All planned slices completed.
 
 ## Completed validation
 
@@ -32,6 +32,7 @@ Slice 3: Add the README badge.
   - `python3 -m json.tool build/download-stats-smoke/download-stats.json`
 - Slice 1 build review passed with no critical or high findings.
 - Slice 2 workflow review: Orca inspected `.github/workflows/update-download-stats.yml` after two empty review-subagent results and confirmed the required schedule/manual triggers, Pages permissions, `github-pages` environment, previous-stats fetch, generator invocation, Pages configure/upload/deploy steps, and safe secret wiring are present.
+- Slice 3 build review passed with no critical or high findings; the README badge uses the GitHub Pages Shields endpoint, links to detailed stats, and documents daily aggregate sources.
 
 ## Notes
 
