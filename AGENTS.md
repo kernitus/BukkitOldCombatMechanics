@@ -51,6 +51,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - **Mandatory trigger:** Use `module-config-change` for `config.yml`, module enablement, modesets, migrations, configurable module assignment, or per-module settings such as tool damage, attack cooldown, attack range, or sword blocking options. Do not use it for pure test execution or release publishing.
 - **Mandatory trigger:** Use `commit-preparation` for preparing commits, pre-commit hooks, Spotless, formatting or linting, validation before commit, staging files, and conventional commit messages. Do not use it for implementation design or PR prose unless commit readiness is also in scope.
 - **Mandatory trigger:** Use `release-readiness-review` for GitHub release, Hangar, CurseForge/BukkitDev, licence, workflow, supported-version, or release asset checks. Do not use it for feature implementation unless the change affects release packaging.
+- **Mandatory trigger:** Use `user-facing-changelog` for rewriting `CHANGELOG.md`, GitHub release notes, or Release Please PR changelog sections into user-facing release notes. This is separate from `release-readiness-review`, which is for publishing, assets, licence, supported-version, and workflow readiness checks.
 - **Mandatory trigger:** Use `pr-draft-summary` when drafting PR descriptions, change summaries, reviewer notes, or risk/test sections. Do not use it while still deciding implementation strategy.
 
 ## Current project state
@@ -88,6 +89,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Module configuration, modeset, migration, and option-change details: `module-config-change`.
 - Commit preparation, pre-commit hooks, Spotless, staging, validation-before-commit, and conventional commit details: `commit-preparation`.
 - Publishing, release workflow, licence, and asset notes: `release-readiness-review`.
+- User-facing `CHANGELOG.md`, GitHub release-note, and Release Please changelog rewrites: `user-facing-changelog`.
 - PR summary templates and reviewer-facing change grouping: `pr-draft-summary`.
 
 ## TDAID reminders (this repo)
