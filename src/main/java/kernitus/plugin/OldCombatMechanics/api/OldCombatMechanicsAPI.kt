@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.api
 
 import org.bukkit.entity.Player
+import org.bukkit.World
 
 /**
  * Java-facing public API for managing per-player module overrides.
@@ -48,6 +49,37 @@ import org.bukkit.entity.Player
  * ```
  */
 interface OldCombatMechanicsAPI {
+
+    /**
+     * Returns all configured modeset names in config iteration order.
+     */
+    fun getModesetNames(): Set<String>
+
+    /**
+     * Returns the modesets allowed in [world] as an unmodifiable defensive copy.
+     *
+     * Iteration order follows the configured world list when present, the
+     * `worlds.__default__` list for worlds without their own list, or the
+     * configured modeset order when no world list applies.
+     */
+    fun getAllowedModesets(world: World): Set<String>
+
+    /**
+     * Returns the stored modeset for [player] in their current world, or null
+     * when no player-specific modeset has been stored yet.
+     */
+    fun getModesetForPlayer(player: Player): String?
+
+    /**
+     * Stores [modesetName] for [player] in their current world.
+     *
+     * The input name is normalised with [java.util.Locale.ROOT] before
+     * validation and storage. Unknown modesets, or modesets not allowed in the
+     * player's current world, are rejected.
+     *
+     * @throws IllegalArgumentException if [modesetName] is unknown or disallowed.
+     */
+    fun setModesetForPlayer(player: Player, modesetName: String)
 
     /**
      * Forces configurable [moduleName] on for online [player]. The override is

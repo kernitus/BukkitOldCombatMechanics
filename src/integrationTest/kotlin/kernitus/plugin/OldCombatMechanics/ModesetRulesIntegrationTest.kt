@@ -16,10 +16,12 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter
 import kernitus.plugin.OldCombatMechanics.module.ModuleDisableOffHand
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking
 import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import org.bukkit.Bukkit
@@ -29,6 +31,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
@@ -36,6 +39,8 @@ class ModesetRulesIntegrationTest :
     FunSpec({
         val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
+        val api = Bukkit.getServicesManager().getRegistration(OldCombatMechanicsAPI::class.java)?.provider
+            ?: error("OldCombatMechanicsAPI service not registered")
         val module =
             ModuleLoader
                 .getModules()
@@ -186,6 +191,15 @@ class ModesetRulesIntegrationTest :
                 modesets = modesets,
                 worlds = worlds
             )
+        }
+
+        fun clearPendingSaveTask() {
+            val field = PlayerStorage::class.java.getDeclaredField("saveTask")
+            field.isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            val saveTask = field.get(null) as AtomicReference<Any?>
+            val pending = saveTask.getAndSet(null)
+            pending?.javaClass?.getMethod("cancel")?.invoke(pending)
         }
 
         suspend fun withConfig(block: suspend () -> Unit) {
@@ -411,6 +425,61 @@ class ModesetRulesIntegrationTest :
                     setModeset(player, "old")
                     Bukkit.dispatchCommand(player, "ocm mode new")
                     getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                }
+            }
+        }
+
+        test("modeset API stores valid modesets and normalises names") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+
+                    setModeset(player, "old")
+                    api.getModesetNames().toList().shouldContainExactly("old", "new")
+                    api.getAllowedModesets(player.world).toList().shouldContainExactly("old", "new")
+
+                    api.setModesetForPlayer(player, "new")
+                    api.getModesetForPlayer(player) shouldBe "new"
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+
+                    api.setModesetForPlayer(player, "OLD")
+                    api.getModesetForPlayer(player) shouldBe "old"
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                }
+            }
+        }
+
+        test("modeset API rejects modesets disallowed in the player world") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old")))
+                    setModeset(player, "old")
+
+                    shouldThrow<IllegalArgumentException> {
+                        api.setModesetForPlayer(player, "new")
+                    }
+
+                    api.getModesetForPlayer(player) shouldBe "old"
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                }
+            }
+        }
+
+        test("modeset API no-op set does not schedule a player data save") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    setModeset(player, "old")
+                    clearPendingSaveTask()
+
+                    api.setModesetForPlayer(player, "old")
+
+                    val field = PlayerStorage::class.java.getDeclaredField("saveTask")
+                    field.isAccessible = true
+                    @Suppress("UNCHECKED_CAST")
+                    val saveTask = field.get(null) as AtomicReference<Any?>
+                    saveTask.get() shouldBe null
+                    api.getModesetForPlayer(player) shouldBe "old"
                 }
             }
         }

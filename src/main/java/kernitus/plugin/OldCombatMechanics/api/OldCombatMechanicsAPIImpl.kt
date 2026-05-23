@@ -8,11 +8,38 @@ package kernitus.plugin.OldCombatMechanics.api
 import kernitus.plugin.OldCombatMechanics.ModuleLoader
 import kernitus.plugin.OldCombatMechanics.OCMMain
 import kernitus.plugin.OldCombatMechanics.module.OCMModule
+import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerModuleOverrides
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
 import org.bukkit.Bukkit
+import org.bukkit.World
 import org.bukkit.entity.Player
+import java.util.Locale
 
 class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanicsAPI {
+
+    override fun getModesetNames(): Set<String> = Config.getModesetNames()
+
+    override fun getAllowedModesets(world: World): Set<String> = Config.getAllowedModesets(world)
+
+    override fun getModesetForPlayer(player: Player): String? =
+        PlayerStorage.getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid)
+
+    override fun setModesetForPlayer(player: Player, modesetName: String) {
+        val normalisedModesetName = modesetName.lowercase(Locale.ROOT)
+        validateModesetForPlayer(player, normalisedModesetName)
+
+        val worldId = player.world.uid
+        val playerData = PlayerStorage.getPlayerData(player.uniqueId)
+        if (playerData.getModesetForWorld(worldId) == normalisedModesetName) {
+            return
+        }
+
+        playerData.setModesetForWorld(worldId, normalisedModesetName)
+        PlayerStorage.setPlayerData(player.uniqueId, playerData)
+        PlayerStorage.scheduleSave()
+        notifyPlayerStateChanged(player)
+    }
 
     override fun forceEnableModuleForPlayer(player: Player, moduleName: String) {
         validateModuleName(moduleName)
@@ -69,6 +96,15 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
             .any { PlayerModuleOverrides.getOverride(player, it) != PlayerModuleOverride.DEFAULT }
 
     override fun getModuleNames(): Set<String> = ModuleLoader.getConfigurableModuleNames()
+
+    private fun validateModesetForPlayer(player: Player, modesetName: String) {
+        if (!Config.getModesets().containsKey(modesetName)) {
+            throw IllegalArgumentException("Unknown modeset: $modesetName")
+        }
+        if (!Config.getAllowedModesets(player.world).contains(modesetName)) {
+            throw IllegalArgumentException("Modeset is not allowed in the player's current world: $modesetName")
+        }
+    }
 
     private fun getConfigurableModule(moduleName: String): OCMModule =
         ModuleLoader.getConfigurableModule(moduleName)

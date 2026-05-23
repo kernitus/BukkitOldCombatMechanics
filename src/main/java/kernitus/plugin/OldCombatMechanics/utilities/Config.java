@@ -28,7 +28,7 @@ public class Config {
     private static final String DEFAULT_WORLD_KEY = "__default__";
     private static OCMMain plugin;
     private static FileConfiguration config;
-    private static final Map<String, Set<String>> modesets = new HashMap<>();
+    private static final Map<String, Set<String>> modesets = new LinkedHashMap<>();
     private static final Map<UUID, Set<String>> worlds = new HashMap<>();
     private static final Set<String> alwaysEnabledModules = new HashSet<>();
     private static final Set<String> disabledModules = new HashSet<>();
@@ -164,6 +164,7 @@ public class Config {
 
         // Iterate over each modeset
         for (String key : modesetsSection.getKeys(false)) {
+            final String modesetName = normaliseModesetName(key);
             // Retrieve the list of module names for the current modeset
             final List<String> moduleList = modesetsSection.getStringList(key);
             final Set<String> moduleSet = new HashSet<>();
@@ -189,7 +190,7 @@ public class Config {
             }
 
             // Add the current modeset and its modules to the map
-            modesets.put(key, moduleSet);
+            modesets.put(modesetName, moduleSet);
 
             // Add all modules in the current modeset to the tracking set
             modulesInModesets.addAll(moduleSet);
@@ -257,7 +258,10 @@ public class Config {
 
         // Retrieve the list of modeset names for the current world
         // Using a linkedhashset to remove duplicates but retain insertion order (important for default modeset)
-        final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>(worldsSection.getStringList(worldKey));
+        final LinkedHashSet<String> modesetsSet = new LinkedHashSet<>();
+        for (String modesetName : worldsSection.getStringList(worldKey)) {
+            modesetsSet.add(normaliseModesetName(modesetName));
+        }
 
         // Add the current world and its modesets to the map
         worlds.put(world.getUID(), modesetsSet);
@@ -266,9 +270,20 @@ public class Config {
     public static Set<String> getAllowedModesets(UUID worldId) {
         final Set<String> worldModesets = worlds.get(worldId);
         if (worldModesets == null || worldModesets.isEmpty()) {
-            return modesets.keySet();
+            return getModesetNames();
         }
-        return worldModesets;
+        return Collections.unmodifiableSet(new LinkedHashSet<>(worldModesets));
+    }
+
+    public static Set<String> getAllowedModesets(World world) {
+        if (world == null) {
+            return getModesetNames();
+        }
+        return getAllowedModesets(world.getUID());
+    }
+
+    public static Set<String> getModesetNames() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(modesets.keySet()));
     }
 
     public static void removeWorld(World world){
@@ -366,5 +381,9 @@ public class Config {
 
     private static String normaliseModuleName(String moduleName) {
         return moduleName == null ? "" : moduleName.toLowerCase(Locale.ROOT);
+    }
+
+    public static String normaliseModesetName(String modesetName) {
+        return modesetName == null ? "" : modesetName.toLowerCase(Locale.ROOT);
     }
 }

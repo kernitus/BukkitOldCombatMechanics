@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.apiSmokeTest;
 
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Set;
 
 public final class ApiSmokeTestPlugin extends JavaPlugin {
 
@@ -33,6 +35,16 @@ public final class ApiSmokeTestPlugin extends JavaPlugin {
             if (!api.getModuleNames().contains(KNOWN_CONFIGURABLE_MODULE)) {
                 throw new IllegalStateException("OldCombatMechanicsAPI is missing known configurable module "
                     + KNOWN_CONFIGURABLE_MODULE);
+            }
+            Set<String> modesetNames = api.getModesetNames();
+            if (modesetNames.isEmpty()) {
+                throw new IllegalStateException("OldCombatMechanicsAPI did not expose any modesets");
+            }
+            World world = Bukkit.getWorlds().get(0);
+            Set<String> allowedModesets = api.getAllowedModesets(world);
+            if (allowedModesets.isEmpty()) {
+                throw new IllegalStateException("OldCombatMechanicsAPI did not expose allowed modesets for "
+                    + world.getName());
             }
             writeResult("PASS");
         } catch (Throwable throwable) {
@@ -61,5 +73,9 @@ public final class ApiSmokeTestPlugin extends JavaPlugin {
         api.forceEnableModuleForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
         api.isModuleEnabledForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
         api.clearModuleOverrideForPlayer(player, KNOWN_CONFIGURABLE_MODULE);
+        String currentModeset = api.getModesetForPlayer(player);
+        if (currentModeset != null) {
+            api.setModesetForPlayer(player, currentModeset);
+        }
     }
 }
