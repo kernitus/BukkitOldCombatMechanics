@@ -46,11 +46,13 @@ spotless {
     kotlinGradle {
         target("*.gradle.kts", "gradle/**/*.gradle.kts")
         ktlint()
+        endWithNewline()
     }
 
     format("misc") {
         target("*.md", "*.yml", "*.yaml", "*.properties", ".editorconfig")
         trimTrailingWhitespace()
+        endWithNewline()
     }
 }
 
