@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.5.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.4.0...v2.5.0) (2026-05-23)
+
+
+### Highlights
+
+* Added per-item attack cooldown support for items such as maces and spears, closing [#856](https://github.com/kernitus/BukkitOldCombatMechanics/issues/856).
+* Added default world modesets, including migration for existing configurations, to make configuration quicker and easier when you have lots of worlds.
+* Added build commit details to version output to make support reports and deployed builds easier to identify.
+
+
+### API and integrations
+
+* Added API controls for per-player module overrides and modesets, plus player state change events, documentation, and examples for integrations that need to react to combat-mode changes.
+* Validated bulk module override updates before applying them, avoiding partial or inconsistent per-player override state.
+
+
+### Compatibility
+
+* Improved attack-range support on Paper by detecting data component availability instead of relying on version assumptions.
+* Reworked compatibility checks and optional API fallbacks to use capability detection and safer version comparisons.
+
+
+### Fixes
+
+* Fixed mixed-mode combat handling so armour strength and shield blocking use the defender's modeset, while tool damage uses the attacker's modeset.
+* Fixed explosion defence applying the wrong modeset ([#861](https://github.com/kernitus/BukkitOldCombatMechanics/issues/861)).
+* Fixed no-knockback handling for MythicMobs damage ([#860](https://github.com/kernitus/BukkitOldCombatMechanics/issues/860)).
+* Fixed damage types with `bypasses_cooldown` incorrectly interacting with attack cooldown logic ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)).
+* Fixed stale stored world modesets being reused after world or configuration changes ([#865](https://github.com/kernitus/BukkitOldCombatMechanics/issues/865)).
+
 ## [2.4.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.3.0...v2.4.0) (2026-03-08)
 
 
@@ -127,3 +157,5 @@
 * listen to dynamically loaded worlds for modesets ([f5b59d7](https://github.com/kernitus/BukkitOldCombatMechanics/commit/f5b59d7537d410fac35fbb4e0181a61a485ae1a5)), closes [#747](https://github.com/kernitus/BukkitOldCombatMechanics/issues/747)
 * resolve elytras always unequipped by removing out-of-scope module ([07106e6](https://github.com/kernitus/BukkitOldCombatMechanics/commit/07106e61a220ec4137a3de200a393cf6aaa50be7)), closes [#725](https://github.com/kernitus/BukkitOldCombatMechanics/issues/725)
 * fix sword blocking shield ending up in inventory on world change ([8aa3fa3](https://github.com/kernitus/BukkitOldCombatMechanics/commit/8aa3fa33081c1e1b1a48baa484fd6946b275362b)), closes [#753](https://github.com/kernitus/BukkitOldCombatMechanics/issues/753)
+
+Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
