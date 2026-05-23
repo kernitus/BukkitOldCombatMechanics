@@ -1,6 +1,15 @@
 # OldCombatMechanics API
 
-The OldCombatMechanics API allows other plugins to manage per-player module overrides at runtime, without touching the global `config.yml`. Overrides are online-session-only, in-memory state for currently online players. They are cleared when the player quits, when OldCombatMechanics is disabled, or when a plugin explicitly clears them through the API.
+The OldCombatMechanics API exposes both configured modesets and temporary per-player module overrides. Prefer modesets for arena and minigame combat modes, such as offering separate 1.8-style and modern PvP experiences. Modesets are named configured bundles, selected per player and world, and changes made through `setModesetForPlayer` use the normal player-data persistence.
+
+Module overrides are different: they are temporary API-only per-player exceptions for individual modules, intended for narrow runtime cases where a plugin needs to force one module on or off for one currently online player. Overrides are online-session-only, in-memory state. They are cleared when the player quits, when OldCombatMechanics is disabled, or when a plugin explicitly clears them through the API. Module overrides are not a replacement for configured modesets.
+
+| Use case | Modesets | Module overrides |
+| --- | --- | --- |
+| Arena/minigame combat style, such as 1.8-style versus modern PvP | Preferred: configure named bundles and select them per player/world | Not intended for this |
+| Persistence | Uses normal player-data persistence when changed through `setModesetForPlayer` | Online-session-only, in-memory |
+| Scope | Whole configured bundle of module choices | Individual module exception for one player |
+| Configuration source | Server configuration and allowed world modesets | API-only runtime state |
 
 Overrides are shared runtime state. If multiple plugins set an override for the same player and module, the last write wins. Any plugin that clears that override clears the same shared state for that player and module.
 
