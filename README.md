@@ -9,9 +9,7 @@
 <img src="res/ocm-banner.png" width=1000>
 </p>
 
-## by kernitus and Rayzr522
-
-[![Aggregate downloads](https://img.shields.io/endpoint?url=https://kernitus.github.io/BukkitOldCombatMechanics/downloads.json)](https://kernitus.github.io/BukkitOldCombatMechanics/download-stats.json)
+## by kernitus and Rayzr522 [![Aggregate downloads](https://img.shields.io/endpoint?url=https://kernitus.github.io/BukkitOldCombatMechanics/downloads.json)](https://kernitus.github.io/BukkitOldCombatMechanics/download-stats.json)
 
 Fine‑tune Minecraft combat, movement, and item balance without breaking your server. OldCombatMechanics is a free, open‑source toolkit for Spigot & Paper that lets you mix 1.8‑style snappiness with modern features, per world and per player. It is built for PvP networks, minigames, BedWars/SkyWars-style games, duels, KitPvP, practice arenas, and mixed PvP/PvE worlds that need different combat rules in different places.
 
