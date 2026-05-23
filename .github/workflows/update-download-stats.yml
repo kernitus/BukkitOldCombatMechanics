@@ -1,0 +1,66 @@
+name: Update download stats
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  update-download-stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Fetch previous download stats
+        id: previous-stats
+        run: |
+          previous_stats="${RUNNER_TEMP}/previous-download-stats.json"
+          if curl --fail --silent --show-error --location --retry 3 --output "${previous_stats}" \
+            "https://kernitus.github.io/BukkitOldCombatMechanics/download-stats.json"; then
+            echo "path=${previous_stats}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Previous download stats are unavailable; generating without reuse."
+          fi
+
+      - name: Generate download stats
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          args=(--output public --timeout 20)
+          if [ -n "${{ steps.previous-stats.outputs.path }}" ]; then
+            args+=(--previous "${{ steps.previous-stats.outputs.path }}")
+          fi
+          python .github/scripts/download_stats.py "${args[@]}"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artefact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

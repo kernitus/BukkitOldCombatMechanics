@@ -17,12 +17,12 @@ execution_status: in_progress
 ## Slice status
 
 - Slice 1: Add the stats generator — completed.
-- Slice 2: Add the GitHub Actions Pages workflow — pending.
+- Slice 2: Add the GitHub Actions Pages workflow — completed.
 - Slice 3: Add the README badge — pending.
 
 ## Current target
 
-Slice 2: Add the GitHub Actions Pages workflow.
+Slice 3: Add the README badge.
 
 ## Completed validation
 
@@ -31,6 +31,7 @@ Slice 2: Add the GitHub Actions Pages workflow.
   - `python3 -m json.tool build/download-stats-smoke/downloads.json`
   - `python3 -m json.tool build/download-stats-smoke/download-stats.json`
 - Slice 1 build review passed with no critical or high findings.
+- Slice 2 workflow review: Orca inspected `.github/workflows/update-download-stats.yml` after two empty review-subagent results and confirmed the required schedule/manual triggers, Pages permissions, `github-pages` environment, previous-stats fetch, generator invocation, Pages configure/upload/deploy steps, and safe secret wiring are present.
 
 ## Notes
 
