@@ -4,6 +4,63 @@ The OldCombatMechanics API allows other plugins to manage per-player module over
 
 Overrides are shared runtime state. If multiple plugins set an override for the same player and module, the last write wins. Any plugin that clears that override clears the same shared state for that player and module.
 
+The API also exposes configured modesets, world-allowed modesets, the player's stored modeset for their current world, modeset changes, and Bukkit events for module override and modeset changes.
+
+---
+
+## Dependency setup
+
+There is currently no separate slim API artefact. Compile against the same OldCombatMechanics plugin jar that you deploy or test with, and mark it as compile-only/provided so your plugin does not shade or bundle OCM.
+
+Gradle Kotlin DSL with a local jar:
+
+```kotlin
+dependencies {
+    compileOnly(files("libs/OldCombatMechanics.jar"))
+    compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+}
+```
+
+Maven with a local or system-provided jar:
+
+```xml
+<dependency>
+    <groupId>kernitus.plugin</groupId>
+    <artifactId>OldCombatMechanics</artifactId>
+    <version>your-ocm-version</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+If you use a local Maven repository or an internal repository manager, publish the OCM jar there and keep the dependency `provided`/`compileOnly`.
+
+Do not use OCM internal packages. Public API classes live under:
+
+```java
+import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverride;
+import kernitus.plugin.OldCombatMechanics.api.PlayerModuleOverrideChangeEvent;
+```
+
+---
+
+## `plugin.yml` load order
+
+Use `depend` when your plugin cannot enable or function without OCM:
+
+```yaml
+depend: [OldCombatMechanics]
+```
+
+Use `softdepend` when OCM integration is optional and your plugin can run without it:
+
+```yaml
+softdepend: [OldCombatMechanics]
+```
+
+With `softdepend`, always treat the API service as optional and disable only your OCM-specific integration if the service is absent.
+
 ---
 
 ## Getting the API instance
@@ -59,6 +116,76 @@ When OldCombatMechanics determines whether a configurable module is enabled for 
 ---
 
 ## Methods
+
+### `getModesetNames`
+
+Returns all configured modeset names in config iteration order.
+```java
+Set<String> getModesetNames()
+```
+```java
+for (String modeset : api.getModesetNames()) {
+    player.sendMessage(modeset);
+}
+```
+
+---
+
+### `getAllowedModesets`
+
+Returns the modesets allowed in a world as an unmodifiable defensive copy.
+```java
+Set<String> getAllowedModesets(World world)
+```
+
+Iteration order is meaningful: it follows the configured world list when present, the `worlds.__default__` list for worlds without their own list, or the configured modeset order when no world list applies.
+
+There is no public API for a default or fallback modeset. If you need to present a default choice, use your own policy, such as the player's stored modeset when present or the first entry from `getAllowedModesets(world)`.
+
+```java
+Set<String> allowed = api.getAllowedModesets(player.getWorld());
+for (String modeset : allowed) {
+    player.sendMessage("Allowed here: " + modeset);
+}
+```
+
+---
+
+### `getModesetForPlayer`
+
+Returns the stored modeset for the player in their current world, or `null` when no player-specific modeset has been stored yet.
+```java
+String getModesetForPlayer(Player player)
+```
+```java
+String modeset = api.getModesetForPlayer(player);
+if (modeset == null) {
+    player.sendMessage("No modeset selected for this world.");
+} else {
+    player.sendMessage("Current modeset: " + modeset);
+}
+```
+
+---
+
+### `setModesetForPlayer`
+
+Stores the modeset for the player in their current world and fires `PlayerModesetChangeEvent` with reason `API` when the stored value changes.
+```java
+void setModesetForPlayer(Player player, String modesetName)
+```
+
+The input name is normalised before validation and storage. Unknown modesets, or modesets not allowed in the player's current world, throw `IllegalArgumentException`.
+
+Modeset changes made through the API follow normal player data persistence semantics: OCM stores the selected modeset in player data and schedules the usual save. They are not session-only overrides.
+
+```java
+if (api.getAllowedModesets(player.getWorld()).contains("arena")) {
+    api.setModesetForPlayer(player, "arena");
+}
+```
+
+---
 
 ### `forceEnableModuleForPlayer`
 
@@ -288,6 +415,47 @@ api.getModuleNames().forEach { name ->
 | `DEFAULT`        | No per-player override; the player follows configured module and modeset rules.        |
 | `FORCE_ENABLED`  | Module is forced on for the player before configured disabled modules are considered.  |
 | `FORCE_DISABLED` | Module is forced off for the player before configured enabled modules are considered.  |
+
+---
+
+## Events
+
+Register event listeners with Bukkit as usual. Events are fired after OCM changes the stored API state and before it reapplies module state for the affected player.
+
+### `PlayerModesetChangeEvent`
+
+Fired when a player's stored modeset changes. Reasons are `API`, `COMMAND`, `WORLD_CHANGE`, and `JOIN`.
+
+```java
+@EventHandler
+public void onModesetChange(PlayerModesetChangeEvent event) {
+    Player player = event.getPlayer();
+    String previous = event.getPreviousModeset();
+    String current = event.getNewModeset();
+
+    player.sendMessage("Modeset changed from " + previous + " to " + current
+            + " because of " + event.getReason());
+}
+```
+
+`getPreviousModeset()` and `getNewModeset()` can return `null` when no modeset was previously stored or no replacement is available.
+
+### `PlayerModuleOverrideChangeEvent`
+
+Fired when a player's per-player module override changes.
+
+```java
+@EventHandler
+public void onModuleOverrideChange(PlayerModuleOverrideChangeEvent event) {
+    if (event.getNewOverride() == PlayerModuleOverride.DEFAULT) {
+        event.getPlayer().sendMessage(event.getModuleName() + " is following configured rules again.");
+        return;
+    }
+
+    event.getPlayer().sendMessage(event.getModuleName() + " changed from "
+            + event.getPreviousOverride() + " to " + event.getNewOverride());
+}
+```
 
 ---
 

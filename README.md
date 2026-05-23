@@ -17,7 +17,7 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 - 🧩 **Modular:** enable only what you need: cooldowns, tool damage, knockback, shields, potions, reach, sounds, more.
 - 🚀 **Performant:** lean listeners only enabled as needed; reflection lookups are cached and recurring tasks are minimised (shared where possible) to keep tick time low on busy PvP servers.
 - 🗺️ **Modesets:** ship different rules for different worlds or players; perfect for PvP networks, BedWars/SkyWars-style minigames, duels, KitPvP, FFA, practice arenas, and mixed PvP/PvE.
-- 🔌 **Plugin-friendly API:** integrate OCM with game logic by applying session-only per-player module overrides and checking whether modules are effectively enabled.
+- 🔌 **Plugin-friendly API:** integrate OCM with game logic by applying session-only per-player module overrides, managing player modesets, and checking whether modules are effectively enabled.
 - ⏪ **Backwards‑friendly:** runs on Java 8+, supports 1.9 to latest; integrates cleanly with PlaceholderAPI and PacketEvents.
 - ✅ **Tested for you:** live integration tests run real Paper servers across multiple versions every build.
 - 💸 **Zero cost:** fully open source, optional basic telemetry (bStats only), no paywalls.
@@ -53,10 +53,10 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
 
 ## 🔌 Developer API
 - OCM registers its API through Bukkit's services manager, so other plugins can look it up without depending on internal implementation classes.
-- The current API supports session-only per-player module overrides, useful for temporary states such as duel warm-ups, active or post-game phases, spectators, lobbies, practice queues, and event rules.
+- The current API supports session-only per-player module overrides, player modeset queries/changes, and events for reacting to OCM state changes.
 - Plugins can also check whether a module is effectively enabled for a player after world rules, player choices, and overrides have been considered.
 - Overrides are not persisted across restarts or reconnects; reapply them from your game state when needed.
-- See [API.md](API.md) for setup instructions, method details, and Java/Kotlin examples.
+- See [API.md](API.md) for dependency setup, `plugin.yml` guidance, method details, and Java/Kotlin examples.
 
 ## ⚙ Configurable Features
 Features are grouped in `module`s as listed below, and can be individually configured and disabled. Disabled modules will have no impact on server performance.
