@@ -18,6 +18,7 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -90,7 +91,7 @@ public class DefenceUtils {
             EntityDamageEvent.DamageCause damageCause,
             boolean randomness) {
 
-        final double armourPoints = damagedEntity.getAttribute(XAttribute.ARMOR.get()).getValue();
+        final double armourPoints = getArmourPoints(damagedEntity);
         // Make sure we don't go over 100% protection
         final double armourReductionFactor = Math.min(1.0, armourPoints * REDUCTION_PER_ARMOUR_POINT);
 
@@ -163,16 +164,7 @@ public class DefenceUtils {
      */
     public static double getDamageAfterArmour1_8(LivingEntity defender, double baseDamage, ItemStack[] armourContents,
             EntityDamageEvent.DamageCause damageCause, boolean randomness) {
-        double armourPoints = 0;
-        for (int i = 0; i < armourContents.length; i++) {
-            final ItemStack itemStack = armourContents[i];
-            if (itemStack == null)
-                continue;
-            final EquipmentSlot slot = new EquipmentSlot[] { EquipmentSlot.FEET, EquipmentSlot.LEGS,
-                    EquipmentSlot.CHEST, EquipmentSlot.HEAD }[i];
-            armourPoints += getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot)
-                    .get(XAttribute.ARMOR.get()));
-        }
+        double armourPoints = getArmourPoints(armourContents);
 
         final double reductionFactor = armourPoints * REDUCTION_PER_ARMOUR_POINT;
 
@@ -201,6 +193,34 @@ public class DefenceUtils {
                 baseDamage, finalDamage);
 
         return finalDamage;
+    }
+
+    private static double getArmourPoints(LivingEntity damagedEntity) {
+        final double attributeArmourPoints = damagedEntity.getAttribute(XAttribute.ARMOR.get()).getValue();
+        if (attributeArmourPoints > 0) {
+            return attributeArmourPoints;
+        }
+
+        final EntityEquipment equipment = damagedEntity.getEquipment();
+        if (equipment == null) {
+            return attributeArmourPoints;
+        }
+
+        return getArmourPoints(equipment.getArmorContents());
+    }
+
+    private static double getArmourPoints(ItemStack[] armourContents) {
+        double armourPoints = 0;
+        for (int i = 0; i < armourContents.length; i++) {
+            final ItemStack itemStack = armourContents[i];
+            if (itemStack == null)
+                continue;
+            final EquipmentSlot slot = new EquipmentSlot[] { EquipmentSlot.FEET, EquipmentSlot.LEGS,
+                    EquipmentSlot.CHEST, EquipmentSlot.HEAD }[i];
+            armourPoints += getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot)
+                    .get(XAttribute.ARMOR.get()));
+        }
+        return armourPoints;
     }
 
     /**
