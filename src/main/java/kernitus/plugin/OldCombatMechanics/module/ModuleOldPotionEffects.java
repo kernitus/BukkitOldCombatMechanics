@@ -15,6 +15,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionKey;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -219,6 +220,11 @@ public class ModuleOldPotionEffects extends OCMModule {
         final Entity entity = extractEntity(event);
         if (!(entity instanceof LivingEntity)) return;
         final LivingEntity livingEntity = (LivingEntity) entity;
+
+        if (livingEntity instanceof OfflinePlayer && !((OfflinePlayer) livingEntity).isOnline()) {
+            WeaknessCompensation.remove(livingEntity);
+            return;
+        }
 
         if (!isEnabled(livingEntity)) {
             WeaknessCompensation.remove(livingEntity);
