@@ -27,7 +27,7 @@ val paperVersion: List<String> =
 plugins {
     `java-library`
     kotlin("jvm") version "2.3.21"
-    id("com.diffplug.spotless") version "8.5.1"
+    id("com.diffplug.spotless") version "8.6.0"
     id("com.gradleup.shadow") version "9.4.1"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     idea
