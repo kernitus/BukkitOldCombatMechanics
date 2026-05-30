@@ -8,6 +8,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -55,6 +56,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onItemDamage(PlayerItemDamageEvent e) {
         final Player player = e.getPlayer();
+        if (isOfflinePlayerReference(player)) return;
         // Shield-blocked armour wear is defender-owned, even when a player attacker caused it.
         if (!isEnabled(player)) return;
         final UUID uuid = player.getUniqueId();
@@ -82,6 +84,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
         if (!(entity instanceof Player)) return;
 
         final Player player = (Player) entity;
+        if (isOfflinePlayerReference(player)) return;
 
         // Shield reduction is defender-owned, even when the incoming hit has a player attacker.
         if (!isEnabled(player)) return;
@@ -132,6 +135,10 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
             stopFullyBlockedCleanupTaskIfIdle();
         }, 1L, 1L);
+    }
+
+    private static boolean isOfflinePlayerReference(Player player) {
+        return player instanceof OfflinePlayer && !((OfflinePlayer) player).isOnline();
     }
 
     private void stopFullyBlockedCleanupTaskIfIdle() {

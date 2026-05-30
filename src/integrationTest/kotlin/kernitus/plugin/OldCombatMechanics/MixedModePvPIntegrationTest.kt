@@ -420,7 +420,10 @@ class MixedModePvPIntegrationTest :
         }
 
         @Suppress("DEPRECATION")
-        fun createShieldBlockedPvPDamageEvent(baseDamage: Double): EntityDamageByEntityEvent {
+        fun createShieldBlockedPvPDamageEvent(
+            baseDamage: Double,
+            target: Player = defender
+        ): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
                     EntityDamageEvent.DamageModifier::class.java
@@ -443,7 +446,7 @@ class MixedModePvPIntegrationTest :
 
             return EntityDamageByEntityEvent(
                 attacker,
-                defender,
+                target,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 modifiers,
                 modifierFunctions
@@ -805,6 +808,57 @@ class MixedModePvPIntegrationTest :
                                 originalPercentage
                             )
                             shieldDamageReductionModule.reload()
+                        }
+                    }
+                }
+            }
+
+            test("shield damage reduction ignores retained offline defender references") {
+                withMixedModeConfig("shield-damage-reduction") {
+                    runSync {
+                        val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                        val offlineFake = FakePlayer(testPlugin)
+
+                        try {
+                            offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
+                            val offlineDefender = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                            offlineDefender.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                            setModeset(offlineDefender, "old")
+
+                            offlineFake.removePlayer()
+
+                            val hitEvent =
+                                createShieldBlockedPvPDamageEvent(
+                                    baseDamage = 20.0,
+                                    target = offlineDefender
+                                )
+                            val originalCancelled = hitEvent.isCancelled
+                            val originalBlocking =
+                                hitEvent.getDamage(EntityDamageEvent.DamageModifier.BLOCKING)
+                            val originalFinalDamage = hitEvent.finalDamage
+                            val hitThrown =
+                                runCatching {
+                                    shieldDamageReductionModule.onHit(hitEvent)
+                                }.exceptionOrNull()
+
+                            val chestplate = checkNotNull(offlineDefender.inventory.chestplate)
+                            val itemDamageEvent = createItemDamageEvent(offlineDefender, chestplate, 1)
+                            val itemDamageThrown =
+                                runCatching {
+                                    shieldDamageReductionModule.onItemDamage(itemDamageEvent)
+                                }.exceptionOrNull()
+
+                            hitEvent.isCancelled shouldBe originalCancelled
+                            hitEvent.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) shouldBe
+                                (originalBlocking plusOrMinus 0.0001)
+                            hitEvent.finalDamage shouldBe (originalFinalDamage plusOrMinus 0.0001)
+                            itemDamageEvent.isCancelled shouldBe false
+                            hitThrown shouldBe null
+                            itemDamageThrown shouldBe null
+                        } finally {
+                            if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                                offlineFake.removePlayer()
+                            }
                         }
                     }
                 }
