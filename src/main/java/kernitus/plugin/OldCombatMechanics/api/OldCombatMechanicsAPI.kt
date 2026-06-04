@@ -5,8 +5,8 @@
  */
 package kernitus.plugin.OldCombatMechanics.api
 
-import org.bukkit.entity.Player
 import org.bukkit.World
+import org.bukkit.entity.Player
 
 /**
  * Java-facing public API for managing per-player module overrides.
@@ -49,7 +49,6 @@ import org.bukkit.World
  * ```
  */
 interface OldCombatMechanicsAPI {
-
     /**
      * Returns all configured modeset names in config iteration order.
      */
@@ -79,7 +78,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [modesetName] is unknown or disallowed.
      */
-    fun setModesetForPlayer(player: Player, modesetName: String)
+    fun setModesetForPlayer(
+        player: Player,
+        modesetName: String
+    )
 
     /**
      * Forces configurable [moduleName] on for online [player]. The override is
@@ -88,7 +90,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [moduleName] is unknown or non-configurable.
      */
-    fun forceEnableModuleForPlayer(player: Player, moduleName: String)
+    fun forceEnableModuleForPlayer(
+        player: Player,
+        moduleName: String
+    )
 
     /**
      * Forces configurable [moduleName] off for online [player]. The override is
@@ -97,7 +102,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [moduleName] is unknown or non-configurable.
      */
-    fun forceDisableModuleForPlayer(player: Player, moduleName: String)
+    fun forceDisableModuleForPlayer(
+        player: Player,
+        moduleName: String
+    )
 
     /**
      * Clears the override for configurable [moduleName] for [player], reverting
@@ -106,7 +114,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [moduleName] is unknown or non-configurable.
      */
-    fun clearModuleOverrideForPlayer(player: Player, moduleName: String)
+    fun clearModuleOverrideForPlayer(
+        player: Player,
+        moduleName: String
+    )
 
     /**
      * Clears all module overrides for [player], reverting to configured module behaviour.
@@ -120,7 +131,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [moduleName] is unknown or non-configurable.
      */
-    fun getModuleOverrideForPlayer(player: Player, moduleName: String): PlayerModuleOverride
+    fun getModuleOverrideForPlayer(
+        player: Player,
+        moduleName: String
+    ): PlayerModuleOverride
 
     /**
      * Returns all active overrides for [player] as a map of module name to [PlayerModuleOverride].
@@ -136,7 +150,10 @@ interface OldCombatMechanicsAPI {
      * @throws IllegalArgumentException if any module name is unknown, non-configurable, or null,
      * or if any override value is null.
      */
-    fun setModuleOverridesForPlayer(player: Player, overrides: Map<String, PlayerModuleOverride>)
+    fun setModuleOverridesForPlayer(
+        player: Player,
+        overrides: Map<String, PlayerModuleOverride>
+    )
 
     /**
      * Returns whether configurable [moduleName] is effectively enabled for [player],
@@ -144,7 +161,10 @@ interface OldCombatMechanicsAPI {
      *
      * @throws IllegalArgumentException if [moduleName] is unknown or non-configurable.
      */
-    fun isModuleEnabledForPlayer(player: Player, moduleName: String): Boolean
+    fun isModuleEnabledForPlayer(
+        player: Player,
+        moduleName: String
+    ): Boolean
 
     /**
      * Returns whether [player] has any non-default override set.

@@ -54,7 +54,9 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
     override fun clearModuleOverrideForPlayer(player: Player, moduleName: String) {
         val normalisedModuleName = validateModuleName(moduleName)
         val previousOverride = PlayerModuleOverrides.getOverride(player, normalisedModuleName)
-        if (previousOverride != PlayerModuleOverride.DEFAULT && PlayerModuleOverrides.clearOverride(player, normalisedModuleName)) {
+        if (previousOverride != PlayerModuleOverride.DEFAULT &&
+            PlayerModuleOverrides.clearOverride(player, normalisedModuleName)
+        ) {
             fireModuleOverrideChangeEvent(player, normalisedModuleName, previousOverride, PlayerModuleOverride.DEFAULT)
             notifyPlayerStateChanged(player)
         }
@@ -134,7 +136,9 @@ class OldCombatMechanicsAPIImpl(private val plugin: OCMMain) : OldCombatMechanic
         return normalisedModuleName
     }
 
-    private fun validateModuleOverrides(overrides: Map<String, PlayerModuleOverride>): List<Pair<String, PlayerModuleOverride>> {
+    private fun validateModuleOverrides(
+        overrides: Map<String, PlayerModuleOverride>
+    ): List<Pair<String, PlayerModuleOverride>> {
         val seenModuleNames = mutableSetOf<String>()
         return (overrides as Map<*, *>).map { (moduleName, override) ->
             val validatedModuleName = moduleName as? String

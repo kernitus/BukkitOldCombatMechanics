@@ -21,66 +21,77 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
-class DisableOffhandIntegrationTest : FunSpec({
-    val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
-    val module = ModuleLoader.getModules()
-        .filterIsInstance<ModuleDisableOffHand>()
-        .firstOrNull() ?: error("ModuleDisableOffHand not registered")
+class DisableOffhandIntegrationTest :
+    FunSpec({
+        val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+        val module =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleDisableOffHand>()
+                .firstOrNull() ?: error("ModuleDisableOffHand not registered")
 
-    lateinit var player: Player
-    lateinit var fakePlayer: FakePlayer
+        lateinit var player: Player
+        lateinit var fakePlayer: FakePlayer
 
-    fun runSync(action: () -> Unit) {
-        if (Bukkit.isPrimaryThread()) {
-            action()
-        } else {
-            Bukkit.getScheduler().callSyncMethod(testPlugin, Callable {
+        fun runSync(action: () -> Unit) {
+            if (Bukkit.isPrimaryThread()) {
                 action()
-                null
-            }).get()
+            } else {
+                Bukkit
+                    .getScheduler()
+                    .callSyncMethod(
+                        testPlugin,
+                        Callable {
+                            action()
+                            null
+                        }
+                    ).get()
+            }
         }
-    }
 
-    fun setModeset(player: Player, modeset: String) {
-        val playerData = getPlayerData(player.uniqueId)
-        playerData.setModesetForWorld(player.world.uid, modeset)
-        setPlayerData(player.uniqueId, playerData)
-    }
-
-    extensions(MainThreadDispatcherExtension(testPlugin))
-
-    beforeSpec {
-        runSync {
-            val world = checkNotNull(Bukkit.getServer().getWorld("world"))
-            fakePlayer = FakePlayer(testPlugin)
-            fakePlayer.spawn(Location(world, 0.0, 100.0, 0.0))
-            player = checkNotNull(Bukkit.getPlayer(fakePlayer.uuid))
+        fun setModeset(
+            player: Player,
+            modeset: String
+        ) {
+            val playerData = getPlayerData(player.uniqueId)
+            playerData.setModesetForWorld(player.world.uid, modeset)
+            setPlayerData(player.uniqueId, playerData)
         }
-    }
 
-    afterSpec {
-        runSync {
-            fakePlayer.removePlayer()
+        extensions(MainThreadDispatcherExtension(testPlugin))
+
+        beforeSpec {
+            runSync {
+                val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                fakePlayer = FakePlayer(testPlugin)
+                fakePlayer.spawn(Location(world, 0.0, 100.0, 0.0))
+                player = checkNotNull(Bukkit.getPlayer(fakePlayer.uuid))
+            }
         }
-    }
 
-    beforeTest {
-        runSync {
-            player.inventory.clear()
-            player.inventory.setItemInOffHand(ItemStack(Material.SHIELD))
-            setModeset(player, "new")
+        afterSpec {
+            runSync {
+                fakePlayer.removePlayer()
+            }
         }
-    }
 
-    test("modeset-change handler ignores players without disable-offhand enabled") {
-        runSync {
-            module.isEnabled(player) shouldBe false
-            val offhand = player.inventory.itemInOffHand.clone()
-
-            module.onModesetChange(player)
-
-            player.inventory.itemInOffHand.type shouldBe offhand.type
-            player.inventory.itemInOffHand.amount shouldBe offhand.amount
+        beforeTest {
+            runSync {
+                player.inventory.clear()
+                player.inventory.setItemInOffHand(ItemStack(Material.SHIELD))
+                setModeset(player, "new")
+            }
         }
-    }
-})
+
+        test("modeset-change handler ignores players without disable-offhand enabled") {
+            runSync {
+                module.isEnabled(player) shouldBe false
+                val offhand = player.inventory.itemInOffHand.clone()
+
+                module.onModesetChange(player)
+
+                player.inventory.itemInOffHand.type shouldBe offhand.type
+                player.inventory.itemInOffHand.amount shouldBe offhand.amount
+            }
+        }
+    })

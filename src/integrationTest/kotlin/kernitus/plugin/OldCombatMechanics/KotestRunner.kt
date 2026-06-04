@@ -19,12 +19,12 @@ import io.kotest.engine.TestEngineLauncher
 import io.kotest.engine.listener.AbstractTestEngineListener
 import io.kotest.engine.listener.CompositeTestEngineListener
 import io.kotest.engine.listener.EnhancedConsoleTestEngineListener
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 @OptIn(ExperimentalKotest::class)
 object KotestProjectConfig : AbstractProjectConfig() {
@@ -73,7 +73,8 @@ object KotestRunner {
                     val failureLines = ArrayList<String>(16)
 
                     fun throwableFromResult(result: TestResult): Throwable? {
-                        // Avoid depending on Kotest internals: fetch any Throwable via reflection for cross-version tolerance.
+                        // Avoid depending on Kotest internals: fetch any Throwable via reflection
+                        // for cross-version tolerance.
                         val candidateGetters =
                             listOf(
                                 "getErrorOrNull",

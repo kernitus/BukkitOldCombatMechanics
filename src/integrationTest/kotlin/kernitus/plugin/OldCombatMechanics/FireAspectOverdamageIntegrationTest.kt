@@ -64,7 +64,7 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
         delay(ticks * 50L)
     }
 
-    val isLegacyServer = !kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+    val isLegacyServer = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
 
     fun needsAttackWarmup(attacker: Player): Boolean = isLegacyServer
 
@@ -223,7 +223,10 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
             val method = entity.javaClass.methods.firstOrNull { m ->
                 m.name == "setAI" &&
                     m.parameterTypes.size == 1 &&
-                    (m.parameterTypes[0] == java.lang.Boolean.TYPE || m.parameterTypes[0] == java.lang.Boolean::class.java)
+                    (
+                        m.parameterTypes[0] == java.lang.Boolean.TYPE ||
+                            m.parameterTypes[0] == java.lang.Boolean::class.java
+                    )
             } ?: return
             method.invoke(entity, false)
         }
@@ -348,7 +351,8 @@ class FireAspectOverdamageIntegrationTest : FunSpec({
                     "${m.owningPlugin?.name ?: "?"}=${runCatching { m.asDouble() }.getOrNull()}"
                 }
             val attackDetails = attackSamples.joinToString(prefix = "[", postfix = "]") {
-                "{c=${it.cancelled}, dmg=${it.damage}, final=${it.finalDamage}, ndt=${it.noDamageTicks}, ld=${it.lastDamage}}"
+                "{c=${it.cancelled}, dmg=${it.damage}, final=${it.finalDamage}, " +
+                    "ndt=${it.noDamageTicks}, ld=${it.lastDamage}}"
             }
             snapshot =
                 "attacks(total=${attackSamples.size}, ok=${attackSamples.count { !it.cancelled }}, " +

@@ -106,7 +106,10 @@ class InGameTesterIntegrationTest :
             val weapon = ItemStack(netheriteSword ?: Material.STONE_SWORD)
             val victim =
                 runSync {
-                    attacker.world.spawnEntity(attacker.location.clone().add(1.5, 0.0, 0.0), EntityType.ZOMBIE) as LivingEntity
+                    attacker.world.spawnEntity(
+                        attacker.location.clone().add(1.5, 0.0, 0.0),
+                        EntityType.ZOMBIE
+                    ) as LivingEntity
                 }
             try {
                 runSync {
@@ -124,7 +127,9 @@ class InGameTesterIntegrationTest :
                     object : Listener {
                         @EventHandler(priority = EventPriority.MONITOR)
                         fun onEntityDamageByEntity(event: EntityDamageByEntityEvent) {
-                            if (event.damager.uniqueId != attacker.uniqueId || event.entity.uniqueId != victim.uniqueId) {
+                            if (event.damager.uniqueId != attacker.uniqueId ||
+                                event.entity.uniqueId != victim.uniqueId
+                            ) {
                                 return
                             }
                             damageEvents += 1

@@ -21,6 +21,8 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -380,9 +382,9 @@ class OldCriticalHitsIntegrationTest : FunSpec({
             attacker.inventory.clear()
             attacker.activePotionEffects.forEach { attacker.removePotionEffect(it.type) }
             attacker.isOp = true
-            val playerData = kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(attacker.uniqueId)
+            val playerData = getPlayerData(attacker.uniqueId)
             playerData.setModesetForWorld(attacker.world.uid, "old")
-            kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData(attacker.uniqueId, playerData)
+            setPlayerData(attacker.uniqueId, playerData)
         }
     }
 

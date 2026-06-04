@@ -30,14 +30,18 @@ class CopperToolsIntegrationTest : StringSpec({
 
     if (copperMaterials.isEmpty()) {
         "copper tools not present on this version" {
-            plugin.logger.info("Copper tools not present on this version; skipping copper damage checks.")
+            plugin.logger.info(
+                "Copper tools not present on this version; skipping copper damage checks."
+            )
         }
     } else {
         copperMaterials.forEach { (xmat, material) ->
             "copper tool damage is configurable for ${xmat.name}" {
                 val damage = WeaponDamages.getDamage(material)
                 if (damage < 0.0) {
-                    throw AssertionError("Expected ${xmat.name} to be present in old-tool-damage.damages (config.yml)")
+                    throw AssertionError(
+                        "Expected ${xmat.name} to be present in old-tool-damage.damages (config.yml)"
+                    )
                 }
             }
         }

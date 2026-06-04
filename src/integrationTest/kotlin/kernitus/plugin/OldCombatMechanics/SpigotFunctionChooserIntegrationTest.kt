@@ -23,7 +23,7 @@ class SpigotFunctionChooserIntegrationTest :
                     NoClassDefFoundError("missing API class"),
                     AbstractMethodError("abstract API method"),
                     IncompatibleClassChangeError("binary incompatibility"),
-                    CompatibilityUnsupportedOperationException("compatibility fallback approved"),
+                    CompatibilityUnsupportedOperationException("compatibility fallback approved")
                 )
 
             compatibilityFailures.forEach { throwable ->
@@ -39,7 +39,7 @@ class SpigotFunctionChooserIntegrationTest :
                         { _, _ ->
                             fallbackCalls.incrementAndGet()
                             "fallback"
-                        },
+                        }
                     )
 
                 chooser.apply("target", Any()) shouldBe "fallback"
@@ -57,7 +57,7 @@ class SpigotFunctionChooserIntegrationTest :
                     { _, _ ->
                         fallbackCalls.incrementAndGet()
                         "fallback"
-                    },
+                    }
                 )
 
             shouldThrow<IllegalStateException> {
@@ -74,7 +74,7 @@ class SpigotFunctionChooserIntegrationTest :
                     { _, _ ->
                         fallbackCalls.incrementAndGet()
                         "fallback"
-                    },
+                    }
                 )
 
             shouldThrow<NullPointerException> {
@@ -91,7 +91,7 @@ class SpigotFunctionChooserIntegrationTest :
                     { _, _ ->
                         fallbackCalls.incrementAndGet()
                         "fallback"
-                    },
+                    }
                 )
 
             shouldThrow<UnsupportedOperationException> {
@@ -102,5 +102,5 @@ class SpigotFunctionChooserIntegrationTest :
     })
 
 private class CompatibilityUnsupportedOperationException(
-    message: String,
+    message: String
 ) : UnsupportedOperationException(message)

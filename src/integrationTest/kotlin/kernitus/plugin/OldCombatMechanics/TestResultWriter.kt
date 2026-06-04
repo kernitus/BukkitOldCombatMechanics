@@ -13,7 +13,11 @@ import java.util.logging.Level
 
 object TestResultWriter {
     @JvmStatic
-    fun writeAndShutdown(plugin: JavaPlugin, success: Boolean, error: Throwable? = null) {
+    fun writeAndShutdown(
+        plugin: JavaPlugin,
+        success: Boolean,
+        error: Throwable? = null
+    ) {
         try {
             val resultFile = File(plugin.dataFolder, "test-results.txt")
             resultFile.parentFile.mkdirs()
@@ -31,7 +35,10 @@ object TestResultWriter {
     }
 
     @JvmStatic
-    fun writeFailureSummary(plugin: JavaPlugin, lines: List<String>) {
+    fun writeFailureSummary(
+        plugin: JavaPlugin,
+        lines: List<String>
+    ) {
         try {
             val file = File(plugin.dataFolder, "test-failures.txt")
             file.parentFile.mkdirs()

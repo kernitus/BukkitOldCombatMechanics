@@ -49,7 +49,7 @@ class ToolDamageTooltipIntegrationTest :
                         Callable {
                             action()
                             null
-                        },
+                        }
                     ).get()
             }
         }
@@ -83,7 +83,7 @@ class ToolDamageTooltipIntegrationTest :
 
         fun setLore(
             item: ItemStack,
-            lines: List<String>?,
+            lines: List<String>?
         ) {
             val meta = item.itemMeta ?: return
             meta.lore = lines
@@ -92,7 +92,7 @@ class ToolDamageTooltipIntegrationTest :
 
         data class SpawnedPlayer(
             val fake: FakePlayer,
-            val player: Player,
+            val player: Player
         )
 
         fun spawnFake(location: Location): SpawnedPlayer {
@@ -122,10 +122,11 @@ class ToolDamageTooltipIntegrationTest :
         suspend fun TestScope.withConfig(
             weaponMaterialKey: String,
             weaponDamage: Double,
-            block: suspend TestScope.() -> Unit,
+            block: suspend TestScope.() -> Unit
         ) {
             val disabledModules = ocm.config.getStringList("disabled_modules")
-            val modesetsSection = ocm.config.getConfigurationSection("modesets") ?: error("Missing 'modesets' section in config")
+            val modesetsSection =
+                ocm.config.getConfigurationSection("modesets") ?: error("Missing 'modesets' section in config")
             val modesetSnapshot =
                 modesetsSection.getKeys(false).associateWith { key ->
                     ocm.config.getStringList("modesets.$key")
@@ -175,7 +176,7 @@ class ToolDamageTooltipIntegrationTest :
         fun switchHotbar(
             player: Player,
             from: Int,
-            to: Int,
+            to: Int
         ) {
             player.inventory.heldItemSlot = to
             Bukkit.getPluginManager().callEvent(PlayerItemHeldEvent(player, from, to))
@@ -366,7 +367,7 @@ class ToolDamageTooltipIntegrationTest :
                         PlayerSwapHandItemsEvent(
                             p.player,
                             p.player.inventory.itemInMainHand,
-                            p.player.inventory.itemInOffHand,
+                            p.player.inventory.itemInOffHand
                         )
                     Bukkit.getPluginManager().callEvent(swap)
 

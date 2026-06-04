@@ -4,11 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
 package kernitus.plugin.OldCombatMechanics
 
 import com.cryptomorin.xseries.XAttribute
@@ -19,6 +14,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSha
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils.getDamageAfterArmour1_8
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getDamage
+import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getMaterialDamages
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
@@ -129,7 +125,7 @@ class InGameTester(private val plugin: JavaPlugin) {
     }
 
     private fun testEnchantedMelee(armour: Array<ItemStack>, preparations: Runnable) {
-        for (weaponType in kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getMaterialDamages().keys) {
+        for (weaponType in getMaterialDamages().keys) {
             val weapon = ItemStack(weaponType)
 
             // only axe and sword can have sharpness
@@ -151,7 +147,7 @@ class InGameTester(private val plugin: JavaPlugin) {
     }
 
     private fun testMelee(armour: Array<ItemStack>, preparations: Runnable) {
-        for (weaponType in kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getMaterialDamages().keys) {
+        for (weaponType in getMaterialDamages().keys) {
             val weapon = ItemStack(weaponType)
             queueAttack(OCMTest(weapon, armour, 1, weaponType.name) {
                 preparations.run()
@@ -187,7 +183,8 @@ class InGameTester(private val plugin: JavaPlugin) {
 
     private fun calculateAttackDamage(weapon: ItemStack): Double {
         val weaponType = weapon.type
-        // Attack components order: (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
+        // Attack components order:
+        // (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay)
         // Hurt components order: Overdamage - Armour Effects
         var expectedDamage = getDamage(weaponType)
 
@@ -237,7 +234,9 @@ class InGameTester(private val plugin: JavaPlugin) {
 
         if (wasOverdamaged(expectedDamage)) {
             val lastDamage = defender.lastDamage
-            plugin.logger.info("Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage))
+            plugin.logger.info(
+                "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage)
+            )
             expectedDamage -= lastDamage
         }
 
@@ -285,7 +284,9 @@ class InGameTester(private val plugin: JavaPlugin) {
                 }
 
                 if (wasFakeOverdamage(weapon) && e.isCancelled) {
-                    plugin.logger.info("PASSED Fake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage)
+                    plugin.logger.info(
+                        "PASSED Fake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage
+                    )
                     tally!!.passed()
                 } else {
                     val weaponMessage = "E: " + expectedWeapon.type.name + " A: " + weaponType.name

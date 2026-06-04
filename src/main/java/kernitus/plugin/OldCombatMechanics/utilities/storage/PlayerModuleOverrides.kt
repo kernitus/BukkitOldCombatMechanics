@@ -16,11 +16,14 @@ import java.util.concurrent.ConcurrentHashMap
  * In-memory per-player module override store.
  */
 object PlayerModuleOverrides {
-
     private val overridesByPlayer = ConcurrentHashMap<UUID, ConcurrentHashMap<String, PlayerModuleOverride>>()
 
     @JvmStatic
-    fun setOverride(human: HumanEntity, moduleName: String, state: PlayerModuleOverride) {
+    fun setOverride(
+        human: HumanEntity,
+        moduleName: String,
+        state: PlayerModuleOverride
+    ) {
         requireOnline(human)
         val normalised = ModuleLoader.normaliseModuleName(moduleName)
         if (state == PlayerModuleOverride.DEFAULT) {
@@ -31,14 +34,20 @@ object PlayerModuleOverrides {
     }
 
     @JvmStatic
-    fun getOverride(human: HumanEntity, moduleName: String): PlayerModuleOverride {
+    fun getOverride(
+        human: HumanEntity,
+        moduleName: String
+    ): PlayerModuleOverride {
         requireOnline(human)
         val perPlayer = overridesByPlayer[human.uniqueId] ?: return PlayerModuleOverride.DEFAULT
         return perPlayer.getOrDefault(ModuleLoader.normaliseModuleName(moduleName), PlayerModuleOverride.DEFAULT)
     }
 
     @JvmStatic
-    fun clearOverride(human: HumanEntity, moduleName: String): Boolean {
+    fun clearOverride(
+        human: HumanEntity,
+        moduleName: String
+    ): Boolean {
         requireOnline(human)
         val perPlayer = overridesByPlayer[human.uniqueId] ?: return false
         val removed = perPlayer.remove(ModuleLoader.normaliseModuleName(moduleName))
@@ -59,11 +68,11 @@ object PlayerModuleOverrides {
 
     @JvmStatic
     private fun requireOnline(human: HumanEntity) {
-        val isOnline = when (human) {
-            is OfflinePlayer -> human.isOnline
-            else -> true // HumanEntity (e.g. a living NPC) — assume present in world
-        }
+        val isOnline =
+            when (human) {
+                is OfflinePlayer -> human.isOnline
+                else -> true // HumanEntity (e.g. a living NPC) — assume present in world
+            }
         require(isOnline) { "HumanEntity ${human.name} is not online" }
     }
-
 }

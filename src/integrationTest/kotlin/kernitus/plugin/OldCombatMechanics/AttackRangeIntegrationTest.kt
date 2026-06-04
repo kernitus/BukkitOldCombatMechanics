@@ -70,7 +70,7 @@ class AttackRangeIntegrationTest :
                         Callable {
                             action()
                             null
-                        },
+                        }
                     ).get()
             }
         }
@@ -79,7 +79,7 @@ class AttackRangeIntegrationTest :
             enabled: Boolean,
             maxRange: Double = 6.0,
             margin: Double = 0.1,
-            block: suspend () -> Unit,
+            block: suspend () -> Unit
         ) {
             // Snapshot
             val disabledOrig = ocm.config.getStringList("disabled_modules").toMutableList()
@@ -151,7 +151,7 @@ class AttackRangeIntegrationTest :
         data class Actors(
             val fake: FakePlayer,
             val player: Player,
-            val zombie: Zombie,
+            val zombie: Zombie
         )
 
         fun spawnActors(): Actors {
@@ -183,7 +183,7 @@ class AttackRangeIntegrationTest :
 
         fun faceEntity(
             player: Player,
-            target: org.bukkit.entity.Entity,
+            target: org.bukkit.entity.Entity
         ) {
             val eye = player.eyeLocation
             val tgt = target.location.clone().add(0.0, target.height / 2.0, 0.0)
@@ -198,7 +198,7 @@ class AttackRangeIntegrationTest :
 
         fun swingAt(
             zombie: Zombie,
-            player: Player,
+            player: Player
         ) {
             runSync {
                 faceEntity(player, zombie)
@@ -248,7 +248,7 @@ class AttackRangeIntegrationTest :
                     runSync {
                         // trigger hand re-evaluation
                         Bukkit.getPluginManager().callEvent(
-                            PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot),
+                            PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot)
                         )
                         zombie.health = zombie.maxHealth
                         zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5))
@@ -292,7 +292,7 @@ class AttackRangeIntegrationTest :
                     runSync {
                         player.inventory.setItemInMainHand(dropped)
                         Bukkit.getPluginManager().callEvent(
-                            PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot),
+                            PlayerItemHeldEvent(player, player.inventory.heldItemSlot, player.inventory.heldItemSlot)
                         )
                         zombie.health = zombie.maxHealth
                         zombie.teleport(player.location.clone().add(0.0, 0.0, 5.5))

@@ -6,20 +6,24 @@
 
 package kernitus.plugin.OldCombatMechanics
 
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-fun attackCompat(attacker: Player, target: Entity) {
-    val apiAttack = attacker.javaClass.methods.firstOrNull { method ->
-        method.name == "attack" &&
-            method.parameterCount == 1 &&
-            Entity::class.java.isAssignableFrom(method.parameterTypes[0])
-    }
+fun attackCompat(
+    attacker: Player,
+    target: Entity
+) {
+    val apiAttack =
+        attacker.javaClass.methods.firstOrNull { method ->
+            method.name == "attack" &&
+                method.parameterCount == 1 &&
+                Entity::class.java.isAssignableFrom(method.parameterTypes[0])
+        }
     val useApiAttack = apiAttack != null && CompatibilityCapabilities.isPlayerAttackApiAvailable(attacker.javaClass)
     if (useApiAttack) {
         val attackMethod = apiAttack
@@ -42,16 +46,20 @@ fun attackCompat(attacker: Player, target: Entity) {
     }
 
     // Fall back to NMS attack when the Bukkit API attack path is absent or unobservable.
-    val handleMethod = attacker.javaClass.methods.firstOrNull { method ->
-        method.name == "getHandle" && method.parameterCount == 0
-    } ?: error("Failed to resolve CraftPlayer#getHandle for ${attacker.javaClass.name}")
+    val handleMethod =
+        attacker.javaClass.methods.firstOrNull { method ->
+            method.name == "getHandle" && method.parameterCount == 0
+        } ?: error("Failed to resolve CraftPlayer#getHandle for ${attacker.javaClass.name}")
 
-    val attackerHandle = handleMethod.invoke(attacker)
-        ?: error("CraftPlayer#getHandle returned null for ${attacker.javaClass.name}")
+    val attackerHandle =
+        handleMethod.invoke(attacker)
+            ?: error("CraftPlayer#getHandle returned null for ${attacker.javaClass.name}")
 
-    val targetHandle = target.javaClass.methods.firstOrNull { method ->
-        method.name == "getHandle" && method.parameterCount == 0
-    }?.invoke(target) ?: error("Failed to resolve CraftEntity#getHandle for ${target.javaClass.name}")
+    val targetHandle =
+        target.javaClass.methods
+            .firstOrNull { method ->
+                method.name == "getHandle" && method.parameterCount == 0
+            }?.invoke(target) ?: error("Failed to resolve CraftEntity#getHandle for ${target.javaClass.name}")
 
     val nmsAttackMethods = resolveNmsAttackMethods(attackerHandle.javaClass, targetHandle.javaClass)
     var falseResultCount = 0
@@ -75,7 +83,10 @@ fun attackCompat(attacker: Player, target: Entity) {
 
     // Last-resort fallback: try Bukkit API even when the capability probe was inconclusive.
     if (!useApiAttack && apiAttack != null) {
-        runCatching { apiAttack.invoke(attacker, target); return }
+        runCatching {
+            apiAttack.invoke(attacker, target)
+            return
+        }
     }
 
     error(
@@ -85,11 +96,10 @@ fun attackCompat(attacker: Player, target: Entity) {
     )
 }
 
-
 private data class LivingAttackSignal(
     val health: Double,
     val lastDamage: Double,
-    val noDamageTicks: Int,
+    val noDamageTicks: Int
 )
 
 private fun captureLivingAttackSignal(entity: Entity): LivingAttackSignal? {
@@ -97,11 +107,14 @@ private fun captureLivingAttackSignal(entity: Entity): LivingAttackSignal? {
     return LivingAttackSignal(
         health = living.health,
         lastDamage = living.lastDamage,
-        noDamageTicks = living.noDamageTicks,
+        noDamageTicks = living.noDamageTicks
     )
 }
 
-private fun hasObservableHit(before: LivingAttackSignal, after: LivingAttackSignal?): Boolean {
+private fun hasObservableHit(
+    before: LivingAttackSignal,
+    after: LivingAttackSignal?
+): Boolean {
     if (after == null) return false
     if (after.health < before.health) return true
     if (after.noDamageTicks > before.noDamageTicks) return true
@@ -110,33 +123,40 @@ private fun hasObservableHit(before: LivingAttackSignal, after: LivingAttackSign
 
 private val attackMethodCache = ConcurrentHashMap<Class<*>, List<Method>>()
 
-private fun resolveNmsAttackMethods(attackerHandleClass: Class<*>, targetHandleClass: Class<*>): List<Method> {
-    return attackMethodCache.computeIfAbsent(attackerHandleClass) {
+private fun resolveNmsAttackMethods(
+    attackerHandleClass: Class<*>,
+    targetHandleClass: Class<*>
+): List<Method> =
+    attackMethodCache.computeIfAbsent(attackerHandleClass) {
         buildAttackMethodCandidates(attackerHandleClass, targetHandleClass)
     }
-}
 
-private fun buildAttackMethodCandidates(attackerHandleClass: Class<*>, targetHandleClass: Class<*>): List<Method> {
+private fun buildAttackMethodCandidates(
+    attackerHandleClass: Class<*>,
+    targetHandleClass: Class<*>
+): List<Method> {
     // Prefer explicit names if they exist, then fall back to signature-based heuristics.
-    val explicit = listOfNotNull(
-        Reflector.getMethodAssignable(attackerHandleClass, "attack", targetHandleClass),
-        Reflector.getMethodAssignable(attackerHandleClass, "a", targetHandleClass),
-        Reflector.getMethodAssignable(attackerHandleClass, "B", targetHandleClass) // legacy 1.12 variants
-    )
+    val explicit =
+        listOfNotNull(
+            Reflector.getMethodAssignable(attackerHandleClass, "attack", targetHandleClass),
+            Reflector.getMethodAssignable(attackerHandleClass, "a", targetHandleClass),
+            Reflector.getMethodAssignable(attackerHandleClass, "B", targetHandleClass) // legacy 1.12 variants
+        )
     if (explicit.isNotEmpty()) {
         explicit.forEach { it.isAccessible = true }
         return explicit
     }
 
-    val candidates = collectAllMethods(attackerHandleClass)
-        .asSequence()
-        .filter { it.parameterCount == 1 }
-        .filter { it.parameterTypes[0].isAssignableFrom(targetHandleClass) }
-        .filter { it.returnType == Void.TYPE || it.returnType == java.lang.Boolean.TYPE }
-        .map { method -> method to scoreAttackMethod(method) }
-        .sortedByDescending { it.second }
-        .map { it.first }
-        .toList()
+    val candidates =
+        collectAllMethods(attackerHandleClass)
+            .asSequence()
+            .filter { it.parameterCount == 1 }
+            .filter { it.parameterTypes[0].isAssignableFrom(targetHandleClass) }
+            .filter { it.returnType == Void.TYPE || it.returnType == java.lang.Boolean.TYPE }
+            .map { method -> method to scoreAttackMethod(method) }
+            .sortedByDescending { it.second }
+            .map { it.first }
+            .toList()
 
     candidates.forEach { it.isAccessible = true }
     return candidates

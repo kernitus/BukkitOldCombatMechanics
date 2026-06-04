@@ -28,14 +28,17 @@ internal class LegacyFakePlayer12(
     val uuid: UUID,
     val name: String
 ) {
-    private val cbVersion: String = Bukkit.getServer().javaClass.`package`.name.substringAfterLast('.')
+    private val cbVersion: String =
+        Bukkit
+            .getServer()
+            .javaClass.`package`.name
+            .substringAfterLast('.')
     var entityPlayer: Any? = null
         private set
     var bukkitPlayer: Player? = null
         private set
 
-    private fun nmsClass(simpleName: String): Class<*> =
-        Class.forName("net.minecraft.server.$cbVersion.$simpleName")
+    private fun nmsClass(simpleName: String): Class<*> = Class.forName("net.minecraft.server.$cbVersion.$simpleName")
 
     private fun craftClass(simpleName: String): Class<*> =
         Class.forName("org.bukkit.craftbukkit.$cbVersion.$simpleName")
@@ -79,9 +82,14 @@ internal class LegacyFakePlayer12(
         sendSpawnPackets(entityPlayer)
         addEntityToWorld(worldServer, entityPlayer)
 
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, Runnable {
-            runCatching { invokeMethod(entityPlayer, "playerTick") }
-        }, 1L, 1L)
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(
+            plugin,
+            Runnable {
+                runCatching { invokeMethod(entityPlayer, "playerTick") }
+            },
+            1L,
+            1L
+        )
 
         plugin.logger.info("Spawn: completed successfully (legacy)")
     }
@@ -125,34 +133,41 @@ internal class LegacyFakePlayer12(
                 return
             }
         }
-        val fallback = entityPlayer.javaClass.methods.firstOrNull { method ->
-            method.parameterTypes.size == 1 && method.parameterTypes[0] == enumHandClass
-        }
+        val fallback =
+            entityPlayer.javaClass.methods.firstOrNull { method ->
+                method.parameterTypes.size == 1 && method.parameterTypes[0] == enumHandClass
+            }
         fallback?.invoke(entityPlayer, offHand)
     }
 
     fun getConnection(serverPlayer: Any): Any {
-        val connectionField = findField(serverPlayer.javaClass, "playerConnection")
-            ?: throw NoSuchFieldException("playerConnection not found on ${serverPlayer.javaClass.name}")
+        val connectionField =
+            findField(serverPlayer.javaClass, "playerConnection")
+                ?: throw NoSuchFieldException("playerConnection not found on ${serverPlayer.javaClass.name}")
         return connectionField.get(serverPlayer)
     }
 
-    private fun createEntityPlayer(minecraftServer: Any, worldServer: Any): Any {
+    private fun createEntityPlayer(
+        minecraftServer: Any,
+        worldServer: Any
+    ): Any {
         val entityPlayerClass = nmsClass("EntityPlayer")
         val playerInteractManagerClass = nmsClass("PlayerInteractManager")
-        val pimCtor = playerInteractManagerClass.constructors.firstOrNull { ctor ->
-            ctor.parameterTypes.size == 1 && ctor.parameterTypes[0].isAssignableFrom(worldServer.javaClass)
-        } ?: playerInteractManagerClass.constructors.first()
+        val pimCtor =
+            playerInteractManagerClass.constructors.firstOrNull { ctor ->
+                ctor.parameterTypes.size == 1 && ctor.parameterTypes[0].isAssignableFrom(worldServer.javaClass)
+            } ?: playerInteractManagerClass.constructors.first()
         val playerInteractManager = pimCtor.newInstance(worldServer)
         val gameProfile = GameProfile(uuid, name)
-        val ctor = entityPlayerClass.constructors.firstOrNull { ctor ->
-            val params = ctor.parameterTypes
-            params.size == 4 &&
-                params[0].isAssignableFrom(minecraftServer.javaClass) &&
-                params[1].isAssignableFrom(worldServer.javaClass) &&
-                params[2] == GameProfile::class.java &&
-                params[3].isAssignableFrom(playerInteractManagerClass)
-        } ?: entityPlayerClass.constructors.first()
+        val ctor =
+            entityPlayerClass.constructors.firstOrNull { ctor ->
+                val params = ctor.parameterTypes
+                params.size == 4 &&
+                    params[0].isAssignableFrom(minecraftServer.javaClass) &&
+                    params[1].isAssignableFrom(worldServer.javaClass) &&
+                    params[2] == GameProfile::class.java &&
+                    params[3].isAssignableFrom(playerInteractManagerClass)
+            } ?: entityPlayerClass.constructors.first()
         return ctor.newInstance(minecraftServer, worldServer, gameProfile, playerInteractManager)
     }
 
@@ -168,15 +183,19 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun setPositionRotation(entityPlayer: Any, location: Location) {
-        val method = entityPlayer.javaClass.getMethod(
-            "setPositionRotation",
-            Double::class.javaPrimitiveType,
-            Double::class.javaPrimitiveType,
-            Double::class.javaPrimitiveType,
-            Float::class.javaPrimitiveType,
-            Float::class.javaPrimitiveType
-        )
+    private fun setPositionRotation(
+        entityPlayer: Any,
+        location: Location
+    ) {
+        val method =
+            entityPlayer.javaClass.getMethod(
+                "setPositionRotation",
+                Double::class.javaPrimitiveType,
+                Double::class.javaPrimitiveType,
+                Double::class.javaPrimitiveType,
+                Float::class.javaPrimitiveType,
+                Float::class.javaPrimitiveType
+            )
         method.invoke(
             entityPlayer,
             location.x,
@@ -198,7 +217,10 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun spawnInWorld(entityPlayer: Any, worldServer: Any) {
+    private fun spawnInWorld(
+        entityPlayer: Any,
+        worldServer: Any
+    ) {
         invokeMethodIfExists(entityPlayer, "spawnIn", worldServer)
         val playerInteractManager = findField(entityPlayer.javaClass, "playerInteractManager")?.get(entityPlayer)
         if (playerInteractManager != null) {
@@ -206,30 +228,39 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun setGameMode(entityPlayer: Any, worldServer: Any) {
-        val playerInteractManager = findField(entityPlayer.javaClass, "playerInteractManager")?.get(entityPlayer) ?: return
+    private fun setGameMode(
+        entityPlayer: Any,
+        worldServer: Any
+    ) {
+        val playerInteractManager =
+            findField(entityPlayer.javaClass, "playerInteractManager")?.get(entityPlayer) ?: return
         val enumGamemodeClass = nmsClass("EnumGamemode")
         val gameMode = Bukkit.getServer().defaultGameMode
         val enumValue = enumValue(enumGamemodeClass, gameMode)
         invokeMethodIfExists(playerInteractManager, "b", enumValue)
     }
 
-    private fun setupConnection(entityPlayer: Any, minecraftServer: Any) {
+    private fun setupConnection(
+        entityPlayer: Any,
+        minecraftServer: Any
+    ) {
         val networkManagerClass = nmsClass("NetworkManager")
         val enumProtocolDirectionClass = nmsClass("EnumProtocolDirection")
         val serverbound = enumValue(enumProtocolDirectionClass, "SERVERBOUND")
-        val networkManager = networkManagerClass
-            .getConstructor(enumProtocolDirectionClass)
-            .newInstance(serverbound)
+        val networkManager =
+            networkManagerClass
+                .getConstructor(enumProtocolDirectionClass)
+                .newInstance(serverbound)
 
         val playerConnectionClass = nmsClass("PlayerConnection")
-        val pcCtor = playerConnectionClass.constructors.firstOrNull { ctor ->
-            val params = ctor.parameterTypes
-            params.size == 3 &&
-                params[0].isAssignableFrom(minecraftServer.javaClass) &&
-                params[1].isAssignableFrom(networkManagerClass) &&
-                params[2].isAssignableFrom(entityPlayer.javaClass)
-        } ?: playerConnectionClass.constructors.first()
+        val pcCtor =
+            playerConnectionClass.constructors.firstOrNull { ctor ->
+                val params = ctor.parameterTypes
+                params.size == 3 &&
+                    params[0].isAssignableFrom(minecraftServer.javaClass) &&
+                    params[1].isAssignableFrom(networkManagerClass) &&
+                    params[2].isAssignableFrom(entityPlayer.javaClass)
+            } ?: playerConnectionClass.constructors.first()
         val playerConnection = pcCtor.newInstance(minecraftServer, networkManager, entityPlayer)
 
         setFieldValue(entityPlayer, "playerConnection", playerConnection)
@@ -238,28 +269,43 @@ internal class LegacyFakePlayer12(
         runCatching { channel.close() }
     }
 
-    private fun addToPlayerChunkMap(worldServer: Any, entityPlayer: Any) {
+    private fun addToPlayerChunkMap(
+        worldServer: Any,
+        entityPlayer: Any
+    ) {
         val playerChunkMap = getPlayerChunkMap(worldServer)
         invokeMethodIfExists(playerChunkMap, "addPlayer", entityPlayer)
     }
 
-    private fun addToPlayerList(playerList: Any, entityPlayer: Any) {
+    private fun addToPlayerList(
+        playerList: Any,
+        entityPlayer: Any
+    ) {
         runCatching {
             val playersField = findField(playerList.javaClass, "players")
-            @Suppress("UNCHECKED_CAST") val players = playersField?.get(playerList) as? MutableCollection<Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val players = playersField?.get(playerList) as? MutableCollection<Any>
             players?.add(entityPlayer)
         }
     }
 
-    private fun updatePlayerListMaps(playerList: Any, entityPlayer: Any) {
+    private fun updatePlayerListMaps(
+        playerList: Any,
+        entityPlayer: Any
+    ) {
         runCatching {
             val byUuidField = findField(playerList.javaClass, "j")
-            @Suppress("UNCHECKED_CAST") val byUuid = byUuidField?.get(playerList) as? MutableMap<Any, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val byUuid = byUuidField?.get(playerList) as? MutableMap<Any, Any>
             byUuid?.put(uuid, entityPlayer)
         }
         runCatching {
             val byNameField = findField(playerList.javaClass, "playersByName")
-            @Suppress("UNCHECKED_CAST") val byName = byNameField?.get(playerList) as? MutableMap<Any, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val byName = byNameField?.get(playerList) as? MutableMap<Any, Any>
             byName?.put(name, entityPlayer)
         }
     }
@@ -268,11 +314,15 @@ internal class LegacyFakePlayer12(
         val packetPlayOutPlayerInfo = nmsClass("PacketPlayOutPlayerInfo")
         val actionClass = nmsClass("PacketPlayOutPlayerInfo\$EnumPlayerInfoAction")
         val addAction = enumValue(actionClass, "ADD_PLAYER")
-        val entityArray = java.lang.reflect.Array.newInstance(entityPlayer.javaClass, 1)
-        java.lang.reflect.Array.set(entityArray, 0, entityPlayer)
-        val infoPacket = packetPlayOutPlayerInfo
-            .getConstructor(actionClass, entityArray.javaClass)
-            .newInstance(addAction, entityArray)
+        val entityArray =
+            java.lang.reflect.Array
+                .newInstance(entityPlayer.javaClass, 1)
+        java.lang.reflect.Array
+            .set(entityArray, 0, entityPlayer)
+        val infoPacket =
+            packetPlayOutPlayerInfo
+                .getConstructor(actionClass, entityArray.javaClass)
+                .newInstance(addAction, entityArray)
 
         val namedSpawnPacket = createSingleArgPacket("PacketPlayOutNamedEntitySpawn", entityPlayer)
 
@@ -301,42 +351,53 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun createPlayerInfoPacket(actionName: String, entityPlayer: Any): Any? {
-        return runCatching {
+    private fun createPlayerInfoPacket(
+        actionName: String,
+        entityPlayer: Any
+    ): Any? =
+        runCatching {
             val packetPlayOutPlayerInfo = nmsClass("PacketPlayOutPlayerInfo")
             val actionClass = nmsClass("PacketPlayOutPlayerInfo\$EnumPlayerInfoAction")
             val action = enumValue(actionClass, actionName)
-            val entityArray = java.lang.reflect.Array.newInstance(entityPlayer.javaClass, 1)
-            java.lang.reflect.Array.set(entityArray, 0, entityPlayer)
+            val entityArray =
+                java.lang.reflect.Array
+                    .newInstance(entityPlayer.javaClass, 1)
+            java.lang.reflect.Array
+                .set(entityArray, 0, entityPlayer)
             packetPlayOutPlayerInfo
                 .getConstructor(actionClass, entityArray.javaClass)
                 .newInstance(action, entityArray)
         }.getOrNull()
-    }
 
-    private fun createEntityDestroyPacket(entityPlayer: Any): Any? {
-        return runCatching {
+    private fun createEntityDestroyPacket(entityPlayer: Any): Any? =
+        runCatching {
             val packetClass = nmsClass("PacketPlayOutEntityDestroy")
             val getIdMethod = entityPlayer.javaClass.getMethod("getId")
             val entityId = getIdMethod.invoke(entityPlayer) as Int
             val ids = intArrayOf(entityId)
             packetClass.getConstructor(IntArray::class.java).newInstance(ids)
         }.getOrNull()
-    }
 
-    private fun createSingleArgPacket(className: String, entityPlayer: Any): Any? {
-        return runCatching {
+    private fun createSingleArgPacket(
+        className: String,
+        entityPlayer: Any
+    ): Any? =
+        runCatching {
             val packetClass = nmsClass(className)
-            val ctor = packetClass.constructors.firstOrNull { ctor ->
-                ctor.parameterTypes.size == 1 && ctor.parameterTypes[0].isAssignableFrom(entityPlayer.javaClass)
-            } ?: packetClass.constructors.firstOrNull { ctor ->
-                ctor.parameterTypes.size == 1 && ctor.parameterTypes[0].isAssignableFrom(entityPlayer.javaClass.superclass)
-            }
+            val ctor =
+                packetClass.constructors.firstOrNull { ctor ->
+                    ctor.parameterTypes.size == 1 && ctor.parameterTypes[0].isAssignableFrom(entityPlayer.javaClass)
+                } ?: packetClass.constructors.firstOrNull { ctor ->
+                    ctor.parameterTypes.size == 1 &&
+                        ctor.parameterTypes[0].isAssignableFrom(entityPlayer.javaClass.superclass)
+                }
             ctor?.newInstance(entityPlayer)
         }.getOrNull()
-    }
 
-    private fun addEntityToWorld(worldServer: Any, entityPlayer: Any) {
+    private fun addEntityToWorld(
+        worldServer: Any,
+        entityPlayer: Any
+    ) {
         invokeMethodIfExists(worldServer, "addEntity", entityPlayer)
     }
 
@@ -355,28 +416,43 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun removeFromPlayerList(playerList: Any, entityPlayer: Any) {
+    private fun removeFromPlayerList(
+        playerList: Any,
+        entityPlayer: Any
+    ) {
         runCatching {
             val playersField = findField(playerList.javaClass, "players")
-            @Suppress("UNCHECKED_CAST") val players = playersField?.get(playerList) as? MutableCollection<Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val players = playersField?.get(playerList) as? MutableCollection<Any>
             players?.remove(entityPlayer)
         }
     }
 
-    private fun removeFromPlayerMaps(playerList: Any, entityPlayer: Any) {
+    private fun removeFromPlayerMaps(
+        playerList: Any,
+        entityPlayer: Any
+    ) {
         runCatching {
             val byUuidField = findField(playerList.javaClass, "j")
-            @Suppress("UNCHECKED_CAST") val byUuid = byUuidField?.get(playerList) as? MutableMap<Any, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val byUuid = byUuidField?.get(playerList) as? MutableMap<Any, Any>
             byUuid?.remove(uuid)
         }
         runCatching {
             val byNameField = findField(playerList.javaClass, "playersByName")
-            @Suppress("UNCHECKED_CAST") val byName = byNameField?.get(playerList) as? MutableMap<Any, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val byName = byNameField?.get(playerList) as? MutableMap<Any, Any>
             byName?.remove(name)
         }
     }
 
-    private fun sendPacket(connection: Any, packet: Any) {
+    private fun sendPacket(
+        connection: Any,
+        packet: Any
+    ) {
         val packetClass = nmsClass("Packet")
         val sendMethod = connection.javaClass.getMethod("sendPacket", packetClass)
         sendMethod.invoke(connection, packet)
@@ -389,13 +465,22 @@ internal class LegacyFakePlayer12(
         }
     }
 
-    private fun invokeMethod(target: Any, name: String, vararg args: Any?): Any {
-        val method = findMethod(target.javaClass, name, args)
-            ?: throw NoSuchMethodException("Method '$name' not found on ${target.javaClass.name}")
+    private fun invokeMethod(
+        target: Any,
+        name: String,
+        vararg args: Any?
+    ): Any {
+        val method =
+            findMethod(target.javaClass, name, args)
+                ?: throw NoSuchMethodException("Method '$name' not found on ${target.javaClass.name}")
         return method.invoke(target, *args)
     }
 
-    private fun invokeMethodIfExists(target: Any, name: String, vararg args: Any?) {
+    private fun invokeMethodIfExists(
+        target: Any,
+        name: String,
+        vararg args: Any?
+    ) {
         val method = findMethod(target.javaClass, name, args, ignoreMissing = true) ?: return
         method.invoke(target, *args)
     }
@@ -407,13 +492,14 @@ internal class LegacyFakePlayer12(
         ignoreMissing: Boolean = false
     ): Method? {
         val candidates = (clazz.methods + clazz.declaredMethods).filter { it.name == name }
-        val method = candidates.firstOrNull { method ->
-            if (method.parameterTypes.size != args.size) return@firstOrNull false
-            method.parameterTypes.indices.all { idx ->
-                val arg = args[idx]
-                arg == null || method.parameterTypes[idx].isAssignableFrom(arg.javaClass)
-            }
-        } ?: candidates.firstOrNull { it.parameterTypes.size == args.size }
+        val method =
+            candidates.firstOrNull { method ->
+                if (method.parameterTypes.size != args.size) return@firstOrNull false
+                method.parameterTypes.indices.all { idx ->
+                    val arg = args[idx]
+                    arg == null || method.parameterTypes[idx].isAssignableFrom(arg.javaClass)
+                }
+            } ?: candidates.firstOrNull { it.parameterTypes.size == args.size }
         if (method == null && !ignoreMissing) {
             throw NoSuchMethodException("Method '$name' not found on ${clazz.name}")
         }
@@ -421,7 +507,10 @@ internal class LegacyFakePlayer12(
         return method
     }
 
-    private fun findField(clazz: Class<*>, name: String): Field? {
+    private fun findField(
+        clazz: Class<*>,
+        name: String
+    ): Field? {
         var current: Class<*>? = clazz
         while (current != null) {
             runCatching {
@@ -434,18 +523,26 @@ internal class LegacyFakePlayer12(
         return null
     }
 
-    private fun setFieldValue(target: Any, name: String, value: Any?) {
+    private fun setFieldValue(
+        target: Any,
+        name: String,
+        value: Any?
+    ) {
         val field = findField(target.javaClass, name) ?: return
         field.set(target, value)
     }
 
-    private fun enumValue(enumClass: Class<*>, name: String): Any {
+    private fun enumValue(
+        enumClass: Class<*>,
+        name: String
+    ): Any {
         @Suppress("UNCHECKED_CAST")
         val enumType = enumClass as Class<out Enum<*>>
         return java.lang.Enum.valueOf(enumType, name)
     }
 
-    private fun enumValue(enumClass: Class<*>, gameMode: GameMode): Any {
-        return enumValue(enumClass, gameMode.name)
-    }
+    private fun enumValue(
+        enumClass: Class<*>,
+        gameMode: GameMode
+    ): Any = enumValue(enumClass, gameMode.name)
 }

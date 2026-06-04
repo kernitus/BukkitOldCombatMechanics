@@ -24,155 +24,177 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.util.concurrent.Callable
 
 @OptIn(ExperimentalKotest::class)
-class EnderpearlCooldownIntegrationTest : FunSpec({
-    val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
-    val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
-    val module = ModuleLoader.getModules().filterIsInstance<ModuleDisableEnderpearlCooldown>().firstOrNull()
-        ?: error("ModuleDisableEnderpearlCooldown not registered")
+class EnderpearlCooldownIntegrationTest :
+    FunSpec({
+        val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+        val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
+        val module =
+            ModuleLoader.getModules().filterIsInstance<ModuleDisableEnderpearlCooldown>().firstOrNull()
+                ?: error("ModuleDisableEnderpearlCooldown not registered")
 
-    lateinit var player: Player
-    lateinit var fakePlayer: FakePlayer
+        lateinit var player: Player
+        lateinit var fakePlayer: FakePlayer
 
-    fun <T> runSync(action: () -> T): T {
-        return if (Bukkit.isPrimaryThread()) action() else Bukkit.getScheduler().callSyncMethod(testPlugin, Callable {
-            action()
-        }).get()
-    }
-
-    fun setModeset(player: Player, modeset: String) {
-        val playerData = kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(player.uniqueId)
-        playerData.setModesetForWorld(player.world.uid, modeset)
-        kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData(player.uniqueId, playerData)
-        ModuleLoader.toggleModules()
-    }
-
-    suspend fun withConfig(cooldownSeconds: Int, showMessage: Boolean, block: suspend () -> Unit) {
-        val oldCooldown = ocm.config.getInt("disable-enderpearl-cooldown.cooldown")
-        val oldShow = ocm.config.getBoolean("disable-enderpearl-cooldown.showMessage")
-        try {
-            runSync {
-                ocm.config.set("disable-enderpearl-cooldown.cooldown", cooldownSeconds)
-                ocm.config.set("disable-enderpearl-cooldown.showMessage", showMessage)
-                module.reload()
-                ModuleLoader.toggleModules()
+        fun <T> runSync(action: () -> T): T =
+            if (Bukkit.isPrimaryThread()) {
+                action()
+            } else {
+                Bukkit
+                    .getScheduler()
+                    .callSyncMethod(
+                        testPlugin,
+                        Callable {
+                            action()
+                        }
+                    ).get()
             }
-            block()
-        } finally {
-            runSync {
-                ocm.config.set("disable-enderpearl-cooldown.cooldown", oldCooldown)
-                ocm.config.set("disable-enderpearl-cooldown.showMessage", oldShow)
-                module.reload()
-                ModuleLoader.toggleModules()
+
+        fun setModeset(
+            player: Player,
+            modeset: String
+        ) {
+            val playerData =
+                kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
+                    player.uniqueId
+                )
+            playerData.setModesetForWorld(player.world.uid, modeset)
+            kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
+                .setPlayerData(player.uniqueId, playerData)
+            ModuleLoader.toggleModules()
+        }
+
+        suspend fun withConfig(
+            cooldownSeconds: Int,
+            showMessage: Boolean,
+            block: suspend () -> Unit
+        ) {
+            val oldCooldown = ocm.config.getInt("disable-enderpearl-cooldown.cooldown")
+            val oldShow = ocm.config.getBoolean("disable-enderpearl-cooldown.showMessage")
+            try {
+                runSync {
+                    ocm.config.set("disable-enderpearl-cooldown.cooldown", cooldownSeconds)
+                    ocm.config.set("disable-enderpearl-cooldown.showMessage", showMessage)
+                    module.reload()
+                    ModuleLoader.toggleModules()
+                }
+                block()
+            } finally {
+                runSync {
+                    ocm.config.set("disable-enderpearl-cooldown.cooldown", oldCooldown)
+                    ocm.config.set("disable-enderpearl-cooldown.showMessage", oldShow)
+                    module.reload()
+                    ModuleLoader.toggleModules()
+                }
             }
         }
-    }
 
-    fun firePearlLaunchEvent(player: Player): ProjectileLaunchEvent {
-        // Spawn a pearl entity directly; the module cancels this and launches a replacement.
-        val pearl = runSync {
-            val world = player.world
-            val entity = world.spawn(player.eyeLocation, EnderPearl::class.java)
-            entity.shooter = player
-            entity
+        fun firePearlLaunchEvent(player: Player): ProjectileLaunchEvent {
+            // Spawn a pearl entity directly; the module cancels this and launches a replacement.
+            val pearl =
+                runSync {
+                    val world = player.world
+                    val entity = world.spawn(player.eyeLocation, EnderPearl::class.java)
+                    entity.shooter = player
+                    entity
+                }
+            val event = ProjectileLaunchEvent(pearl)
+            runSync { Bukkit.getPluginManager().callEvent(event) }
+            return event
         }
-        val event = ProjectileLaunchEvent(pearl)
-        runSync { Bukkit.getPluginManager().callEvent(event) }
-        return event
-    }
 
-    extensions(MainThreadDispatcherExtension(testPlugin))
+        extensions(MainThreadDispatcherExtension(testPlugin))
 
-    beforeSpec {
-        runSync {
-            val world = Bukkit.getWorld("world") ?: error("world not loaded")
-            val location = Location(world, 0.0, 120.0, 0.0, 0f, 0f)
-            fakePlayer = FakePlayer(testPlugin)
-            fakePlayer.spawn(location)
-            player = Bukkit.getPlayer(fakePlayer.uuid) ?: error("Player not found")
-            player.isOp = true
-            setModeset(player, "old")
+        beforeSpec {
+            runSync {
+                val world = Bukkit.getWorld("world") ?: error("world not loaded")
+                val location = Location(world, 0.0, 120.0, 0.0, 0f, 0f)
+                fakePlayer = FakePlayer(testPlugin)
+                fakePlayer.spawn(location)
+                player = Bukkit.getPlayer(fakePlayer.uuid) ?: error("Player not found")
+                player.isOp = true
+                setModeset(player, "old")
+            }
         }
-    }
 
-    afterSpec {
-        runSync { fakePlayer.removePlayer() }
-    }
-
-    beforeTest {
-        runSync {
-            setModeset(player, "old")
-            player.gameMode = GameMode.SURVIVAL
-            player.inventory.clear()
-            player.inventory.setItemInMainHand(ItemStack(Material.ENDER_PEARL, 16))
+        afterSpec {
+            runSync { fakePlayer.removePlayer() }
         }
-    }
 
-    test("cooldown 0 allows repeated throws and consumes an enderpearl in survival") {
-        withConfig(cooldownSeconds = 0, showMessage = false) {
-            val before = runSync { player.inventory.itemInMainHand.amount }
-            val e1 = firePearlLaunchEvent(player)
-            e1.isCancelled shouldBe true
-            val after1 = runSync { player.inventory.itemInMainHand.amount }
-            (before - after1) shouldBe 1
-
-            val e2 = firePearlLaunchEvent(player)
-            e2.isCancelled shouldBe true
-            val after2 = runSync { player.inventory.itemInMainHand.amount }
-            (after1 - after2) shouldBe 1
+        beforeTest {
+            runSync {
+                setModeset(player, "old")
+                player.gameMode = GameMode.SURVIVAL
+                player.inventory.clear()
+                player.inventory.setItemInMainHand(ItemStack(Material.ENDER_PEARL, 16))
+            }
         }
-    }
 
-    test("cooldown blocks a second throw within the window and exposes remaining cooldown") {
-        withConfig(cooldownSeconds = 5, showMessage = false) {
-            val e1 = firePearlLaunchEvent(player)
-            e1.isCancelled shouldBe true
+        test("cooldown 0 allows repeated throws and consumes an enderpearl in survival") {
+            withConfig(cooldownSeconds = 0, showMessage = false) {
+                val before = runSync { player.inventory.itemInMainHand.amount }
+                val e1 = firePearlLaunchEvent(player)
+                e1.isCancelled shouldBe true
+                val after1 = runSync { player.inventory.itemInMainHand.amount }
+                (before - after1) shouldBe 1
 
-            val remainingAfterFirst = runSync { module.getEnderpearlCooldown(player.uniqueId) }
-            remainingAfterFirst shouldBeGreaterThan 0
-
-            val before2 = runSync { player.inventory.itemInMainHand.amount }
-            val e2 = firePearlLaunchEvent(player)
-            e2.isCancelled shouldBe true
-
-            // Second throw attempt should not consume another pearl.
-            val after2 = runSync { player.inventory.itemInMainHand.amount }
-            before2 shouldBe after2
+                val e2 = firePearlLaunchEvent(player)
+                e2.isCancelled shouldBe true
+                val after2 = runSync { player.inventory.itemInMainHand.amount }
+                (after1 - after2) shouldBe 1
+            }
         }
-    }
 
-    test("creative mode does not consume enderpearls") {
-        withConfig(cooldownSeconds = 0, showMessage = false) {
-            runSync { player.gameMode = GameMode.CREATIVE }
-            val before = runSync { player.inventory.itemInMainHand.amount }
-            val e1 = firePearlLaunchEvent(player)
-            e1.isCancelled shouldBe true
-            val after = runSync { player.inventory.itemInMainHand.amount }
-            before shouldBe after
+        test("cooldown blocks a second throw within the window and exposes remaining cooldown") {
+            withConfig(cooldownSeconds = 5, showMessage = false) {
+                val e1 = firePearlLaunchEvent(player)
+                e1.isCancelled shouldBe true
+
+                val remainingAfterFirst = runSync { module.getEnderpearlCooldown(player.uniqueId) }
+                remainingAfterFirst shouldBeGreaterThan 0
+
+                val before2 = runSync { player.inventory.itemInMainHand.amount }
+                val e2 = firePearlLaunchEvent(player)
+                e2.isCancelled shouldBe true
+
+                // Second throw attempt should not consume another pearl.
+                val after2 = runSync { player.inventory.itemInMainHand.amount }
+                before2 shouldBe after2
+            }
         }
-    }
 
-    test("no enderpearl item in either hand does not throw or consume") {
-        withConfig(cooldownSeconds = 0, showMessage = false) {
-            runSync { player.inventory.clear() }
-            val e1 = firePearlLaunchEvent(player)
-            e1.isCancelled shouldBe true
-            runSync { player.inventory.itemInMainHand.type shouldBe Material.AIR }
+        test("creative mode does not consume enderpearls") {
+            withConfig(cooldownSeconds = 0, showMessage = false) {
+                runSync { player.gameMode = GameMode.CREATIVE }
+                val before = runSync { player.inventory.itemInMainHand.amount }
+                val e1 = firePearlLaunchEvent(player)
+                e1.isCancelled shouldBe true
+                val after = runSync { player.inventory.itemInMainHand.amount }
+                before shouldBe after
+            }
         }
-    }
 
-    test("cooldown expires after real time and throw becomes allowed again") {
-        withConfig(cooldownSeconds = 1, showMessage = false) {
-            val e1 = firePearlLaunchEvent(player)
-            e1.isCancelled shouldBe true
-
-            // Wait slightly over a second to ensure wall-clock cooldown is over.
-            delay(1200)
-
-            val before2 = runSync { player.inventory.itemInMainHand.amount }
-            val e2 = firePearlLaunchEvent(player)
-            e2.isCancelled shouldBe true
-            val after2 = runSync { player.inventory.itemInMainHand.amount }
-            (before2 - after2) shouldBe 1
+        test("no enderpearl item in either hand does not throw or consume") {
+            withConfig(cooldownSeconds = 0, showMessage = false) {
+                runSync { player.inventory.clear() }
+                val e1 = firePearlLaunchEvent(player)
+                e1.isCancelled shouldBe true
+                runSync { player.inventory.itemInMainHand.type shouldBe Material.AIR }
+            }
         }
-    }
-})
+
+        test("cooldown expires after real time and throw becomes allowed again") {
+            withConfig(cooldownSeconds = 1, showMessage = false) {
+                val e1 = firePearlLaunchEvent(player)
+                e1.isCancelled shouldBe true
+
+                // Wait slightly over a second to ensure wall-clock cooldown is over.
+                delay(1200)
+
+                val before2 = runSync { player.inventory.itemInMainHand.amount }
+                val e2 = firePearlLaunchEvent(player)
+                e2.isCancelled shouldBe true
+                val after2 = runSync { player.inventory.itemInMainHand.amount }
+                (before2 - after2) shouldBe 1
+            }
+        }
+    })

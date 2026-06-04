@@ -72,7 +72,8 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
         if (isLegacy12) {
             legacyImpl12!!.spawn(location)
-            serverPlayer = legacyImpl12.entityPlayer ?: throw IllegalStateException("Legacy12 entity player not created.")
+            serverPlayer = legacyImpl12.entityPlayer
+                ?: throw IllegalStateException("Legacy12 entity player not created.")
             bukkitPlayer = legacyImpl12.bukkitPlayer
             return
         }
@@ -270,7 +271,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
             return ctor.newInstance(*args.toTypedArray())
         }
 
-        throw NoSuchMethodException("No compatible ServerGamePacketListenerImpl constructor found for ${listenerClass.name}")
+        throw NoSuchMethodException(
+            "No compatible ServerGamePacketListenerImpl constructor found for ${listenerClass.name}"
+        )
     }
 
     private fun createCommonListenerCookie(cookieClass: Class<*>, serverPlayer: Any): Any {
@@ -640,16 +643,6 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Disconnect the player
         bukkitPlayer!!.kickPlayer(quitMessage)
 
-        // Remove the player from the world
-        /*
-    val removeMethodName = reflectionRemapper.remapMethodName(
-        serverPlayer.javaClass,
-        "remove"
-    )
-    val removeMethod = serverPlayer.javaClass.getMethod(removeMethodName)
-    removeMethod.invoke(serverPlayer)
-         */
-
         // Remove from playerList if still present and not already removed
         runCatching {
             val playerList = getPlayerList(getMinecraftServer())
@@ -722,7 +715,8 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val candidateNames = listOf("doTick", "tick")
         for (name in candidateNames) {
             val remapped = reflectionRemapper.remapMethodName(serverPlayerClass, name)
-            val method = Reflector.getMethod(serverPlayerClass, remapped) ?: Reflector.getMethod(serverPlayerClass, name)
+            val method = Reflector.getMethod(serverPlayerClass, remapped)
+                ?: Reflector.getMethod(serverPlayerClass, name)
             if (method != null && method.parameterCount == 0) {
                 method.isAccessible = true
                 return method

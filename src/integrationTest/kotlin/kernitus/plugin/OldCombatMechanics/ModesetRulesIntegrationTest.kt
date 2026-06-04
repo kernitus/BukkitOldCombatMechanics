@@ -33,16 +33,17 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Callable
+import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(ExperimentalKotest::class)
 class ModesetRulesIntegrationTest :
     FunSpec({
         val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
-        val api = Bukkit.getServicesManager().getRegistration(OldCombatMechanicsAPI::class.java)?.provider
-            ?: error("OldCombatMechanicsAPI service not registered")
+        val api =
+            Bukkit.getServicesManager().getRegistration(OldCombatMechanicsAPI::class.java)?.provider
+                ?: error("OldCombatMechanicsAPI service not registered")
         val module =
             ModuleLoader
                 .getModules()
@@ -436,14 +437,15 @@ class ModesetRulesIntegrationTest :
                 runSync {
                     applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
                     val events = mutableListOf<PlayerModesetChangeEvent>()
-                    val listener = object : Listener {
-                        @EventHandler
-                        fun onModesetChange(event: PlayerModesetChangeEvent) {
-                            if (event.player.uniqueId == player.uniqueId) {
-                                events += event
+                    val listener =
+                        object : Listener {
+                            @EventHandler
+                            fun onModesetChange(event: PlayerModesetChangeEvent) {
+                                if (event.player.uniqueId == player.uniqueId) {
+                                    events += event
+                                }
                             }
                         }
-                    }
                     Bukkit.getPluginManager().registerEvents(listener, testPlugin)
 
                     try {
@@ -484,14 +486,15 @@ class ModesetRulesIntegrationTest :
                     player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
                     setModeset(player, "old")
                     val events = mutableListOf<PlayerModesetChangeEvent>()
-                    val listener = object : Listener {
-                        @EventHandler
-                        fun onModesetChange(event: PlayerModesetChangeEvent) {
-                            if (event.player.uniqueId == player.uniqueId) {
-                                events += event
+                    val listener =
+                        object : Listener {
+                            @EventHandler
+                            fun onModesetChange(event: PlayerModesetChangeEvent) {
+                                if (event.player.uniqueId == player.uniqueId) {
+                                    events += event
+                                }
                             }
                         }
-                    }
                     Bukkit.getPluginManager().registerEvents(listener, testPlugin)
 
                     try {

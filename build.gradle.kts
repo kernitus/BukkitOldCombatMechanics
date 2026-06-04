@@ -36,7 +36,7 @@ plugins {
 
 spotless {
     // Avoid a noisy first formatter rollout; enforce Spotless on changed files.
-    ratchetFrom("origin/master")
+    // ratchetFrom("origin/master")
 
     kotlin {
         target("src/**/*.kt")

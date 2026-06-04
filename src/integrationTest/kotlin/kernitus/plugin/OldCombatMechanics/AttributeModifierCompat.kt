@@ -7,14 +7,14 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.cryptomorin.xseries.XAttribute
-import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
-import org.bukkit.attribute.AttributeModifier
-import org.bukkit.inventory.EquipmentSlot
-import org.bukkit.attribute.Attribute
-import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
+import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
+import org.bukkit.attribute.Attribute
+import org.bukkit.attribute.AttributeModifier
+import org.bukkit.inventory.EquipmentSlot
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
 import java.util.UUID
 
 fun createAttributeModifier(
@@ -43,7 +43,11 @@ fun createAttributeModifier(
     }
 }
 
-fun addAttributeModifierCompat(meta: ItemMeta, attribute: Attribute, modifier: AttributeModifier) {
+fun addAttributeModifierCompat(
+    meta: ItemMeta,
+    attribute: Attribute,
+    modifier: AttributeModifier
+) {
     try {
         meta.addAttributeModifier(attribute, modifier)
         return
@@ -71,14 +75,16 @@ fun getDefaultAttributeModifiersCompat(
         // Fall back to older Material APIs if present.
     }
 
-    val modifiers = try {
-        val method = item.type.javaClass.getMethod("getAttributeModifiers", EquipmentSlot::class.java)
-        @Suppress("UNCHECKED_CAST")
-        val multimap = method.invoke(item.type, slot) as Multimap<Attribute, AttributeModifier>
-        multimap.get(attribute) ?: emptySet()
-    } catch (e: Exception) {
-        emptySet()
-    }
+    val modifiers =
+        try {
+            val method = item.type.javaClass.getMethod("getAttributeModifiers", EquipmentSlot::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val multimap = method.invoke(item.type, slot) as Multimap<Attribute, AttributeModifier>
+            multimap.get(attribute) ?: emptySet()
+        } catch (e: Exception) {
+            emptySet()
+        }
 
     if (modifiers.isNotEmpty()) {
         return modifiers
@@ -88,12 +94,13 @@ fun getDefaultAttributeModifiersCompat(
     if (attackDamageAttribute != null && attribute == attackDamageAttribute && slot == EquipmentSlot.HAND) {
         val fallbackDamage = NewWeaponDamage.getDamageOrNull(item.type) ?: return emptySet()
         val amount = fallbackDamage.toDouble() - 1.0
-        val fallbackModifier = createAttributeModifier(
-            name = "ocm-fallback-damage",
-            amount = amount,
-            operation = AttributeModifier.Operation.ADD_NUMBER,
-            slot = slot
-        )
+        val fallbackModifier =
+            createAttributeModifier(
+                name = "ocm-fallback-damage",
+                amount = amount,
+                operation = AttributeModifier.Operation.ADD_NUMBER,
+                slot = slot
+            )
         return setOf(fallbackModifier)
     }
 

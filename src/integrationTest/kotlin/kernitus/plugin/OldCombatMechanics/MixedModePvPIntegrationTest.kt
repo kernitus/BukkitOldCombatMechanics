@@ -885,7 +885,8 @@ class MixedModePvPIntegrationTest :
             }
 
             test(
-                "shield damage reduction uses old shield maths and armour suppression when only the defender is old-mode"
+                "shield damage reduction uses old shield maths and armour suppression " +
+                    "when only the defender is old-mode"
             ) {
                 withMixedModeConfig("shield-damage-reduction") {
                     runSync {

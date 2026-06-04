@@ -14,6 +14,8 @@ import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
 import com.cryptomorin.xseries.XAttribute
 import kernitus.plugin.OldCombatMechanics.utilities.CompatibilityCapabilities
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -75,9 +77,9 @@ class PlayerKnockbackIntegrationTest : FunSpec({
     }
 
     fun setModeset(player: Player, modeset: String) {
-        val playerData = kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(player.uniqueId)
+        val playerData = getPlayerData(player.uniqueId)
         playerData.setModesetForWorld(player.world.uid, modeset)
-        kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData(player.uniqueId, playerData)
+        setPlayerData(player.uniqueId, playerData)
     }
 
     fun pendingKnockbackField(): java.lang.reflect.Field {
@@ -138,7 +140,12 @@ class PlayerKnockbackIntegrationTest : FunSpec({
     }
 
     fun damageEvent(): EntityDamageByEntityEvent {
-        val event = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0)
+        val event = EntityDamageByEntityEvent(
+            attacker,
+            victim,
+            EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+            4.0
+        )
         Bukkit.getPluginManager().callEvent(event)
         return event
     }
@@ -283,7 +290,12 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                 val modifier = AttributeModifier(UUID.randomUUID(), "test", 0.5, AttributeModifier.Operation.ADD_NUMBER)
                 attribute?.addModifier(modifier)
 
-                val event = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0)
+                val event = EntityDamageByEntityEvent(
+                    attacker,
+                    victim,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    4.0
+                )
                 Bukkit.getPluginManager().callEvent(event)
 
                 attribute?.modifiers?.contains(modifier) shouldBe false
@@ -301,7 +313,12 @@ class PlayerKnockbackIntegrationTest : FunSpec({
                 val modifier = AttributeModifier(UUID.randomUUID(), "test", 0.5, AttributeModifier.Operation.ADD_NUMBER)
                 attribute?.addModifier(modifier)
 
-                val event = EntityDamageByEntityEvent(attacker, victim, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0)
+                val event = EntityDamageByEntityEvent(
+                    attacker,
+                    victim,
+                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    4.0
+                )
                 Bukkit.getPluginManager().callEvent(event)
 
                 attribute?.modifiers?.contains(modifier) shouldBe true

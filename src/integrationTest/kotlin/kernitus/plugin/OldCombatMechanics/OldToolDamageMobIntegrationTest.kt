@@ -48,7 +48,7 @@ class OldToolDamageMobIntegrationTest :
                         Callable {
                             action()
                             null
-                        },
+                        }
                     ).get()
             }
         }
@@ -132,7 +132,7 @@ class OldToolDamageMobIntegrationTest :
 
         fun attackCompat(
             attacker: LivingEntity,
-            target: Entity,
+            target: Entity
         ): Boolean {
             val handleMethod =
                 attacker.javaClass.methods.firstOrNull { method ->
@@ -152,7 +152,7 @@ class OldToolDamageMobIntegrationTest :
             val candidates =
                 listOfNotNull(
                     Reflector.getMethodAssignable(attackerHandle.javaClass, "attack", targetHandle.javaClass),
-                    Reflector.getMethodAssignable(attackerHandle.javaClass, "a", targetHandle.javaClass),
+                    Reflector.getMethodAssignable(attackerHandle.javaClass, "a", targetHandle.javaClass)
                 ).ifEmpty {
                     mobCollectAllMethods(attackerHandle.javaClass)
                         .asSequence()
@@ -181,7 +181,7 @@ class OldToolDamageMobIntegrationTest :
 
         suspend fun captureVindicatorBaseDamage(
             debugFile: java.io.File,
-            label: String,
+            label: String
         ): Double {
             val mobClass: Class<out LivingEntity> =
                 try {
@@ -219,7 +219,7 @@ class OldToolDamageMobIntegrationTest :
                         mob,
                         victim,
                         org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                        baseDamage.toDouble(),
+                        baseDamage.toDouble()
                     )
                 runSync {
                     Bukkit.getPluginManager().callEvent(event)
@@ -227,7 +227,7 @@ class OldToolDamageMobIntegrationTest :
                 val moduleEnabled = Config.moduleEnabled("old-tool-damage", victim.world)
                 debugFile.parentFile?.mkdirs()
                 debugFile.appendText(
-                    "label=$label base=${event.damage} raw=${event.damage} weapon=IRON_AXE enabled=$moduleEnabled\n",
+                    "label=$label base=${event.damage} raw=${event.damage} weapon=IRON_AXE enabled=$moduleEnabled\n"
                 )
                 return event.damage
             } finally {
@@ -248,7 +248,7 @@ class OldToolDamageMobIntegrationTest :
                         "disabled_modules",
                         ocm.config
                             .getStringList("disabled_modules")
-                            .filterNot { it.equals("old-tool-damage", true) },
+                            .filterNot { it.equals("old-tool-damage", true) }
                     )
                     val oldModeset =
                         ocm.config
