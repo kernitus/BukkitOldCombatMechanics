@@ -41,6 +41,10 @@ spotless {
     kotlin {
         target("src/**/*.kt")
         ktlint()
+        suppressLintsFor {
+            step = "ktlint"
+            shortCode = "standard:package-name"
+        }
     }
 
     kotlinGradle {

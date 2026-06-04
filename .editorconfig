@@ -586,6 +586,9 @@ ij_kotlin_wrap_elvis_expressions = 1
 ij_kotlin_wrap_expression_body_functions = 1
 ij_kotlin_wrap_first_method_in_call_chain = false
 
+[*.{kt,kts}]
+ktlint_standard_package-name = disabled
+
 [{*.htm,*.html,*.ng,*.sht,*.shtm,*.shtml}]
 ij_html_add_new_line_before_tags = body,div,p,form,h1,h2,h3
 ij_html_align_attributes = true
