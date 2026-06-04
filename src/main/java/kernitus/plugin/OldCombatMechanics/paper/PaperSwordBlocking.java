@@ -4,7 +4,9 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.bukkit.Bukkit;
@@ -31,6 +33,7 @@ public class PaperSwordBlocking {
     private final MethodHandle nmsRemoveComponent;
     private final MethodHandle nmsGetComponentsPatch;
     private final MethodHandle nmsPatchGet;
+    private final MethodHandle nmsPatchEntrySet;
     private final Object addConsumablePatch;
     private final Object removeConsumablePatch;
     private final Object nmsConsumableType;
@@ -56,6 +59,8 @@ public class PaperSwordBlocking {
     private final MethodHandle craftPlayerGetHandle;
     private final MethodHandle nmsGetUseItem;
     private final MethodHandle nmsItemStackIs;
+    private final MethodHandle nmsGetItemHolder;
+    private final MethodHandle nmsHolderIsTag;
     private final Object nmsSwordTag;
 
     public PaperSwordBlocking() throws Exception {
@@ -196,7 +201,13 @@ public class PaperSwordBlocking {
         nmsRemoveComponent = lookup.unreflect(findItemStackRemoveMethod(nmsItemStack, nmsComponentType));
 
         nmsGetComponentsPatch = lookup.unreflect(nmsItemStack.getMethod("getComponentsPatch"));
-        nmsPatchGet = lookup.unreflect(nmsPatch.getMethod("get", nmsComponentType));
+        MethodHandle patchGet = null;
+        try {
+            patchGet = lookup.unreflect(nmsPatch.getMethod("get", nmsComponentType));
+        } catch (NoSuchMethodException ignored) {
+        }
+        nmsPatchGet = patchGet;
+        nmsPatchEntrySet = lookup.unreflect(nmsPatch.getMethod("entrySet"));
 
         // Detect sword blocking via active item use:
         // player.getUseItem().is(ItemTags.SWORDS)
@@ -210,7 +221,19 @@ public class PaperSwordBlocking {
 
         final Object swordTag = Class.forName("net.minecraft.tags.ItemTags").getField("SWORDS").get(null);
         nmsSwordTag = swordTag;
-        nmsItemStackIs = lookup.unreflect(findItemStackIsMethod(nmsItemStack, swordTag));
+        MethodHandle itemStackIsTag = null;
+        MethodHandle getItemHolder = null;
+        MethodHandle holderIsTag = null;
+        try {
+            itemStackIsTag = lookup.unreflect(findItemStackIsMethod(nmsItemStack, swordTag));
+        } catch (NoSuchMethodException ignored) {
+            final Method holderMethod = findItemStackHolderMethod(nmsItemStack);
+            getItemHolder = lookup.unreflect(holderMethod);
+            holderIsTag = lookup.unreflect(findHolderIsTagMethod(holderMethod.getReturnType(), swordTag));
+        }
+        nmsItemStackIs = itemStackIsTag;
+        nmsGetItemHolder = getItemHolder;
+        nmsHolderIsTag = holderIsTag;
     }
 
     private Field resolveCraftItemStackHandleField(ItemStack stack) throws NoSuchFieldException {
@@ -250,11 +273,18 @@ public class PaperSwordBlocking {
     }
 
     private Method findItemStackIsMethod(Class<?> nmsItemStackClass, Object tagInstance) throws NoSuchMethodException {
+        if (tagInstance != null) {
+            try {
+                return nmsItemStackClass.getMethod("is", tagInstance.getClass());
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
         for (Method m : nmsItemStackClass.getMethods()) {
             if (!m.getName().equals("is")) continue;
             if (m.getParameterCount() != 1) continue;
             if (m.getReturnType() != boolean.class) continue;
             final Class<?> param = m.getParameterTypes()[0];
+            if (param == Object.class) continue;
             // NMS has multiple "is(...)" overloads. We specifically need the tag overload used by
             // ItemStack#is(ItemTags.SWORDS). Pick an overload whose parameter can accept the tag object.
             if (tagInstance != null && param.isInstance(tagInstance)) {
@@ -269,6 +299,44 @@ public class PaperSwordBlocking {
             }
         }
         throw new NoSuchMethodException("ItemStack#is(tag) not found");
+    }
+
+    private Method findItemStackHolderMethod(Class<?> nmsItemStackClass) throws NoSuchMethodException {
+        for (String name : new String[]{"getItemHolder", "typeHolder"}) {
+            try {
+                return nmsItemStackClass.getMethod(name);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        for (Method m : nmsItemStackClass.getMethods()) {
+            if (m.getParameterCount() != 0) continue;
+            if (!"net.minecraft.core.Holder".equals(m.getReturnType().getName())) continue;
+            return m;
+        }
+        throw new NoSuchMethodException("ItemStack item holder accessor not found");
+    }
+
+    private Method findHolderIsTagMethod(Class<?> holderClass, Object tagInstance) throws NoSuchMethodException {
+        if (tagInstance != null) {
+            try {
+                return holderClass.getMethod("is", tagInstance.getClass());
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        for (Method m : holderClass.getMethods()) {
+            if (!m.getName().equals("is")) continue;
+            if (m.getParameterCount() != 1) continue;
+            if (m.getReturnType() != boolean.class) continue;
+            final Class<?> param = m.getParameterTypes()[0];
+            if (param == Object.class) continue;
+            if (tagInstance != null && param.isInstance(tagInstance)) {
+                return m;
+            }
+            if (param.getName().contains("TagKey")) {
+                return m;
+            }
+        }
+        throw new NoSuchMethodException("Holder#is(tag) not found");
     }
 
     public void applyComponents(ItemStack stack) {
@@ -394,9 +462,21 @@ public class PaperSwordBlocking {
             if (nms == null) return false;
             final Object patch = nmsGetComponentsPatch.invoke(nms);
             if (patch == null) return false;
-            final Object entry = nmsPatchGet.invoke(patch, nmsConsumableType);
-            if (!(entry instanceof Optional)) return false;
-            return ((Optional<?>) entry).isPresent();
+            if (nmsPatchGet != null) {
+                final Object entry = nmsPatchGet.invoke(patch, nmsConsumableType);
+                if (!(entry instanceof Optional)) return false;
+                return ((Optional<?>) entry).isPresent();
+            }
+            final Object entries = nmsPatchEntrySet.invoke(patch);
+            if (!(entries instanceof Set)) return false;
+            for (final Object entryObject : (Set<?>) entries) {
+                if (!(entryObject instanceof Map.Entry)) continue;
+                final Map.Entry<?, ?> entry = (Map.Entry<?, ?>) entryObject;
+                if (entry.getKey() != nmsConsumableType) continue;
+                final Object value = entry.getValue();
+                return value instanceof Optional && ((Optional<?>) value).isPresent();
+            }
+            return false;
         } catch (Throwable ignored) {
             return false;
         }
@@ -510,7 +590,12 @@ public class PaperSwordBlocking {
             if (nmsPlayer == null) return false;
             final Object useItem = nmsGetUseItem.invoke(nmsPlayer);
             if (useItem == null) return false;
-            return (boolean) nmsItemStackIs.invoke(useItem, nmsSwordTag);
+            if (nmsItemStackIs != null) {
+                return (boolean) nmsItemStackIs.invoke(useItem, nmsSwordTag);
+            }
+            final Object holder = nmsGetItemHolder.invoke(useItem);
+            if (holder == null) return false;
+            return (boolean) nmsHolderIsTag.invoke(holder, nmsSwordTag);
         } catch (Throwable ignored) {
             return false;
         }
