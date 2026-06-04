@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("ktlint:standard:package-name")
+
 package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
@@ -58,7 +60,7 @@ class SwordBlockingIntegrationTest :
                         plugin,
                         Callable {
                             action()
-                        },
+                        }
                     ).get()
             }
 
@@ -84,7 +86,7 @@ class SwordBlockingIntegrationTest :
                     player.maximumNoDamageTicks = 20
                     player.noDamageTicks = 0 // remove spawn invulnerability
                     player.isInvulnerable = false
-                },
+                }
             )
         }
 
@@ -97,23 +99,24 @@ class SwordBlockingIntegrationTest :
                         player.inventory.itemInMainHand,
                         null,
                         BlockFace.SELF,
-                        EquipmentSlot.HAND,
+                        EquipmentSlot.HAND
                     )
                 Bukkit.getPluginManager().callEvent(event)
             }
 
         fun rightClickEntity(
             target: Entity,
-            hand: EquipmentSlot,
+            hand: EquipmentSlot
         ) = runSync {
             Bukkit.getPluginManager().callEvent(PlayerInteractEntityEvent(player, target, hand))
         }
 
         fun rightClickEntityAt(
             target: Entity,
-            hand: EquipmentSlot,
+            hand: EquipmentSlot
         ) = runSync {
-            Bukkit.getPluginManager().callEvent(PlayerInteractAtEntityEvent(player, target, Vector(0.0, 1.0, 0.0), hand))
+            val event = PlayerInteractAtEntityEvent(player, target, Vector(0.0, 1.0, 0.0), hand)
+            Bukkit.getPluginManager().callEvent(event)
         }
 
         fun spawnEntityTarget(): Entity =
@@ -147,7 +150,7 @@ class SwordBlockingIntegrationTest :
 
         suspend fun TestScope.withPaperAnimationEnabled(
             enabled: Boolean,
-            block: suspend TestScope.() -> Unit,
+            block: suspend TestScope.() -> Unit
         ) {
             val original = runSync { ocm.config.get("sword-blocking.paper-animation") }
             runSync {
@@ -168,7 +171,7 @@ class SwordBlockingIntegrationTest :
 
         suspend fun TestScope.withUsePermission(
             required: Boolean,
-            block: suspend TestScope.() -> Unit,
+            block: suspend TestScope.() -> Unit
         ) {
             val original = runSync { ocm.config.getBoolean("sword-blocking.use-permission") }
             runSync {
@@ -207,8 +210,24 @@ class SwordBlockingIntegrationTest :
                 plugin,
                 Runnable {
                     fakePlayer.removePlayer()
-                },
+                }
             )
+        }
+
+        "initialises the Paper consumable component path when the data component API is present" {
+            val paperDataComponentApiPresent =
+                try {
+                    Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                    true
+                } catch (_: Throwable) {
+                    false
+                }
+
+            if (!paperDataComponentApiPresent) {
+                println("Skipping: Paper data component API unavailable")
+            } else {
+                paperConsumablePathAvailable() shouldBe true
+            }
         }
 
         "adds blocking when right-clicking with a sword (shield on legacy, consumable on Paper)" {
@@ -223,7 +242,9 @@ class SwordBlockingIntegrationTest :
             runSync {
                 // Legacy path: module injects a shield (actual "blocking" state is client-driven).
                 // Paper path: offhand remains intact and a consumable-based use animation can surface as "hand raised".
-                (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
+                val blockingStateVisible =
+                    player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised
+                blockingStateVisible shouldBe true
                 // Legacy path injects shield; paper path keeps offhand intact
                 setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
             }
@@ -275,7 +296,10 @@ class SwordBlockingIntegrationTest :
                 delayTicks(1)
 
                 runSync {
-                    (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
+                    val offhandType = player.inventory.itemInOffHand.type
+                    val blockingStateVisible =
+                        offhandType == Material.SHIELD || player.isBlocking || player.isHandRaised
+                    blockingStateVisible shouldBe true
                     setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
                 }
             } finally {
@@ -317,7 +341,10 @@ class SwordBlockingIntegrationTest :
                 delayTicks(1)
 
                 runSync {
-                    (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
+                    val offhandType = player.inventory.itemInOffHand.type
+                    val blockingStateVisible =
+                        offhandType == Material.SHIELD || player.isBlocking || player.isHandRaised
+                    blockingStateVisible shouldBe true
                     if (player.inventory.itemInOffHand.type == Material.SHIELD) {
                         forceRestoreViaHotbarChange()
                     }
@@ -398,7 +425,10 @@ class SwordBlockingIntegrationTest :
                 runSync {
                     // Legacy path injects a shield and sets isBlocking; Paper path keeps offhand intact and uses a
                     // consumable-based use animation which can surface as "hand raised".
-                    (player.inventory.itemInOffHand.type == Material.SHIELD || player.isBlocking || player.isHandRaised) shouldBe true
+                    val offhandType = player.inventory.itemInOffHand.type
+                    val blockingStateVisible =
+                        offhandType == Material.SHIELD || player.isBlocking || player.isHandRaised
+                    blockingStateVisible shouldBe true
                     setOf(Material.SHIELD, Material.AIR).contains(player.inventory.itemInOffHand.type) shouldBe true
                 }
             }

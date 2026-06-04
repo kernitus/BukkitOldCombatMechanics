@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("ktlint:standard:package-name")
+
 package kernitus.plugin.OldCombatMechanics
 
 import io.kotest.common.ExperimentalKotest
@@ -74,7 +76,7 @@ class ConsumableComponentIntegrationTest :
                         player.inventory.itemInMainHand,
                         null,
                         BlockFace.SELF,
-                        EquipmentSlot.HAND,
+                        EquipmentSlot.HAND
                     )
                 Bukkit.getPluginManager().callEvent(event)
             }
@@ -210,7 +212,7 @@ class ConsumableComponentIntegrationTest :
         suspend fun withPacketEventsClientVersion(
             player: Player,
             versionName: String,
-            block: suspend () -> Unit,
+            block: suspend () -> Unit
         ) {
             val user = requirePacketEventsUser(player)
             val versionClass = packetEventsClientVersionClass()
@@ -258,7 +260,7 @@ class ConsumableComponentIntegrationTest :
             } catch (t: Throwable) {
                 throw IllegalStateException(
                     "Failed to obtain NMS ItemStack (${t::class.java.simpleName}: ${t.message})",
-                    t,
+                    t
                 )
             }
         }
@@ -279,12 +281,25 @@ class ConsumableComponentIntegrationTest :
                 val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
                 val dataComponents = Class.forName("net.minecraft.core.component.DataComponents")
                 val consumableType = dataComponents.getField("CONSUMABLE").get(null)
-                val getMethod = patch.javaClass.getMethod("get", dataComponentType)
-                getMethod.invoke(patch, consumableType) as? Optional<*>
+                val getMethod =
+                    try {
+                        patch.javaClass.getMethod("get", dataComponentType)
+                    } catch (_: NoSuchMethodException) {
+                        null
+                    }
+                if (getMethod != null) {
+                    getMethod.invoke(patch, consumableType) as? Optional<*>
+                } else {
+                    val entries = patch.javaClass.getMethod("entrySet").invoke(patch) as? Set<*> ?: return null
+                    entries
+                        .filterIsInstance<Map.Entry<*, *>>()
+                        .firstOrNull { it.key === consumableType }
+                        ?.value as? Optional<*>
+                }
             } catch (t: Throwable) {
                 throw IllegalStateException(
                     "Failed to inspect data component patch (${t::class.java.simpleName}: ${t.message})",
-                    t,
+                    t
                 )
             }
         }
@@ -294,14 +309,18 @@ class ConsumableComponentIntegrationTest :
             return !entry.isPresent
         }
 
-        fun nmsConsumableType(): Any = Class.forName("net.minecraft.core.component.DataComponents").getField("CONSUMABLE").get(null)
+        fun nmsConsumableType(): Any =
+            Class.forName("net.minecraft.core.component.DataComponents").getField("CONSUMABLE").get(null)
 
         fun nmsConsumableComponent(): Any {
             val nmsConsumable = Class.forName("net.minecraft.world.item.component.Consumable")
             val builder = nmsConsumable.getMethod("builder").invoke(null)
             val nmsUseAnim = Class.forName("net.minecraft.world.item.ItemUseAnimation")
             val blockAnim = nmsUseAnim.getField("BLOCK").get(null)
-            val withSeconds = builder.javaClass.getMethod("consumeSeconds", Float::class.javaPrimitiveType).invoke(builder, 1.6f)
+            val withSeconds =
+                builder.javaClass
+                    .getMethod("consumeSeconds", Float::class.javaPrimitiveType)
+                    .invoke(builder, 1.6f)
             val withAnim = withSeconds.javaClass.getMethod("animation", nmsUseAnim).invoke(withSeconds, blockAnim)
             return withAnim.javaClass.getMethod("build").invoke(withAnim)
         }
@@ -335,14 +354,14 @@ class ConsumableComponentIntegrationTest :
             } catch (t: Throwable) {
                 throw IllegalStateException(
                     "Failed to apply NMS consumable component (${t::class.java.simpleName}: ${t.message})",
-                    t,
+                    t
                 )
             }
         }
 
         fun assertNoConsumableRemoval(
             stack: ItemStack?,
-            label: String,
+            label: String
         ) {
             val entry = consumablePatchEntry(stack)
             if (entry != null && !entry.isPresent) {
@@ -352,7 +371,7 @@ class ConsumableComponentIntegrationTest :
 
         fun setModeset(
             player: Player,
-            modeset: String?,
+            modeset: String?
         ) {
             val data = getPlayerData(player.uniqueId)
             val worldId = player.world.uid
@@ -366,7 +385,7 @@ class ConsumableComponentIntegrationTest :
 
         fun syntheticPlayerDeathEvent(
             player: Player,
-            drops: MutableList<ItemStack>,
+            drops: MutableList<ItemStack>
         ): PlayerDeathEvent {
             for (ctor in PlayerDeathEvent::class.java.constructors) {
                 val args = arrayOfNulls<Any>(ctor.parameterCount)
@@ -378,7 +397,8 @@ class ConsumableComponentIntegrationTest :
                                 player
                             }
 
-                            MutableList::class.java.isAssignableFrom(paramType) || List::class.java.isAssignableFrom(paramType) -> {
+                            MutableList::class.java.isAssignableFrom(paramType) ||
+                                List::class.java.isAssignableFrom(paramType) -> {
                                 drops
                             }
 
@@ -422,7 +442,7 @@ class ConsumableComponentIntegrationTest :
 
         fun restoreSection(
             path: String,
-            value: Any?,
+            value: Any?
         ) {
             ocm.config.set(path, null)
             when (value) {
@@ -443,7 +463,7 @@ class ConsumableComponentIntegrationTest :
 
         suspend fun withWorldModesets(
             worldModesets: List<String>,
-            block: suspend () -> Unit,
+            block: suspend () -> Unit
         ) {
             val originalWorlds = runSync { snapshotSection("worlds") }
             try {
@@ -512,7 +532,7 @@ class ConsumableComponentIntegrationTest :
 
         suspend fun withSwordBlockingPaperAnimation(
             enabled: Boolean,
-            block: suspend () -> Unit,
+            block: suspend () -> Unit
         ) {
             val original = runSync { snapshotSection("sword-blocking.paper-animation") }
             try {
@@ -616,7 +636,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryType.SlotType.CONTAINER,
                                 0,
                                 ClickType.LEFT,
-                                InventoryAction.PICKUP_ALL,
+                                InventoryAction.PICKUP_ALL
                             )
                         click.currentItem = slotItem
                         click.cursor = cursorItem
@@ -666,7 +686,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryType.SlotType.CONTAINER,
                                 0,
                                 ClickType.LEFT,
-                                InventoryAction.PICKUP_ALL,
+                                InventoryAction.PICKUP_ALL
                             )
                         click.currentItem = slotItem
                         click.cursor = cursorItem
@@ -715,7 +735,7 @@ class ConsumableComponentIntegrationTest :
                             0,
                             ClickType.NUMBER_KEY,
                             InventoryAction.HOTBAR_SWAP,
-                            0,
+                            0
                         )
                     }
 
@@ -770,7 +790,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryType.SlotType.CONTAINER,
                                 0,
                                 ClickType.LEFT,
-                                InventoryAction.PICKUP_ALL,
+                                InventoryAction.PICKUP_ALL
                             )
                         click.currentItem = slotItem
                         click.cursor = cursorItem
@@ -819,7 +839,7 @@ class ConsumableComponentIntegrationTest :
                                     InventoryType.SlotType.CONTAINER,
                                     0,
                                     ClickType.LEFT,
-                                    InventoryAction.PICKUP_ALL,
+                                    InventoryAction.PICKUP_ALL
                                 )
                             click.currentItem = slotItem
                             click.cursor = cursorItem
@@ -1013,7 +1033,7 @@ class ConsumableComponentIntegrationTest :
                         PlayerSwapHandItemsEvent(
                             player,
                             player.inventory.itemInMainHand.clone(),
-                            player.inventory.itemInOffHand.clone(),
+                            player.inventory.itemInOffHand.clone()
                         )
                     }
 
@@ -1214,7 +1234,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryType.SlotType.CONTAINER,
                                 0,
                                 ClickType.MIDDLE,
-                                InventoryAction.CLONE_STACK,
+                                InventoryAction.CLONE_STACK
                             )
                         click.currentItem = gui.getItem(0)
                         click
@@ -1261,7 +1281,7 @@ class ConsumableComponentIntegrationTest :
                             ItemStack(Material.CARROT),
                             ItemStack(Material.CARROT),
                             false,
-                            mapOf(0 to ItemStack(Material.CARROT)),
+                            mapOf(0 to ItemStack(Material.CARROT))
                         )
                     }
 
@@ -1308,7 +1328,7 @@ class ConsumableComponentIntegrationTest :
                             ItemStack(Material.CARROT),
                             ItemStack(Material.CARROT),
                             false,
-                            mapOf(9 to ItemStack(Material.CARROT)),
+                            mapOf(9 to ItemStack(Material.CARROT))
                         )
                     }
 
@@ -1364,7 +1384,7 @@ class ConsumableComponentIntegrationTest :
                             ItemStack(Material.CARROT),
                             ItemStack(Material.CARROT),
                             false,
-                            mapOf(9 to ItemStack(Material.CARROT)),
+                            mapOf(9 to ItemStack(Material.CARROT))
                         )
                     }
 
@@ -1418,7 +1438,7 @@ class ConsumableComponentIntegrationTest :
                             ItemStack(Material.CARROT),
                             ItemStack(Material.CARROT),
                             false,
-                            mapOf(9 to ItemStack(Material.CARROT)),
+                            mapOf(9 to ItemStack(Material.CARROT))
                         )
                     }
 
@@ -1511,7 +1531,7 @@ class ConsumableComponentIntegrationTest :
                                     InventoryType.SlotType.CONTAINER,
                                     0,
                                     ClickType.LEFT,
-                                    InventoryAction.PICKUP_ALL,
+                                    InventoryAction.PICKUP_ALL
                                 )
                             event.currentItem = gui.getItem(0)
                             event
@@ -1556,7 +1576,7 @@ class ConsumableComponentIntegrationTest :
                             player.location,
                             ItemStack(Material.SHIELD).apply {
                                 itemMeta = itemMeta?.apply { setDisplayName("Unrelated Shield") }
-                            },
+                            }
                         )
                     }
 
@@ -1599,7 +1619,7 @@ class ConsumableComponentIntegrationTest :
                         PlayerSwapHandItemsEvent(
                             player,
                             player.inventory.itemInMainHand,
-                            player.inventory.itemInOffHand,
+                            player.inventory.itemInOffHand
                         )
                     }
 
@@ -1647,7 +1667,7 @@ class ConsumableComponentIntegrationTest :
                 val drops =
                     mutableListOf(
                         ItemStack(Material.SHIELD),
-                        ItemStack(Material.SHIELD),
+                        ItemStack(Material.SHIELD)
                     )
                 val deathEvent = runSync { syntheticPlayerDeathEvent(player, drops) }
 
@@ -1751,7 +1771,7 @@ class ConsumableComponentIntegrationTest :
                         PlayerSwapHandItemsEvent(
                             player,
                             player.inventory.itemInMainHand,
-                            player.inventory.itemInOffHand,
+                            player.inventory.itemInOffHand
                         )
                     }
 
@@ -1838,7 +1858,7 @@ class ConsumableComponentIntegrationTest :
                                 0,
                                 ClickType.NUMBER_KEY,
                                 InventoryAction.HOTBAR_SWAP,
-                                2,
+                                2
                             )
                         click.currentItem = player.inventory.getItem(0)
                         click
