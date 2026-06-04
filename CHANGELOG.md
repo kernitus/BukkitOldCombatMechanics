@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **armour:** fall back to equipped armour modifiers ([#861](https://github.com/kernitus/BukkitOldCombatMechanics/issues/861)) ([84634bd](https://github.com/kernitus/BukkitOldCombatMechanics/commit/84634bde7b1741356674703f7faf812fcd9e7801))
+* **legacy:** restore armour and fishing compatibility ([2ec347f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/2ec347f689f19c2dc96e923385cf51bd01f4ac5b))
+* **potions:** ignore offline potion effect events ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([eb687b1](https://github.com/kernitus/BukkitOldCombatMechanics/commit/eb687b1827c367a3a8b89944672108e55c089637))
+* **shields:** ignore offline shield defenders ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([3b59bc8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3b59bc83a5bc06bdab208862639fec06bcb91e0d))
+* sword blocking falling back to the shield swap on Paper 26.1 ([#892](https://github.com/kernitus/BukkitOldCombatMechanics/issues/892)) ([#898](https://github.com/kernitus/BukkitOldCombatMechanics/issues/898)) ([24c46c8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/24c46c874d045120d8875f1bbcd5a092d9698566))
+
 ## [2.5.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.4.0...v2.5.0) (2026-05-23)
 
 
