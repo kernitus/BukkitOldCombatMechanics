@@ -218,7 +218,8 @@ class OldArmourStrengthModesetIntegrationTest :
                     val originalMagic = event.getDamage(EntityDamageEvent.DamageModifier.MAGIC)
                     val originalFinalDamage = event.finalDamage
 
-                    Bukkit.getPluginManager().callEvent(event)
+                    module.isEnabled(player) shouldBe false
+                    module.onEntityDamage(event)
 
                     event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (originalArmour plusOrMinus 0.0001)
                     event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (originalMagic plusOrMinus 0.0001)
@@ -234,7 +235,8 @@ class OldArmourStrengthModesetIntegrationTest :
 
                     val event = createExplosionDamageEvent()
 
-                    Bukkit.getPluginManager().callEvent(event)
+                    module.isEnabled(player) shouldBe true
+                    module.onEntityDamage(event)
 
                     event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
                     event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)

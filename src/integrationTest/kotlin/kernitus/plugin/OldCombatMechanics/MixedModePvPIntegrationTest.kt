@@ -8,6 +8,7 @@
 
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XEntityType
 import com.cryptomorin.xseries.XPotion
 import com.google.common.base.Function
 import io.kotest.common.ExperimentalKotest
@@ -18,6 +19,7 @@ import kernitus.plugin.OldCombatMechanics.module.ModuleFishingKnockback
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldPotionEffects
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
@@ -28,6 +30,7 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.World
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.FishHook
@@ -68,6 +71,11 @@ class MixedModePvPIntegrationTest :
                 .getModules()
                 .filterIsInstance<ModuleOldPotionEffects>()
                 .firstOrNull() ?: error("ModuleOldPotionEffects not registered")
+        val oldToolDamageModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleOldToolDamage>()
+                .firstOrNull() ?: error("ModuleOldToolDamage not registered")
         val oldCriticalHitsModule =
             ModuleLoader
                 .getModules()
@@ -521,10 +529,31 @@ class MixedModePvPIntegrationTest :
 
         fun createFakeHook(
             rodder: Player,
-            location: Location
+            location: Location,
+            nearbyHitEntity: Entity? = null
         ): FishHook {
             val id = UUID.randomUUID()
+            val hookType = XEntityType.FISHING_BOBBER.get() ?: error("Fishing bobber entity type missing")
             var velocity = Vector(0.0, 0.0, 0.0)
+            val hookWorld =
+                if (nearbyHitEntity == null) {
+                    location.world
+                } else {
+                    Proxy.newProxyInstance(
+                        World::class.java.classLoader,
+                        arrayOf(World::class.java)
+                    ) { _, method, args ->
+                        when (method.name) {
+                            "getNearbyEntities" -> {
+                                listOf(nearbyHitEntity)
+                            }
+
+                            else -> {
+                                method.invoke(location.world, *(args ?: emptyArray()))
+                            }
+                        }
+                    } as World
+                }
             val handler =
                 InvocationHandler { _, method, args ->
                     when (method.name) {
@@ -550,7 +579,7 @@ class MixedModePvPIntegrationTest :
                         }
 
                         "getType" -> {
-                            return@InvocationHandler EntityType.FISHING_BOBBER
+                            return@InvocationHandler hookType
                         }
 
                         "isValid" -> {
@@ -562,7 +591,7 @@ class MixedModePvPIntegrationTest :
                         }
 
                         "getWorld" -> {
-                            return@InvocationHandler location.world
+                            return@InvocationHandler hookWorld
                         }
 
                         "getLocation" -> {
@@ -593,10 +622,91 @@ class MixedModePvPIntegrationTest :
             ) as FishHook
         }
 
+        fun createVelocityRecordingPlayer(delegate: Player): Pair<Player, () -> Vector> {
+            val id = UUID.randomUUID()
+            var velocity = Vector(0.0, 0.0, 0.0)
+            val handler =
+                InvocationHandler { _, method, args ->
+                    when (method.name) {
+                        "getUniqueId" -> {
+                            return@InvocationHandler id
+                        }
+
+                        "getName" -> {
+                            return@InvocationHandler "velocity-target"
+                        }
+
+                        "getWorld" -> {
+                            return@InvocationHandler delegate.world
+                        }
+
+                        "getLocation" -> {
+                            return@InvocationHandler delegate.location.clone()
+                        }
+
+                        "getVelocity" -> {
+                            return@InvocationHandler velocity
+                        }
+
+                        "setVelocity" -> {
+                            velocity = (args?.get(0) as? Vector) ?: velocity
+                            return@InvocationHandler null
+                        }
+
+                        "getNoDamageTicks" -> {
+                            return@InvocationHandler 0
+                        }
+
+                        "getMaximumNoDamageTicks" -> {
+                            return@InvocationHandler 20
+                        }
+
+                        "getGameMode" -> {
+                            return@InvocationHandler GameMode.SURVIVAL
+                        }
+
+                        "damage" -> {
+                            return@InvocationHandler null
+                        }
+
+                        "equals" -> {
+                            return@InvocationHandler false
+                        }
+
+                        "hashCode" -> {
+                            return@InvocationHandler id.hashCode()
+                        }
+
+                        "toString" -> {
+                            return@InvocationHandler "VelocityRecordingPlayer($id)"
+                        }
+                    }
+
+                    return@InvocationHandler when (method.returnType) {
+                        java.lang.Boolean.TYPE -> false
+                        java.lang.Integer.TYPE -> 0
+                        java.lang.Long.TYPE -> 0L
+                        java.lang.Float.TYPE -> 0f
+                        java.lang.Double.TYPE -> 0.0
+                        java.lang.Void.TYPE -> null
+                        else -> null
+                    }
+                }
+            val player =
+                Proxy.newProxyInstance(
+                    Player::class.java.classLoader,
+                    arrayOf(Player::class.java),
+                    handler
+                ) as Player
+            return player to { velocity }
+        }
+
         fun createProjectileHitEvent(
             hook: FishHook,
             hitEntity: Entity
         ): ProjectileHitEvent {
+            val getHitEntityMethod =
+                runCatching { ProjectileHitEvent::class.java.getMethod("getHitEntity") }.getOrNull()
             for (constructor in ProjectileHitEvent::class.java.constructors) {
                 val params = constructor.parameterTypes
                 val args = arrayOfNulls<Any>(params.size)
@@ -622,7 +732,12 @@ class MixedModePvPIntegrationTest :
                 val event =
                     runCatching { constructor.newInstance(*args) as ProjectileHitEvent }.getOrNull()
                         ?: continue
-                if (event.entity.uniqueId == hook.uniqueId) return event
+                if (event.entity.uniqueId != hook.uniqueId) continue
+                if (getHitEntityMethod != null) {
+                    val reportedHit = getHitEntityMethod.invoke(event) as? Entity ?: continue
+                    if (reportedHit.uniqueId != hitEntity.uniqueId) continue
+                }
+                return event
             }
 
             error("No compatible ProjectileHitEvent constructor found for this server version")
@@ -872,11 +987,12 @@ class MixedModePvPIntegrationTest :
                         setModeset(attacker, "old")
                         setModeset(defender, "new")
 
-                        val event = createDirectPvPToolDamageEvent(baseDamage = 7.0)
-                        Bukkit.getPluginManager().callEvent(event)
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 7.0)
+                        event.setBaseDamage(7.0)
+                        oldToolDamageModule.isEnabled(attacker) shouldBe true
+                        oldToolDamageModule.onEntityDamaged(event)
 
-                        event.getDamage(EntityDamageEvent.DamageModifier.BASE) shouldBe (8.0 plusOrMinus 0.0001)
-                        event.finalDamage shouldBe (8.0 plusOrMinus 0.0001)
+                        event.baseDamage shouldBe (8.0 plusOrMinus 0.0001)
                     }
                 }
             }
@@ -887,11 +1003,12 @@ class MixedModePvPIntegrationTest :
                         setModeset(attacker, "new")
                         setModeset(defender, "old")
 
-                        val event = createDirectPvPToolDamageEvent(baseDamage = 7.0)
-                        Bukkit.getPluginManager().callEvent(event)
+                        val event = createOCMDirectPvPDamageEvent(rawDamage = 7.0)
+                        event.setBaseDamage(7.0)
+                        oldToolDamageModule.isEnabled(attacker) shouldBe false
+                        oldToolDamageModule.onEntityDamaged(event)
 
-                        event.getDamage(EntityDamageEvent.DamageModifier.BASE) shouldBe (7.0 plusOrMinus 0.0001)
-                        event.finalDamage shouldBe (7.0 plusOrMinus 0.0001)
+                        event.baseDamage shouldBe (7.0 plusOrMinus 0.0001)
                     }
                 }
             }
@@ -1018,14 +1135,13 @@ class MixedModePvPIntegrationTest :
                     runSync {
                         setModeset(attacker, "old")
                         setModeset(defender, "new")
-                        defender.velocity = Vector(0.0, 0.0, 0.0)
-                        defender.noDamageTicks = 0
+                        val (target, targetVelocity) = createVelocityRecordingPlayer(defender)
 
-                        val hook = createFakeHook(attacker, defender.location.clone().add(1.0, 0.0, 0.0))
-                        val event = createProjectileHitEvent(hook, defender)
+                        val hook = createFakeHook(attacker, target.location.clone().add(0.1, 0.0, 0.0), target)
+                        val event = createProjectileHitEvent(hook, target)
                         oldFishingKnockbackModule.onRodLand(event)
 
-                        val velocity = defender.velocity
+                        val velocity = targetVelocity()
                         velocity.x shouldBe (-0.4 plusOrMinus 0.0001)
                         velocity.y shouldBe (0.4 plusOrMinus 0.0001)
                         velocity.z shouldBe (0.0 plusOrMinus 0.0001)
@@ -1038,17 +1154,17 @@ class MixedModePvPIntegrationTest :
                     runSync {
                         setModeset(attacker, "new")
                         setModeset(defender, "old")
-                        val originalVelocity = Vector(0.0, 0.0, 0.0)
-                        defender.velocity = originalVelocity
-                        defender.noDamageTicks = 0
+                        val (target, targetVelocity) = createVelocityRecordingPlayer(defender)
+                        val originalVelocity = targetVelocity()
 
-                        val hook = createFakeHook(attacker, defender.location.clone().add(1.0, 0.0, 0.0))
-                        val event = createProjectileHitEvent(hook, defender)
+                        val hook = createFakeHook(attacker, target.location.clone().add(0.1, 0.0, 0.0), target)
+                        val event = createProjectileHitEvent(hook, target)
                         oldFishingKnockbackModule.onRodLand(event)
 
-                        defender.velocity.x shouldBe (originalVelocity.x plusOrMinus 0.0001)
-                        defender.velocity.y shouldBe (originalVelocity.y plusOrMinus 0.0001)
-                        defender.velocity.z shouldBe (originalVelocity.z plusOrMinus 0.0001)
+                        val velocity = targetVelocity()
+                        velocity.x shouldBe (originalVelocity.x plusOrMinus 0.0001)
+                        velocity.y shouldBe (originalVelocity.y plusOrMinus 0.0001)
+                        velocity.z shouldBe (originalVelocity.z plusOrMinus 0.0001)
                     }
                 }
             }

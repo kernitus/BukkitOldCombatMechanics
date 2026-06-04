@@ -487,8 +487,15 @@ class OldPotionEffectsIntegrationTest :
                 Bukkit.getScheduler().callSyncMethod(testPlugin, Callable { action() }).get()
             }
 
-        fun createWeaknessPotionEffectEvent(entity: LivingEntity): Event {
-            val eventClass = Class.forName("org.bukkit.event.entity.EntityPotionEffectEvent")
+        fun entityPotionEffectEventClass(): Class<*>? =
+            try {
+                Class.forName("org.bukkit.event.entity.EntityPotionEffectEvent")
+            } catch (_: ClassNotFoundException) {
+                null
+            }
+
+        fun createWeaknessPotionEffectEvent(entity: LivingEntity): Event? {
+            val eventClass = entityPotionEffectEventClass() ?: return null
             val weakness = XPotion.WEAKNESS.get() ?: error("Weakness potion missing")
             val newEffect = PotionEffect(weakness, 200, 0)
             val constructor =
@@ -662,7 +669,11 @@ class OldPotionEffectsIntegrationTest :
                             module.reload()
 
                             val event = createWeaknessPotionEffectEvent(offlinePlayer)
-                            invokePotionEffectHandler(event)
+                            if (event == null) {
+                                null
+                            } else {
+                                invokePotionEffectHandler(event)
+                            }
                         } finally {
                             if (Bukkit.getPlayer(offlineFake.uuid) != null) {
                                 offlineFake.removePlayer()

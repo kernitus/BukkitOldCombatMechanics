@@ -14,6 +14,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionCho
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
@@ -217,10 +218,68 @@ public class DefenceUtils {
                 continue;
             final EquipmentSlot slot = new EquipmentSlot[] { EquipmentSlot.FEET, EquipmentSlot.LEGS,
                     EquipmentSlot.CHEST, EquipmentSlot.HEAD }[i];
-            armourPoints += getAttributeModifierSum(itemStack.getType().getDefaultAttributeModifiers(slot)
-                    .get(XAttribute.ARMOR.get()));
+            armourPoints += getArmourPoints(itemStack.getType(), slot);
         }
         return armourPoints;
+    }
+
+    private static double getArmourPoints(Material material, EquipmentSlot slot) {
+        try {
+            final Attribute armourAttribute = XAttribute.ARMOR.get();
+            if (armourAttribute != null) {
+                return getAttributeModifierSum(material.getDefaultAttributeModifiers(slot).get(armourAttribute));
+            }
+        } catch (NoSuchMethodError ignored) {
+            // Material#getDefaultAttributeModifiers is absent on legacy Bukkit APIs.
+        }
+        return getLegacyArmourPoints(material);
+    }
+
+    private static double getLegacyArmourPoints(Material material) {
+        if (material == null) return 0;
+        switch (material.name()) {
+            case "LEATHER_HELMET":
+                return 1;
+            case "GOLD_HELMET":
+            case "GOLDEN_HELMET":
+            case "CHAINMAIL_HELMET":
+            case "IRON_HELMET":
+                return 2;
+            case "DIAMOND_HELMET":
+                return 3;
+            case "LEATHER_CHESTPLATE":
+                return 3;
+            case "GOLD_CHESTPLATE":
+            case "GOLDEN_CHESTPLATE":
+            case "CHAINMAIL_CHESTPLATE":
+                return 5;
+            case "IRON_CHESTPLATE":
+                return 6;
+            case "DIAMOND_CHESTPLATE":
+                return 8;
+            case "LEATHER_LEGGINGS":
+                return 2;
+            case "GOLD_LEGGINGS":
+            case "GOLDEN_LEGGINGS":
+                return 3;
+            case "CHAINMAIL_LEGGINGS":
+                return 4;
+            case "IRON_LEGGINGS":
+                return 5;
+            case "DIAMOND_LEGGINGS":
+                return 6;
+            case "LEATHER_BOOTS":
+            case "GOLD_BOOTS":
+            case "GOLDEN_BOOTS":
+            case "CHAINMAIL_BOOTS":
+                return 1;
+            case "IRON_BOOTS":
+                return 2;
+            case "DIAMOND_BOOTS":
+                return 3;
+            default:
+                return 0;
+        }
     }
 
     /**

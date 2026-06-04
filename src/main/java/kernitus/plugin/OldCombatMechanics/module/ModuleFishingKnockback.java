@@ -33,13 +33,8 @@ public class ModuleFishingKnockback extends OCMModule {
 
         getHookFunction = SpigotFunctionChooser.apiCompatReflectionCall((e, params) -> e.getHook(),
                 PlayerFishEvent.class, "getHook");
-        getHitEntityFunction = SpigotFunctionChooser.apiCompatCall((e, params) -> e.getHitEntity(), (e, params) -> {
-            final Entity hookEntity = e.getEntity();
-            return hookEntity.getWorld().getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
-                    .filter(entity -> !knockbackNonPlayerEntities && entity instanceof Player)
-                    .findFirst()
-                    .orElse(null);
-        });
+        getHitEntityFunction = SpigotFunctionChooser.apiCompatCall((e, params) -> e.getHitEntity(),
+                (e, params) -> findNearbyHitEntity(e.getEntity()));
     }
 
     @Override
@@ -63,7 +58,10 @@ public class ModuleFishingKnockback extends OCMModule {
         if (!isEnabled(rodder))
             return;
 
-        final Entity hitEntity = getHitEntityFunction.apply(event);
+        Entity hitEntity = getHitEntityFunction.apply(event);
+        if (hitEntity == null) {
+            hitEntity = findNearbyHitEntity(hookEntity);
+        }
 
         if (hitEntity == null)
             return; // If no entity was hit
@@ -101,6 +99,13 @@ public class ModuleFishingKnockback extends OCMModule {
         livingEntity.damage(damage, rodder);
         livingEntity.setVelocity(
                 calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
+    }
+
+    private Entity findNearbyHitEntity(Entity hookEntity) {
+        return hookEntity.getWorld().getNearbyEntities(hookEntity.getLocation(), 0.25, 0.25, 0.25).stream()
+                .filter(entity -> knockbackNonPlayerEntities || entity instanceof Player)
+                .findFirst()
+                .orElse(null);
     }
 
     private Vector calculateKnockbackVelocity(Vector currentVelocity, Location player, Location hook) {
