@@ -149,14 +149,21 @@ class OldArmourStrengthModesetIntegrationTest :
             }
         }
 
+        fun setModeset(
+            target: Player,
+            modeset: String,
+        ) {
+            val playerData = getPlayerData(target.uniqueId)
+            playerData.setModesetForWorld(target.world.uid, modeset)
+            setPlayerData(target.uniqueId, playerData)
+        }
+
         fun setModeset(modeset: String) {
-            val playerData = getPlayerData(player.uniqueId)
-            playerData.setModesetForWorld(player.world.uid, modeset)
-            setPlayerData(player.uniqueId, playerData)
+            setModeset(player, modeset)
         }
 
         @Suppress("DEPRECATION")
-        fun createExplosionDamageEvent(): EntityDamageEvent {
+        fun createExplosionDamageEvent(target: Player = player): EntityDamageEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
                     EntityDamageEvent.DamageModifier::class.java,
@@ -176,7 +183,7 @@ class OldArmourStrengthModesetIntegrationTest :
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
             return EntityDamageEvent(
-                player,
+                target,
                 EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
                 modifiers,
                 modifierFunctions,
@@ -239,6 +246,45 @@ class OldArmourStrengthModesetIntegrationTest :
                     event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
                     event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
                     event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                }
+            }
+        }
+
+        test("old-armour-strength ignores retained offline player-shaped defenders") {
+            withIssue861Config {
+                runSync {
+                    val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+
+                    try {
+                        offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
+                        val offlinePlayer = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        offlinePlayer.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                        setModeset(offlinePlayer, "old")
+
+                        offlineFake.removePlayer()
+                        offlinePlayer.isOnline shouldBe false
+
+                        val event = createExplosionDamageEvent(offlinePlayer)
+                        val originalArmour = event.getDamage(EntityDamageEvent.DamageModifier.ARMOR)
+                        val originalMagic = event.getDamage(EntityDamageEvent.DamageModifier.MAGIC)
+                        val originalFinalDamage = event.finalDamage
+                        val thrown =
+                            runCatching {
+                                module.onEntityDamage(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe
+                            (originalArmour plusOrMinus 0.0001)
+                        event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe
+                            (originalMagic plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (originalFinalDamage plusOrMinus 0.0001)
+                    } finally {
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
                 }
             }
         }

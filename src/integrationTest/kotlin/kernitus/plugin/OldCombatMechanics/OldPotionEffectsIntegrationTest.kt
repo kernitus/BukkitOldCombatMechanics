@@ -996,6 +996,104 @@ class OldPotionEffectsIntegrationTest :
         }
 
         context("Strength and weakness modifiers") {
+            test("damage modifiers ignore retained offline player-shaped attackers") {
+                withConfig {
+                    runSync {
+                        ocm.config.set("old-potion-effects.strength.modifier", 2.4)
+                        ocm.config.set("old-potion-effects.weakness.modifier", -0.75)
+                        module.reload()
+
+                        val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                        val offlineFake = FakePlayer(testPlugin)
+
+                        try {
+                            offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                            val offlineAttacker = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                            val playerData = getPlayerData(offlineAttacker.uniqueId)
+                            playerData.setModesetForWorld(world.uid, "old")
+                            setPlayerData(offlineAttacker.uniqueId, playerData)
+                            offlineAttacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0), true)
+                            offlineAttacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 200, 0), true)
+
+                            val event =
+                                OCMEntityDamageByEntityEvent(
+                                    offlineAttacker,
+                                    player,
+                                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                    4.0,
+                                )
+                            val originalStrengthModifier = event.strengthModifier
+                            val originalWeaknessModifier = event.weaknessModifier
+
+                            offlineFake.removePlayer()
+                            offlineAttacker.isOnline shouldBe false
+
+                            val thrown =
+                                runCatching {
+                                    module.onDamageByEntity(event)
+                                }.exceptionOrNull()
+
+                            thrown shouldBe null
+                            event.strengthModifier shouldBe (originalStrengthModifier plusOrMinus 0.0001)
+                            event.weaknessModifier shouldBe (originalWeaknessModifier plusOrMinus 0.0001)
+                        } finally {
+                            if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                                offlineFake.removePlayer()
+                            }
+                        }
+                    }
+                }
+            }
+
+            test("damage modifiers ignore retained offline player-shaped defenders from mob attackers") {
+                withConfig {
+                    runSync {
+                        ocm.config.set("old-potion-effects.strength.modifier", 2.4)
+                        module.reload()
+
+                        val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                        val offlineFake = FakePlayer(testPlugin)
+                        var zombie: LivingEntity? = null
+
+                        try {
+                            offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
+                            val offlineDefender = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                            val playerData = getPlayerData(offlineDefender.uniqueId)
+                            playerData.setModesetForWorld(world.uid, "old")
+                            setPlayerData(offlineDefender.uniqueId, playerData)
+
+                            zombie = world.spawn(Location(world, 0.0, 100.0, 0.0), org.bukkit.entity.Zombie::class.java)
+                            zombie.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 200, 0), true)
+
+                            val event =
+                                OCMEntityDamageByEntityEvent(
+                                    zombie,
+                                    offlineDefender,
+                                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                    4.0,
+                                )
+                            val originalStrengthModifier = event.strengthModifier
+
+                            offlineFake.removePlayer()
+                            offlineDefender.isOnline shouldBe false
+
+                            val thrown =
+                                runCatching {
+                                    module.onDamageByEntity(event)
+                                }.exceptionOrNull()
+
+                            thrown shouldBe null
+                            event.strengthModifier shouldBe (originalStrengthModifier plusOrMinus 0.0001)
+                        } finally {
+                            zombie?.remove()
+                            if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                                offlineFake.removePlayer()
+                            }
+                        }
+                    }
+                }
+            }
+
             test("vanilla strength addend applies when old-potion-effects is disabled") {
                 withConfig {
                     val disabled =

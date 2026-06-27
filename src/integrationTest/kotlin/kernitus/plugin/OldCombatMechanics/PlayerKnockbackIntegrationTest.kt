@@ -397,6 +397,44 @@ class PlayerKnockbackIntegrationTest :
                 }
             }
 
+            test("direct damage ignores retained offline player-shaped attackers") {
+                withConfig {
+                    val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+
+                    try {
+                        offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                        val offlineAttacker = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        offlineAttacker.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                        setModeset(offlineAttacker, "old")
+
+                        offlineFake.removePlayer()
+                        offlineAttacker.isOnline shouldBe false
+
+                        val originalVelocity = victim.velocity.clone()
+                        val event =
+                            EntityDamageByEntityEvent(
+                                offlineAttacker,
+                                victim,
+                                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                4.0,
+                            )
+                        val thrown =
+                            runCatching {
+                                module.onEntityDamageEntity(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        getPendingVector(victim.uniqueId) shouldBe null
+                        victim.velocity shouldBe originalVelocity
+                    } finally {
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
+                }
+            }
+
             test("enabled resistance scales horizontal knockback") {
                 if (!CompatibilityCapabilities.isKnockbackResistanceAvailable()) return@test
                 withConfig {

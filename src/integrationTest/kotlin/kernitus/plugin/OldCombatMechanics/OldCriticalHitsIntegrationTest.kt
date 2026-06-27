@@ -437,6 +437,99 @@ class OldCriticalHitsIntegrationTest :
             }
         }
 
+        test("critical hits ignore retained offline player-shaped attackers") {
+            withConfig {
+                runSync {
+                    ocm.config.set("old-critical-hits.multiplier", 1.25)
+                    criticalModule.reload()
+
+                    val world = checkNotNull(Bukkit.getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+
+                    try {
+                        offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                        val offlineAttacker = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        val playerData = getPlayerData(offlineAttacker.uniqueId)
+                        playerData.setModesetForWorld(world.uid, "old")
+                        setPlayerData(offlineAttacker.uniqueId, playerData)
+
+                        val event =
+                            OCMEntityDamageByEntityEvent(
+                                offlineAttacker,
+                                attacker,
+                                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                4.0,
+                            )
+                        event.setWas1_8Crit(true)
+                        event.setWasSprinting(false)
+
+                        offlineFake.removePlayer()
+                        offlineAttacker.isOnline shouldBe false
+
+                        val thrown =
+                            runCatching {
+                                criticalModule.onOCMDamage(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        event.criticalMultiplier shouldBe (1.0 plusOrMinus 0.0001)
+                    } finally {
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
+                }
+            }
+        }
+
+        test("critical hits ignore retained offline player-shaped defenders from mob attackers") {
+            withConfig {
+                runSync {
+                    ocm.config.set("old-critical-hits.multiplier", 1.25)
+                    criticalModule.reload()
+
+                    val world = checkNotNull(Bukkit.getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+                    var zombie: LivingEntity? = null
+
+                    try {
+                        offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
+                        val offlineDefender = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        val playerData = getPlayerData(offlineDefender.uniqueId)
+                        playerData.setModesetForWorld(world.uid, "old")
+                        setPlayerData(offlineDefender.uniqueId, playerData)
+
+                        zombie = world.spawn(Location(world, 0.0, 100.0, 0.0), org.bukkit.entity.Zombie::class.java)
+                        val event =
+                            OCMEntityDamageByEntityEvent(
+                                zombie,
+                                offlineDefender,
+                                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                4.0,
+                            )
+                        event.setWas1_8Crit(true)
+                        event.setWasSprinting(false)
+
+                        offlineFake.removePlayer()
+                        offlineDefender.isOnline shouldBe false
+
+                        val thrown =
+                            runCatching {
+                                criticalModule.onOCMDamage(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        event.criticalMultiplier shouldBe (1.0 plusOrMinus 0.0001)
+                    } finally {
+                        zombie?.remove()
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
+                }
+            }
+        }
+
         test("critical hit multiplier applies to customised tool damage") {
             withConfig {
                 ocm.config.set("old-critical-hits.enabled", true)

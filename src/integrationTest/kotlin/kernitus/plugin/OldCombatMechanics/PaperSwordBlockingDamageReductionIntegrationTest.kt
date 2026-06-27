@@ -237,4 +237,61 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
                 }
             }
         }
+
+        test("Paper sword blocking reduction ignores retained offline player-shaped damagers") {
+            if (!paperDataComponentApiPresent()) {
+                println("Skipping: Paper DataComponent API not present")
+                return@test
+            }
+
+            val originalPaperAnimation = ocm.config.get("sword-blocking.paper-animation")
+            runSync {
+                ocm.config.set("sword-blocking.paper-animation", true)
+                module.reload()
+            }
+
+            try {
+                val reduction =
+                    runSync {
+                        val world = Bukkit.getWorld("world") ?: error("world missing")
+                        val offlineFake = FakePlayer(testPlugin)
+
+                        try {
+                            offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                            val offlineDamager =
+                                Bukkit.getPlayer(offlineFake.uuid) ?: error("offline damager not found")
+                            setModeset(offlineDamager, "old")
+
+                            offlineFake.removePlayer()
+                            offlineDamager.isOnline shouldBe false
+
+                            val event =
+                                org.bukkit.event.entity.EntityDamageByEntityEvent(
+                                    offlineDamager,
+                                    defender,
+                                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                    2.5,
+                                )
+                            val result =
+                                runCatching {
+                                    module.applyPaperBlockingReduction(event, 2.5)
+                                }
+
+                            result.exceptionOrNull() shouldBe null
+                            result.getOrThrow()
+                        } finally {
+                            if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                                offlineFake.removePlayer()
+                            }
+                        }
+                    }
+
+                reduction shouldBe 0.0
+            } finally {
+                runSync {
+                    ocm.config.set("sword-blocking.paper-animation", originalPaperAnimation)
+                    module.reload()
+                }
+            }
+        }
     })

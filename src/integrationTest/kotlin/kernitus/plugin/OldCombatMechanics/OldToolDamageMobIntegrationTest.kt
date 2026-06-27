@@ -9,14 +9,20 @@ package kernitus.plugin.OldCombatMechanics
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestScope
+import io.kotest.matchers.doubles.plusOrMinus
+import io.kotest.matchers.shouldBe
+import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
+import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.entity.Arrow
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Villager
@@ -25,6 +31,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import java.lang.reflect.Method
@@ -35,6 +42,11 @@ class OldToolDamageMobIntegrationTest :
     FunSpec({
         val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
+        val toolDamageModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleOldToolDamage>()
+                .firstOrNull() ?: error("ModuleOldToolDamage not registered")
         extensions(MainThreadDispatcherExtension(testPlugin))
 
         fun runSync(action: () -> Unit) {
@@ -177,6 +189,99 @@ class OldToolDamageMobIntegrationTest :
             }
 
             return false
+        }
+
+        test("old tool damage ignores retained offline player-shaped direct attackers") {
+            withConfig {
+                runSync {
+                    val world = checkNotNull(Bukkit.getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+                    var victim: LivingEntity? = null
+
+                    try {
+                        offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                        val offlineAttacker = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        offlineAttacker.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                        val playerData = getPlayerData(offlineAttacker.uniqueId)
+                        playerData.setModesetForWorld(world.uid, "old")
+                        setPlayerData(offlineAttacker.uniqueId, playerData)
+
+                        victim = world.spawn(Location(world, 0.0, 100.0, 0.0), org.bukkit.entity.Cow::class.java)
+                        val event =
+                            OCMEntityDamageByEntityEvent(
+                                offlineAttacker,
+                                victim,
+                                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                7.0,
+                            )
+                        event.setBaseDamage(7.0)
+
+                        offlineFake.removePlayer()
+                        offlineAttacker.isOnline shouldBe false
+
+                        val thrown =
+                            runCatching {
+                                toolDamageModule.onEntityDamaged(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        event.baseDamage shouldBe (7.0 plusOrMinus 0.0001)
+                    } finally {
+                        victim?.remove()
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
+                }
+            }
+        }
+
+        test("old tool damage ignores projectiles shot by retained offline player-shaped attackers") {
+            withConfig {
+                runSync {
+                    val world = checkNotNull(Bukkit.getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+                    var arrow: Arrow? = null
+                    var victim: LivingEntity? = null
+
+                    try {
+                        offlineFake.spawn(Location(world, -4.5, 100.0, 0.0))
+                        val offlineShooter = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        val playerData = getPlayerData(offlineShooter.uniqueId)
+                        playerData.setModesetForWorld(world.uid, "old")
+                        setPlayerData(offlineShooter.uniqueId, playerData)
+
+                        arrow = world.spawn(Location(world, -3.5, 100.0, 0.0), Arrow::class.java)
+                        arrow.shooter = offlineShooter
+                        victim = world.spawn(Location(world, 0.0, 100.0, 0.0), org.bukkit.entity.Cow::class.java)
+                        val event =
+                            OCMEntityDamageByEntityEvent(
+                                arrow,
+                                victim,
+                                EntityDamageEvent.DamageCause.PROJECTILE,
+                                7.0,
+                            )
+                        event.setBaseDamage(7.0)
+
+                        offlineFake.removePlayer()
+                        offlineShooter.isOnline shouldBe false
+
+                        val thrown =
+                            runCatching {
+                                toolDamageModule.onEntityDamaged(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                        event.baseDamage shouldBe (7.0 plusOrMinus 0.0001)
+                    } finally {
+                        arrow?.remove()
+                        victim?.remove()
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
+                }
+            }
         }
 
         suspend fun captureVindicatorBaseDamage(
