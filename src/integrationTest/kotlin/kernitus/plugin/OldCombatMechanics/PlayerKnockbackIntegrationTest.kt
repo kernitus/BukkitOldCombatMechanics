@@ -20,6 +20,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.attribute.AttributeModifier
+import org.bukkit.entity.Arrow
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
@@ -350,6 +351,49 @@ class PlayerKnockbackIntegrationTest :
                     Bukkit.getPluginManager().callEvent(event)
 
                     attribute?.modifiers?.contains(modifier) shouldBe true
+                }
+            }
+
+            test("projectile damage ignores retained offline player-shaped victims") {
+                withConfig {
+                    ocm.config.set("old-player-knockback.enable-knockback-resistance", false)
+                    module.reload()
+
+                    val world = checkNotNull(Bukkit.getServer().getWorld("world"))
+                    val offlineFake = FakePlayer(testPlugin)
+                    var arrow: Arrow? = null
+
+                    try {
+                        offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
+                        val offlineVictim = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
+                        setModeset(offlineVictim, "old")
+
+                        offlineFake.removePlayer()
+                        offlineVictim.isOnline shouldBe false
+
+                        val launchedArrow = world.spawn(attacker.eyeLocation, Arrow::class.java)
+                        launchedArrow.shooter = attacker
+                        arrow = launchedArrow
+
+                        val event =
+                            EntityDamageByEntityEvent(
+                                launchedArrow,
+                                offlineVictim,
+                                EntityDamageEvent.DamageCause.PROJECTILE,
+                                4.0,
+                            )
+                        val thrown =
+                            runCatching {
+                                module.onEntityDamage(event)
+                            }.exceptionOrNull()
+
+                        thrown shouldBe null
+                    } finally {
+                        arrow?.remove()
+                        if (Bukkit.getPlayer(offlineFake.uuid) != null) {
+                            offlineFake.removePlayer()
+                        }
+                    }
                 }
             }
 

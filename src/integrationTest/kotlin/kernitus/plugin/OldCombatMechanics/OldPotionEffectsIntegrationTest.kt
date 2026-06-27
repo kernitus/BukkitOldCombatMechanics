@@ -33,6 +33,7 @@ import org.bukkit.Material
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.block.BlockFace
 import org.bukkit.configuration.ConfigurationSection
+import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.Event
@@ -508,6 +509,10 @@ class OldPotionEffectsIntegrationTest :
                     .map { parameterType ->
                         when {
                             LivingEntity::class.java.isAssignableFrom(parameterType) -> {
+                                entity
+                            }
+
+                            Entity::class.java.isAssignableFrom(parameterType) -> {
                                 entity
                             }
 

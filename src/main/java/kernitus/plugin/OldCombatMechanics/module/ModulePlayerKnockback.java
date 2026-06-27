@@ -107,6 +107,8 @@ public class ModulePlayerKnockback extends OCMModule {
         if (!(entity instanceof Player) || netheriteKnockbackResistance)
             return;
         final Player damagee = (Player) entity;
+        if (!damagee.isOnline())
+            return;
 
         // This depends on the attacker's combat mode
         if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK

@@ -927,7 +927,7 @@ class MixedModePvPIntegrationTest :
                 }
             }
 
-            test("shield damage reduction ignores retained offline defender references") {
+            test("shield damage reduction ignores player attacks on retained offline defender references") {
                 withMixedModeConfig("shield-damage-reduction") {
                     runSync {
                         val world = checkNotNull(Bukkit.getServer().getWorld("world"))
@@ -940,6 +940,7 @@ class MixedModePvPIntegrationTest :
                             setModeset(offlineDefender, "old")
 
                             offlineFake.removePlayer()
+                            offlineDefender.isOnline shouldBe false
 
                             val hitEvent =
                                 createShieldBlockedPvPDamageEvent(
