@@ -37,7 +37,7 @@ class ConfigMigrationIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -82,8 +82,8 @@ class ConfigMigrationIntegrationTest :
                         "modesets",
                         linkedMapOf(
                             "custom" to listOf("disable-offhand"),
-                            "alt" to listOf("old-golden-apples")
-                        )
+                            "alt" to listOf("old-golden-apples"),
+                        ),
                     )
                     oldConfig.set("worlds.__default__", null)
                     oldConfig.set("worlds.world", listOf("custom", "alt"))
@@ -139,8 +139,8 @@ class ConfigMigrationIntegrationTest :
                         "modesets",
                         linkedMapOf(
                             "custom" to listOf("disable-offhand"),
-                            "alt" to listOf("old-golden-apples")
-                        )
+                            "alt" to listOf("old-golden-apples"),
+                        ),
                     )
                     oldConfig.set("worlds.__default__", listOf("legacy-default"))
                     oldConfig.set("worlds.world", listOf("custom"))

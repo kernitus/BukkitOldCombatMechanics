@@ -34,7 +34,7 @@ class VersionComparatorTest :
 private fun assertCurrentVersionIsNewerOrEqualTo(
     targetMajor: Int,
     targetMinor: Int,
-    targetPatch: Int
+    targetPatch: Int,
 ) {
     VersionComparator.isNewerOrEqualTo(1, 21, 11, targetMajor, targetMinor, targetPatch) shouldBe true
 }

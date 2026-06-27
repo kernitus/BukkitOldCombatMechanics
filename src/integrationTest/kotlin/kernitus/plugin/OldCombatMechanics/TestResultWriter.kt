@@ -16,7 +16,7 @@ object TestResultWriter {
     fun writeAndShutdown(
         plugin: JavaPlugin,
         success: Boolean,
-        error: Throwable? = null
+        error: Throwable? = null,
     ) {
         try {
             val resultFile = File(plugin.dataFolder, "test-results.txt")
@@ -37,7 +37,7 @@ object TestResultWriter {
     @JvmStatic
     fun writeFailureSummary(
         plugin: JavaPlugin,
-        lines: List<String>
+        lines: List<String>,
     ) {
         try {
             val file = File(plugin.dataFolder, "test-failures.txt")

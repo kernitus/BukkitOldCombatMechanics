@@ -22,7 +22,7 @@ object PlayerModuleOverrides {
     fun setOverride(
         human: HumanEntity,
         moduleName: String,
-        state: PlayerModuleOverride
+        state: PlayerModuleOverride,
     ) {
         requireOnline(human)
         val normalised = ModuleLoader.normaliseModuleName(moduleName)
@@ -36,7 +36,7 @@ object PlayerModuleOverrides {
     @JvmStatic
     fun getOverride(
         human: HumanEntity,
-        moduleName: String
+        moduleName: String,
     ): PlayerModuleOverride {
         requireOnline(human)
         val perPlayer = overridesByPlayer[human.uniqueId] ?: return PlayerModuleOverride.DEFAULT
@@ -46,7 +46,7 @@ object PlayerModuleOverrides {
     @JvmStatic
     fun clearOverride(
         human: HumanEntity,
-        moduleName: String
+        moduleName: String,
     ): Boolean {
         requireOnline(human)
         val perPlayer = overridesByPlayer[human.uniqueId] ?: return false

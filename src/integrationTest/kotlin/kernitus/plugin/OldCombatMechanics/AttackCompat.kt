@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 fun attackCompat(
     attacker: Player,
-    target: Entity
+    target: Entity,
 ) {
     val apiAttack =
         attacker.javaClass.methods.firstOrNull { method ->
@@ -92,14 +92,14 @@ fun attackCompat(
     error(
         "Failed to invoke NMS attack for attacker=${attackerHandle.javaClass.name} " +
             "target=${targetHandle.javaClass.name} (candidates=${nmsAttackMethods.size}, " +
-            "falseResults=$falseResultCount, exceptions=$exceptionCount, attempted=$attemptedMethods)"
+            "falseResults=$falseResultCount, exceptions=$exceptionCount, attempted=$attemptedMethods)",
     )
 }
 
 private data class LivingAttackSignal(
     val health: Double,
     val lastDamage: Double,
-    val noDamageTicks: Int
+    val noDamageTicks: Int,
 )
 
 private fun captureLivingAttackSignal(entity: Entity): LivingAttackSignal? {
@@ -107,13 +107,13 @@ private fun captureLivingAttackSignal(entity: Entity): LivingAttackSignal? {
     return LivingAttackSignal(
         health = living.health,
         lastDamage = living.lastDamage,
-        noDamageTicks = living.noDamageTicks
+        noDamageTicks = living.noDamageTicks,
     )
 }
 
 private fun hasObservableHit(
     before: LivingAttackSignal,
-    after: LivingAttackSignal?
+    after: LivingAttackSignal?,
 ): Boolean {
     if (after == null) return false
     if (after.health < before.health) return true
@@ -125,7 +125,7 @@ private val attackMethodCache = ConcurrentHashMap<Class<*>, List<Method>>()
 
 private fun resolveNmsAttackMethods(
     attackerHandleClass: Class<*>,
-    targetHandleClass: Class<*>
+    targetHandleClass: Class<*>,
 ): List<Method> =
     attackMethodCache.computeIfAbsent(attackerHandleClass) {
         buildAttackMethodCandidates(attackerHandleClass, targetHandleClass)
@@ -133,14 +133,14 @@ private fun resolveNmsAttackMethods(
 
 private fun buildAttackMethodCandidates(
     attackerHandleClass: Class<*>,
-    targetHandleClass: Class<*>
+    targetHandleClass: Class<*>,
 ): List<Method> {
     // Prefer explicit names if they exist, then fall back to signature-based heuristics.
     val explicit =
         listOfNotNull(
             Reflector.getMethodAssignable(attackerHandleClass, "attack", targetHandleClass),
             Reflector.getMethodAssignable(attackerHandleClass, "a", targetHandleClass),
-            Reflector.getMethodAssignable(attackerHandleClass, "B", targetHandleClass) // legacy 1.12 variants
+            Reflector.getMethodAssignable(attackerHandleClass, "B", targetHandleClass), // legacy 1.12 variants
         )
     if (explicit.isNotEmpty()) {
         explicit.forEach { it.isAccessible = true }

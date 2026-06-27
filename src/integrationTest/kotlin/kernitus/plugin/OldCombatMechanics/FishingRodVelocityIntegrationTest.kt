@@ -56,17 +56,17 @@ class FishingRodVelocityIntegrationTest :
                         testPlugin,
                         Callable {
                             action()
-                        }
+                        },
                     ).get()
             }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -82,7 +82,7 @@ class FishingRodVelocityIntegrationTest :
         fun assertVectorClose(
             actual: Vector,
             expected: Vector,
-            tolerance: Double
+            tolerance: Double,
         ) {
             abs(actual.x - expected.x) shouldBeLessThan tolerance
             abs(actual.y - expected.y) shouldBeLessThan tolerance
@@ -92,7 +92,7 @@ class FishingRodVelocityIntegrationTest :
         fun createFishEvent(
             player: Player,
             hook: FishHook,
-            state: PlayerFishEvent.State
+            state: PlayerFishEvent.State,
         ): PlayerFishEvent {
             val ctors = PlayerFishEvent::class.java.constructors
             for (ctor in ctors) {
@@ -237,7 +237,7 @@ class FishingRodVelocityIntegrationTest :
             return Proxy.newProxyInstance(
                 FishHook::class.java.classLoader,
                 interfaces.toTypedArray(),
-                handler
+                handler,
             ) as FishHook
         }
 

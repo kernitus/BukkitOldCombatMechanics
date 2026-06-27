@@ -10,6 +10,7 @@ import com.cryptomorin.xseries.XAttribute
 import com.cryptomorin.xseries.XEnchantment
 import com.cryptomorin.xseries.XPotion
 import kernitus.plugin.OldCombatMechanics.TesterUtils.assertEquals
+import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.getOldSharpnessDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils.isCriticalHit1_8
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DefenceUtils.getDamageAfterArmour1_8
@@ -17,7 +18,6 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getDama
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages.getMaterialDamages
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
-import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -35,11 +35,17 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.potion.PotionEffect
-import java.util.*
+import java.util.ArrayDeque
+import java.util.Arrays
+import java.util.Objects
+import java.util.Queue
+import java.util.Random
 import java.util.function.Consumer
 import kotlin.math.max
 
-class InGameTester(private val plugin: JavaPlugin) {
+class InGameTester(
+    private val plugin: JavaPlugin,
+) {
     private var tally: Tally? = null
     private var sender: CommandSender? = null
     private lateinit var attacker: Player
@@ -51,7 +57,10 @@ class InGameTester(private val plugin: JavaPlugin) {
     /**
      * Perform all tests using the two specified players
      */
-    fun performTests(sender: CommandSender?, location: Location) {
+    fun performTests(
+        sender: CommandSender?,
+        location: Location,
+    ) {
         plugin.logger.info("PERFORMING THE TESTS")
         this.sender = sender
         fakeAttacker = FakePlayer(plugin)
@@ -83,17 +92,20 @@ class InGameTester(private val plugin: JavaPlugin) {
         tally = Tally()
 
         // Queue all tests
-        //runAttacks(new ItemStack[]{}, () -> {}); // with no armour
+        // runAttacks(new ItemStack[]{}, () -> {}); // with no armour
         testArmour()
 
-        //testEnchantedMelee(new ItemStack[]{}, () -> {});
+        // testEnchantedMelee(new ItemStack[]{}, () -> {});
 
         // Run all tests in the queue
         runQueuedTests()
     }
 
-    private fun runAttacks(armour: Array<ItemStack>, preparations: Runnable) {
-        //testMelee(armour, preparations);
+    private fun runAttacks(
+        armour: Array<ItemStack>,
+        preparations: Runnable,
+    ) {
+        // testMelee(armour, preparations);
         testEnchantedMelee(armour, preparations)
         testOverdamage(armour, preparations)
     }
@@ -103,18 +115,19 @@ class InGameTester(private val plugin: JavaPlugin) {
         val slots = arrayOf("BOOTS", "LEGGINGS", "CHESTPLATE", "HELMET")
         val random = Random(System.currentTimeMillis())
 
-        val armourContents = Array(4) { i ->
-            val slot = slots[i]
-            // Pick a random material for each slot
-            val material = materials[random.nextInt(materials.size)]
+        val armourContents =
+            Array(4) { i ->
+                val slot = slots[i]
+                // Pick a random material for each slot
+                val material = materials[random.nextInt(materials.size)]
 
-            val itemStack = ItemStack(Material.valueOf("${material}_$slot"))
+                val itemStack = ItemStack(Material.valueOf("${material}_$slot"))
 
-            // Apply enchantment to the armour piece
-            itemStack.addUnsafeEnchantment(XEnchantment.PROTECTION.get()!!, 50)
+                // Apply enchantment to the armour piece
+                itemStack.addUnsafeEnchantment(XEnchantment.PROTECTION.get()!!, 50)
 
-            itemStack
-        }
+                itemStack
+            }
 
         runAttacks(armourContents) {
             defender.inventory.setArmorContents(armourContents)
@@ -124,7 +137,10 @@ class InGameTester(private val plugin: JavaPlugin) {
         }
     }
 
-    private fun testEnchantedMelee(armour: Array<ItemStack>, preparations: Runnable) {
+    private fun testEnchantedMelee(
+        armour: Array<ItemStack>,
+        preparations: Runnable,
+    ) {
         for (weaponType in getMaterialDamages().keys) {
             val weapon = ItemStack(weaponType)
 
@@ -135,45 +151,64 @@ class InGameTester(private val plugin: JavaPlugin) {
             }
 
             val message = weaponType.name + " Sharpness 3"
-            queueAttack(OCMTest(weapon, armour, 2, message) {
-                preparations.run()
-                defender.maximumNoDamageTicks = 0
-                attacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 10, 0, false))
-                attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 10, -1, false))
-                plugin.logger.info("TESTING WEAPON $weaponType")
-                attacker.fallDistance = 2f // Crit
-            })
+            queueAttack(
+                OCMTest(weapon, armour, 2, message) {
+                    preparations.run()
+                    defender.maximumNoDamageTicks = 0
+                    attacker.addPotionEffect(PotionEffect(XPotion.STRENGTH.get()!!, 10, 0, false))
+                    attacker.addPotionEffect(PotionEffect(XPotion.WEAKNESS.get()!!, 10, -1, false))
+                    plugin.logger.info("TESTING WEAPON $weaponType")
+                    attacker.fallDistance = 2f // Crit
+                },
+            )
         }
     }
 
-    private fun testMelee(armour: Array<ItemStack>, preparations: Runnable) {
+    private fun testMelee(
+        armour: Array<ItemStack>,
+        preparations: Runnable,
+    ) {
         for (weaponType in getMaterialDamages().keys) {
             val weapon = ItemStack(weaponType)
-            queueAttack(OCMTest(weapon, armour, 1, weaponType.name) {
-                preparations.run()
-                defender.maximumNoDamageTicks = 0
-            })
+            queueAttack(
+                OCMTest(weapon, armour, 1, weaponType.name) {
+                    preparations.run()
+                    defender.maximumNoDamageTicks = 0
+                },
+            )
         }
     }
 
-    private fun testOverdamage(armour: Array<ItemStack>, preparations: Runnable) {
+    private fun testOverdamage(
+        armour: Array<ItemStack>,
+        preparations: Runnable,
+    ) {
         // 1, 5, 6, 7, 3, 8 according to OCM
         // 1, 4, 5, 6, 2, 7 according to 1.9+
-        val weapons = arrayOf(
-            Material.WOODEN_HOE,
-            Material.WOODEN_SWORD,
-            Material.STONE_SWORD,
-            Material.IRON_SWORD,
-            Material.WOODEN_PICKAXE,
-            Material.DIAMOND_SWORD
-        )
+        val weapons =
+            arrayOf(
+                Material.WOODEN_HOE,
+                Material.WOODEN_SWORD,
+                Material.STONE_SWORD,
+                Material.IRON_SWORD,
+                Material.WOODEN_PICKAXE,
+                Material.DIAMOND_SWORD,
+            )
 
         for (weaponType in weapons) {
             val weapon = ItemStack(weaponType)
-            queueAttack(OCMTest(weapon, armour, 3, weaponType.name, Runnable {
-                preparations.run()
-                defender.maximumNoDamageTicks = 30
-            }))
+            queueAttack(
+                OCMTest(
+                    weapon,
+                    armour,
+                    3,
+                    weaponType.name,
+                    Runnable {
+                        preparations.run()
+                        defender.maximumNoDamageTicks = 30
+                    },
+                ),
+            )
         }
     }
 
@@ -220,22 +255,25 @@ class InGameTester(private val plugin: JavaPlugin) {
         val weaponDamage = calculateAttackDamage(weapon)
         val lastDamage = defender.lastDamage
         return defender.noDamageTicks.toFloat() > defender.maximumNoDamageTicks.toFloat() / 2.0f &&
-                weaponDamage <= lastDamage
+            weaponDamage <= lastDamage
     }
 
     private fun wasOverdamaged(rawWeaponDamage: Double): Boolean {
         val lastDamage = defender.lastDamage
         return defender.noDamageTicks.toFloat() > defender.maximumNoDamageTicks.toFloat() / 2.0f &&
-                rawWeaponDamage > lastDamage
+            rawWeaponDamage > lastDamage
     }
 
-    private fun calculateExpectedDamage(weapon: ItemStack, armourContents: Array<ItemStack>): Float {
+    private fun calculateExpectedDamage(
+        weapon: ItemStack,
+        armourContents: Array<ItemStack>,
+    ): Float {
         var expectedDamage = calculateAttackDamage(weapon)
 
         if (wasOverdamaged(expectedDamage)) {
             val lastDamage = defender.lastDamage
             plugin.logger.info(
-                "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage)
+                "Overdamaged: " + expectedDamage + " - " + lastDamage + " = " + (expectedDamage - lastDamage),
             )
             expectedDamage -= lastDamage
         }
@@ -246,13 +284,14 @@ class InGameTester(private val plugin: JavaPlugin) {
             plugin.logger.info("AFTER BLOCK $expectedDamage")
         }
 
-        expectedDamage = getDamageAfterArmour1_8(
-            defender,
-            expectedDamage,
-            armourContents,
-            EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-            false
-        )
+        expectedDamage =
+            getDamageAfterArmour1_8(
+                defender,
+                expectedDamage,
+                armourContents,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                false,
+            )
 
         return expectedDamage.toFloat()
     }
@@ -260,43 +299,52 @@ class InGameTester(private val plugin: JavaPlugin) {
     private fun runQueuedTests() {
         plugin.logger.info("Running " + testQueue.size + " tests")
 
-        val listener: Listener = object : Listener {
-            @EventHandler(priority = EventPriority.MONITOR)
-            fun onEvent(e: EntityDamageByEntityEvent) {
-                val damager = e.damager
-                if (damager.uniqueId !== attacker.uniqueId ||
-                    e.entity.uniqueId !== defender.uniqueId
-                ) return
+        val listener: Listener =
+            object : Listener {
+                @EventHandler(priority = EventPriority.MONITOR)
+                fun onEvent(e: EntityDamageByEntityEvent) {
+                    val damager = e.damager
+                    if (damager.uniqueId !== attacker.uniqueId ||
+                        e.entity.uniqueId !== defender.uniqueId
+                    ) {
+                        return
+                    }
 
-                val weapon = (damager as Player).inventory.itemInMainHand
-                val weaponType = weapon.type
-                var test = testQueue.remove()
-                var expectedWeapon = test.weapon
-                var expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
+                    val weapon = (damager as Player).inventory.itemInMainHand
+                    val weaponType = weapon.type
+                    var test = testQueue.remove()
+                    var expectedWeapon = test.weapon
+                    var expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
 
-                while (weaponType != expectedWeapon.type) {
-                    expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
-                    plugin.logger.info("SKIPPED " + expectedWeapon.type + " Expected Damage: " + expectedDamage)
-                    if (expectedDamage == 0f) tally!!.passed()
-                    else tally!!.failed()
-                    test = testQueue.remove()
-                    expectedWeapon = test.weapon
-                }
+                    while (weaponType != expectedWeapon.type) {
+                        expectedDamage = calculateExpectedDamage(expectedWeapon, test.armour)
+                        plugin.logger.info("SKIPPED " + expectedWeapon.type + " Expected Damage: " + expectedDamage)
+                        if (expectedDamage == 0f) {
+                            tally!!.passed()
+                        } else {
+                            tally!!.failed()
+                        }
+                        test = testQueue.remove()
+                        expectedWeapon = test.weapon
+                    }
 
-                if (wasFakeOverdamage(weapon) && e.isCancelled) {
-                    plugin.logger.info(
-                        "PASSED Fake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage
-                    )
-                    tally!!.passed()
-                } else {
-                    val weaponMessage = "E: " + expectedWeapon.type.name + " A: " + weaponType.name
-                    assertEquals(
-                        expectedDamage, e.finalDamage.toFloat(),
-                        tally!!, weaponMessage, sender!!
-                    )
+                    if (wasFakeOverdamage(weapon) && e.isCancelled) {
+                        plugin.logger.info(
+                            "PASSED Fake overdamage " + expectedDamage + " < " + (e.entity as LivingEntity).lastDamage,
+                        )
+                        tally!!.passed()
+                    } else {
+                        val weaponMessage = "E: " + expectedWeapon.type.name + " A: " + weaponType.name
+                        assertEquals(
+                            expectedDamage,
+                            e.finalDamage.toFloat(),
+                            tally!!,
+                            weaponMessage,
+                            sender!!,
+                        )
+                    }
                 }
             }
-        }
 
         Bukkit.getServer().pluginManager.registerEvents(listener, plugin)
 
@@ -307,19 +355,27 @@ class InGameTester(private val plugin: JavaPlugin) {
         for (test in testQueue) {
             attackDelay += test.attackDelay
 
-            Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-                beforeEach()
-                test.preparations.run()
-                preparePlayer(test.weapon)
-                attackCompat(attacker, defender)
-                afterEach()
-            }, attackDelay)
+            Bukkit.getScheduler().runTaskLater(
+                plugin,
+                Runnable {
+                    beforeEach()
+                    test.preparations.run()
+                    preparePlayer(test.weapon)
+                    attackCompat(attacker, defender)
+                    afterEach()
+                },
+                attackDelay,
+            )
         }
 
-        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-            afterAll(testCount)
-            EntityDamageByEntityEvent.getHandlerList().unregister(listener)
-        }, attackDelay + 1)
+        Bukkit.getScheduler().runTaskLater(
+            plugin,
+            Runnable {
+                afterAll(testCount)
+                EntityDamageByEntityEvent.getHandlerList().unregister(listener)
+            },
+            attackDelay + 1,
+        )
     }
 
     private fun beforeAll() {
@@ -337,13 +393,14 @@ class InGameTester(private val plugin: JavaPlugin) {
         fakeDefender.removePlayer()
 
         val missed = testCount - tally!!.total
-        val message = String.format(
-            "Passed: %d Failed: %d Total: %d Missed: %d",
-            tally!!.passed,
-            tally!!.failed,
-            tally!!.total,
-            missed
-        )
+        val message =
+            String.format(
+                "Passed: %d Failed: %d Total: %d Missed: %d",
+                tally!!.passed,
+                tally!!.failed,
+                tally!!.total,
+                missed,
+            )
         plugin.logger.info(message)
     }
 
@@ -358,12 +415,13 @@ class InGameTester(private val plugin: JavaPlugin) {
     private fun preparePlayer(weapon: ItemStack) {
         if (weapon.hasItemMeta()) {
             val meta = weapon.itemMeta
-            val speedModifier = createAttributeModifier(
-                name = "speed",
-                amount = 1000.0,
-                operation = AttributeModifier.Operation.ADD_NUMBER,
-                slot = EquipmentSlot.HAND
-            )
+            val speedModifier =
+                createAttributeModifier(
+                    name = "speed",
+                    amount = 1000.0,
+                    operation = AttributeModifier.Operation.ADD_NUMBER,
+                    slot = EquipmentSlot.HAND,
+                )
             val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get()
             if (attackSpeedAttribute != null) {
                 addAttributeModifierCompat(meta!!, attackSpeedAttribute, speedModifier)
@@ -383,15 +441,19 @@ class InGameTester(private val plugin: JavaPlugin) {
                 Consumer { am: AttributeModifier? ->
                     ai.removeModifier(am!!)
                     ai.addModifier(am)
-                })
+                },
+            )
         }
 
         val armourContents = defender.inventory.armorContents
         plugin.logger.info(
-            "Armour: " + Arrays.stream(armourContents).filter { obj: ItemStack? -> Objects.nonNull(obj) }
-                .map { `is`: ItemStack -> `is`.type.name }
-                .reduce { a: String, b: String -> "$a, $b" }
-                .orElse("none")
+            "Armour: " +
+                Arrays
+                    .stream(armourContents)
+                    .filter { obj: ItemStack? -> Objects.nonNull(obj) }
+                    .map { `is`: ItemStack -> `is`.type.name }
+                    .reduce { a: String, b: String -> "$a, $b" }
+                    .orElse("none"),
         )
         for (i in armourContents.indices) {
             val itemStack = armourContents[i] ?: continue
@@ -401,7 +463,7 @@ class InGameTester(private val plugin: JavaPlugin) {
                     EquipmentSlot.FEET,
                     EquipmentSlot.LEGS,
                     EquipmentSlot.CHEST,
-                    EquipmentSlot.HEAD
+                    EquipmentSlot.HEAD,
                 )[i]
             if (armourAttribute != null && defenderArmour != null) {
                 for (attributeModifier in getDefaultAttributeModifiersCompat(itemStack, slot, armourAttribute)) {

@@ -47,18 +47,18 @@ class SwordSweepIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -129,7 +129,7 @@ class SwordSweepIntegrationTest :
                             attacker,
                             victim,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            baseDamage + 1
+                            baseDamage + 1,
                         )
                     module.onEntityDamaged(priming)
 
@@ -138,7 +138,7 @@ class SwordSweepIntegrationTest :
                             attacker,
                             victim,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            sweepDamage
+                            sweepDamage,
                         )
                     module.onEntityDamaged(sweepEvent)
                     sweepEvent.isCancelled shouldBe true
@@ -151,7 +151,7 @@ class SwordSweepIntegrationTest :
                         attacker,
                         victim,
                         EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                        1.0
+                        1.0,
                     )
                 Bukkit.getPluginManager().callEvent(event)
                 event.isCancelled shouldBe false
@@ -181,7 +181,7 @@ class SwordSweepIntegrationTest :
                             attacker,
                             victim,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            baseDamage + 1
+                            baseDamage + 1,
                         )
                     module.onEntityDamaged(priming)
 
@@ -190,7 +190,7 @@ class SwordSweepIntegrationTest :
                             attacker,
                             victim,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            sweepDamage
+                            sweepDamage,
                         )
                     module.onEntityDamaged(sweepEvent)
                     sweepEvent.isCancelled shouldBe false

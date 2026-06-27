@@ -53,7 +53,7 @@ class OldArmourStrengthModesetIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -65,7 +65,7 @@ class OldArmourStrengthModesetIntegrationTest :
 
         fun restoreSection(
             path: String,
-            value: Any?
+            value: Any?,
         ) {
             ocm.config.set(path, null)
             when (value) {
@@ -89,12 +89,12 @@ class OldArmourStrengthModesetIntegrationTest :
                 setOf(
                     "modeset-listener",
                     "attack-cooldown-tracker",
-                    "entity-damage-listener"
+                    "entity-damage-listener",
                 )
             val optionalModules =
                 setOf(
                     "disable-attack-sounds",
-                    "disable-sword-sweep-particles"
+                    "disable-sword-sweep-particles",
                 )
 
             return (
@@ -121,8 +121,8 @@ class OldArmourStrengthModesetIntegrationTest :
                 "modesets",
                 mapOf(
                     "old" to listOf(oldArmourStrength),
-                    "new" to emptyList<String>()
-                )
+                    "new" to emptyList<String>(),
+                ),
             )
             ocm.config.set("worlds", null)
             ocm.config.createSection("worlds", mapOf("world" to listOf("new")))
@@ -159,7 +159,7 @@ class OldArmourStrengthModesetIntegrationTest :
         fun createExplosionDamageEvent(): EntityDamageEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers[EntityDamageEvent.DamageModifier.BASE] = 20.0
             modifiers[EntityDamageEvent.DamageModifier.ARMOR] = -8.0
@@ -171,7 +171,7 @@ class OldArmourStrengthModesetIntegrationTest :
                 }
             val modifierFunctions =
                 EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
@@ -179,7 +179,7 @@ class OldArmourStrengthModesetIntegrationTest :
                 player,
                 EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
                 modifiers,
-                modifierFunctions
+                modifierFunctions,
             )
         }
 

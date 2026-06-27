@@ -13,5 +13,5 @@ class OCMTest(
     val armour: Array<ItemStack>,
     val attackDelay: Long,
     val message: String,
-    val preparations: Runnable
+    val preparations: Runnable,
 )

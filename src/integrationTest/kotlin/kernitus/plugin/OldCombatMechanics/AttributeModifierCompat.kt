@@ -22,7 +22,7 @@ fun createAttributeModifier(
     amount: Double,
     operation: AttributeModifier.Operation,
     slot: EquipmentSlot? = null,
-    uuid: UUID = UUID.randomUUID()
+    uuid: UUID = UUID.randomUUID(),
 ): AttributeModifier {
     // Use the most specific constructor available at runtime.
     if (slot != null) {
@@ -46,7 +46,7 @@ fun createAttributeModifier(
 fun addAttributeModifierCompat(
     meta: ItemMeta,
     attribute: Attribute,
-    modifier: AttributeModifier
+    modifier: AttributeModifier,
 ) {
     try {
         meta.addAttributeModifier(attribute, modifier)
@@ -67,7 +67,7 @@ fun addAttributeModifierCompat(
 fun getDefaultAttributeModifiersCompat(
     item: ItemStack,
     slot: EquipmentSlot,
-    attribute: Attribute
+    attribute: Attribute,
 ): Collection<AttributeModifier> {
     try {
         return item.type.getDefaultAttributeModifiers(slot)[attribute] ?: emptySet()
@@ -99,7 +99,7 @@ fun getDefaultAttributeModifiersCompat(
                 name = "ocm-fallback-damage",
                 amount = amount,
                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                slot = slot
+                slot = slot,
             )
         return setOf(fallbackModifier)
     }

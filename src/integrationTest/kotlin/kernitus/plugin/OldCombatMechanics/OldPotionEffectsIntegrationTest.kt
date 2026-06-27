@@ -84,7 +84,7 @@ class OldPotionEffectsIntegrationTest :
                 "INSTANT_DAMAGE",
                 "INSTANT_HEAL",
                 "INSTANT_HEALTH",
-                "UNCRAFTABLE"
+                "UNCRAFTABLE",
             )
 
         data class PotionCase(
@@ -94,26 +94,26 @@ class OldPotionEffectsIntegrationTest :
             val isExtended: Boolean,
             val potion: XPotion,
             val drinkableTicks: Int,
-            val splashTicks: Int
+            val splashTicks: Int,
         )
 
         data class PotionBaseSnapshot(
             val baseType: PotionType?,
             val isUpgraded: Boolean,
-            val isExtended: Boolean
+            val isExtended: Boolean,
         )
 
         data class ParsedPotionKey(
             val baseName: String,
             val isStrong: Boolean,
             val isExtended: Boolean,
-            val debugName: String
+            val debugName: String,
         )
 
         fun debugName(
             baseName: String,
             isStrong: Boolean,
-            isExtended: Boolean
+            isExtended: Boolean,
         ): String =
             when {
                 isStrong -> "STRONG_$baseName"
@@ -140,7 +140,7 @@ class OldPotionEffectsIntegrationTest :
 
         fun resolveBasePotionType(
             baseName: String,
-            potion: XPotion
+            potion: XPotion,
         ): PotionType? =
             runCatching { PotionType.valueOf(baseName) }.getOrNull()
                 ?: potion.potionType
@@ -169,7 +169,7 @@ class OldPotionEffectsIntegrationTest :
             baseName: String,
             isStrong: Boolean,
             isExtended: Boolean,
-            potion: XPotion
+            potion: XPotion,
         ): Boolean {
             val potionType = resolveBasePotionType(baseName, potion) ?: return false
             return if (hasBasePotionType) {
@@ -208,14 +208,14 @@ class OldPotionEffectsIntegrationTest :
                     isExtended = parsed.isExtended,
                     potion = potion,
                     drinkableTicks = drinkable.getInt(key) * 20,
-                    splashTicks = splash.getInt(key) * 20
+                    splashTicks = splash.getInt(key) * 20,
                 )
             }
         }
 
         fun createPotionItem(
             material: Material,
-            potionCase: PotionCase
+            potionCase: PotionCase,
         ): ItemStack {
             val item = ItemStack(material)
             val meta = item.itemMeta as PotionMeta
@@ -234,7 +234,7 @@ class OldPotionEffectsIntegrationTest :
                     PotionData(
                         baseType,
                         potionCase.isExtended,
-                        potionCase.isStrong
+                        potionCase.isStrong,
                     )
             }
             item.itemMeta = meta
@@ -262,7 +262,7 @@ class OldPotionEffectsIntegrationTest :
 
         fun expectedAmplifier(
             baseName: String,
-            isStrong: Boolean
+            isStrong: Boolean,
         ): Int = if (isStrong) 1 else 0
 
         fun assertAdjusted(
@@ -270,7 +270,7 @@ class OldPotionEffectsIntegrationTest :
             baseName: String,
             isStrong: Boolean,
             potion: XPotion,
-            expectedTicks: Int
+            expectedTicks: Int,
         ) {
             val meta = item.itemMeta as PotionMeta
             val potionType =
@@ -299,7 +299,7 @@ class OldPotionEffectsIntegrationTest :
 
         fun assertUnchanged(
             item: ItemStack,
-            originalBase: PotionBaseSnapshot
+            originalBase: PotionBaseSnapshot,
         ) {
             val meta = item.itemMeta as PotionMeta
             meta.customEffects.shouldHaveSize(0)
@@ -350,7 +350,7 @@ class OldPotionEffectsIntegrationTest :
                         item,
                         block,
                         face,
-                        EquipmentSlot.HAND
+                        EquipmentSlot.HAND,
                     ) as PlayerInteractEvent
                 } else {
                     PlayerInteractEvent(player, Action.RIGHT_CLICK_AIR, item, block, face)
@@ -364,7 +364,7 @@ class OldPotionEffectsIntegrationTest :
                 player.world.getBlockAt(
                     player.location.blockX,
                     player.location.blockY,
-                    player.location.blockZ
+                    player.location.blockZ,
                 )
             val event = BlockDispenseEvent(block, item, Vector(0, 0, 0))
             Bukkit.getPluginManager().callEvent(event)
@@ -375,14 +375,14 @@ class OldPotionEffectsIntegrationTest :
             adjusted: ItemStack,
             potionCase: PotionCase,
             originalBase: PotionBaseSnapshot,
-            splash: Boolean
+            splash: Boolean,
         ) {
             val expectedTicks = if (splash) potionCase.splashTicks else potionCase.drinkableTicks
             val adjustedDebugName =
                 debugName(
                     potionCase.baseName,
                     potionCase.isStrong,
-                    potionCase.isExtended
+                    potionCase.isExtended,
                 )
             if (excludedPotionTypes.contains(adjustedDebugName)) {
                 assertUnchanged(adjusted, originalBase)
@@ -392,7 +392,7 @@ class OldPotionEffectsIntegrationTest :
                     potionCase.baseName,
                     potionCase.isStrong,
                     potionCase.potion,
-                    expectedTicks
+                    expectedTicks,
                 )
             }
         }
@@ -473,7 +473,7 @@ class OldPotionEffectsIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -543,7 +543,7 @@ class OldPotionEffectsIntegrationTest :
             val method =
                 ModuleOldPotionEffects::class.java.getDeclaredMethod(
                     "handleEntityPotionEffectEvent",
-                    Event::class.java
+                    Event::class.java,
                 )
             method.isAccessible = true
             return try {
@@ -750,7 +750,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -764,7 +764,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -775,7 +775,7 @@ class OldPotionEffectsIntegrationTest :
                     suspend fun record(
                         label: String,
                         expectedDamage: Double,
-                        action: () -> Unit
+                        action: () -> Unit,
                     ): Boolean {
                         val before = events.size
                         runSync {
@@ -792,7 +792,7 @@ class OldPotionEffectsIntegrationTest :
                                 "finalDamage=${events.lastOrNull()?.finalDamage} " +
                                 "damagerType=${events.lastOrNull()?.damager?.javaClass?.simpleName} " +
                                 "damagerId=${events.lastOrNull()?.damager?.uniqueId} " +
-                                "inputDamage=$expectedDamage"
+                                "inputDamage=$expectedDamage",
                         )
                         return fired
                     }
@@ -967,7 +967,7 @@ class OldPotionEffectsIntegrationTest :
                         "always_enabled_modules",
                         ocm.config
                             .getStringList("always_enabled_modules")
-                            .filterNot { it.equals("old-potion-effects", true) }
+                            .filterNot { it.equals("old-potion-effects", true) },
                     )
                     val modesetsSection =
                         ocm.config.getConfigurationSection("modesets")
@@ -1004,7 +1004,7 @@ class OldPotionEffectsIntegrationTest :
                         "always_enabled_modules",
                         ocm.config
                             .getStringList("always_enabled_modules")
-                            .filterNot { it.equals("old-potion-effects", true) }
+                            .filterNot { it.equals("old-potion-effects", true) },
                     )
                     val modesetsSection =
                         ocm.config.getConfigurationSection("modesets")
@@ -1031,7 +1031,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -1045,7 +1045,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -1152,7 +1152,7 @@ class OldPotionEffectsIntegrationTest :
                             player,
                             defender,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            4.0
+                            4.0,
                         )
                     Bukkit.getPluginManager().callEvent(event)
 
@@ -1185,7 +1185,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -1199,7 +1199,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -1306,7 +1306,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -1320,7 +1320,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -1427,7 +1427,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -1441,7 +1441,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -1548,7 +1548,7 @@ class OldPotionEffectsIntegrationTest :
                                 name = "speed",
                                 amount = 1000.0,
                                 operation = AttributeModifier.Operation.ADD_NUMBER,
-                                slot = EquipmentSlot.HAND
+                                slot = EquipmentSlot.HAND,
                             )
                         val attackSpeedAttribute = XAttribute.ATTACK_SPEED.get() ?: return
                         addAttributeModifierCompat(meta, attackSpeedAttribute, speedModifier)
@@ -1562,7 +1562,7 @@ class OldPotionEffectsIntegrationTest :
                             getDefaultAttributeModifiersCompat(
                                 item,
                                 EquipmentSlot.HAND,
-                                attackDamageAttribute
+                                attackDamageAttribute,
                             )
                         modifiers.forEach { modifier ->
                             attackAttribute.removeModifier(modifier)
@@ -1666,7 +1666,7 @@ class OldPotionEffectsIntegrationTest :
                             player,
                             player,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            4.0
+                            4.0,
                         )
                     Bukkit.getPluginManager().callEvent(event)
 
@@ -1693,7 +1693,7 @@ class OldPotionEffectsIntegrationTest :
                             player,
                             player,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            4.0
+                            4.0,
                         )
                     Bukkit.getPluginManager().callEvent(eventLevel0)
                     baseLevel0 = eventLevel0.baseDamage
@@ -1708,7 +1708,7 @@ class OldPotionEffectsIntegrationTest :
                             player,
                             player,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            4.0
+                            4.0,
                         )
                     Bukkit.getPluginManager().callEvent(eventLevel67)
                     baseLevel67 = eventLevel67.baseDamage

@@ -18,7 +18,8 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent
 import org.bukkit.event.player.PlayerPreLoginEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.net.InetAddress
-import java.util.*
+import java.util.Locale
+import java.util.UUID
 
 /**
  * Fake player for 1.9.x (v1_9_R2). Uses PlayerList#a(NetworkManager, EntityPlayer)
@@ -27,7 +28,7 @@ import java.util.*
 internal class LegacyFakePlayer9(
     private val plugin: JavaPlugin,
     val uuid: UUID,
-    val name: String
+    val name: String,
 ) {
     private val cbVersion: String =
         Bukkit
@@ -166,8 +167,8 @@ internal class LegacyFakePlayer9(
                         0,
                         listOf(
                             *
-                                contents ?: emptyArray()
-                        )
+                                contents ?: emptyArray(),
+                        ),
                     )
                 }.getOrNull()
 
@@ -182,7 +183,7 @@ internal class LegacyFakePlayer9(
                         .getConstructor(
                             Float::class.javaPrimitiveType,
                             Int::class.javaPrimitiveType,
-                            Float::class.javaPrimitiveType
+                            Float::class.javaPrimitiveType,
                         ).newInstance(health, foodLevel, saturation)
                 }.getOrNull()
 
@@ -191,7 +192,7 @@ internal class LegacyFakePlayer9(
                 metaClass.getConstructor(
                     Int::class.javaPrimitiveType,
                     nms("DataWatcher"),
-                    Boolean::class.javaPrimitiveType
+                    Boolean::class.javaPrimitiveType,
                 )
             val dataWatcher = ep.javaClass.getMethod("getDataWatcher").invoke(ep)
             val metaPacket = metaCtor.newInstance(ep.javaClass.getMethod("getId").invoke(ep) as Int, dataWatcher, true)
@@ -265,7 +266,7 @@ internal class LegacyFakePlayer9(
                 }
             },
             1L,
-            1L
+            1L,
         )
     }
 
@@ -286,7 +287,7 @@ internal class LegacyFakePlayer9(
             val pcm = getPlayerChunkMap(ep)
             pcm?.javaClass?.methods?.firstOrNull { it.name == "removePlayer" && it.parameterCount == 1 }?.invoke(
                 pcm,
-                ep
+                ep,
             )
         }
     }
@@ -333,7 +334,7 @@ internal class LegacyFakePlayer9(
 
     private fun createEntityPlayer(
         mcServer: Any,
-        worldServer: Any
+        worldServer: Any,
     ): Any {
         val epClass = nms("EntityPlayer")
         val pimClass = nms("PlayerInteractManager")
@@ -360,7 +361,7 @@ internal class LegacyFakePlayer9(
 
     private fun setupConnection(
         ep: Any,
-        mcServer: Any
+        mcServer: Any,
     ): Any {
         val nmClass = nms("NetworkManager")
         val dirClass = nms("EnumProtocolDirection")
@@ -404,7 +405,7 @@ internal class LegacyFakePlayer9(
 
     private fun setPosition(
         ep: Any,
-        loc: Location
+        loc: Location,
     ) {
         ep.javaClass
             .getMethod(
@@ -413,7 +414,7 @@ internal class LegacyFakePlayer9(
                 Double::class.javaPrimitiveType,
                 Double::class.javaPrimitiveType,
                 Float::class.javaPrimitiveType,
-                Float::class.javaPrimitiveType
+                Float::class.javaPrimitiveType,
             ).invoke(ep, loc.x, loc.y, loc.z, loc.yaw, loc.pitch)
     }
 
@@ -438,7 +439,7 @@ internal class LegacyFakePlayer9(
 
     private fun setVulnerability(
         ep: Any,
-        invulnerable: Boolean
+        invulnerable: Boolean,
     ) {
         runCatching { ep.javaClass.getField("invulnerableTicks").setInt(ep, if (invulnerable) 20 else 0) }
         runCatching { ep.javaClass.getField("noDamageTicks").setInt(ep, if (invulnerable) 20 else 0) }
@@ -449,7 +450,7 @@ internal class LegacyFakePlayer9(
                     "isInvulnerable" to invulnerable,
                     "isFlying" to false,
                     "mayfly" to false,
-                    "canInstantlyBuild" to false
+                    "canInstantlyBuild" to false,
                 )
             flags.forEach { (k, v) ->
                 runCatching { abilities.javaClass.getField(k).setBoolean(abilities, v) }
@@ -502,7 +503,7 @@ internal class LegacyFakePlayer9(
 
     private fun updateCraftMaps(
         craftServer: Any,
-        player: Player
+        player: Player,
     ) {
         runCatching {
             val playersField = craftServer.javaClass.getDeclaredField("players")

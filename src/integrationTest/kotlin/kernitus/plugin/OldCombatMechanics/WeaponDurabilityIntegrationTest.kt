@@ -46,7 +46,7 @@ class WeaponDurabilityIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -57,7 +57,7 @@ class WeaponDurabilityIntegrationTest :
 
         suspend fun waitUntilTicks(
             maxTicks: Long,
-            condition: () -> Boolean
+            condition: () -> Boolean,
         ): Boolean {
             repeat(maxTicks.toInt()) {
                 if (condition()) return true
@@ -109,7 +109,7 @@ class WeaponDurabilityIntegrationTest :
 
         fun attackNms(
             attacker: Player,
-            target: LivingEntity
+            target: LivingEntity,
         ) {
             runCatching {
                 attacker.attack(target)
@@ -156,13 +156,13 @@ class WeaponDurabilityIntegrationTest :
                     kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.getMethodAssignable(
                         attackerHandleClass,
                         "attack",
-                        targetHandleClass
+                        targetHandleClass,
                     ),
                     kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.getMethodAssignable(
                         attackerHandleClass,
                         "a",
-                        targetHandleClass
-                    )
+                        targetHandleClass,
+                    ),
                 ).ifEmpty {
                     collectAllMethods(attackerHandleClass)
                         .asSequence()
@@ -203,7 +203,7 @@ class WeaponDurabilityIntegrationTest :
 
         fun describeNmsState(
             attacker: Player,
-            victim: LivingEntity
+            victim: LivingEntity,
         ): String {
             return runCatching {
                 val attackerHandle =
@@ -217,7 +217,7 @@ class WeaponDurabilityIntegrationTest :
 
                 fun flag(
                     handle: Any,
-                    name: String
+                    name: String,
                 ): String? {
                     val method = handle.javaClass.methods.firstOrNull { it.name == name && it.parameterCount == 0 }
                     val value = method?.invoke(handle)
@@ -233,7 +233,7 @@ class WeaponDurabilityIntegrationTest :
 
         fun setItemDamage(
             item: ItemStack,
-            damage: Int
+            damage: Int,
         ) {
             val meta = item.itemMeta
             if (meta != null) {
@@ -339,7 +339,7 @@ class WeaponDurabilityIntegrationTest :
                             "victimDead=${victim.isDead} " +
                             "victimInWorld=${victim.world.entities.any { it.uniqueId == victim.uniqueId }} " +
                             "worldPvp=${victim.world.pvp} " +
-                            "nms=${describeNmsState(attacker, victim)}"
+                            "nms=${describeNmsState(attacker, victim)}",
                     )
 
                     val hitCount = AtomicInteger(0)
@@ -386,7 +386,7 @@ class WeaponDurabilityIntegrationTest :
                     try {
                         runSync {
                             Bukkit.getPluginManager().callEvent(
-                                EntityDamageEvent(victim, EntityDamageEvent.DamageCause.CUSTOM, 0.1)
+                                EntityDamageEvent(victim, EntityDamageEvent.DamageCause.CUSTOM, 0.1),
                             )
                         }
                         delayTicks(1)
@@ -415,7 +415,7 @@ class WeaponDurabilityIntegrationTest :
                         appendDebug(
                             "invuln:afterDamage totalHits=${totalHitCount.get()} " +
                                 "cancelledHits=${cancelledHitCount.get()} healthBefore=$beforeHealth " +
-                                "healthAfter=${victim.health}"
+                                "healthAfter=${victim.health}",
                         )
                     }
 
@@ -423,7 +423,7 @@ class WeaponDurabilityIntegrationTest :
                         "invuln:hits=$hits totalHits=$totalHits cancelledHits=$cancelledHits " +
                             "victimEvents=${victimEventCount.get()} anyDamageEvents=${anyDamageEventCount.get()} " +
                             "allDamageEvents=${allDamageEventCount.get()} " +
-                            "itemDamageEvents=$damageEvents itemDamage=$actualDamage"
+                            "itemDamageEvents=$damageEvents itemDamage=$actualDamage",
                     )
 
                     if (hits <= 0) {
@@ -456,7 +456,7 @@ class WeaponDurabilityIntegrationTest :
                     if (finalDamageEvents != finalHits || finalItemDamage != finalHits) {
                         error(
                             "Durability changed per click, not per hit: hits=$finalHits " +
-                                "itemDamageEvents=$finalDamageEvents itemDamage=$finalItemDamage"
+                                "itemDamageEvents=$finalDamageEvents itemDamage=$finalItemDamage",
                         )
                     }
                 } catch (e: Throwable) {
@@ -486,7 +486,7 @@ class WeaponDurabilityIntegrationTest :
                             "victimDead=${victim.isDead} " +
                             "victimInWorld=${victim.world.entities.any { it.uniqueId == victim.uniqueId }} " +
                             "worldPvp=${victim.world.pvp} " +
-                            "nms=${describeNmsState(attacker, victim)}"
+                            "nms=${describeNmsState(attacker, victim)}",
                     )
 
                     val hitCount = AtomicInteger(0)
@@ -533,7 +533,7 @@ class WeaponDurabilityIntegrationTest :
                     try {
                         runSync {
                             Bukkit.getPluginManager().callEvent(
-                                EntityDamageEvent(victim, EntityDamageEvent.DamageCause.CUSTOM, 0.1)
+                                EntityDamageEvent(victim, EntityDamageEvent.DamageCause.CUSTOM, 0.1),
                             )
                         }
                         delayTicks(1)
@@ -562,7 +562,7 @@ class WeaponDurabilityIntegrationTest :
                         appendDebug(
                             "expire:afterDamage totalHits=${totalHitCount.get()} " +
                                 "cancelledHits=${cancelledHitCount.get()} healthBefore=$beforeHealth " +
-                                "healthAfter=${victim.health}"
+                                "healthAfter=${victim.health}",
                         )
                     }
 
@@ -570,7 +570,7 @@ class WeaponDurabilityIntegrationTest :
                         "expire:hits=$hits totalHits=$totalHits cancelledHits=$cancelledHits " +
                             "victimEvents=${victimEventCount.get()} anyDamageEvents=${anyDamageEventCount.get()} " +
                             "allDamageEvents=${allDamageEventCount.get()} " +
-                            "itemDamageEvents=$damageEvents itemDamage=$actualDamage"
+                            "itemDamageEvents=$damageEvents itemDamage=$actualDamage",
                     )
 
                     if (hits < 2) {
@@ -603,7 +603,7 @@ class WeaponDurabilityIntegrationTest :
                     if (finalDamageEvents != finalHits || finalItemDamage != finalHits) {
                         error(
                             "Durability did not match hits: hits=$finalHits " +
-                                "itemDamageEvents=$finalDamageEvents itemDamage=$finalItemDamage"
+                                "itemDamageEvents=$finalDamageEvents itemDamage=$finalItemDamage",
                         )
                     }
                 } catch (e: Throwable) {

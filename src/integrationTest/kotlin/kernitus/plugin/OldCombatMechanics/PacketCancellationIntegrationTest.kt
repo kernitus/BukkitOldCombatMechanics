@@ -64,7 +64,7 @@ class PacketCancellationIntegrationTest :
             enabled: Boolean,
             preReload: (() -> Unit)? = null,
             postRestore: (() -> Unit)? = null,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             val disabledOriginal = ocm.config.getStringList("disabled_modules")
             val alwaysOriginal = ocm.config.getStringList("always_enabled_modules")
@@ -130,7 +130,7 @@ class PacketCancellationIntegrationTest :
         suspend fun withBlockedSounds(
             module: ModuleAttackSounds,
             blocked: Set<String>,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             val field = module.javaClass.getDeclaredField("blockedSounds")
             field.isAccessible = true
@@ -154,7 +154,7 @@ class PacketCancellationIntegrationTest :
             channel: Any,
             user: User,
             player: Player,
-            buffer: Any
+            buffer: Any,
         ): PacketSendEvent {
             val constructor =
                 PacketSendEvent::class.java.getDeclaredConstructor(
@@ -164,7 +164,7 @@ class PacketCancellationIntegrationTest :
                     Any::class.java,
                     User::class.java,
                     Any::class.java,
-                    Any::class.java
+                    Any::class.java,
                 )
             constructor.isAccessible = true
             return constructor.newInstance(
@@ -174,13 +174,13 @@ class PacketCancellationIntegrationTest :
                 channel,
                 user,
                 player,
-                buffer
+                buffer,
             ) as PacketSendEvent
         }
 
         fun runPacketThroughPacketEvents(
             player: Player,
-            wrapper: PacketWrapper<*>
+            wrapper: PacketWrapper<*>,
         ): Boolean {
             val api = PacketEvents.getAPI()
             val channel = api.playerManager.getChannel(player) ?: error("Missing channel for ${player.name}")
@@ -190,7 +190,7 @@ class PacketCancellationIntegrationTest :
                     channel,
                     ConnectionState.PLAY,
                     serverVersion.toClientVersion(),
-                    UserProfile(player.uniqueId, player.name)
+                    UserProfile(player.uniqueId, player.name),
                 )
             user.setEncoderState(ConnectionState.PLAY)
             user.setDecoderState(ConnectionState.PLAY)

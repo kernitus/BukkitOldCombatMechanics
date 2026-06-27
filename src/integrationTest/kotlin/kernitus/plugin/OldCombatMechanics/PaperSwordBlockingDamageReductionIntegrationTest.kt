@@ -62,7 +62,7 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
 
         fun setModeset(
             player: Player,
-            name: String
+            name: String,
         ) {
             val data = getPlayerData(player.uniqueId)
             data.setModesetForWorld(player.world.uid, name)
@@ -71,7 +71,7 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
 
         fun equipSword(
             player: Player,
-            material: Material
+            material: Material,
         ) {
             player.inventory.setItemInMainHand(ItemStack(material))
             player.updateInventory()
@@ -85,7 +85,7 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
                     player.inventory.itemInMainHand,
                     null,
                     org.bukkit.block.BlockFace.SELF,
-                    EquipmentSlot.HAND
+                    EquipmentSlot.HAND,
                 )
             Bukkit.getPluginManager().callEvent(event)
         }
@@ -120,7 +120,7 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
 
         fun describeAdapterState(
             module: ModuleSwordBlocking,
-            player: Player
+            player: Player,
         ): String =
             try {
                 val adapterField = ModuleSwordBlocking::class.java.getDeclaredField("paperAdapter")
@@ -222,7 +222,7 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
                             zombie,
                             defender,
                             EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                            2.5
+                            2.5,
                         )
                     }
 

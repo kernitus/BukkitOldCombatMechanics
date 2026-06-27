@@ -45,17 +45,17 @@ class EnderpearlCooldownIntegrationTest :
                         testPlugin,
                         Callable {
                             action()
-                        }
+                        },
                     ).get()
             }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -66,7 +66,7 @@ class EnderpearlCooldownIntegrationTest :
         suspend fun withConfig(
             cooldownSeconds: Int,
             showMessage: Boolean,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             val oldCooldown = ocm.config.getInt("disable-enderpearl-cooldown.cooldown")
             val oldShow = ocm.config.getBoolean("disable-enderpearl-cooldown.showMessage")

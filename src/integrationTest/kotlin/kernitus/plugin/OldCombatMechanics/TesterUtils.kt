@@ -22,21 +22,31 @@ object TesterUtils {
      * @param testName The name of the test being run
      * @param senders  The command senders to message with the result of the test
      */
-    fun assertEquals(a: Float, b: Float, tally: Tally, testName: String, vararg senders: CommandSender) {
+    fun assertEquals(
+        a: Float,
+        b: Float,
+        tally: Tally,
+        testName: String,
+        vararg senders: CommandSender,
+    ) {
         // Due to cooldown effects, numbers can be very close (e.g. 1.0000000149011612 == 1.0)
         // These are equivalent when using floats, which is what the server is using anyway
         if (a == b) {
             tally.passed()
-            for (sender in senders) send(
-                sender,
-                "&aPASSED &f$testName [E: $a / A: $b]"
-            )
+            for (sender in senders) {
+                send(
+                    sender,
+                    "&aPASSED &f$testName [E: $a / A: $b]",
+                )
+            }
         } else {
             tally.failed()
-            for (sender in senders) send(
-                sender,
-                "&cFAILED &f$testName [E: $a / A: $b]"
-            )
+            for (sender in senders) {
+                send(
+                    sender,
+                    "&cFAILED &f$testName [E: $a / A: $b]",
+                )
+            }
         }
     }
 
@@ -46,11 +56,12 @@ object TesterUtils {
      */
     fun LivingEntity.getPotionEffectCompat(type: PotionEffectType): PotionEffect? {
         // Prefer reflection to avoid linkage errors on legacy servers.
-        val method = javaClass.methods.firstOrNull { m ->
-            m.name == "getPotionEffect" &&
-                m.parameterTypes.size == 1 &&
-                m.parameterTypes[0] == PotionEffectType::class.java
-        }
+        val method =
+            javaClass.methods.firstOrNull { m ->
+                m.name == "getPotionEffect" &&
+                    m.parameterTypes.size == 1 &&
+                    m.parameterTypes[0] == PotionEffectType::class.java
+            }
         return runCatching { method?.invoke(this, type) as PotionEffect? }.getOrNull()
             ?: activePotionEffects.firstOrNull { it.type == type }
     }

@@ -80,7 +80,7 @@ interface OldCombatMechanicsAPI {
      */
     fun setModesetForPlayer(
         player: Player,
-        modesetName: String
+        modesetName: String,
     )
 
     /**
@@ -92,7 +92,7 @@ interface OldCombatMechanicsAPI {
      */
     fun forceEnableModuleForPlayer(
         player: Player,
-        moduleName: String
+        moduleName: String,
     )
 
     /**
@@ -104,7 +104,7 @@ interface OldCombatMechanicsAPI {
      */
     fun forceDisableModuleForPlayer(
         player: Player,
-        moduleName: String
+        moduleName: String,
     )
 
     /**
@@ -116,7 +116,7 @@ interface OldCombatMechanicsAPI {
      */
     fun clearModuleOverrideForPlayer(
         player: Player,
-        moduleName: String
+        moduleName: String,
     )
 
     /**
@@ -133,7 +133,7 @@ interface OldCombatMechanicsAPI {
      */
     fun getModuleOverrideForPlayer(
         player: Player,
-        moduleName: String
+        moduleName: String,
     ): PlayerModuleOverride
 
     /**
@@ -152,7 +152,7 @@ interface OldCombatMechanicsAPI {
      */
     fun setModuleOverridesForPlayer(
         player: Player,
-        overrides: Map<String, PlayerModuleOverride>
+        overrides: Map<String, PlayerModuleOverride>,
     )
 
     /**
@@ -163,7 +163,7 @@ interface OldCombatMechanicsAPI {
      */
     fun isModuleEnabledForPlayer(
         player: Player,
-        moduleName: String
+        moduleName: String,
     ): Boolean
 
     /**

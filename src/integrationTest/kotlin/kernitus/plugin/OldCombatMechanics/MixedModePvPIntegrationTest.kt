@@ -109,7 +109,7 @@ class MixedModePvPIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -121,7 +121,7 @@ class MixedModePvPIntegrationTest :
 
         fun restoreSection(
             path: String,
-            value: Any?
+            value: Any?,
         ) {
             ocm.config.set(path, null)
             when (value) {
@@ -145,12 +145,12 @@ class MixedModePvPIntegrationTest :
                 setOf(
                     "modeset-listener",
                     "attack-cooldown-tracker",
-                    "entity-damage-listener"
+                    "entity-damage-listener",
                 )
             val optionalModules =
                 setOf(
                     "disable-attack-sounds",
-                    "disable-sword-sweep-particles"
+                    "disable-sword-sweep-particles",
                 )
 
             return (
@@ -181,8 +181,8 @@ class MixedModePvPIntegrationTest :
                 "modesets",
                 mapOf(
                     "old" to listOf(moduleUnderTest),
-                    "new" to emptyList<String>()
-                )
+                    "new" to emptyList<String>(),
+                ),
             )
             ocm.config.set("worlds", null)
             ocm.config.createSection("worlds", mapOf("world" to listOf("old", "new")))
@@ -191,7 +191,7 @@ class MixedModePvPIntegrationTest :
 
         suspend fun withMixedModeConfig(
             moduleUnderTest: String,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             val originalAlways = ocm.config.get("always_enabled_modules")
             val originalDisabled = ocm.config.get("disabled_modules")
@@ -333,7 +333,7 @@ class MixedModePvPIntegrationTest :
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData = getPlayerData(player.uniqueId)
             playerData.setModesetForWorld(player.world.uid, modeset)
@@ -344,7 +344,7 @@ class MixedModePvPIntegrationTest :
         fun createDirectPvPDamageEvent(): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers[EntityDamageEvent.DamageModifier.BASE] = 20.0
             modifiers[EntityDamageEvent.DamageModifier.ARMOR] = -8.0
@@ -356,7 +356,7 @@ class MixedModePvPIntegrationTest :
                 }
             val modifierFunctions =
                 EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
@@ -365,7 +365,7 @@ class MixedModePvPIntegrationTest :
                 defender,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 modifiers,
-                modifierFunctions
+                modifierFunctions,
             )
         }
 
@@ -373,7 +373,7 @@ class MixedModePvPIntegrationTest :
         fun createNonPlayerDamageEvent(): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers[EntityDamageEvent.DamageModifier.BASE] = 20.0
             modifiers[EntityDamageEvent.DamageModifier.ARMOR] = -8.0
@@ -385,7 +385,7 @@ class MixedModePvPIntegrationTest :
                 }
             val modifierFunctions =
                 EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
@@ -394,7 +394,7 @@ class MixedModePvPIntegrationTest :
                 defender,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 modifiers,
-                modifierFunctions
+                modifierFunctions,
             )
         }
 
@@ -402,7 +402,7 @@ class MixedModePvPIntegrationTest :
         fun createDirectPvPToolDamageEvent(baseDamage: Double): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers[EntityDamageEvent.DamageModifier.BASE] = baseDamage
 
@@ -412,7 +412,7 @@ class MixedModePvPIntegrationTest :
                 }
             val modifierFunctions =
                 EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
@@ -421,18 +421,18 @@ class MixedModePvPIntegrationTest :
                 defender,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 modifiers,
-                modifierFunctions
+                modifierFunctions,
             )
         }
 
         @Suppress("DEPRECATION")
         fun createShieldBlockedPvPDamageEvent(
             baseDamage: Double,
-            target: Player = defender
+            target: Player = defender,
         ): EntityDamageByEntityEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers[EntityDamageEvent.DamageModifier.BASE] = baseDamage
             modifiers[EntityDamageEvent.DamageModifier.HARD_HAT] = 0.0
@@ -446,7 +446,7 @@ class MixedModePvPIntegrationTest :
                 }
             val modifierFunctions =
                 EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
-                    EntityDamageEvent.DamageModifier::class.java
+                    EntityDamageEvent.DamageModifier::class.java,
                 )
             modifiers.keys.forEach { modifierFunctions[it] = identity }
 
@@ -455,14 +455,14 @@ class MixedModePvPIntegrationTest :
                 target,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 modifiers,
-                modifierFunctions
+                modifierFunctions,
             )
         }
 
         fun createItemDamageEvent(
             player: Player,
             item: ItemStack,
-            damage: Int
+            damage: Int,
         ): PlayerItemDamageEvent {
             val constructor =
                 PlayerItemDamageEvent::class.java.constructors.firstOrNull { candidate ->
@@ -485,7 +485,7 @@ class MixedModePvPIntegrationTest :
                 attacker,
                 defender,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                rawDamage
+                rawDamage,
             )
 
         fun pendingKnockbackField(): java.lang.reflect.Field {
@@ -528,7 +528,7 @@ class MixedModePvPIntegrationTest :
         fun createFakeHook(
             rodder: Player,
             location: Location,
-            nearbyHitEntity: Entity? = null
+            nearbyHitEntity: Entity? = null,
         ): FishHook {
             val id = UUID.randomUUID()
             val hookType = XEntityType.FISHING_BOBBER.get() ?: error("Fishing bobber entity type missing")
@@ -539,7 +539,7 @@ class MixedModePvPIntegrationTest :
                 } else {
                     Proxy.newProxyInstance(
                         World::class.java.classLoader,
-                        arrayOf(World::class.java)
+                        arrayOf(World::class.java),
                     ) { _, method, args ->
                         when (method.name) {
                             "getNearbyEntities" -> {
@@ -616,7 +616,7 @@ class MixedModePvPIntegrationTest :
             return Proxy.newProxyInstance(
                 FishHook::class.java.classLoader,
                 interfaces.toTypedArray(),
-                handler
+                handler,
             ) as FishHook
         }
 
@@ -694,14 +694,14 @@ class MixedModePvPIntegrationTest :
                 Proxy.newProxyInstance(
                     Player::class.java.classLoader,
                     arrayOf(Player::class.java),
-                    handler
+                    handler,
                 ) as Player
             return player to { velocity }
         }
 
         fun createProjectileHitEvent(
             hook: FishHook,
-            hitEntity: Entity
+            hitEntity: Entity,
         ): ProjectileHitEvent {
             val getHitEntityMethod =
                 runCatching { ProjectileHitEvent::class.java.getMethod("getHitEntity") }.getOrNull()
@@ -753,7 +753,7 @@ class MixedModePvPIntegrationTest :
                 nonPlayerAttacker =
                     world.spawnEntity(
                         Location(world, 3.0, 100.0, 0.0),
-                        EntityType.ZOMBIE
+                        EntityType.ZOMBIE,
                     )
             }
         }
@@ -886,7 +886,7 @@ class MixedModePvPIntegrationTest :
 
             test(
                 "shield damage reduction uses old shield maths and armour suppression " +
-                    "when only the defender is old-mode"
+                    "when only the defender is old-mode",
             ) {
                 withMixedModeConfig("shield-damage-reduction") {
                     runSync {
@@ -919,7 +919,7 @@ class MixedModePvPIntegrationTest :
                             ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", originalAmount)
                             ocm.config.set(
                                 "shield-damage-reduction.generalDamageReductionPercentage",
-                                originalPercentage
+                                originalPercentage,
                             )
                             shieldDamageReductionModule.reload()
                         }
@@ -944,7 +944,7 @@ class MixedModePvPIntegrationTest :
                             val hitEvent =
                                 createShieldBlockedPvPDamageEvent(
                                     baseDamage = 20.0,
-                                    target = offlineDefender
+                                    target = offlineDefender,
                                 )
                             val originalCancelled = hitEvent.isCancelled
                             val originalBlocking =

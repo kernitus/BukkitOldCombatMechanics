@@ -47,7 +47,7 @@ class ChorusFruitIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -82,7 +82,7 @@ class ChorusFruitIntegrationTest :
 
         suspend fun TestScope.withChorusConfig(
             distance: Double,
-            block: suspend TestScope.() -> Unit
+            block: suspend TestScope.() -> Unit,
         ) {
             val enabled = ocm.config.getBoolean("chorus-fruit.enabled")
             val maxDistance = ocm.config.getDouble("chorus-fruit.max-teleportation-distance")
@@ -122,7 +122,7 @@ class ChorusFruitIntegrationTest :
 
         suspend fun withFakePlayer(
             origin: Location,
-            block: suspend (Player) -> Unit
+            block: suspend (Player) -> Unit,
         ) {
             lateinit var fake: FakePlayer
             lateinit var player: Player
@@ -163,7 +163,7 @@ class ChorusFruitIntegrationTest :
                                 player,
                                 player.location,
                                 player.location.clone(),
-                                PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT
+                                PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT,
                             )
                         Bukkit.getPluginManager().callEvent(event)
                         result = event.to

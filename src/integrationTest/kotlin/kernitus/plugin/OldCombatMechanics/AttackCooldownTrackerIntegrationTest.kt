@@ -34,7 +34,7 @@ class AttackCooldownTrackerIntegrationTest :
                         testPlugin,
                         Callable {
                             action()
-                        }
+                        },
                     ).get()
             }
 

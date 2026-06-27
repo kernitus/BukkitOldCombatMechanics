@@ -46,7 +46,7 @@ class OldArmourDurabilityIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
@@ -65,7 +65,7 @@ class OldArmourDurabilityIntegrationTest :
         fun setModeset(modeset: String) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -74,7 +74,7 @@ class OldArmourDurabilityIntegrationTest :
 
         fun createItemDamageEvent(
             item: ItemStack,
-            damage: Int
+            damage: Int,
         ): PlayerItemDamageEvent {
             val ctor =
                 PlayerItemDamageEvent::class.java.constructors.firstOrNull { constructor ->

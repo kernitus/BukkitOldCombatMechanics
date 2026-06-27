@@ -42,17 +42,17 @@ class PlayerRegenIntegrationTest :
                         testPlugin,
                         Callable {
                             action()
-                        }
+                        },
                     ).get()
             }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -70,7 +70,7 @@ class PlayerRegenIntegrationTest :
                                 continuation.resume(Unit)
                             }
                         },
-                        ticks
+                        ticks,
                     )
                 continuation.invokeOnCancellation { task.cancel() }
             }
@@ -80,7 +80,7 @@ class PlayerRegenIntegrationTest :
             intervalMs: Long,
             amount: Int,
             exhaustion: Double,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             val oldInterval = ocm.config.getLong("old-player-regen.interval")
             val oldAmount = ocm.config.getInt("old-player-regen.amount")
@@ -109,7 +109,7 @@ class PlayerRegenIntegrationTest :
         fun createRegainEvent(
             player: Player,
             reason: EntityRegainHealthEvent.RegainReason,
-            amount: Double
+            amount: Double,
         ): EntityRegainHealthEvent {
             val ctors = EntityRegainHealthEvent::class.java.constructors
             for (ctor in ctors) {

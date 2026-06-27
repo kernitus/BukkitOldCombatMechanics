@@ -72,7 +72,7 @@ class DisableOffhandReflectionIntegrationTest :
                             InventoryType.SlotType.CONTAINER,
                             0,
                             ClickType.LEFT,
-                            InventoryAction.PICKUP_ALL
+                            InventoryAction.PICKUP_ALL,
                         )
                     }
                 val method = Reflector.getMethod(event.javaClass, "getView") ?: error("getView missing")

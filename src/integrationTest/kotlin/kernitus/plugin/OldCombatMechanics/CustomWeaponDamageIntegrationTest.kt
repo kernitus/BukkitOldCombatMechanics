@@ -35,197 +35,222 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(ExperimentalKotest::class)
-class CustomWeaponDamageIntegrationTest : FunSpec({
-    val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
-    val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
-    val toolDamageModule = ModuleLoader.getModules()
-        .filterIsInstance<ModuleOldToolDamage>()
-        .firstOrNull() ?: error("ModuleOldToolDamage not registered")
+class CustomWeaponDamageIntegrationTest :
+    FunSpec({
+        val testPlugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+        val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
+        val toolDamageModule =
+            ModuleLoader
+                .getModules()
+                .filterIsInstance<ModuleOldToolDamage>()
+                .firstOrNull() ?: error("ModuleOldToolDamage not registered")
 
-    extensions(MainThreadDispatcherExtension(testPlugin))
+        extensions(MainThreadDispatcherExtension(testPlugin))
 
-    fun runSync(action: () -> Unit) {
-        if (Bukkit.isPrimaryThread()) action() else Bukkit.getScheduler().callSyncMethod(testPlugin, Callable {
-            action()
-            null
-        }).get()
-    }
-
-    suspend fun TestScope.withWeaponConfig(
-        tridentMelee: Double?,
-        tridentThrown: Double?,
-        mace: Double?,
-        block: suspend TestScope.() -> Unit
-    ) {
-        val snapshot = ocm.config
-            .getConfigurationSection("old-tool-damage.damages")
-            ?.getValues(false) ?: emptyMap<String, Any?>()
-
-        fun set(path: String, value: Double?) {
-            if (value == null) return
-            ocm.config.set("old-tool-damage.damages.$path", value)
-        }
-
-        try {
-            set("TRIDENT", tridentMelee)
-            set("TRIDENT_THROWN", tridentThrown)
-            set("MACE", mace)
-            toolDamageModule.reload()
-            WeaponDamages.initialise(ocm)
-            ModuleLoader.toggleModules()
-            block()
-        } finally {
-            // restore
-            snapshot.forEach { (k, v) -> ocm.config.set("old-tool-damage.damages.$k", v) }
-            toolDamageModule.reload()
-            WeaponDamages.initialise(ocm)
-            ModuleLoader.toggleModules()
-        }
-    }
-
-    data class SpawnedPlayer(val fake: FakePlayer, val player: Player)
-
-    fun spawnFake(location: Location): SpawnedPlayer {
-        lateinit var fake: FakePlayer
-        lateinit var player: Player
-        runSync {
-            fake = FakePlayer(testPlugin)
-            fake.spawn(location)
-            player = checkNotNull(Bukkit.getPlayer(fake.uuid))
-            player.gameMode = GameMode.SURVIVAL
-            player.isInvulnerable = false
-            player.inventory.clear()
-            player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
-            val data = getPlayerData(player.uniqueId)
-            data.setModesetForWorld(player.world.uid, "old")
-            setPlayerData(player.uniqueId, data)
-        }
-        return SpawnedPlayer(fake, player)
-    }
-
-    fun cleanup(vararg players: SpawnedPlayer) {
-        runSync {
-            players.forEach { p ->
-                p.fake.removePlayer()
+        fun runSync(action: () -> Unit) {
+            if (Bukkit.isPrimaryThread()) {
+                action()
+            } else {
+                Bukkit
+                    .getScheduler()
+                    .callSyncMethod(
+                        testPlugin,
+                        Callable {
+                            action()
+                            null
+                        },
+                    ).get()
             }
         }
-    }
 
-    test("trident melee uses configured base damage") {
-        if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT")) return@test
-        val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
-        withWeaponConfig(tridentMelee = 12.0, tridentThrown = null, mace = null) {
-            val world = checkNotNull(Bukkit.getWorld("world"))
-            val attacker = spawnFake(Location(world, 0.0, 100.0, 0.0))
-            val victim = spawnFake(Location(world, 1.5, 100.0, 0.0))
-            val damageCapture = AtomicReference<Double?>()
-            val listener = object : Listener {
-                @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-                fun onHit(event: EntityDamageByEntityEvent) {
-                    if (event.damager == attacker.player && event.entity == victim.player) {
-                        damageCapture.set(event.damage)
-                    }
+        suspend fun TestScope.withWeaponConfig(
+            tridentMelee: Double?,
+            tridentThrown: Double?,
+            mace: Double?,
+            block: suspend TestScope.() -> Unit,
+        ) {
+            val snapshot =
+                ocm.config
+                    .getConfigurationSection("old-tool-damage.damages")
+                    ?.getValues(false) ?: emptyMap<String, Any?>()
+
+            fun set(
+                path: String,
+                value: Double?,
+            ) {
+                if (value == null) return
+                ocm.config.set("old-tool-damage.damages.$path", value)
+            }
+
+            try {
+                set("TRIDENT", tridentMelee)
+                set("TRIDENT_THROWN", tridentThrown)
+                set("MACE", mace)
+                toolDamageModule.reload()
+                WeaponDamages.initialise(ocm)
+                ModuleLoader.toggleModules()
+                block()
+            } finally {
+                // restore
+                snapshot.forEach { (k, v) -> ocm.config.set("old-tool-damage.damages.$k", v) }
+                toolDamageModule.reload()
+                WeaponDamages.initialise(ocm)
+                ModuleLoader.toggleModules()
+            }
+        }
+
+        data class SpawnedPlayer(
+            val fake: FakePlayer,
+            val player: Player,
+        )
+
+        fun spawnFake(location: Location): SpawnedPlayer {
+            lateinit var fake: FakePlayer
+            lateinit var player: Player
+            runSync {
+                fake = FakePlayer(testPlugin)
+                fake.spawn(location)
+                player = checkNotNull(Bukkit.getPlayer(fake.uuid))
+                player.gameMode = GameMode.SURVIVAL
+                player.isInvulnerable = false
+                player.inventory.clear()
+                player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
+                val data = getPlayerData(player.uniqueId)
+                data.setModesetForWorld(player.world.uid, "old")
+                setPlayerData(player.uniqueId, data)
+            }
+            return SpawnedPlayer(fake, player)
+        }
+
+        fun cleanup(vararg players: SpawnedPlayer) {
+            runSync {
+                players.forEach { p ->
+                    p.fake.removePlayer()
                 }
             }
-
-            runSync {
-                Bukkit.getPluginManager().registerEvents(listener, testPlugin)
-                attacker.player.inventory.setItemInMainHand(ItemStack(tridentMat))
-                Bukkit.getPluginManager().callEvent(
-                    EntityDamageByEntityEvent(
-                        attacker.player,
-                        victim.player,
-                        EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                        8.0
-                    )
-                )
-                HandlerList.unregisterAll(listener)
-            }
-
-            val dealt = damageCapture.get() ?: error("No damage recorded")
-            dealt shouldBe (12.0 plusOrMinus 0.05)
-            cleanup(attacker, victim)
         }
-    }
 
-    test("thrown trident uses configured damage") {
-        if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT") ||
-            !CompatibilityCapabilities.isBukkitClassAvailable("org.bukkit.entity.Trident")) return@test
-        val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
-        withWeaponConfig(tridentMelee = null, tridentThrown = 15.0, mace = null) {
-            val world = checkNotNull(Bukkit.getWorld("world"))
-            val victim = spawnFake(Location(world, 0.0, 100.0, 0.0))
-            val tridentRef = AtomicReference<Trident>()
-            runSync {
-                tridentRef.set(
-                    world.spawn(world.spawnLocation, Trident::class.java).apply {
-                        this.item = ItemStack(tridentMat)
+        test("trident melee uses configured base damage") {
+            if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT")) return@test
+            val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
+            withWeaponConfig(tridentMelee = 12.0, tridentThrown = null, mace = null) {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attacker = spawnFake(Location(world, 0.0, 100.0, 0.0))
+                val victim = spawnFake(Location(world, 1.5, 100.0, 0.0))
+                val damageCapture = AtomicReference<Double?>()
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+                        fun onHit(event: EntityDamageByEntityEvent) {
+                            if (event.damager == attacker.player && event.entity == victim.player) {
+                                damageCapture.set(event.damage)
+                            }
+                        }
                     }
-                )
-            }
-            val damageCapture = AtomicReference<Double?>()
-            val listener = object : Listener {
-                @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-                fun onHit(event: EntityDamageByEntityEvent) {
-                    if (event.damager == tridentRef.get() && event.entity == victim.player) {
-                        damageCapture.set(event.damage)
-                    }
+
+                runSync {
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    attacker.player.inventory.setItemInMainHand(ItemStack(tridentMat))
+                    Bukkit.getPluginManager().callEvent(
+                        EntityDamageByEntityEvent(
+                            attacker.player,
+                            victim.player,
+                            EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                            8.0,
+                        ),
+                    )
+                    HandlerList.unregisterAll(listener)
                 }
-            }
-            runSync {
-                Bukkit.getPluginManager().registerEvents(listener, testPlugin)
-                Bukkit.getPluginManager().callEvent(
-                    EntityDamageByEntityEvent(
-                        tridentRef.get(),
-                        victim.player,
-                        EntityDamageEvent.DamageCause.PROJECTILE,
-                        8.0
-                    )
-                )
-                HandlerList.unregisterAll(listener)
-            }
 
-            val dealt = damageCapture.get() ?: error("No damage recorded")
-            dealt shouldBeExactly 15.0
-            cleanup(victim)
-            runSync { tridentRef.get()?.remove() }
+                val dealt = damageCapture.get() ?: error("No damage recorded")
+                dealt shouldBe (12.0 plusOrMinus 0.05)
+                cleanup(attacker, victim)
+            }
         }
-    }
 
-    test("mace melee uses configured base damage") {
-        if (!CompatibilityCapabilities.isMaterialAvailable("MACE")) return@test
-        val maceMat = Material.matchMaterial("MACE") ?: return@test
-        withWeaponConfig(tridentMelee = null, tridentThrown = null, mace = 10.0) {
-            val world = checkNotNull(Bukkit.getWorld("world"))
-            val attacker = spawnFake(Location(world, 0.0, 100.0, 0.0))
-            val victim = spawnFake(Location(world, 1.5, 100.0, 0.0))
-            val damageCapture = AtomicReference<Double?>()
-            val listener = object : Listener {
-                @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-                fun onHit(event: EntityDamageByEntityEvent) {
-                    if (event.damager == attacker.player && event.entity == victim.player) {
-                        damageCapture.set(event.damage)
-                    }
+        test("thrown trident uses configured damage") {
+            if (!CompatibilityCapabilities.isMaterialAvailable("TRIDENT") ||
+                !CompatibilityCapabilities.isBukkitClassAvailable("org.bukkit.entity.Trident")
+            ) {
+                return@test
+            }
+            val tridentMat = Material.matchMaterial("TRIDENT") ?: return@test
+            withWeaponConfig(tridentMelee = null, tridentThrown = 15.0, mace = null) {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val victim = spawnFake(Location(world, 0.0, 100.0, 0.0))
+                val tridentRef = AtomicReference<Trident>()
+                runSync {
+                    tridentRef.set(
+                        world.spawn(world.spawnLocation, Trident::class.java).apply {
+                            this.item = ItemStack(tridentMat)
+                        },
+                    )
                 }
-            }
-
-            runSync {
-                Bukkit.getPluginManager().registerEvents(listener, testPlugin)
-                attacker.player.inventory.setItemInMainHand(ItemStack(maceMat))
-                Bukkit.getPluginManager().callEvent(
-                    EntityDamageByEntityEvent(
-                        attacker.player,
-                        victim.player,
-                        EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                        6.0
+                val damageCapture = AtomicReference<Double?>()
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+                        fun onHit(event: EntityDamageByEntityEvent) {
+                            if (event.damager == tridentRef.get() && event.entity == victim.player) {
+                                damageCapture.set(event.damage)
+                            }
+                        }
+                    }
+                runSync {
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    Bukkit.getPluginManager().callEvent(
+                        EntityDamageByEntityEvent(
+                            tridentRef.get(),
+                            victim.player,
+                            EntityDamageEvent.DamageCause.PROJECTILE,
+                            8.0,
+                        ),
                     )
-                )
-                HandlerList.unregisterAll(listener)
-            }
+                    HandlerList.unregisterAll(listener)
+                }
 
-            val dealt = damageCapture.get() ?: error("No damage recorded")
-            dealt shouldBe (10.0 plusOrMinus 0.05)
-            cleanup(attacker, victim)
+                val dealt = damageCapture.get() ?: error("No damage recorded")
+                dealt shouldBeExactly 15.0
+                cleanup(victim)
+                runSync { tridentRef.get()?.remove() }
+            }
         }
-    }
-})
+
+        test("mace melee uses configured base damage") {
+            if (!CompatibilityCapabilities.isMaterialAvailable("MACE")) return@test
+            val maceMat = Material.matchMaterial("MACE") ?: return@test
+            withWeaponConfig(tridentMelee = null, tridentThrown = null, mace = 10.0) {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val attacker = spawnFake(Location(world, 0.0, 100.0, 0.0))
+                val victim = spawnFake(Location(world, 1.5, 100.0, 0.0))
+                val damageCapture = AtomicReference<Double?>()
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+                        fun onHit(event: EntityDamageByEntityEvent) {
+                            if (event.damager == attacker.player && event.entity == victim.player) {
+                                damageCapture.set(event.damage)
+                            }
+                        }
+                    }
+
+                runSync {
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    attacker.player.inventory.setItemInMainHand(ItemStack(maceMat))
+                    Bukkit.getPluginManager().callEvent(
+                        EntityDamageByEntityEvent(
+                            attacker.player,
+                            victim.player,
+                            EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                            6.0,
+                        ),
+                    )
+                    HandlerList.unregisterAll(listener)
+                }
+
+                val dealt = damageCapture.get() ?: error("No damage recorded")
+                dealt shouldBe (10.0 plusOrMinus 0.05)
+                cleanup(attacker, victim)
+            }
+        }
+    })

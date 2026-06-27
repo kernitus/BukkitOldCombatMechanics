@@ -108,7 +108,7 @@ class InGameTesterIntegrationTest :
                 runSync {
                     attacker.world.spawnEntity(
                         attacker.location.clone().add(1.5, 0.0, 0.0),
-                        EntityType.ZOMBIE
+                        EntityType.ZOMBIE,
                     ) as LivingEntity
                 }
             try {

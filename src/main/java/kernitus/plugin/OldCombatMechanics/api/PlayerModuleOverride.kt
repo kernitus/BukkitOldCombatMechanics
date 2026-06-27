@@ -11,5 +11,5 @@ package kernitus.plugin.OldCombatMechanics.api
 enum class PlayerModuleOverride {
     DEFAULT,
     FORCE_ENABLED,
-    FORCE_DISABLED
+    FORCE_DISABLED,
 }

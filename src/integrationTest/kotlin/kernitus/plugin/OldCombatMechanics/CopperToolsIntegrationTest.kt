@@ -14,37 +14,38 @@ import org.bukkit.Material
 import org.bukkit.plugin.java.JavaPlugin
 
 @OptIn(ExperimentalKotest::class)
-class CopperToolsIntegrationTest : StringSpec({
-    val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
-    extension(MainThreadDispatcherExtension(plugin))
-    val copperMaterials = listOf(
-        XMaterial.COPPER_SWORD,
-        XMaterial.COPPER_AXE,
-        XMaterial.COPPER_PICKAXE,
-        XMaterial.COPPER_SHOVEL,
-        XMaterial.COPPER_HOE
-    ).mapNotNull { xmat ->
-        val material = runCatching { Material.valueOf(xmat.name) }.getOrNull()
-        material?.let { xmat to it }
-    }
+class CopperToolsIntegrationTest :
+    StringSpec({
+        val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
+        extension(MainThreadDispatcherExtension(plugin))
+        val copperMaterials =
+            listOf(
+                XMaterial.COPPER_SWORD,
+                XMaterial.COPPER_AXE,
+                XMaterial.COPPER_PICKAXE,
+                XMaterial.COPPER_SHOVEL,
+                XMaterial.COPPER_HOE,
+            ).mapNotNull { xmat ->
+                val material = runCatching { Material.valueOf(xmat.name) }.getOrNull()
+                material?.let { xmat to it }
+            }
 
-    if (copperMaterials.isEmpty()) {
-        "copper tools not present on this version" {
-            plugin.logger.info(
-                "Copper tools not present on this version; skipping copper damage checks."
-            )
-        }
-    } else {
-        copperMaterials.forEach { (xmat, material) ->
-            "copper tool damage is configurable for ${xmat.name}" {
-                val damage = WeaponDamages.getDamage(material)
-                if (damage < 0.0) {
-                    throw AssertionError(
-                        "Expected ${xmat.name} to be present in old-tool-damage.damages (config.yml)"
-                    )
+        if (copperMaterials.isEmpty()) {
+            "copper tools not present on this version" {
+                plugin.logger.info(
+                    "Copper tools not present on this version; skipping copper damage checks.",
+                )
+            }
+        } else {
+            copperMaterials.forEach { (xmat, material) ->
+                "copper tool damage is configurable for ${xmat.name}" {
+                    val damage = WeaponDamages.getDamage(material)
+                    if (damage < 0.0) {
+                        throw AssertionError(
+                            "Expected ${xmat.name} to be present in old-tool-damage.damages (config.yml)",
+                        )
+                    }
                 }
             }
         }
-    }
-
-})
+    })

@@ -26,7 +26,7 @@ import java.util.UUID
 internal class LegacyFakePlayer12(
     private val plugin: JavaPlugin,
     val uuid: UUID,
-    val name: String
+    val name: String,
 ) {
     private val cbVersion: String =
         Bukkit
@@ -88,7 +88,7 @@ internal class LegacyFakePlayer12(
                 runCatching { invokeMethod(entityPlayer, "playerTick") }
             },
             1L,
-            1L
+            1L,
         )
 
         plugin.logger.info("Spawn: completed successfully (legacy)")
@@ -149,7 +149,7 @@ internal class LegacyFakePlayer12(
 
     private fun createEntityPlayer(
         minecraftServer: Any,
-        worldServer: Any
+        worldServer: Any,
     ): Any {
         val entityPlayerClass = nmsClass("EntityPlayer")
         val playerInteractManagerClass = nmsClass("PlayerInteractManager")
@@ -185,7 +185,7 @@ internal class LegacyFakePlayer12(
 
     private fun setPositionRotation(
         entityPlayer: Any,
-        location: Location
+        location: Location,
     ) {
         val method =
             entityPlayer.javaClass.getMethod(
@@ -194,7 +194,7 @@ internal class LegacyFakePlayer12(
                 Double::class.javaPrimitiveType,
                 Double::class.javaPrimitiveType,
                 Float::class.javaPrimitiveType,
-                Float::class.javaPrimitiveType
+                Float::class.javaPrimitiveType,
             )
         method.invoke(
             entityPlayer,
@@ -202,7 +202,7 @@ internal class LegacyFakePlayer12(
             location.y,
             location.z,
             location.yaw,
-            location.pitch
+            location.pitch,
         )
     }
 
@@ -219,7 +219,7 @@ internal class LegacyFakePlayer12(
 
     private fun spawnInWorld(
         entityPlayer: Any,
-        worldServer: Any
+        worldServer: Any,
     ) {
         invokeMethodIfExists(entityPlayer, "spawnIn", worldServer)
         val playerInteractManager = findField(entityPlayer.javaClass, "playerInteractManager")?.get(entityPlayer)
@@ -230,7 +230,7 @@ internal class LegacyFakePlayer12(
 
     private fun setGameMode(
         entityPlayer: Any,
-        worldServer: Any
+        worldServer: Any,
     ) {
         val playerInteractManager =
             findField(entityPlayer.javaClass, "playerInteractManager")?.get(entityPlayer) ?: return
@@ -242,7 +242,7 @@ internal class LegacyFakePlayer12(
 
     private fun setupConnection(
         entityPlayer: Any,
-        minecraftServer: Any
+        minecraftServer: Any,
     ) {
         val networkManagerClass = nmsClass("NetworkManager")
         val enumProtocolDirectionClass = nmsClass("EnumProtocolDirection")
@@ -271,7 +271,7 @@ internal class LegacyFakePlayer12(
 
     private fun addToPlayerChunkMap(
         worldServer: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         val playerChunkMap = getPlayerChunkMap(worldServer)
         invokeMethodIfExists(playerChunkMap, "addPlayer", entityPlayer)
@@ -279,7 +279,7 @@ internal class LegacyFakePlayer12(
 
     private fun addToPlayerList(
         playerList: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         runCatching {
             val playersField = findField(playerList.javaClass, "players")
@@ -292,7 +292,7 @@ internal class LegacyFakePlayer12(
 
     private fun updatePlayerListMaps(
         playerList: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         runCatching {
             val byUuidField = findField(playerList.javaClass, "j")
@@ -353,7 +353,7 @@ internal class LegacyFakePlayer12(
 
     private fun createPlayerInfoPacket(
         actionName: String,
-        entityPlayer: Any
+        entityPlayer: Any,
     ): Any? =
         runCatching {
             val packetPlayOutPlayerInfo = nmsClass("PacketPlayOutPlayerInfo")
@@ -380,7 +380,7 @@ internal class LegacyFakePlayer12(
 
     private fun createSingleArgPacket(
         className: String,
-        entityPlayer: Any
+        entityPlayer: Any,
     ): Any? =
         runCatching {
             val packetClass = nmsClass(className)
@@ -396,7 +396,7 @@ internal class LegacyFakePlayer12(
 
     private fun addEntityToWorld(
         worldServer: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         invokeMethodIfExists(worldServer, "addEntity", entityPlayer)
     }
@@ -418,7 +418,7 @@ internal class LegacyFakePlayer12(
 
     private fun removeFromPlayerList(
         playerList: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         runCatching {
             val playersField = findField(playerList.javaClass, "players")
@@ -431,7 +431,7 @@ internal class LegacyFakePlayer12(
 
     private fun removeFromPlayerMaps(
         playerList: Any,
-        entityPlayer: Any
+        entityPlayer: Any,
     ) {
         runCatching {
             val byUuidField = findField(playerList.javaClass, "j")
@@ -451,7 +451,7 @@ internal class LegacyFakePlayer12(
 
     private fun sendPacket(
         connection: Any,
-        packet: Any
+        packet: Any,
     ) {
         val packetClass = nmsClass("Packet")
         val sendMethod = connection.javaClass.getMethod("sendPacket", packetClass)
@@ -468,7 +468,7 @@ internal class LegacyFakePlayer12(
     private fun invokeMethod(
         target: Any,
         name: String,
-        vararg args: Any?
+        vararg args: Any?,
     ): Any {
         val method =
             findMethod(target.javaClass, name, args)
@@ -479,7 +479,7 @@ internal class LegacyFakePlayer12(
     private fun invokeMethodIfExists(
         target: Any,
         name: String,
-        vararg args: Any?
+        vararg args: Any?,
     ) {
         val method = findMethod(target.javaClass, name, args, ignoreMissing = true) ?: return
         method.invoke(target, *args)
@@ -489,7 +489,7 @@ internal class LegacyFakePlayer12(
         clazz: Class<*>,
         name: String,
         args: Array<out Any?>,
-        ignoreMissing: Boolean = false
+        ignoreMissing: Boolean = false,
     ): Method? {
         val candidates = (clazz.methods + clazz.declaredMethods).filter { it.name == name }
         val method =
@@ -509,7 +509,7 @@ internal class LegacyFakePlayer12(
 
     private fun findField(
         clazz: Class<*>,
-        name: String
+        name: String,
     ): Field? {
         var current: Class<*>? = clazz
         while (current != null) {
@@ -526,7 +526,7 @@ internal class LegacyFakePlayer12(
     private fun setFieldValue(
         target: Any,
         name: String,
-        value: Any?
+        value: Any?,
     ) {
         val field = findField(target.javaClass, name) ?: return
         field.set(target, value)
@@ -534,7 +534,7 @@ internal class LegacyFakePlayer12(
 
     private fun enumValue(
         enumClass: Class<*>,
-        name: String
+        name: String,
     ): Any {
         @Suppress("UNCHECKED_CAST")
         val enumType = enumClass as Class<out Enum<*>>
@@ -543,6 +543,6 @@ internal class LegacyFakePlayer12(
 
     private fun enumValue(
         enumClass: Class<*>,
-        gameMode: GameMode
+        gameMode: GameMode,
     ): Any = enumValue(enumClass, gameMode.name)
 }

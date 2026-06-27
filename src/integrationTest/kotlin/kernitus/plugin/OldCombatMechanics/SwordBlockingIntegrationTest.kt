@@ -58,7 +58,7 @@ class SwordBlockingIntegrationTest :
                         plugin,
                         Callable {
                             action()
-                        }
+                        },
                     ).get()
             }
 
@@ -84,7 +84,7 @@ class SwordBlockingIntegrationTest :
                     player.maximumNoDamageTicks = 20
                     player.noDamageTicks = 0 // remove spawn invulnerability
                     player.isInvulnerable = false
-                }
+                },
             )
         }
 
@@ -97,21 +97,21 @@ class SwordBlockingIntegrationTest :
                         player.inventory.itemInMainHand,
                         null,
                         BlockFace.SELF,
-                        EquipmentSlot.HAND
+                        EquipmentSlot.HAND,
                     )
                 Bukkit.getPluginManager().callEvent(event)
             }
 
         fun rightClickEntity(
             target: Entity,
-            hand: EquipmentSlot
+            hand: EquipmentSlot,
         ) = runSync {
             Bukkit.getPluginManager().callEvent(PlayerInteractEntityEvent(player, target, hand))
         }
 
         fun rightClickEntityAt(
             target: Entity,
-            hand: EquipmentSlot
+            hand: EquipmentSlot,
         ) = runSync {
             val event = PlayerInteractAtEntityEvent(player, target, Vector(0.0, 1.0, 0.0), hand)
             Bukkit.getPluginManager().callEvent(event)
@@ -148,7 +148,7 @@ class SwordBlockingIntegrationTest :
 
         suspend fun TestScope.withPaperAnimationEnabled(
             enabled: Boolean,
-            block: suspend TestScope.() -> Unit
+            block: suspend TestScope.() -> Unit,
         ) {
             val original = runSync { ocm.config.get("sword-blocking.paper-animation") }
             runSync {
@@ -169,7 +169,7 @@ class SwordBlockingIntegrationTest :
 
         suspend fun TestScope.withUsePermission(
             required: Boolean,
-            block: suspend TestScope.() -> Unit
+            block: suspend TestScope.() -> Unit,
         ) {
             val original = runSync { ocm.config.getBoolean("sword-blocking.use-permission") }
             runSync {
@@ -208,7 +208,7 @@ class SwordBlockingIntegrationTest :
                 plugin,
                 Runnable {
                     fakePlayer.removePlayer()
-                }
+                },
             )
         }
 

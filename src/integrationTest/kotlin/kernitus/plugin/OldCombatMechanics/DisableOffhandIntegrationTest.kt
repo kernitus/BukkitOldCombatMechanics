@@ -44,14 +44,14 @@ class DisableOffhandIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData = getPlayerData(player.uniqueId)
             playerData.setModesetForWorld(player.world.uid, modeset)

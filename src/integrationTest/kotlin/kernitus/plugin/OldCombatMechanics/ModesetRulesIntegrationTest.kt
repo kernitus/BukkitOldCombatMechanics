@@ -58,12 +58,12 @@ class ModesetRulesIntegrationTest :
             setOf(
                 "modeset-listener",
                 "attack-cooldown-tracker",
-                "entity-damage-listener"
+                "entity-damage-listener",
             )
         val optionalModules =
             setOf(
                 "disable-attack-sounds",
-                "disable-sword-sweep-particles"
+                "disable-sword-sweep-particles",
             )
 
         lateinit var player: Player
@@ -82,14 +82,14 @@ class ModesetRulesIntegrationTest :
                         Callable {
                             action()
                             null
-                        }
+                        },
                     ).get()
             }
         }
 
         fun setModeset(
             player: Player,
-            modeset: String
+            modeset: String,
         ) {
             val playerData = getPlayerData(player.uniqueId)
             playerData.setModesetForWorld(player.world.uid, modeset)
@@ -103,7 +103,7 @@ class ModesetRulesIntegrationTest :
 
         fun restoreSection(
             path: String,
-            value: Any?
+            value: Any?,
         ) {
             ocm.config.set(path, null)
             when (value) {
@@ -126,7 +126,7 @@ class ModesetRulesIntegrationTest :
             always: List<String>,
             disabled: List<String>,
             modesets: Map<String, List<String>>,
-            worlds: Map<String, List<String>>
+            worlds: Map<String, List<String>>,
         ) {
             ocm.config.set("always_enabled_modules", always)
             ocm.config.set("disabled_modules", disabled)
@@ -142,20 +142,20 @@ class ModesetRulesIntegrationTest :
             always: List<String>,
             disabled: List<String>,
             modesets: Map<String, List<String>>,
-            worldModesets: List<String>
+            worldModesets: List<String>,
         ) {
             applyConfigWithWorlds(
                 always = always,
                 disabled = disabled,
                 modesets = modesets,
-                worlds = mapOf("world" to worldModesets)
+                worlds = mapOf("world" to worldModesets),
             )
         }
 
         fun completeAlways(
             always: List<String>,
             disabled: List<String>,
-            modesets: Map<String, List<String>>
+            modesets: Map<String, List<String>>,
         ): List<String> {
             val assigned = HashSet<String>()
             always.forEach { assigned.add(it.lowercase(Locale.ROOT)) }
@@ -181,18 +181,18 @@ class ModesetRulesIntegrationTest :
             val modesets =
                 mapOf(
                     "old" to listOf("disable-offhand"),
-                    "new" to listOf("old-potion-effects")
+                    "new" to listOf("old-potion-effects"),
                 )
             applyConfigWithWorlds(
                 always =
                     completeAlways(
                         always = emptyList(),
                         disabled = emptyList(),
-                        modesets = modesets
+                        modesets = modesets,
                     ),
                 disabled = emptyList(),
                 modesets = modesets,
-                worlds = worlds
+                worlds = worlds,
             )
         }
 
@@ -251,16 +251,16 @@ class ModesetRulesIntegrationTest :
                                 modesets =
                                     mapOf(
                                         "old" to listOf("old-golden-apples"),
-                                        "new" to listOf("old-potion-effects")
-                                    )
+                                        "new" to listOf("old-potion-effects"),
+                                    ),
                             ),
                         disabled = emptyList(),
                         modesets =
                             mapOf(
                                 "old" to listOf("old-golden-apples"),
-                                "new" to listOf("old-potion-effects")
+                                "new" to listOf("old-potion-effects"),
                             ),
-                        worldModesets = listOf("old", "new")
+                        worldModesets = listOf("old", "new"),
                     )
 
                     setModeset(player, "old")
@@ -283,16 +283,16 @@ class ModesetRulesIntegrationTest :
                                 modesets =
                                     mapOf(
                                         "old" to listOf("old-golden-apples"),
-                                        "new" to listOf("old-potion-effects")
-                                    )
+                                        "new" to listOf("old-potion-effects"),
+                                    ),
                             ),
                         disabled = listOf("disable-offhand"),
                         modesets =
                             mapOf(
                                 "old" to listOf("old-golden-apples"),
-                                "new" to listOf("old-potion-effects")
+                                "new" to listOf("old-potion-effects"),
                             ),
-                        worldModesets = listOf("old", "new")
+                        worldModesets = listOf("old", "new"),
                     )
 
                     setModeset(player, "old")
@@ -315,16 +315,16 @@ class ModesetRulesIntegrationTest :
                                 modesets =
                                     mapOf(
                                         "old" to listOf("disable-offhand"),
-                                        "new" to listOf("old-potion-effects")
-                                    )
+                                        "new" to listOf("old-potion-effects"),
+                                    ),
                             ),
                         disabled = emptyList(),
                         modesets =
                             mapOf(
                                 "old" to listOf("disable-offhand"),
-                                "new" to listOf("old-potion-effects")
+                                "new" to listOf("old-potion-effects"),
                             ),
-                        worldModesets = listOf("old", "new")
+                        worldModesets = listOf("old", "new"),
                     )
 
                     setModeset(player, "old")
@@ -347,16 +347,16 @@ class ModesetRulesIntegrationTest :
                                 modesets =
                                     mapOf(
                                         "old" to listOf("sword-blocking"),
-                                        "new" to listOf("old-potion-effects")
-                                    )
+                                        "new" to listOf("old-potion-effects"),
+                                    ),
                             ),
                         disabled = emptyList(),
                         modesets =
                             mapOf(
                                 "old" to listOf("sword-blocking"),
-                                "new" to listOf("old-potion-effects")
+                                "new" to listOf("old-potion-effects"),
                             ),
-                        worldModesets = listOf("new")
+                        worldModesets = listOf("new"),
                     )
 
                     setModeset(player, "old")
@@ -374,8 +374,8 @@ class ModesetRulesIntegrationTest :
                     applySimpleModesetWorlds(
                         mapOf(
                             "__default__" to listOf("old"),
-                            "world" to listOf("new", "old")
-                        )
+                            "world" to listOf("new", "old"),
+                        ),
                     )
 
                     Config.getAllowedModesets(player.world.uid).toList().shouldContainExactly("new", "old")
@@ -401,8 +401,8 @@ class ModesetRulesIntegrationTest :
                     applySimpleModesetWorlds(
                         mapOf(
                             "__default__" to listOf("old"),
-                            "world" to emptyList()
-                        )
+                            "world" to emptyList(),
+                        ),
                     )
 
                     val allowedModesets = Config.getAllowedModesets(player.world.uid)
@@ -561,16 +561,16 @@ class ModesetRulesIntegrationTest :
                                     modesets =
                                         mapOf(
                                             "old" to listOf("old-potion-effects"),
-                                            "new" to listOf("old-golden-apples")
-                                        )
+                                            "new" to listOf("old-golden-apples"),
+                                        ),
                                 ),
                             disabled = listOf("disable-offhand"),
                             modesets =
                                 mapOf(
                                     "old" to listOf("old-potion-effects"),
-                                    "new" to listOf("old-golden-apples")
+                                    "new" to listOf("old-golden-apples"),
                                 ),
-                            worldModesets = listOf("old", "new")
+                            worldModesets = listOf("old", "new"),
                         )
                     }
                 }
@@ -596,7 +596,7 @@ class ModesetRulesIntegrationTest :
                             always = always,
                             disabled = emptyList(),
                             modesets = mapOf("old" to emptyList()),
-                            worldModesets = listOf("old")
+                            worldModesets = listOf("old"),
                         )
                     }
                 }

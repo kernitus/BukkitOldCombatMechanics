@@ -86,7 +86,7 @@ class GoldenAppleIntegrationTest :
         fun setModeset(modeset: String) {
             val playerData =
                 kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData(
-                    player.uniqueId
+                    player.uniqueId,
                 )
             playerData.setModesetForWorld(player.world.uid, modeset)
             kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage
@@ -117,7 +117,7 @@ class GoldenAppleIntegrationTest :
                 player.javaClass.getMethod(
                     "openWorkbench",
                     Location::class.java,
-                    Boolean::class.javaPrimitiveType
+                    Boolean::class.javaPrimitiveType,
                 )
             val viewObj = openWorkbench.invoke(player, null, true) ?: error("Workbench view was null")
             val getTopInventory = viewObj.javaClass.getMethod("getTopInventory")
@@ -136,7 +136,7 @@ class GoldenAppleIntegrationTest :
 
         fun assertDuration(
             effect: PotionEffect?,
-            expectedTicks: Int
+            expectedTicks: Int,
         ) {
             effect.shouldNotBe(null)
             val duration = effect!!.duration
@@ -153,7 +153,7 @@ class GoldenAppleIntegrationTest :
                             continuation.resume(Unit)
                         }
                     },
-                    ticks
+                    ticks,
                 )
             }
         }

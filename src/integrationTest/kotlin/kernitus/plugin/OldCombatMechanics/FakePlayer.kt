@@ -28,9 +28,12 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.net.UnknownHostException
-import java.util.*
+import java.util.EnumSet
+import java.util.UUID
 
-class FakePlayer(private val plugin: JavaPlugin) {
+class FakePlayer(
+    private val plugin: JavaPlugin,
+) {
     val uuid: UUID = UUID.randomUUID()
     private val name: String = uuid.toString().substring(0, 16)
     private lateinit var serverPlayer: Any // NMS ServerPlayer instance
@@ -42,12 +45,13 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private val isLegacy12 = !Reflector.versionIsNewerOrEqualTo(1, 13, 0) && Reflector.versionIsNewerOrEqualTo(1, 10, 0)
     private val legacyImpl9: LegacyFakePlayer9? = if (isLegacy9) LegacyFakePlayer9(plugin, uuid, name) else null
     private val legacyImpl12: LegacyFakePlayer12? = if (isLegacy12) LegacyFakePlayer12(plugin, uuid, name) else null
-    private val reflectionRemapper: ReflectionRemapper = try {
-        ReflectionRemapper.forReobfMappingsInPaperJar()
-    } catch (e: Throwable) {
-        plugin.logger.warning("Reflection mappings not found; using no-op remapper for legacy server.")
-        ReflectionRemapper.noop()
-    }
+    private val reflectionRemapper: ReflectionRemapper =
+        try {
+            ReflectionRemapper.forReobfMappingsInPaperJar()
+        } catch (e: Throwable) {
+            plugin.logger.warning("Reflection mappings not found; using no-op remapper for legacy server.")
+            ReflectionRemapper.noop()
+        }
 
     // Helper function to load NMS classes using the appropriate class loader and remap names
     fun getNMSClass(name: String): Class<*> {
@@ -56,8 +60,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Get the NMS MinecraftServer from the Bukkit server
         val server = Bukkit.getServer()
         val craftServerClass = server.javaClass
-        val getServerMethod = Reflector.getMethod(craftServerClass, "getServer")
-            ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
+        val getServerMethod =
+            Reflector.getMethod(craftServerClass, "getServer")
+                ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
         val minecraftServer = Reflector.invokeMethod<Any>(getServerMethod, server)
 
         return Class.forName(remappedName, true, minecraftServer.javaClass.classLoader)
@@ -82,8 +87,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Get the NMS WorldServer (ServerLevel) from the Bukkit world
         val world = location.world ?: throw IllegalArgumentException("Location has no world!")
         val craftWorldClass = world.javaClass
-        val getHandleMethod = Reflector.getMethod(craftWorldClass, "getHandle")
-            ?: throw NoSuchMethodException("Cannot find getHandle method in ${craftWorldClass.name}")
+        val getHandleMethod =
+            Reflector.getMethod(craftWorldClass, "getHandle")
+                ?: throw NoSuchMethodException("Cannot find getHandle method in ${craftWorldClass.name}")
         val worldServer = Reflector.invokeMethod<Any>(getHandleMethod, world)
 
         val minecraftServer = getMinecraftServer()
@@ -96,13 +102,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val serverPlayerClass = getNMSClass("net.minecraft.server.level.ServerPlayer")
 
         // Create a new instance of ServerPlayer (constructor signature varies by version)
-        this.serverPlayer = createServerPlayer(
-            serverPlayerClass,
-            minecraftServerClass,
-            minecraftServer,
-            worldServer,
-            gameProfile
-        )
+        this.serverPlayer =
+            createServerPlayer(
+                serverPlayerClass,
+                minecraftServerClass,
+                minecraftServer,
+                worldServer,
+                gameProfile,
+            )
         plugin.logger.info("Spawn: created serverPlayer")
 
         // Set up the connection for the ServerPlayer
@@ -157,10 +164,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
         return teleported
     }
 
-    fun requireBukkitPlayer(): Player = Bukkit.getPlayer(uuid) ?: bukkitPlayer
-        ?: error("Bukkit player with UUID $uuid not found!")
+    fun requireBukkitPlayer(): Player =
+        Bukkit.getPlayer(uuid) ?: bukkitPlayer
+            ?: error("Bukkit player with UUID $uuid not found!")
 
-    private fun setupPlayerConnection(minecraftServer: Any, worldServer: Any) {
+    private fun setupPlayerConnection(
+        minecraftServer: Any,
+        worldServer: Any,
+    ) {
         // Access ServerGamePacketListenerImpl class
         val serverGamePacketListenerImplClass = getNMSClass("net.minecraft.server.network.ServerGamePacketListenerImpl")
 
@@ -168,12 +179,13 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val connectionClass = getNMSClass("net.minecraft.network.Connection")
         val packetFlowClass = getNMSClass("net.minecraft.network.protocol.PacketFlow")
         val serverboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "SERVERBOUND")
-        val packetFlow = runCatching {
-            Reflector.getEnumConstant(packetFlowClass, serverboundFieldName, "SERVERBOUND")
-        }.getOrElse {
-            val clientboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "CLIENTBOUND")
-            Reflector.getEnumConstant(packetFlowClass, clientboundFieldName, "CLIENTBOUND")
-        }
+        val packetFlow =
+            runCatching {
+                Reflector.getEnumConstant(packetFlowClass, serverboundFieldName, "SERVERBOUND")
+            }.getOrElse {
+                val clientboundFieldName = reflectionRemapper.remapFieldName(packetFlowClass, "CLIENTBOUND")
+                Reflector.getEnumConstant(packetFlowClass, clientboundFieldName, "CLIENTBOUND")
+            }
         val connectionConstructor = connectionClass.getConstructor(packetFlowClass)
         val connection = connectionConstructor.newInstance(packetFlow)
         networkConnection = connection
@@ -203,31 +215,34 @@ class FakePlayer(private val plugin: JavaPlugin) {
         // Create a new ServerGamePacketListenerImpl instance (constructor signature varies by version)
         val serverPlayerClass = serverPlayer.javaClass
         val minecraftServerClass = getNMSClass("net.minecraft.server.MinecraftServer")
-        val listenerInstance = createServerGamePacketListener(
-            serverGamePacketListenerImplClass,
-            minecraftServerClass,
-            connectionClass,
-            serverPlayerClass,
-            minecraftServer,
-            connection,
-            serverPlayer
-        )
+        val listenerInstance =
+            createServerGamePacketListener(
+                serverGamePacketListenerImplClass,
+                minecraftServerClass,
+                connectionClass,
+                serverPlayerClass,
+                minecraftServer,
+                connection,
+                serverPlayer,
+            )
 
         // Set the listenerInstance to the player's 'connection' field
         val connectionFieldName = reflectionRemapper.remapFieldName(serverPlayerClass, "connection")
         val connectionField = Reflector.getField(serverPlayerClass, connectionFieldName)
         Reflector.setFieldValue(connectionField, serverPlayer, listenerInstance)
 
-        val setListenerName = reflectionRemapper.remapMethodName(
-            connectionClass,
-            "setListener",
-            listenerInstance.javaClass
-        )
-        val setListenerMethod = Reflector.getMethodAssignable(
-            connectionClass,
-            setListenerName,
-            listenerInstance.javaClass
-        ) ?: Reflector.getMethodAssignable(connectionClass, "setListener", listenerInstance.javaClass)
+        val setListenerName =
+            reflectionRemapper.remapMethodName(
+                connectionClass,
+                "setListener",
+                listenerInstance.javaClass,
+            )
+        val setListenerMethod =
+            Reflector.getMethodAssignable(
+                connectionClass,
+                setListenerName,
+                listenerInstance.javaClass,
+            ) ?: Reflector.getMethodAssignable(connectionClass, "setListener", listenerInstance.javaClass)
         if (setListenerMethod != null) {
             Reflector.invokeMethod<Any>(setListenerMethod, connection, listenerInstance)
         }
@@ -240,7 +255,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         serverPlayerClass: Class<*>,
         minecraftServer: Any,
         connection: Any,
-        serverPlayer: Any
+        serverPlayer: Any,
     ): Any {
         val constructors = listenerClass.constructors.sortedBy { it.parameterCount }
         for (ctor in constructors) {
@@ -259,7 +274,10 @@ class FakePlayer(private val plugin: JavaPlugin) {
             for (i in 3 until params.size) {
                 val param = params[i]
                 when (param.simpleName) {
-                    "CommonListenerCookie" -> args.add(createCommonListenerCookie(param, serverPlayer))
+                    "CommonListenerCookie" -> {
+                        args.add(createCommonListenerCookie(param, serverPlayer))
+                    }
+
                     else -> {
                         supported = false
                         break
@@ -272,26 +290,32 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
 
         throw NoSuchMethodException(
-            "No compatible ServerGamePacketListenerImpl constructor found for ${listenerClass.name}"
+            "No compatible ServerGamePacketListenerImpl constructor found for ${listenerClass.name}",
         )
     }
 
-    private fun createCommonListenerCookie(cookieClass: Class<*>, serverPlayer: Any): Any {
+    private fun createCommonListenerCookie(
+        cookieClass: Class<*>,
+        serverPlayer: Any,
+    ): Any {
         val getProfileName = reflectionRemapper.remapMethodName(serverPlayer.javaClass, "getGameProfile")
-        val getProfileMethod = Reflector.getMethod(serverPlayer.javaClass, getProfileName)
-            ?: Reflector.getMethod(serverPlayer.javaClass, "getGameProfile")
-            ?: throw NoSuchMethodException("getGameProfile not found in ${serverPlayer.javaClass.name}")
+        val getProfileMethod =
+            Reflector.getMethod(serverPlayer.javaClass, getProfileName)
+                ?: Reflector.getMethod(serverPlayer.javaClass, "getGameProfile")
+                ?: throw NoSuchMethodException("getGameProfile not found in ${serverPlayer.javaClass.name}")
         val gameProfile = Reflector.invokeMethod<GameProfile>(getProfileMethod, serverPlayer)
 
-        val remappedName = reflectionRemapper.remapMethodName(
-            cookieClass,
-            "createInitial",
-            GameProfile::class.java,
-            Boolean::class.javaPrimitiveType
-        )
-        val method = Reflector.getMethod(cookieClass, remappedName, "GameProfile", "boolean")
-            ?: Reflector.getMethod(cookieClass, "createInitial", "GameProfile", "boolean")
-            ?: throw NoSuchMethodException("createInitial not found in ${cookieClass.name}")
+        val remappedName =
+            reflectionRemapper.remapMethodName(
+                cookieClass,
+                "createInitial",
+                GameProfile::class.java,
+                Boolean::class.javaPrimitiveType,
+            )
+        val method =
+            Reflector.getMethod(cookieClass, remappedName, "GameProfile", "boolean")
+                ?: Reflector.getMethod(cookieClass, "createInitial", "GameProfile", "boolean")
+                ?: throw NoSuchMethodException("createInitial not found in ${cookieClass.name}")
         return Reflector.invokeMethod(method, null, gameProfile, false)
     }
 
@@ -300,7 +324,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
         minecraftServerClass: Class<*>,
         minecraftServer: Any,
         worldServer: Any,
-        gameProfile: GameProfile
+        gameProfile: GameProfile,
     ): Any {
         val constructors = serverPlayerClass.constructors.sortedBy { it.parameterCount }
         for (ctor in constructors) {
@@ -319,8 +343,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
             for (i in 3 until params.size) {
                 val param = params[i]
                 when (param.simpleName) {
-                    "ProfilePublicKey" -> args.add(null)
-                    "ClientInformation" -> args.add(createDefaultClientInformation(param))
+                    "ProfilePublicKey" -> {
+                        args.add(null)
+                    }
+
+                    "ClientInformation" -> {
+                        args.add(createDefaultClientInformation(param))
+                    }
+
                     else -> {
                         supported = false
                         break
@@ -337,48 +367,58 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
     private fun createDefaultClientInformation(clientInfoClass: Class<*>): Any {
         val remappedName = reflectionRemapper.remapMethodName(clientInfoClass, "createDefault")
-        val method = Reflector.getMethod(clientInfoClass, remappedName)
-            ?: Reflector.getMethod(clientInfoClass, "createDefault")
-            ?: throw NoSuchMethodException("createDefault not found in ${clientInfoClass.name}")
+        val method =
+            Reflector.getMethod(clientInfoClass, remappedName)
+                ?: Reflector.getMethod(clientInfoClass, "createDefault")
+                ?: throw NoSuchMethodException("createDefault not found in ${clientInfoClass.name}")
         return Reflector.invokeMethod(method, null)
     }
 
-    private fun setPlayerGameMode(gameModeName: String, minecraftServer: Any) {
+    private fun setPlayerGameMode(
+        gameModeName: String,
+        minecraftServer: Any,
+    ) {
         val gameModeClass = getNMSClass("net.minecraft.world.level.GameType")
         val gameModeFieldName = reflectionRemapper.remapFieldName(gameModeClass, gameModeName)
         val gameModeField = Reflector.getField(gameModeClass, gameModeFieldName)
         val gameMode = gameModeField.get(null)
-        val setGameModeMethodName = reflectionRemapper.remapMethodName(
-            serverPlayer.javaClass,
-            "setGameMode",
-            gameModeClass
-        )
+        val setGameModeMethodName =
+            reflectionRemapper.remapMethodName(
+                serverPlayer.javaClass,
+                "setGameMode",
+                gameModeClass,
+            )
         val setGameModeMethod = serverPlayer.javaClass.getMethod(setGameModeMethodName, gameModeClass)
         setGameModeMethod.invoke(serverPlayer, gameMode)
     }
 
     private fun setPlayerPosition(location: Location) {
         val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
-        val setPosMethodName = reflectionRemapper.remapMethodName(
-            entityClass,
-            "setPos",
-            Double::class.javaPrimitiveType,
-            Double::class.javaPrimitiveType,
-            Double::class.javaPrimitiveType
-        )
-        val setPosMethod = checkNotNull(
-            Reflector.getMethod(
+        val setPosMethodName =
+            reflectionRemapper.remapMethodName(
                 entityClass,
-                setPosMethodName,
-                "double",
-                "double",
-                "double"
+                "setPos",
+                Double::class.javaPrimitiveType,
+                Double::class.javaPrimitiveType,
+                Double::class.javaPrimitiveType,
             )
-        )
+        val setPosMethod =
+            checkNotNull(
+                Reflector.getMethod(
+                    entityClass,
+                    setPosMethodName,
+                    "double",
+                    "double",
+                    "double",
+                ),
+            )
         setPosMethod.invoke(serverPlayer, location.x, location.y, location.z)
     }
 
-    private fun setPlayerRotation(xRot: Float, yRot: Float) {
+    private fun setPlayerRotation(
+        xRot: Float,
+        yRot: Float,
+    ) {
         val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
         val xRotFieldName = reflectionRemapper.remapFieldName(entityClass, "xRot")
         val xRotField = Reflector.getField(entityClass, xRotFieldName)
@@ -392,6 +432,7 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun fireAsyncPlayerPreLoginEvent() {
         try {
             val ipAddress = InetAddress.getByName("127.0.0.1")
+
             @Suppress("DEPRECATION") // Legacy constructor kept for older server compatibility in tests.
             val asyncPreLoginEvent = AsyncPlayerPreLoginEvent(name, ipAddress, uuid)
             Thread { Bukkit.getPluginManager().callEvent(asyncPreLoginEvent) }.start()
@@ -408,19 +449,20 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
         val placeMethodName = reflectionRemapper.remapMethodName(playerListClass, "placeNewPlayer")
         val connection = checkNotNull(networkConnection) { "Connection not initialised" }
-        val placeMethodWithCookie = Reflector.getMethodAssignable(
-            playerListClass,
-            placeMethodName,
-            connection.javaClass,
-            serverPlayer.javaClass,
-            null
-        ) ?: Reflector.getMethodAssignable(
-            playerListClass,
-            "placeNewPlayer",
-            connection.javaClass,
-            serverPlayer.javaClass,
-            null
-        )
+        val placeMethodWithCookie =
+            Reflector.getMethodAssignable(
+                playerListClass,
+                placeMethodName,
+                connection.javaClass,
+                serverPlayer.javaClass,
+                null,
+            ) ?: Reflector.getMethodAssignable(
+                playerListClass,
+                "placeNewPlayer",
+                connection.javaClass,
+                serverPlayer.javaClass,
+                null,
+            )
 
         if (placeMethodWithCookie != null && placeMethodWithCookie.parameterTypes.size == 3) {
             val cookieClass = placeMethodWithCookie.parameterTypes[2]
@@ -429,17 +471,18 @@ class FakePlayer(private val plugin: JavaPlugin) {
             return true
         }
 
-        val placeMethod = Reflector.getMethodAssignable(
-            playerListClass,
-            placeMethodName,
-            connection.javaClass,
-            serverPlayer.javaClass
-        ) ?: Reflector.getMethodAssignable(
-            playerListClass,
-            "placeNewPlayer",
-            connection.javaClass,
-            serverPlayer.javaClass
-        )
+        val placeMethod =
+            Reflector.getMethodAssignable(
+                playerListClass,
+                placeMethodName,
+                connection.javaClass,
+                serverPlayer.javaClass,
+            ) ?: Reflector.getMethodAssignable(
+                playerListClass,
+                "placeNewPlayer",
+                connection.javaClass,
+                serverPlayer.javaClass,
+            )
 
         if (placeMethod != null) {
             placeMethod.invoke(playerList, connection, serverPlayer)
@@ -447,11 +490,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
         }
 
         val loadMethodName = reflectionRemapper.remapMethodName(playerListClass, "load", serverPlayer.javaClass)
-        val loadMethod = playerListClass.methods.firstOrNull { method ->
-            method.name == loadMethodName &&
-                method.parameterCount == 1 &&
-                method.parameterTypes[0].isAssignableFrom(serverPlayer.javaClass)
-        }
+        val loadMethod =
+            playerListClass.methods.firstOrNull { method ->
+                method.name == loadMethodName &&
+                    method.parameterCount == 1 &&
+                    method.parameterTypes[0].isAssignableFrom(serverPlayer.javaClass)
+            }
 
         if (loadMethod != null) {
             Reflector.invokeMethod<Any>(loadMethod, playerList, serverPlayer)
@@ -464,9 +508,13 @@ class FakePlayer(private val plugin: JavaPlugin) {
             players.add(serverPlayer)
 
             // Add player to the UUID map
-            val playersByUUIDField = Reflector.getMapFieldWithTypes(
-                playerListClass, UUID::class.java, serverPlayer.javaClass
-            )
+            val playersByUUIDField =
+                Reflector.getMapFieldWithTypes(
+                    playerListClass,
+                    UUID::class.java,
+                    serverPlayer.javaClass,
+                )
+
             @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
             val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as MutableMap<UUID, Any>
             playerByUUID[uuid] = serverPlayer
@@ -485,29 +533,35 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun notifyPlayersOfJoin() {
         if (Bukkit.getOnlinePlayers().isEmpty()) return
 
-        val packet = runCatching { createLegacyPlayerInfoPacket() }.getOrNull()
-            ?: runCatching { createPlayerInfoUpdatePacket() }.getOrNull()
-            ?: return
+        val packet =
+            runCatching { createLegacyPlayerInfoPacket() }.getOrNull()
+                ?: runCatching { createPlayerInfoUpdatePacket() }.getOrNull()
+                ?: return
         sendPacket(packet)
     }
 
-    private fun spawnPlayerInWorld(worldServer: Any, minecraftServer: Any) {
+    private fun spawnPlayerInWorld(
+        worldServer: Any,
+        minecraftServer: Any,
+    ) {
         // Add the player to the world
         val worldServerClass = worldServer.javaClass
-        val addNewPlayerMethodName = reflectionRemapper.remapMethodName(
-            worldServerClass,
-            "addNewPlayer",
-            serverPlayer.javaClass
-        )
-        val addNewPlayerMethod = Reflector.getMethodAssignable(
-            worldServerClass,
-            addNewPlayerMethodName,
-            serverPlayer.javaClass
-        )
-            ?: Reflector.getMethodAssignable(worldServerClass, "addNewPlayer", serverPlayer.javaClass)
-            ?: Reflector.getMethodAssignable(worldServerClass, "addPlayer", serverPlayer.javaClass)
-            ?: Reflector.getMethodAssignable(worldServerClass, "addFreshEntity", serverPlayer.javaClass)
-            ?: Reflector.getMethodAssignable(worldServerClass, "addEntity", serverPlayer.javaClass)
+        val addNewPlayerMethodName =
+            reflectionRemapper.remapMethodName(
+                worldServerClass,
+                "addNewPlayer",
+                serverPlayer.javaClass,
+            )
+        val addNewPlayerMethod =
+            Reflector.getMethodAssignable(
+                worldServerClass,
+                addNewPlayerMethodName,
+                serverPlayer.javaClass,
+            )
+                ?: Reflector.getMethodAssignable(worldServerClass, "addNewPlayer", serverPlayer.javaClass)
+                ?: Reflector.getMethodAssignable(worldServerClass, "addPlayer", serverPlayer.javaClass)
+                ?: Reflector.getMethodAssignable(worldServerClass, "addFreshEntity", serverPlayer.javaClass)
+                ?: Reflector.getMethodAssignable(worldServerClass, "addEntity", serverPlayer.javaClass)
         if (addNewPlayerMethod != null) {
             addNewPlayerMethod.invoke(worldServer, serverPlayer)
         } else {
@@ -521,16 +575,18 @@ class FakePlayer(private val plugin: JavaPlugin) {
             val getStatusMethod = Reflector.getMethod(minecraftServerClass, getStatusMethodName)
             val status = Reflector.invokeMethod<Any>(getStatusMethod!!, minecraftServer)
 
-            val sendServerStatusMethodName = reflectionRemapper.remapMethodName(
-                serverPlayer.javaClass,
-                "sendServerStatus",
-                status.javaClass
-            )
-            val sendServerStatusMethod = Reflector.getMethod(
-                serverPlayer.javaClass,
-                sendServerStatusMethodName,
-                status.javaClass.simpleName
-            ) ?: Reflector.getMethod(serverPlayer.javaClass, "sendServerStatus", status.javaClass.simpleName)
+            val sendServerStatusMethodName =
+                reflectionRemapper.remapMethodName(
+                    serverPlayer.javaClass,
+                    "sendServerStatus",
+                    status.javaClass,
+                )
+            val sendServerStatusMethod =
+                Reflector.getMethod(
+                    serverPlayer.javaClass,
+                    sendServerStatusMethodName,
+                    status.javaClass.simpleName,
+                ) ?: Reflector.getMethod(serverPlayer.javaClass, "sendServerStatus", status.javaClass.simpleName)
             if (sendServerStatusMethod != null) {
                 sendServerStatusMethod.invoke(serverPlayer, status)
             }
@@ -556,14 +612,15 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val addPlayerFieldName = reflectionRemapper.remapFieldName(actionClass, "ADD_PLAYER")
         val addPlayerAction = actionClass.getDeclaredField(addPlayerFieldName).get(null)
 
-        val clientboundPlayerInfoPacketConstructor = clientboundPlayerInfoPacketClass.getConstructor(
-            actionClass,
-            Collection::class.java
-        )
+        val clientboundPlayerInfoPacketConstructor =
+            clientboundPlayerInfoPacketClass.getConstructor(
+                actionClass,
+                Collection::class.java,
+            )
 
         return clientboundPlayerInfoPacketConstructor.newInstance(
             addPlayerAction,
-            listOf(serverPlayer)
+            listOf(serverPlayer),
         )
     }
 
@@ -573,22 +630,25 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val addPlayerFieldName = reflectionRemapper.remapFieldName(actionClass, "ADD_PLAYER")
         val addPlayerAction = actionClass.getDeclaredField(addPlayerFieldName).get(null)
 
-        val createInitMethodName = reflectionRemapper.remapMethodName(
-            packetClass,
-            "createPlayerInitializing",
-            serverPlayer.javaClass
-        )
-        val createInitMethod = Reflector.getMethodAssignable(
-            packetClass,
-            createInitMethodName,
-            serverPlayer.javaClass
-        ) ?: Reflector.getMethodAssignable(packetClass, "createPlayerInitializing", serverPlayer.javaClass)
+        val createInitMethodName =
+            reflectionRemapper.remapMethodName(
+                packetClass,
+                "createPlayerInitializing",
+                serverPlayer.javaClass,
+            )
+        val createInitMethod =
+            Reflector.getMethodAssignable(
+                packetClass,
+                createInitMethodName,
+                serverPlayer.javaClass,
+            ) ?: Reflector.getMethodAssignable(packetClass, "createPlayerInitializing", serverPlayer.javaClass)
         if (createInitMethod != null) {
             return Reflector.invokeMethod(createInitMethod, null, serverPlayer)
         }
 
         val constructor = packetClass.getConstructor(EnumSet::class.java, Collection::class.java)
         val enumSetNoneOf = EnumSet::class.java.getMethod("noneOf", Class::class.java)
+
         @Suppress("UNCHECKED_CAST")
         val actions = enumSetNoneOf.invoke(null, actionClass) as MutableSet<Any>
         actions.add(addPlayerAction)
@@ -647,11 +707,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
         runCatching {
             val playerList = getPlayerList(getMinecraftServer())
             if (!isEntityRemoved(serverPlayer) && isPlayerListed(playerList)) {
-                val removePlayerMethodName = reflectionRemapper.remapMethodName(
-                    playerList.javaClass,
-                    "remove",
-                    serverPlayer.javaClass
-                )
+                val removePlayerMethodName =
+                    reflectionRemapper.remapMethodName(
+                        playerList.javaClass,
+                        "remove",
+                        serverPlayer.javaClass,
+                    )
                 val removePlayerMethod = playerList.javaClass.getMethod(removePlayerMethodName, serverPlayer.javaClass)
                 removePlayerMethod.invoke(playerList, serverPlayer)
             }
@@ -659,11 +720,12 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
         // Close the connection properly
         val connection = getConnection(serverPlayer)
-        val disconnectMethodName = reflectionRemapper.remapMethodName(
-            connection.javaClass,
-            "disconnect",
-            getNMSClass("net.minecraft.network.chat.Component")
-        )
+        val disconnectMethodName =
+            reflectionRemapper.remapMethodName(
+                connection.javaClass,
+                "disconnect",
+                getNMSClass("net.minecraft.network.chat.Component"),
+            )
         val disconnectMethod =
             connection.javaClass.getMethod(disconnectMethodName, getNMSClass("net.minecraft.network.chat.Component"))
         val quitMessageNoColour = "$name left the game"
@@ -676,47 +738,57 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val serverPlayerClass = serverPlayer.javaClass
         val tickMethod = resolveServerPlayerTickMethod(serverPlayerClass)
         val baseTickMethod = resolveBaseTickMethod(serverPlayerClass)
-        val getRemainingFireTicksMethod = runCatching {
-            val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
-            val remapped = reflectionRemapper.remapMethodName(entityClass, "getRemainingFireTicks")
-            Reflector.getMethod(entityClass, remapped) ?: Reflector.getMethod(entityClass, "getRemainingFireTicks")
-        }.getOrNull()
-        tickTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, Runnable {
-            val remainingFireTicks = if (getRemainingFireTicksMethod != null) {
-                runCatching { getRemainingFireTicksMethod.invoke(serverPlayer) as Int }.getOrNull()
-            } else {
-                null
-            }
-            if (remainingFireTicks != null && remainingFireTicks > 0) {
-                val player = bukkitPlayer
-                val inWater = player != null && (
-                    player.location.block.type == Material.WATER ||
-                        player.eyeLocation.block.type == Material.WATER
-                    )
-                if (inWater && tickMethod != null) {
-                    runCatching { tickMethod.invoke(serverPlayer) }
-                    return@Runnable
-                }
-                if (baseTickMethod != null) {
-                    runCatching { baseTickMethod.invoke(serverPlayer) }
-                    return@Runnable
-                }
-            }
+        val getRemainingFireTicksMethod =
+            runCatching {
+                val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
+                val remapped = reflectionRemapper.remapMethodName(entityClass, "getRemainingFireTicks")
+                Reflector.getMethod(entityClass, remapped) ?: Reflector.getMethod(entityClass, "getRemainingFireTicks")
+            }.getOrNull()
+        tickTaskId =
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                plugin,
+                Runnable {
+                    val remainingFireTicks =
+                        if (getRemainingFireTicksMethod != null) {
+                            runCatching { getRemainingFireTicksMethod.invoke(serverPlayer) as Int }.getOrNull()
+                        } else {
+                            null
+                        }
+                    if (remainingFireTicks != null && remainingFireTicks > 0) {
+                        val player = bukkitPlayer
+                        val inWater =
+                            player != null && (
+                                player.location.block.type == Material.WATER ||
+                                    player.eyeLocation.block.type == Material.WATER
+                            )
+                        if (inWater && tickMethod != null) {
+                            runCatching { tickMethod.invoke(serverPlayer) }
+                            return@Runnable
+                        }
+                        if (baseTickMethod != null) {
+                            runCatching { baseTickMethod.invoke(serverPlayer) }
+                            return@Runnable
+                        }
+                    }
 
-            if (tickMethod != null) {
-                runCatching { tickMethod.invoke(serverPlayer) }
-            } else if (baseTickMethod != null) {
-                runCatching { baseTickMethod.invoke(serverPlayer) }
-            }
-        }, 1L, 1L)
+                    if (tickMethod != null) {
+                        runCatching { tickMethod.invoke(serverPlayer) }
+                    } else if (baseTickMethod != null) {
+                        runCatching { baseTickMethod.invoke(serverPlayer) }
+                    }
+                },
+                1L,
+                1L,
+            )
     }
 
     private fun resolveServerPlayerTickMethod(serverPlayerClass: Class<*>): Method? {
         val candidateNames = listOf("doTick", "tick")
         for (name in candidateNames) {
             val remapped = reflectionRemapper.remapMethodName(serverPlayerClass, name)
-            val method = Reflector.getMethod(serverPlayerClass, remapped)
-                ?: Reflector.getMethod(serverPlayerClass, name)
+            val method =
+                Reflector.getMethod(serverPlayerClass, remapped)
+                    ?: Reflector.getMethod(serverPlayerClass, name)
             if (method != null && method.parameterCount == 0) {
                 method.isAccessible = true
                 return method
@@ -728,13 +800,14 @@ class FakePlayer(private val plugin: JavaPlugin) {
             return baseTickMethod
         }
 
-        val fallback = serverPlayerClass.methods.firstOrNull { method ->
-            method.parameterCount == 0 &&
-                method.returnType == Void.TYPE &&
-                method.name.lowercase().contains("tick")
-        } ?: serverPlayerClass.methods.firstOrNull { method ->
-            method.parameterCount == 0 && method.returnType == Void.TYPE
-        }
+        val fallback =
+            serverPlayerClass.methods.firstOrNull { method ->
+                method.parameterCount == 0 &&
+                    method.returnType == Void.TYPE &&
+                    method.name.lowercase().contains("tick")
+            } ?: serverPlayerClass.methods.firstOrNull { method ->
+                method.parameterCount == 0 && method.returnType == Void.TYPE
+            }
 
         fallback?.isAccessible = true
         return fallback
@@ -742,18 +815,20 @@ class FakePlayer(private val plugin: JavaPlugin) {
 
     private fun resolveBaseTickMethod(serverPlayerClass: Class<*>): Method? {
         val entityClass = runCatching { getNMSClass("net.minecraft.world.entity.Entity") }.getOrNull()
-        val candidateNames = buildList {
-            entityClass?.let { add(reflectionRemapper.remapMethodName(it, "baseTick")) }
-            add("baseTick")
-        }.distinct()
+        val candidateNames =
+            buildList {
+                entityClass?.let { add(reflectionRemapper.remapMethodName(it, "baseTick")) }
+                add("baseTick")
+            }.distinct()
         for (name in candidateNames) {
-            val method = (serverPlayerClass.declaredMethods + serverPlayerClass.methods).firstOrNull { candidate ->
-                candidate.name == name && candidate.parameterCount == 0
-            } ?: entityClass?.let { clazz ->
-                (clazz.declaredMethods + clazz.methods).firstOrNull { candidate ->
+            val method =
+                (serverPlayerClass.declaredMethods + serverPlayerClass.methods).firstOrNull { candidate ->
                     candidate.name == name && candidate.parameterCount == 0
+                } ?: entityClass?.let { clazz ->
+                    (clazz.declaredMethods + clazz.methods).firstOrNull { candidate ->
+                        candidate.name == name && candidate.parameterCount == 0
+                    }
                 }
-            }
             if (method != null) {
                 method.isAccessible = true
                 return method
@@ -773,8 +848,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun getMinecraftServer(): Any {
         val server = Bukkit.getServer()
         val craftServerClass = server.javaClass
-        val getServerMethod = Reflector.getMethod(craftServerClass, "getServer")
-            ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
+        val getServerMethod =
+            Reflector.getMethod(craftServerClass, "getServer")
+                ?: throw NoSuchMethodException("Cannot find getServer method in ${craftServerClass.name}")
         return Reflector.invokeMethod(getServerMethod, server)
     }
 
@@ -787,21 +863,24 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun isPlayerListed(playerList: Any): Boolean {
         val playerListClass = getNMSClass("net.minecraft.server.players.PlayerList")
         return runCatching {
-            val playersByUUIDField = Reflector.getMapFieldWithTypes(
-                playerListClass,
-                UUID::class.java,
-                serverPlayer.javaClass
-            )
+            val playersByUUIDField =
+                Reflector.getMapFieldWithTypes(
+                    playerListClass,
+                    UUID::class.java,
+                    serverPlayer.javaClass,
+                )
+
             @Suppress("UNCHECKED_CAST") // Reflection into NMS map; types vary by version.
             val playerByUUID = Reflector.getFieldValue(playersByUUIDField, playerList) as Map<UUID, Any>
             playerByUUID.containsKey(uuid)
         }.getOrElse {
             val getPlayerMethodName = reflectionRemapper.remapMethodName(playerListClass, "getPlayer", UUID::class.java)
-            val getPlayerMethod = Reflector.getMethodAssignable(
-                playerListClass,
-                getPlayerMethodName,
-                UUID::class.java
-            ) ?: Reflector.getMethodAssignable(playerListClass, "getPlayer", UUID::class.java)
+            val getPlayerMethod =
+                Reflector.getMethodAssignable(
+                    playerListClass,
+                    getPlayerMethodName,
+                    UUID::class.java,
+                ) ?: Reflector.getMethodAssignable(playerListClass, "getPlayer", UUID::class.java)
             if (getPlayerMethod != null) {
                 Reflector.invokeMethod<Any?>(getPlayerMethod, playerList, uuid) != null
             } else {
@@ -813,8 +892,9 @@ class FakePlayer(private val plugin: JavaPlugin) {
     private fun isEntityRemoved(entity: Any): Boolean {
         val entityClass = getNMSClass("net.minecraft.world.entity.Entity")
         val isRemovedMethodName = reflectionRemapper.remapMethodName(entityClass, "isRemoved")
-        val isRemovedMethod = Reflector.getMethod(entityClass, isRemovedMethodName)
-            ?: Reflector.getMethod(entityClass, "isRemoved")
+        val isRemovedMethod =
+            Reflector.getMethod(entityClass, isRemovedMethodName)
+                ?: Reflector.getMethod(entityClass, "isRemoved")
         if (isRemovedMethod != null) {
             return Reflector.invokeMethod(isRemovedMethod, entity)
         }
@@ -850,15 +930,17 @@ class FakePlayer(private val plugin: JavaPlugin) {
         val mainHandField = interactionHandClass.getDeclaredField(mainHandFieldName)
         val mainHand = mainHandField.get(null)
 
-        val startUsingItemMethodName = reflectionRemapper.remapMethodName(
-            livingEntityClass,
-            "startUsingItem",
-            interactionHandClass
-        )
+        val startUsingItemMethodName =
+            reflectionRemapper.remapMethodName(
+                livingEntityClass,
+                "startUsingItem",
+                interactionHandClass,
+            )
 
-        val startUsingItemMethod = checkNotNull(
-            Reflector.getMethod(livingEntityClass, startUsingItemMethodName, interactionHandClass.simpleName)
-        )
+        val startUsingItemMethod =
+            checkNotNull(
+                Reflector.getMethod(livingEntityClass, startUsingItemMethodName, interactionHandClass.simpleName),
+            )
         Reflector.invokeMethod<Any>(startUsingItemMethod, serverPlayer, mainHand)
 
         // Manually set useItemRemaining field to simulate blocking
