@@ -7,9 +7,11 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.cryptomorin.xseries.XAttribute
+import io.kotest.assertions.withClue
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
+import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackCooldown
 import kernitus.plugin.OldCombatMechanics.utilities.Config
@@ -19,7 +21,10 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.World
+import org.bukkit.attribute.AttributeInstance
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
+import org.bukkit.entity.Zombie
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
@@ -48,12 +53,15 @@ class AttackCooldownHeldItemIntegrationTest :
                 Bukkit.getScheduler().callSyncMethod(testPlugin, Callable { action() }).get()
             }
 
-        fun currentAttackSpeed(player: Player): Double {
+        fun attackSpeedAttribute(player: Player): AttributeInstance {
             val attackSpeedAttribute =
                 checkNotNull(XAttribute.ATTACK_SPEED.get()) { "Missing attack speed attribute type" }
-            val attribute = player.getAttribute(attackSpeedAttribute) ?: error("Missing attack speed attribute")
-            return attribute.baseValue
+            return player.getAttribute(attackSpeedAttribute) ?: error("Missing attack speed attribute")
         }
+
+        fun currentAttackSpeed(player: Player): Double = attackSpeedAttribute(player).baseValue
+
+        fun effectiveAttackSpeed(player: Player): Double = attackSpeedAttribute(player).value
 
         fun setModeset(
             player: Player,
@@ -287,6 +295,56 @@ class AttackCooldownHeldItemIntegrationTest :
                     }
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (7.0 plusOrMinus 0.01)
                 } finally {
+                    cleanup(spawned)
+                }
+            }
+        }
+
+        test("wooden spear held-item attack cooldown restarts after attacking in old mode") {
+            val spear = Material.matchMaterial("WOODEN_SPEAR") ?: return@test
+            val targetAttackSpeed = 1.54
+
+            withAttackCooldownConfig(
+                genericAttackSpeed = 40.0,
+                heldItemAttackSpeeds = mapOf(spear.name to targetAttackSpeed),
+            ) {
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val spawned = spawnFake(world)
+                var zombie: Zombie? = null
+
+                try {
+                    runSync {
+                        spawned.player.inventory.setItemInMainHand(ItemStack(spear))
+                        fireJoin(spawned.player)
+                        val spawnedZombie =
+                            world.spawnEntity(
+                                spawned.player.location
+                                    .clone()
+                                    .add(0.0, 0.0, 2.0),
+                                EntityType.ZOMBIE,
+                            ) as Zombie
+                        zombie = spawnedZombie
+                        spawnedZombie.apply {
+                            isSilent = true
+                            maximumNoDamageTicks = 0
+                            noDamageTicks = 0
+                        }
+                        spawned.fake.attack(spawnedZombie)
+                    }
+                    waitForPossibleDeferredWork()
+
+                    val cooldownAfterAttack = runSync { spawned.player.attackCooldown.toDouble() }
+                    val baseAttackSpeed = runSync { currentAttackSpeed(spawned.player) }
+                    val effectiveAttackSpeed = runSync { effectiveAttackSpeed(spawned.player) }
+
+                    withClue(
+                        "cooldownAfterAttack=$cooldownAfterAttack " +
+                            "baseAttackSpeed=$baseAttackSpeed effectiveAttackSpeed=$effectiveAttackSpeed",
+                    ) {
+                        cooldownAfterAttack.shouldBeGreaterThan(0.0)
+                    }
+                } finally {
+                    runSync { zombie?.remove() }
                     cleanup(spawned)
                 }
             }
