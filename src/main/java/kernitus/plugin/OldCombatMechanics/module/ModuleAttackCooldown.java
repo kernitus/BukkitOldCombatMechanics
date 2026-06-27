@@ -10,7 +10,9 @@ import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.ConfigUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,6 +21,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;
@@ -95,7 +98,7 @@ public class ModuleAttackCooldown extends OCMModule {
 
     private void adjustAttackSpeed(Player player, ItemStack mainHand) {
         final double attackSpeed = isEnabled(player)
-                ? getConfiguredAttackSpeed(mainHand)
+                ? getConfiguredAttackSpeedBaseValue(mainHand)
                 : VANILLA_ATTACK_SPEED;
 
         setAttackSpeed(player, attackSpeed);
@@ -106,12 +109,39 @@ public class ModuleAttackCooldown extends OCMModule {
         adjustAttackSpeed(player);
     }
 
-    private double getConfiguredAttackSpeed(ItemStack itemStack) {
-        if (itemStack == null) {
-            return genericAttackSpeed;
+    private double getConfiguredAttackSpeedBaseValue(ItemStack itemStack) {
+        final Double heldItemAttackSpeed = getHeldItemAttackSpeed(itemStack);
+        if (heldItemAttackSpeed == null) return genericAttackSpeed;
+
+        final double defaultAttackSpeedAddNumber = getDefaultAttackSpeedAddNumber(itemStack.getType());
+        if (heldItemAttackSpeed + defaultAttackSpeedAddNumber <= 0.0) {
+            return heldItemAttackSpeed - defaultAttackSpeedAddNumber;
         }
 
-        return heldItemAttackSpeeds.getOrDefault(itemStack.getType(), genericAttackSpeed);
+        return heldItemAttackSpeed;
+    }
+
+    private Double getHeldItemAttackSpeed(ItemStack itemStack) {
+        if (itemStack == null) return null;
+
+        return heldItemAttackSpeeds.get(itemStack.getType());
+    }
+
+    private double getDefaultAttackSpeedAddNumber(Material material) {
+        final Attribute attackSpeedAttribute = XAttribute.ATTACK_SPEED.get();
+        if (attackSpeedAttribute == null) return 0.0;
+
+        try {
+            double addNumber = 0.0;
+            for (AttributeModifier modifier : material.getDefaultAttributeModifiers(EquipmentSlot.HAND).get(attackSpeedAttribute)) {
+                if (modifier.getOperation() == AttributeModifier.Operation.ADD_NUMBER) {
+                    addNumber += modifier.getAmount();
+                }
+            }
+            return addNumber;
+        } catch (NoSuchMethodError ignored) {
+            return 0.0;
+        }
     }
 
     /**
