@@ -89,6 +89,7 @@ public class Config {
                     moduleEnabled("old-potion-effects")
                     || moduleEnabled("old-critical-hits")
                     || moduleEnabled("old-armour-strength")
+                    || moduleEnabled("sword-blocking")
             );
         }
 
