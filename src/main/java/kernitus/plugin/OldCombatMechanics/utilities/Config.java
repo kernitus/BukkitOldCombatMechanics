@@ -82,12 +82,13 @@ public class Config {
         reloadModesets();
         reloadWorlds();
 
-        //Set EntityDamagedByEntityListener to enabled if either of these modules is enabled
+        //Set EntityDamagedByEntityListener to enabled if any module using the old damage pipeline is enabled
         final EntityDamageByEntityListener EDBEL = EntityDamageByEntityListener.getINSTANCE();
         if (EDBEL != null) {
             EDBEL.setEnabled(moduleEnabled("old-tool-damage") ||
                     moduleEnabled("old-potion-effects")
                     || moduleEnabled("old-critical-hits")
+                    || moduleEnabled("old-armour-strength")
             );
         }
 
