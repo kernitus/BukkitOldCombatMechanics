@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* **armour:** fall back to equipped armour modifiers ([#861](https://github.com/kernitus/BukkitOldCombatMechanics/issues/861)) ([84634bd](https://github.com/kernitus/BukkitOldCombatMechanics/commit/84634bde7b1741356674703f7faf812fcd9e7801))
+* **blocking:** keep damage pipeline active for sword blocking ([aa166a0](https://github.com/kernitus/BukkitOldCombatMechanics/commit/aa166a0a7782091eaf1fe602465a031be150c684))
+* **cooldown:** keep spear attack cooldown positive ([#904](https://github.com/kernitus/BukkitOldCombatMechanics/issues/904)) ([a2a5cf8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a2a5cf8279b0f6e7b6bfc2e7e122820b9ebd5530))
+* **damage:** keep listener active for old armour strength [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864) ([e37f7f3](https://github.com/kernitus/BukkitOldCombatMechanics/commit/e37f7f3adf7cd41d51019418e46a74e17ea47de8))
+* **legacy:** restore armour and fishing compatibility ([2ec347f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/2ec347f689f19c2dc96e923385cf51bd01f4ac5b))
+* **npcs:** ignore offline player-shaped damage targets ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([41db769](https://github.com/kernitus/BukkitOldCombatMechanics/commit/41db769a16ef4cd19a11d9c7e55ff22753285d7c))
+* **npcs:** ignore offline player-shaped module lookups ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([9855147](https://github.com/kernitus/BukkitOldCombatMechanics/commit/98551475427f0424057b81a23aa22bf9f5856715))
+* **potions:** ignore offline potion effect events ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([eb687b1](https://github.com/kernitus/BukkitOldCombatMechanics/commit/eb687b1827c367a3a8b89944672108e55c089637))
+* **reflection:** tolerate noisy server version strings ([3c6a46a](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3c6a46a836f18b0399fa6437e66e55d16c556556))
+* **shields:** ignore offline shield defenders ([#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893)) ([3b59bc8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3b59bc83a5bc06bdab208862639fec06bcb91e0d))
+* sword blocking falling back to the shield swap on Paper 26.1 ([#892](https://github.com/kernitus/BukkitOldCombatMechanics/issues/892)) ([#898](https://github.com/kernitus/BukkitOldCombatMechanics/issues/898)) ([24c46c8](https://github.com/kernitus/BukkitOldCombatMechanics/commit/24c46c874d045120d8875f1bbcd5a092d9698566))
+
 ## [2.5.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.4.0...v2.5.0) (2026-05-23)
 
 
