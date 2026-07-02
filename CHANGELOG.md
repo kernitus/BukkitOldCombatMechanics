@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-07-02)
+
+This release focuses on compatibility and crash fixes for newer Paper/Purpur versions, NPC-style entities, sword blocking, armour calculations, and per-item attack cooldowns.
+
+### Fixes
+
+- Fixed sword blocking on Paper/Purpur 26.1.x, where the Paper data component path could fail and OCM would fall back to the shield-swap behaviour instead of the intended sword blocking animation and damage reduction. Fixes [#892](https://github.com/kernitus/BukkitOldCombatMechanics/issues/892) via [#898](https://github.com/kernitus/BukkitOldCombatMechanics/pull/898).
+
+- Fixed crashes and error spam when other plugins expose offline or NPC-like `HumanEntity`/player-shaped entities during combat, potion, shield, knockback, and module lookups. OCM now ignores those offline player-shaped entities instead of treating them as online players. Fixes [#893](https://github.com/kernitus/BukkitOldCombatMechanics/issues/893).
+
+- Fixed explosion and armour-strength calculations on newer versions by falling back to equipped armour modifiers when the expected damage modifier data is unavailable. This prevents armour/explosion damage from being reduced incorrectly in worlds or modes where OCM should not be applying old armour behaviour. Fixes [#861](https://github.com/kernitus/BukkitOldCombatMechanics/issues/861).
+
+- Restored legacy compatibility for old armour strength and old fishing knockback handling, including cases where older server APIs do not expose newer damage or projectile data in the same way.
+
+- Fixed spear attack cooldowns so configured spear speeds no longer produce negative or stuck cooldown values. Fixes [#904](https://github.com/kernitus/BukkitOldCombatMechanics/issues/904).
+
+- Fixed damage pipeline registration so old armour strength, sword blocking, and vanilla damage types that bypass cooldown continue to be handled correctly when only the relevant modules are enabled. Related to [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864).
+
+- Improved Minecraft/Paper version parsing so OCM tolerates noisy server version strings instead of failing compatibility checks on unusual fork/version formats.
+
 ## [2.5.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.4.0...v2.5.0) (2026-05-23)
 
 
