@@ -31,3 +31,5 @@ kls_database.db
 /run/
 /bin/
 .opencode/
+.vtcode/
+vtcode.toml
