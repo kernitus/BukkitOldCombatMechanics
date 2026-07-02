@@ -123,8 +123,12 @@ on [Hangar](https://hangar.papermc.io/kernitus/OldCombatMechanics/versions?chann
 
 ## 🤝 Contributions
 If you are interested in contributing, please [check this page first](.github/CONTRIBUTING.md).
-<hr/>
 
+## 🍺 Donations
+If this project has helped you in any way, consider sending over a beer. The project will always remain free!
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kernitus)
+<hr/>
 
 <a href="https://bstats.org/plugin/bukkit/OldCombatMechanics">
     <img src="https://bstats.org/signatures/bukkit/OldCombatMechanics.svg" alt="bStats">
