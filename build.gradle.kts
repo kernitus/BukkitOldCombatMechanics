@@ -147,7 +147,7 @@ dependencies {
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.8.0")
     // Spigot
-    compileOnly("org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core-jvm:5.9.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -176,13 +176,13 @@ dependencies {
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
-    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT")
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.0.23.Final")
 
     // Java-only API smoke plugin dependencies
     add("apiSmokeTestCompileOnly", sourceSets.main.get().output)
-    add("apiSmokeTestCompileOnly", "org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    add("apiSmokeTestCompileOnly", "org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT")
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
