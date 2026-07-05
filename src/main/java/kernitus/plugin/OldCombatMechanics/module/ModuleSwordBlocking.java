@@ -1013,8 +1013,6 @@ public class ModuleSwordBlocking extends OCMModule {
             if (!shouldHandleConsumable(player) || !supportsPaperAnimation(player)) return;
             final int heldSlotAtEvent = player.getInventory().getHeldItemSlot();
             final org.bukkit.inventory.InventoryView viewAtEvent = player.getOpenInventory();
-            final org.bukkit.inventory.Inventory eventTop = viewAtEvent == null ? null : viewAtEvent.getTopInventory();
-            final org.bukkit.inventory.Inventory eventBottom = viewAtEvent == null ? null : viewAtEvent.getBottomInventory();
             // Apply/strip against the actual inventory after the swap has taken place.
             Bukkit.getScheduler().runTask(plugin, () -> {
                 final PlayerInventory inv = player.getInventory();
@@ -1023,9 +1021,7 @@ public class ModuleSwordBlocking extends OCMModule {
                 final boolean mainStripped = stripConsumable(main);
                 final boolean offStripped = stripConsumable(off);
                 final org.bukkit.inventory.InventoryView currentView = player.getOpenInventory();
-                final boolean viewMatches = currentView != null
-                        && currentView.getTopInventory() == eventTop
-                        && currentView.getBottomInventory() == eventBottom;
+                final boolean viewMatches = currentView == viewAtEvent;
                 final boolean mainApplied = shouldHandleConsumable(player)
                         && supportsPaperAnimation(player)
                         && inv.getHeldItemSlot() == heldSlotAtEvent

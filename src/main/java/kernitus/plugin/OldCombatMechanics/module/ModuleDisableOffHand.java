@@ -22,11 +22,9 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
-import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -40,12 +38,6 @@ public class ModuleDisableOffHand extends OCMModule {
     private List<Material> materials;
     private String deniedMessage;
     private BlockType blockType;
-
-    // Cache reflective methods used on older versions
-    private static volatile boolean useReflectionViewPath = false;
-    private static Method getViewMethod;
-    private static Method getBottomInventoryMethod;
-    private static Method getTopInventoryMethod;
 
     public ModuleDisableOffHand(OCMMain plugin) {
         super(plugin, "disable-offhand");
@@ -97,42 +89,8 @@ public class ModuleDisableOffHand extends OCMModule {
         if (inventoryType != InventoryType.PLAYER)
             return;
 
-        // First try the modern Bukkit API path. If that fails once (older versions),
-        // fall back to a cached reflection path next time onwards.
-        if (!useReflectionViewPath) {
-            try {
-                final Inventory bottom = e.getView().getBottomInventory();
-                final Inventory top = e.getView().getTopInventory();
-                if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
-                    return;
-            } catch (Throwable ignored) {
-                useReflectionViewPath = true;
-            }
-        }
-
-        if (useReflectionViewPath) {
-            try {
-                if (getViewMethod == null) {
-                    getViewMethod = Reflector.getMethod(e.getClass(), "getView");
-                }
-                final Object view = Reflector.invokeMethod(getViewMethod, e);
-
-                final Class<?> viewClass = view.getClass();
-                if (getBottomInventoryMethod == null) {
-                    getBottomInventoryMethod = Reflector.getMethod(viewClass, "getBottomInventory");
-                }
-                if (getTopInventoryMethod == null) {
-                    getTopInventoryMethod = Reflector.getMethod(viewClass, "getTopInventory");
-                }
-
-                final Inventory bottom = Reflector.invokeMethod(getBottomInventoryMethod, view);
-                final Inventory top = Reflector.invokeMethod(getTopInventoryMethod, view);
-                if (bottom.getType() != InventoryType.CRAFTING && top.getType() != InventoryType.CRAFTING)
-                    return;
-            } catch (RuntimeException exception) {
-                exception.printStackTrace();
-            }
-        }
+        if (e.getInventory().getType() != InventoryType.CRAFTING)
+            return;
 
         // Prevent shift-clicking a shield into the offhand item slot
         final ItemStack currentItem = e.getCurrentItem();
