@@ -7,7 +7,6 @@ package kernitus.plugin.OldCombatMechanics.commands;
 
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -43,9 +42,8 @@ public class OCMCommandCompleter implements TabCompleter {
                         || sender.hasPermission("oldcombatmechanics.mode.own")
                 ) {
                     if (sender instanceof Player) { // Get the modesets allowed in the world player is in
-                        final World world = ((Player) sender).getWorld();
                         completions.addAll(
-                                Config.getAllowedModesets(world.getUID())
+                                Config.getAllowedModesets((Player) sender)
                                         .stream()
                                         .filter(ms -> ms.startsWith(args[1]))
                                         .collect(Collectors.toList()));

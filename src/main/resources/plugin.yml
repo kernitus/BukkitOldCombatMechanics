@@ -27,6 +27,7 @@ permissions:
       oldcombatmechanics.mode: true
       oldcombatmechanics.mode.own: true
       oldcombatmechanics.mode.others: true
+      oldcombatmechanics.modeset.*: true
       oldcombatmechanics.swordblock: true
   oldcombatmechanics.commands:
     description: Allows the usage of OCM commands
@@ -47,6 +48,9 @@ permissions:
     default: op
     children:
       oldcombatmechanics.mode: true
+  oldcombatmechanics.modeset.*:
+    description: Allows access to all named OCM modesets when mode permissions are enabled
+    default: op
   oldcombatmechanics.swordblock:
     description: Allows players to block with sword
     default: op

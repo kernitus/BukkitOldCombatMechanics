@@ -13,6 +13,7 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
 import kernitus.plugin.OldCombatMechanics.api.PlayerModesetChangeEvent
@@ -210,6 +211,8 @@ class ModesetRulesIntegrationTest :
             val originalDisabled = ocm.config.get("disabled_modules")
             val originalModesets = snapshotSection("modesets")
             val originalWorlds = snapshotSection("worlds")
+            val originalModePermissions = snapshotSection("mode-permissions")
+            val originalModeMessages = snapshotSection("mode-messages")
 
             try {
                 block()
@@ -219,6 +222,8 @@ class ModesetRulesIntegrationTest :
                     ocm.config.set("disabled_modules", originalDisabled)
                     restoreSection("modesets", originalModesets)
                     restoreSection("worlds", originalWorlds)
+                    restoreSection("mode-permissions", originalModePermissions)
+                    restoreSection("mode-messages", originalModeMessages)
                     ocm.saveConfig()
                     Config.reload()
                 }
@@ -237,6 +242,14 @@ class ModesetRulesIntegrationTest :
         afterSpec {
             runSync {
                 fakePlayer.removePlayer()
+            }
+        }
+
+        test("bundled config defines modeset permission defaults") {
+            runSync {
+                ocm.config.isSet("mode-permissions.enabled").shouldBeTrue()
+                ocm.config.getBoolean("mode-permissions.enabled").shouldBeFalse()
+                ocm.config.isSet("mode-messages.no-permission-modeset").shouldBeTrue()
             }
         }
 
@@ -432,6 +445,132 @@ class ModesetRulesIntegrationTest :
             }
         }
 
+        test("mode command ignores modeset permissions when disabled by default") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    ocm.config.set("mode-permissions.enabled", false)
+                    ocm.saveConfig()
+                    Config.reload()
+                    player.addAttachment(ocm, "oldcombatmechanics.commands", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.new", false)
+
+                    setModeset(player, "old")
+
+                    Bukkit.dispatchCommand(player, "ocm mode new") shouldBe true
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+                }
+            }
+        }
+
+        test("mode command requires target player modeset permission when enabled") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    ocm.config.set("mode-permissions.enabled", true)
+                    ocm.config.set("mode-messages.no-permission-modeset", "&cNo access to that modeset!")
+                    ocm.saveConfig()
+                    Config.reload()
+                    player.addAttachment(ocm, "oldcombatmechanics.commands", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.old", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.new", false)
+
+                    setModeset(player, "new")
+
+                    Bukkit.dispatchCommand(player, "ocm mode old") shouldBe true
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+
+                    Bukkit.dispatchCommand(player, "ocm mode new") shouldBe true
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "old"
+                }
+            }
+        }
+
+        test("mode tab completion filters world modesets by player permissions") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(
+                        mapOf(
+                            "__default__" to listOf("old", "new"),
+                            "world" to listOf("old"),
+                        ),
+                    )
+                    ocm.config.set("mode-permissions.enabled", true)
+                    ocm.saveConfig()
+                    Config.reload()
+                    player.addAttachment(ocm, "oldcombatmechanics.mode", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.mode.own", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.old", true)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.new", true)
+
+                    val command = checkNotNull(Bukkit.getPluginCommand("oldcombatmechanics"))
+                    val completions =
+                        checkNotNull(OCMCommandCompleter().onTabComplete(player, command, "ocm", arrayOf("mode", "")))
+
+                    completions.shouldContainExactly("old")
+                    completions.shouldNotContain("new")
+                }
+            }
+        }
+
+        test("join fallback chooses the first permitted world modeset when enabled") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    ocm.config.set("mode-permissions.enabled", true)
+                    ocm.saveConfig()
+                    Config.reload()
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.old", false)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.new", true)
+
+                    setModeset(player, "old")
+                    Bukkit.getPluginManager().callEvent(PlayerJoinEvent(player, ""))
+
+                    getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe "new"
+                }
+            }
+        }
+
+        test("join fallback clears stale stored modeset when no modesets are permitted") {
+            withConfig {
+                runSync {
+                    applySimpleModesetWorlds(mapOf("world" to listOf("old", "new")))
+                    ocm.config.set("mode-permissions.enabled", true)
+                    ocm.saveConfig()
+                    Config.reload()
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.old", false)
+                    player.addAttachment(ocm, "oldcombatmechanics.modeset.new", false)
+                    val events = mutableListOf<PlayerModesetChangeEvent>()
+                    val listener =
+                        object : Listener {
+                            @EventHandler
+                            fun onModesetChange(event: PlayerModesetChangeEvent) {
+                                if (event.player.uniqueId == player.uniqueId) {
+                                    events += event
+                                }
+                            }
+                        }
+                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+
+                    try {
+                        setModeset(player, "old")
+                        Bukkit.getPluginManager().callEvent(PlayerJoinEvent(player, ""))
+
+                        getPlayerData(player.uniqueId).getModesetForWorld(player.world.uid) shouldBe null
+                        events.single().previousModeset shouldBe "old"
+                        events.single().newModeset shouldBe null
+                        events.single().reason shouldBe PlayerModesetChangeEvent.Reason.JOIN
+                    } finally {
+                        HandlerList.unregisterAll(listener)
+                    }
+                }
+            }
+        }
+
         test("modeset API stores valid modesets and normalises names") {
             withConfig {
                 runSync {
@@ -450,6 +589,9 @@ class ModesetRulesIntegrationTest :
 
                     try {
                         setModeset(player, "old")
+                        ocm.config.set("mode-permissions.enabled", true)
+                        ocm.saveConfig()
+                        Config.reload()
                         api.getModesetNames().toList().shouldContainExactly("old", "new")
                         api.getAllowedModesets(player.world).toList().shouldContainExactly("old", "new")
 

@@ -57,16 +57,36 @@ public class ModesetListener extends OCMModule {
         final String originalModeset = playerData.getModesetForWorld(worldId);
         String modesetName = playerData.getModesetForWorld(worldId);
 
-        // Get modesets allowed in to world
-        Set<String> allowedModesets = Config.getAllowedModesets(worldId);
+        // Get modesets allowed in the target world for this player
+        Set<String> allowedModesets = Config.getAllowedModesets(player);
 
-        // If they don't have a modeset in toWorld yet, or the stored one is not allowed there
+        // If they don't have a modeset in the target world yet, or the stored one is not allowed there
         if (modesetName == null || !allowedModesets.contains(modesetName)) {
             // Try to use modeset of world they are coming from
             if (modesetFromName != null && allowedModesets.contains(modesetFromName))
                 modesetName = modesetFromName;
-            else // Otherwise, if the from modeset is not allowed, use default for to world
+            else // Otherwise, if the from modeset is not allowed, use default for the target world
                 modesetName = allowedModesets.stream().findFirst().orElse(null);
+        }
+
+        if (modesetName == null) {
+            if (originalModeset != null) {
+                playerData.clearModesetForWorld(worldId);
+                PlayerStorage.setPlayerData(playerId, playerData);
+                PlayerStorage.scheduleSave();
+
+                Bukkit.getPluginManager().callEvent(new PlayerModesetChangeEvent(
+                        player,
+                        world,
+                        originalModeset,
+                        null,
+                        reason
+                ));
+
+                // Re-apply things like attack speed and collision team
+                ModuleLoader.notifyPlayerStateChanged(player);
+            }
+            return;
         }
 
         // If the modeset changed, set and save

@@ -129,6 +129,13 @@ public class OCMCommandHandler implements CommandExecutor {
             return;
         }
 
+        if (!Config.canUseModeset(player, modesetName)) {
+            Messenger.send(sender,
+                    Config.getConfig().getString("mode-messages.no-permission-modeset",
+                            "&4ERROR: &rmode-messages.no-permission-modeset string missing"));
+            return;
+        }
+
         final PlayerData playerData = PlayerStorage.getPlayerData(player.getUniqueId());
         final String previousModeset = playerData.getModesetForWorld(worldId);
         if (modesetName.equals(previousModeset)) {

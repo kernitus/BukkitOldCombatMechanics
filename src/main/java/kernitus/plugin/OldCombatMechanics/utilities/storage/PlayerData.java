@@ -32,6 +32,10 @@ public class PlayerData {
         modesetByWorld.put(worldId, modeset);
     }
 
+    public void clearModesetForWorld(UUID worldId) {
+        modesetByWorld.remove(worldId);
+    }
+
     public @Nullable String getModesetForWorld(UUID worldId) {
         return modesetByWorld.get(worldId);
     }

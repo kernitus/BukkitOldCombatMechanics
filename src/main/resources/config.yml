@@ -69,6 +69,11 @@ worlds:
   # old_world: [ "old" ]
   # brave_new_world: [ "new" ]
 
+mode-permissions:
+  # When enabled, players can only select modesets for which they have oldcombatmechanics.modeset.<modeset>.
+  # Join and world-change fallback will also ignore modesets the player cannot use.
+  enabled: false
+
 mode-messages:
   # Messages used when changing player mode
   # To disable any message, leave the corresponding string empty (e.g., mode-status: "").
@@ -76,6 +81,7 @@ mode-messages:
   mode-status: "&bYour current modeset is: &7%s"
   message-usage: "&eYou can use &c/ocm mode <modeset> [player] &eto change modeset"
   invalid-modeset: "&cPlease specify a valid modeset!"
+  no-permission-modeset: "&cYou do not have permission to use that modeset!"
   invalid-player: "&cPlease specify a valid player!"
   mode-set: "&2Set modeset to &7%s"
 
@@ -598,4 +604,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 73
+config-version: 74
