@@ -145,7 +145,7 @@ dependencies {
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.12.3")
     // For BSON file serialisation
-    implementation("org.mongodb:bson:5.8.0")
+    implementation("org.mongodb:bson:5.9.0")
     // Spigot
     compileOnly("org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
