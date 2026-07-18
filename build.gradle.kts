@@ -169,10 +169,10 @@ dependencies {
      */
 
     // Integration test dependencies
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.4.0")
-    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.4.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-test:2.4.10")
+    add("integrationTestImplementation", "org.jetbrains.kotlin:kotlin-reflect:2.4.10")
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
