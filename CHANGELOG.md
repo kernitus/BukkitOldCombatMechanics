@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-07-19)
+
+
+### Features
+
+* **modesets:** control modeset access with permissions ([#905](https://github.com/kernitus/BukkitOldCombatMechanics/issues/905)) ([854719f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/854719ff8129f852af4888b3152e4e4e26cf03c0))
+
+
+### Bug Fixes
+
+* **inventory:** avoid InventoryView compatibility crash ([#911](https://github.com/kernitus/BukkitOldCombatMechanics/issues/911)) ([188f893](https://github.com/kernitus/BukkitOldCombatMechanics/commit/188f8937420e5dcf1226d05d36759c88d9efc7d2))
+
 ## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-07-02)
 
 This release focuses on compatibility and crash fixes for newer Paper/Purpur versions, NPC-style entities, sword blocking, armour calculations, and per-item attack cooldowns.
