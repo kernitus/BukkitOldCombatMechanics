@@ -70,7 +70,7 @@ public class PaperSwordBlocking {
         final Class<?> nmsUseAnim = Class.forName("net.minecraft.world.item.ItemUseAnimation");
         final Object nmsBlockAnim = nmsUseAnim.getField("BLOCK").get(null);
         final Object nmsConsumableValue = nmsConsumableBuilder.getClass().getMethod("consumeSeconds", float.class)
-            .invoke(nmsConsumableBuilder, Float.MAX_VALUE);
+            .invoke(nmsConsumableBuilder, 2_592_000.0f); // needs to be less than 2_147_483_647
         final Object nmsConsumableValue2 = nmsConsumableValue.getClass().getMethod("animation", nmsUseAnim)
             .invoke(nmsConsumableValue, nmsBlockAnim);
         final Object consumableComponent = nmsConsumableValue2.getClass().getMethod("build").invoke(nmsConsumableValue2);
