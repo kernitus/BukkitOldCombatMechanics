@@ -28,7 +28,7 @@ plugins {
     `java-library`
     kotlin("jvm") version "2.4.10"
     id("com.diffplug.spotless") version "8.10.0"
-    id("com.gradleup.shadow") version "9.5.1"
+    id("com.gradleup.shadow") version "9.6.1"
     id("xyz.jpenilla.run-paper") version "3.1.0"
     idea
     id("io.papermc.hangar-publish-plugin") version "0.1.4"
@@ -243,12 +243,10 @@ val shadowJarTask =
     tasks.named<ShadowJar>("shadowJar") {
         dependsOn("jar")
         archiveFileName.set("${project.name}.jar")
-        dependencies {
-            relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
-            relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
-            relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
-            relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
-        }
+        relocate("org.bstats", "kernitus.plugin.OldCombatMechanics.lib.bstats")
+        relocate("com.cryptomorin.xseries", "kernitus.plugin.OldCombatMechanics.lib.xseries")
+        relocate("com.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.api")
+        relocate("io.github.retrooper.packetevents", "kernitus.plugin.OldCombatMechanics.lib.packetevents.impl")
     }
 
 // For ingametesting
