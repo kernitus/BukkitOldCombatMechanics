@@ -367,15 +367,17 @@ class AttackCooldownHeldItemIntegrationTest :
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (12.0 plusOrMinus 0.01)
 
                     runSync {
+                        val oldMainHand = spawned.player.inventory.itemInMainHand
+                        val oldOffHand = spawned.player.inventory.itemInOffHand
                         val swap =
                             PlayerSwapHandItemsEvent(
                                 spawned.player,
-                                spawned.player.inventory.itemInMainHand,
-                                spawned.player.inventory.itemInOffHand,
+                                oldOffHand,
+                                oldMainHand,
                             )
                         Bukkit.getPluginManager().callEvent(swap)
-                        spawned.player.inventory.setItemInMainHand(swap.offHandItem)
-                        spawned.player.inventory.setItemInOffHand(swap.mainHandItem)
+                        spawned.player.inventory.setItemInMainHand(swap.mainHandItem)
+                        spawned.player.inventory.setItemInOffHand(swap.offHandItem)
                     }
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (19.0 plusOrMinus 0.01)
                 } finally {
@@ -452,11 +454,13 @@ class AttackCooldownHeldItemIntegrationTest :
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (19.0 plusOrMinus 0.01)
 
                     runSync {
+                        val oldMainHand = spawned.player.inventory.itemInMainHand
+                        val oldOffHand = spawned.player.inventory.itemInOffHand
                         val event =
                             PlayerSwapHandItemsEvent(
                                 spawned.player,
-                                spawned.player.inventory.itemInMainHand,
-                                spawned.player.inventory.itemInOffHand,
+                                oldOffHand,
+                                oldMainHand,
                             )
                         Bukkit.getPluginManager().callEvent(event)
                     }
@@ -522,15 +526,17 @@ class AttackCooldownHeldItemIntegrationTest :
                     runSync { currentAttackSpeed(spawned.player) } shouldBe (12.0 plusOrMinus 0.01)
 
                     runSync {
+                        val oldMainHand = spawned.player.inventory.itemInMainHand
+                        val oldOffHand = spawned.player.inventory.itemInOffHand
                         val event =
                             PlayerSwapHandItemsEvent(
                                 spawned.player,
-                                spawned.player.inventory.itemInMainHand,
-                                spawned.player.inventory.itemInOffHand,
+                                oldOffHand,
+                                oldMainHand,
                             )
                         Bukkit.getPluginManager().callEvent(event)
-                        spawned.player.inventory.setItemInMainHand(event.offHandItem)
-                        spawned.player.inventory.setItemInOffHand(event.mainHandItem)
+                        spawned.player.inventory.setItemInMainHand(event.mainHandItem)
+                        spawned.player.inventory.setItemInOffHand(event.offHandItem)
                     }
 
                     waitForPossibleDeferredWork()
