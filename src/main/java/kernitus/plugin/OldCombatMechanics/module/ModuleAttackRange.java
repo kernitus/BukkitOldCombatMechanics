@@ -94,7 +94,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHotbar(PlayerItemHeldEvent event) {
-        // strip old, then apply/strip new
+        // Clear the old override, then apply or clear the new one.
         cleanHand(event.getPlayer(), event.getPreviousSlot());
         applyToHeld(event.getPlayer());
     }
@@ -109,14 +109,14 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         Player player = event.getPlayer();
         if (!supported) return;
 
-        ItemStack postSwapMainHand = event.getOffHandItem();
-        ItemStack postSwapOffHand = event.getMainHandItem();
-        stripComponent(postSwapOffHand);
+        ItemStack postSwapMainHand = event.getMainHandItem();
+        ItemStack postSwapOffHand = event.getOffHandItem();
+        clearComponentOverride(postSwapOffHand);
         applyToItem(player, postSwapMainHand);
 
         // Persist adjusted stacks into event payload for synthetic/manual swap flows.
-        event.setOffHandItem(postSwapMainHand);
-        event.setMainHandItem(postSwapOffHand);
+        event.setMainHandItem(postSwapMainHand);
+        event.setOffHandItem(postSwapOffHand);
     }
 
     private void reconcileSwapInventory(Player player) {
@@ -128,8 +128,8 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             ItemStack mainHand = player.getInventory().getItemInMainHand();
             ItemStack offHand = player.getInventory().getItemInOffHand();
 
-            stripComponent(mainHand);
-            stripComponent(offHand);
+            clearComponentOverride(mainHand);
+            clearComponentOverride(offHand);
             applyToItem(player, mainHand);
         });
     }
@@ -143,11 +143,11 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     private void applyToItem(Player player, ItemStack item) {
         if (item == null || item.getType() == Material.AIR || !isWeapon(item.getType())) {
-            stripComponent(item);
+            clearComponentOverride(item);
             return;
         }
         if (!isEnabled(player)) {
-            stripComponent(item);
+            clearComponentOverride(item);
             return;
         }
         applyAttackRange(item);
@@ -155,7 +155,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
     private void cleanHand(Player player, int slot) {
         ItemStack old = player.getInventory().getItem(slot);
-        stripComponent(old);
+        clearComponentOverride(old);
     }
 
     private boolean isWeapon(Material material) {
@@ -167,9 +167,9 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         paperAdapter.apply(item, minRange, maxRange, minCreative, maxCreative, hitboxMargin, mobFactor);
     }
 
-    private void stripComponent(ItemStack item) {
+    private void clearComponentOverride(ItemStack item) {
         if (!supported || paperAdapter == null || item == null) return;
-        paperAdapter.clear(item);
+        paperAdapter.clearOverride(item);
     }
 
     private void registerCleanerListener(Plugin plugin) {
@@ -177,8 +177,8 @@ public class ModuleAttackRange extends OCMModule implements Listener {
     }
 
     /**
-     * Always-on listener that strips the component when the item leaves hand or is dropped,
-     * preventing lingering modified stacks even when the module is disabled.
+     * Always-on listener that clears the module override when an item leaves the hand or is dropped,
+     * restoring the item-type prototype where the runtime API supports it.
      */
     private class CleanerListener implements Listener {
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -193,24 +193,24 @@ public class ModuleAttackRange extends OCMModule implements Listener {
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onDrop(PlayerDropItemEvent event) {
-            stripComponent(event.getItemDrop().getItemStack());
+            clearComponentOverride(event.getItemDrop().getItemStack());
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onDeath(PlayerDeathEvent event) {
-            event.getDrops().forEach(ModuleAttackRange.this::stripComponent);
+            event.getDrops().forEach(ModuleAttackRange.this::clearComponentOverride);
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onQuit(PlayerQuitEvent event) {
-            stripComponent(event.getPlayer().getInventory().getItemInMainHand());
-            stripComponent(event.getPlayer().getInventory().getItemInOffHand());
+            clearComponentOverride(event.getPlayer().getInventory().getItemInMainHand());
+            clearComponentOverride(event.getPlayer().getInventory().getItemInOffHand());
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onWorldChange(PlayerChangedWorldEvent event) {
-            stripComponent(event.getPlayer().getInventory().getItemInMainHand());
-            stripComponent(event.getPlayer().getInventory().getItemInOffHand());
+            clearComponentOverride(event.getPlayer().getInventory().getItemInMainHand());
+            clearComponentOverride(event.getPlayer().getInventory().getItemInOffHand());
             applyToHeld(event.getPlayer());
         }
     }
@@ -233,7 +233,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
         private final java.lang.reflect.Method buildMethod;
         private final java.lang.reflect.Method itemSetData;
         private final java.lang.reflect.Method itemHasData;
-        private final java.lang.reflect.Method itemUnsetData;
+        private final java.lang.reflect.Method itemClearData;
         private final java.lang.reflect.Method itemEnsureServerConversions;
         private final java.lang.reflect.Method itemCopyDataFrom;
         private boolean warned;
@@ -254,7 +254,7 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             Class<?> dctClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
             itemSetData = findSetDataMethod(dctClass, ar);
             itemHasData = ItemStack.class.getMethod("hasData", dctClass);
-            itemUnsetData = ItemStack.class.getMethod("unsetData", dctClass);
+            itemClearData = findClearDataMethod(dctClass);
 
             Method ensureMethod = null;
             Method copyMethod = null;
@@ -266,6 +266,15 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             }
             itemEnsureServerConversions = ensureMethod;
             itemCopyDataFrom = copyMethod;
+        }
+
+        private Method findClearDataMethod(Class<?> dctClass) throws NoSuchMethodException {
+            try {
+                return ItemStack.class.getMethod("resetData", dctClass);
+            } catch (NoSuchMethodException ignored) {
+                // Older Paper APIs can only remove the patched component explicitly.
+                return ItemStack.class.getMethod("unsetData", dctClass);
+            }
         }
 
         private static boolean isAvailable() {
@@ -326,10 +335,10 @@ public class ModuleAttackRange extends OCMModule implements Listener {
             }
         }
 
-        void clear(ItemStack stack) {
+        void clearOverride(ItemStack stack) {
             try {
                 if (hasComponent(stack)) {
-                    itemUnsetData.invoke(stack, attackRangeType);
+                    itemClearData.invoke(stack, attackRangeType);
                     ensureServerConversions(stack);
                 }
             } catch (Throwable ignored) {

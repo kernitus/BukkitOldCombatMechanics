@@ -10,6 +10,7 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleAttackRange
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -43,19 +44,27 @@ class AttackRangeIntegrationTest :
             attackRangeModule?.javaClass?.getDeclaredMethod("applyToHeld", Player::class.java)?.apply {
                 isAccessible = true
             }
+        val applyToItemMethod =
+            attackRangeModule
+                ?.javaClass
+                ?.getDeclaredMethod("applyToItem", Player::class.java, ItemStack::class.java)
+                ?.apply { isAccessible = true }
 
-        fun hasAttackRange(stack: ItemStack?): Boolean =
-            try {
-                if (stack == null) return false
-                val dctClass = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
-                val typeField = dctClass.getField("ATTACK_RANGE")
-                val type = typeField.get(null)
-                val baseTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType")
-                val getter = ItemStack::class.java.getMethod("getData", baseTypeClass)
-                getter.invoke(stack, type) != null
-            } catch (t: Throwable) {
-                false
-            }
+        fun attackRangeData(stack: ItemStack?): Any? {
+            if (stack == null) return null
+            val converted =
+                ItemStack::class.java
+                    .getMethod("ensureServerConversions")
+                    .invoke(stack) as? ItemStack ?: stack
+            val dctClass = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+            val type = dctClass.getField("ATTACK_RANGE").get(null)
+            val valuedTypeClass =
+                Class.forName("io.papermc.paper.datacomponent.DataComponentType\$Valued")
+            val getter = ItemStack::class.java.getMethod("getData", valuedTypeClass)
+            return getter.invoke(converted, type)
+        }
+
+        fun hasAttackRange(stack: ItemStack?): Boolean = attackRangeData(stack) != null
 
         extensions(MainThreadDispatcherExtension(testPlugin))
 
@@ -304,6 +313,63 @@ class AttackRangeIntegrationTest :
             }
 
             cleanup(actors)
+        }
+
+        test("dropping an iron spear restores its vanilla attack-range prototype") {
+            val spear = Material.matchMaterial("IRON_SPEAR") ?: return@test
+            attackRangeApiAvailable shouldBe true
+            attackRangeModule shouldNotBe null
+
+            val prototype = attackRangeData(ItemStack(spear))
+            prototype shouldNotBe null
+            val actors = spawnActors()
+
+            try {
+                lateinit var dropped: ItemStack
+                runSync {
+                    val drop = actors.player.world.dropItem(actors.player.location, ItemStack(spear))
+                    Bukkit.getPluginManager().callEvent(PlayerDropItemEvent(actors.player, drop))
+                    dropped = drop.itemStack.clone()
+                    drop.remove()
+                }
+
+                attackRangeData(dropped) shouldBe prototype
+            } finally {
+                cleanup(actors)
+            }
+        }
+
+        test("swap payload applies the override to the item entering the main hand") {
+            if (!attackRangeApiAvailable) return@test
+            if (attackRangeModule == null) return@test
+
+            val actors = spawnActors()
+            try {
+                withModuleState(enabled = true, maxRange = 6.0) {
+                    val overridden = ItemStack(Material.IRON_SWORD)
+                    runSync { applyToItemMethod?.invoke(attackRangeModule, actors.player, overridden) }
+                    val prototype = attackRangeData(ItemStack(Material.IRON_SWORD))
+                    val override = attackRangeData(overridden)
+                    override shouldNotBe prototype
+
+                    lateinit var swap: PlayerSwapHandItemsEvent
+                    runSync {
+                        swap =
+                            PlayerSwapHandItemsEvent(
+                                actors.player,
+                                ItemStack(Material.IRON_SWORD),
+                                overridden,
+                            )
+                        attackRangeModule.onSwap(swap)
+                    }
+
+                    attackRangeData(swap.mainHandItem) shouldBe override
+                    attackRangeData(swap.offHandItem) shouldBe prototype
+                    hasAttackRange(swap.mainHandItem) shouldBe true
+                }
+            } finally {
+                cleanup(actors)
+            }
         }
 
         test("extended reach does not apply when module disabled; close swing still hits (AttackRange API available)") {
