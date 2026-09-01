@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-09-01)
+
+This release adds optional per-modeset permissions and improves item handling when players change hotbar slots or swap hands. It also fixes inventory compatibility errors and prevents sword item data from disconnecting players when shared through chat plugins.
+
+### Configuration
+
+- Added optional access control for individual modesets. Enable `mode-permissions.enabled` and grant `oldcombatmechanics.modeset.<modeset>` to decide which modesets each player may select. Tab completion, commands, joining, and changing worlds respect these permissions. The option is disabled by default, preserving existing behaviour. Related to [#905](https://github.com/kernitus/BukkitOldCombatMechanics/issues/905).
+
+### Fixes
+
+- Fixed attack-range and per-item attack cooldown handling when players change hotbar slots or swap hands. OCM now applies settings to the new main-hand item and restores a spear's native reach after removing its range override. Fixes [#925](https://github.com/kernitus/BukkitOldCombatMechanics/issues/925) and [#939](https://github.com/kernitus/BukkitOldCombatMechanics/pull/939).
+
+- Fixed inventory compatibility errors that could produce repeated stack traces when `disable-offhand` processed inventory clicks on some server versions. Sword-blocking hand swaps also use safer inventory-view tracking. Fixes [#911](https://github.com/kernitus/BukkitOldCombatMechanics/issues/911).
+
+- Fixed Paper sword-blocking item data using an invalid duration when serialised by item-chat plugins. Sharing a sword through plugins such as InteractiveChat no longer disconnects recipients because of a negative consumable duration. Fixes [#937](https://github.com/kernitus/BukkitOldCombatMechanics/issues/937) via [#938](https://github.com/kernitus/BukkitOldCombatMechanics/pull/938).
+
 ## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-07-02)
 
 This release focuses on compatibility and crash fixes for newer Paper/Purpur versions, NPC-style entities, sword blocking, armour calculations, and per-item attack cooldowns.
