@@ -2,17 +2,19 @@
 
 ## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-09-01)
 
+This release adds optional per-modeset permissions and improves item handling when players change hotbar slots or swap hands. It also fixes inventory compatibility errors and prevents sword item data from disconnecting players when shared through chat plugins.
 
-### Features
+### Configuration
 
-* **modesets:** control modeset access with permissions ([#905](https://github.com/kernitus/BukkitOldCombatMechanics/issues/905)) ([854719f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/854719ff8129f852af4888b3152e4e4e26cf03c0))
+- Added optional access control for individual modesets. Enable `mode-permissions.enabled` and grant `oldcombatmechanics.modeset.<modeset>` to decide which modesets each player may select. Tab completion, commands, joining, and changing worlds respect these permissions. The option is disabled by default, preserving existing behaviour. Related to [#905](https://github.com/kernitus/BukkitOldCombatMechanics/issues/905).
 
+### Fixes
 
-### Bug Fixes
+- Fixed attack-range and per-item attack cooldown handling when players change hotbar slots or swap hands. OCM now applies settings to the new main-hand item and restores a spear's native reach after removing its range override. Fixes [#925](https://github.com/kernitus/BukkitOldCombatMechanics/issues/925) and [#939](https://github.com/kernitus/BukkitOldCombatMechanics/pull/939).
 
-* **attack-range:** preserve vanilla spear reach and correct hand swaps ([#925](https://github.com/kernitus/BukkitOldCombatMechanics/issues/925)) ([1be23e4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/1be23e45ca96c1f114415e3d1dd77162cd44aecf))
-* **inventory:** avoid InventoryView compatibility crash ([#911](https://github.com/kernitus/BukkitOldCombatMechanics/issues/911)) ([188f893](https://github.com/kernitus/BukkitOldCombatMechanics/commit/188f8937420e5dcf1226d05d36759c88d9efc7d2))
-* use new main-hand item when adjusting attack speed on hand swap ([#939](https://github.com/kernitus/BukkitOldCombatMechanics/issues/939)) ([a0bba36](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a0bba3662523919c51e89a9180b682221ccf0b8c))
+- Fixed inventory compatibility errors that could produce repeated stack traces when `disable-offhand` processed inventory clicks on some server versions. Sword-blocking hand swaps also use safer inventory-view tracking. Fixes [#911](https://github.com/kernitus/BukkitOldCombatMechanics/issues/911).
+
+- Fixed Paper sword-blocking item data using an invalid duration when serialised by item-chat plugins. Sharing a sword through plugins such as InteractiveChat no longer disconnects recipients because of a negative consumable duration. Fixes [#937](https://github.com/kernitus/BukkitOldCombatMechanics/issues/937) via [#938](https://github.com/kernitus/BukkitOldCombatMechanics/pull/938).
 
 ## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-07-02)
 
