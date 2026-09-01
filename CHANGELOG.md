@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-09-01)
+
+
+### Features
+
+* **modesets:** control modeset access with permissions ([#905](https://github.com/kernitus/BukkitOldCombatMechanics/issues/905)) ([854719f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/854719ff8129f852af4888b3152e4e4e26cf03c0))
+
+
+### Bug Fixes
+
+* **attack-range:** preserve vanilla spear reach and correct hand swaps ([#925](https://github.com/kernitus/BukkitOldCombatMechanics/issues/925)) ([1be23e4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/1be23e45ca96c1f114415e3d1dd77162cd44aecf))
+* **inventory:** avoid InventoryView compatibility crash ([#911](https://github.com/kernitus/BukkitOldCombatMechanics/issues/911)) ([188f893](https://github.com/kernitus/BukkitOldCombatMechanics/commit/188f8937420e5dcf1226d05d36759c88d9efc7d2))
+* use new main-hand item when adjusting attack speed on hand swap ([#939](https://github.com/kernitus/BukkitOldCombatMechanics/issues/939)) ([a0bba36](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a0bba3662523919c51e89a9180b682221ccf0b8c))
+
 ## [2.5.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.0...v2.5.1) (2026-07-02)
 
 This release focuses on compatibility and crash fixes for newer Paper/Purpur versions, NPC-style entities, sword blocking, armour calculations, and per-item attack cooldowns.
