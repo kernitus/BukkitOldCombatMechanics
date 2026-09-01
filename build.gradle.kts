@@ -91,7 +91,7 @@ repositories {
 }
 
 group = "kernitus.plugin.OldCombatMechanics"
-version = "2.6.0" // x-release-please-version
+version = "2.6.1-SNAPSHOT" // x-release-please-version
 description = "OldCombatMechanics"
 
 java {
