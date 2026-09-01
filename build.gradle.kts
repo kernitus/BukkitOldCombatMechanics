@@ -19,8 +19,8 @@ import java.net.URI
 import java.nio.file.Files
 import java.security.MessageDigest
 
-val paperVersion: List<String> =
-    (property("gameVersions") as String)
+val paperVersions: List<String> =
+    (property("paperVersions") as String)
         .split(",")
         .map { it.trim() }
 
@@ -899,7 +899,7 @@ hangarPublish {
         platforms {
             register(Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(paperVersion)
+                platformVersions.set(paperVersions)
             }
         }
     }

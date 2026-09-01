@@ -6,7 +6,7 @@
   "packages": {
     ".": {
       "package-name": "OldCombatMechanics",
-      "release-type": "simple",
+      "release-type": "java",
       "extra-files": [
         {
           "type": "generic",

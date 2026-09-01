@@ -26,6 +26,21 @@ Use this skill to turn generated or developer-oriented changelog material into c
 - Read enough issue, PR, and commit context to understand the user-visible problem and final shipped behaviour, but avoid broad repository exploration unless the requested rewrite needs it.
 - Preserve useful issue links, especially when an entry fixes a reported bug or closes a user request.
 
+## Release Please pull requests
+
+For this repository, `CHANGELOG.md` is the durable repository record, but the Release Please pull-request body is load-bearing release metadata. After the release PR merges, Release Please parses that body to create the GitHub release. The published GitHub release body then becomes the text passed to CurseForge and Hangar through `github.event.release.body` in `.github/workflows/build-upload-release.yml`.
+
+When rewriting a Release Please release:
+
+1. Edit the generated release section in `CHANGELOG.md` on the Release Please branch.
+2. Replace the matching release section in the PR body with the same user-facing prose. A commit that changes `CHANGELOG.md` does not synchronise the PR body automatically.
+3. Preserve the PR body's `:robot:` header, horizontal-rule separators, version heading, and final Release Please attribution because its structure is parsed by Release Please.
+4. Put the standard issue-reporting footer inside the release section, before the final separator, so it reaches the GitHub release and downstream publishing platforms.
+5. Make manual changelog and PR-body edits after Release Please's final automatic refresh where practical. A later refresh may overwrite them.
+6. Before merging, verify that the release prose in `CHANGELOG.md` and the PR body agrees and that the PR retains its `autorelease: pending` label.
+
+If the user asks only for revised prose, provide the complete replacement PR body and do not mutate GitHub without explicit authorisation.
+
 ## Writing rules
 
 - Describe only final shipped user-visible behaviour.
