@@ -54,7 +54,7 @@ public class ModuleOldArmourStrength extends OCMModule {
                         .filter(e::isApplicable)
                         .collect(Collectors.toMap(m -> m, e::getDamage));
 
-        DefenceUtils.calculateDefenceDamageReduction(damagedEntity, damageModifiers, e.getCause(), randomness);
+        DefenceUtils.calculateDefenceDamageReduction(damagedEntity, damageModifiers, e, randomness);
 
         // Set the modifiers back to the event
         damageModifiers.forEach(e::setDamage);

@@ -166,7 +166,10 @@ class OldArmourStrengthModesetIntegrationTest :
         }
 
         @Suppress("DEPRECATION")
-        fun createExplosionDamageEvent(target: Player = player): EntityDamageEvent {
+        fun createExplosionDamageEvent(
+            target: Player = player,
+            cause: EntityDamageEvent.DamageCause = EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
+        ): EntityDamageEvent {
             val modifiers =
                 EnumMap<EntityDamageEvent.DamageModifier, Double>(
                     EntityDamageEvent.DamageModifier::class.java,
@@ -187,7 +190,7 @@ class OldArmourStrengthModesetIntegrationTest :
 
             return EntityDamageEvent(
                 target,
-                EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
+                cause,
                 modifiers,
                 modifierFunctions,
             )
@@ -278,6 +281,24 @@ class OldArmourStrengthModesetIntegrationTest :
                     event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
                     event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
                     event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                }
+            }
+        }
+
+        for ((cause, expectedArmour) in listOf(
+            EntityDamageEvent.DamageCause.FIRE to -6.4,
+            EntityDamageEvent.DamageCause.FIRE_TICK to 0.0,
+        )) {
+            test("legacy cause fallback preserves $cause armour eligibility") {
+                withIssue861Config {
+                    runSync {
+                        setModeset("old")
+                        val event = createExplosionDamageEvent(cause = cause)
+                        // Legacy APIs have no source. Modern deprecated constructors synthesise GENERIC.
+                        module.onEntityDamage(event)
+                        event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe
+                            (expectedArmour plusOrMinus 0.0001)
+                    }
                 }
             }
         }

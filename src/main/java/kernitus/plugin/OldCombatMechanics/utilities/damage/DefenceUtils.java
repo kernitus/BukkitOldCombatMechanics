@@ -85,13 +85,15 @@ public class DefenceUtils {
      * @param damagedEntity   The entity that was damaged
      * @param damageModifiers A map of the damage modifiers and their values from
      *                        the event
-     * @param damageCause     The cause of the damage
+     * @param event           The original damage event
      */
     @SuppressWarnings("deprecation")
     public static void calculateDefenceDamageReduction(LivingEntity damagedEntity,
             Map<EntityDamageEvent.DamageModifier, Double> damageModifiers,
-            EntityDamageEvent.DamageCause damageCause,
+            EntityDamageEvent event,
             boolean randomness) {
+        final EntityDamageEvent.DamageCause damageCause = event.getCause();
+        final DamageTypeTags tags = DamageTypeTags.from(event);
 
         final double armourPoints = getArmourPoints(damagedEntity);
         // Make sure we don't go over 100% protection
@@ -107,10 +109,13 @@ public class DefenceUtils {
             double armourReduction = 0;
             // If the damage cause does not ignore armour
             // If the block they are in is a stalagmite, also ignore armour
-            if (!ARMOUR_IGNORING_CAUSES.contains(damageCause) &&
-                    !(POINTED_DRIPSTONE != null &&
-                            damageCause == EntityDamageEvent.DamageCause.CONTACT &&
-                            damagedEntity.getLocation().getBlock().getType() == POINTED_DRIPSTONE)) {
+            final boolean legacyBypass = ARMOUR_IGNORING_CAUSES.contains(damageCause) ||
+                    (POINTED_DRIPSTONE != null && damageCause == EntityDamageEvent.DamageCause.CONTACT &&
+                            damagedEntity.getLocation().getBlock().getType() == POINTED_DRIPSTONE);
+            // Armour protected against direct vanilla fire in 1.8; custom fire types retain their tags.
+            final boolean legacyDirectFire = damageCause == EntityDamageEvent.DamageCause.FIRE &&
+                    (tags.getKey() == null || "minecraft:in_fire".equals(tags.getKey()));
+            if (legacyDirectFire || !tags.matches("bypasses_armor", legacyBypass)) {
                 armourReduction = currentDamage * -armourReductionFactor;
             }
             damageModifiers.put(EntityDamageEvent.DamageModifier.ARMOR, armourReduction);
