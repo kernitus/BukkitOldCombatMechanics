@@ -6,10 +6,12 @@
 
 package kernitus.plugin.OldCombatMechanics
 
+import com.cryptomorin.xseries.XPotion
 import com.google.common.base.Function
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
+import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
 import kernitus.plugin.OldCombatMechanics.utilities.Config
@@ -22,6 +24,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.potion.PotionEffect
 import java.util.EnumMap
 import java.util.Locale
 import java.util.concurrent.Callable
@@ -190,6 +193,35 @@ class OldArmourStrengthModesetIntegrationTest :
             )
         }
 
+        // Reproduce the legacy server's resistance and negative-damage clamp functions.
+        // Bukkit keeps these functions when plugins replace individual modifier values.
+        @Suppress("DEPRECATION")
+        fun createLegacyResistanceEvent(amplifier: Int): EntityDamageEvent {
+            val functions =
+                EnumMap<EntityDamageEvent.DamageModifier, Function<in Double, Double>>(
+                    EntityDamageEvent.DamageModifier::class.java,
+                )
+            functions[EntityDamageEvent.DamageModifier.BASE] = Function { 0.0 }
+            functions[EntityDamageEvent.DamageModifier.ARMOR] = Function { 0.0 }
+            functions[EntityDamageEvent.DamageModifier.RESISTANCE] =
+                Function { damage -> -(damage * (amplifier + 1) * 0.2).toFloat().toDouble() }
+            functions[EntityDamageEvent.DamageModifier.MAGIC] = Function { damage -> -minOf(0.0, damage) }
+            functions[EntityDamageEvent.DamageModifier.ABSORPTION] = Function { 0.0 }
+
+            val modifiers =
+                EnumMap<EntityDamageEvent.DamageModifier, Double>(EntityDamageEvent.DamageModifier::class.java)
+            modifiers[EntityDamageEvent.DamageModifier.BASE] = 18.0
+            var remainingDamage = 18.0
+            functions.forEach { (modifier, function) ->
+                if (modifier != EntityDamageEvent.DamageModifier.BASE) {
+                    val adjustment = function.apply(remainingDamage)
+                    modifiers[modifier] = adjustment
+                    remainingDamage += adjustment
+                }
+            }
+            return EntityDamageEvent(player, EntityDamageEvent.DamageCause.PROJECTILE, modifiers, functions)
+        }
+
         beforeSpec {
             runSync {
                 val world = checkNotNull(Bukkit.getServer().getWorld("world"))
@@ -246,6 +278,64 @@ class OldArmourStrengthModesetIntegrationTest :
                     event.getDamage(EntityDamageEvent.DamageModifier.ARMOR) shouldBe (-6.4 plusOrMinus 0.0001)
                     event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
                     event.finalDamage shouldBe (13.6 plusOrMinus 0.0001)
+                }
+            }
+        }
+
+        for (amplifier in listOf(4, 5, 255)) {
+            test("full resistance clears stale magic damage at amplifier $amplifier") {
+                withIssue861Config {
+                    runSync {
+                        setModeset("old")
+                        player.inventory.clear()
+                        player.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, amplifier))
+                        val event = createLegacyResistanceEvent(amplifier)
+                        event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+
+                        module.onEntityDamage(event)
+
+                        event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
+                        event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+
+                        // A later plugin, such as CrackShot, can change the raw damage.
+                        // Legacy Bukkit may then report negative final damage; it must never become damaging.
+                        event.damage = 2.0
+                        event.finalDamage.shouldBeLessThanOrEqual(0.0001)
+                    }
+                }
+            }
+        }
+
+        test("full resistance clears a retained enchantment reduction") {
+            withIssue861Config {
+                runSync {
+                    setModeset("old")
+                    player.inventory.clear()
+                    player.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 4))
+                    val event = createLegacyResistanceEvent(4)
+                    event.setDamage(EntityDamageEvent.DamageModifier.MAGIC, -2.0)
+
+                    module.onEntityDamage(event)
+
+                    event.getDamage(EntityDamageEvent.DamageModifier.MAGIC) shouldBe (0.0 plusOrMinus 0.0001)
+                    event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+                }
+            }
+        }
+
+        test("partial resistance still scales when a later plugin changes damage") {
+            withIssue861Config {
+                runSync {
+                    setModeset("old")
+                    player.inventory.clear()
+                    player.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 0))
+                    val event = createLegacyResistanceEvent(0)
+
+                    module.onEntityDamage(event)
+
+                    event.finalDamage shouldBe (14.4 plusOrMinus 0.0001)
+                    event.damage = 2.0
+                    event.finalDamage shouldBe (1.6 plusOrMinus 0.0001)
                 }
             }
         }

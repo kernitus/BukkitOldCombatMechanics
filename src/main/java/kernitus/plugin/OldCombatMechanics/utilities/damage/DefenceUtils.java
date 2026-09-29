@@ -131,13 +131,17 @@ public class DefenceUtils {
                 currentDamage += resistanceReduction;
             }
 
-            // Apply armour enchants
-            // Don't calculate enchants if damage already 0 (like 1.8 NMS). Enchants cap at
-            // 80% reduction
-            if (currentDamage > 0 && damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
-                final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(
-                        damagedEntity.getEquipment().getArmorContents(), damageCause, randomness);
-                final double enchantsReduction = currentDamage * -enchantsReductionFactor;
+            // Apply armour enchants. Always replace the modifier: legacy servers can
+            // leave a positive MAGIC adjustment after resistance reduced damage below zero.
+            if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
+                double enchantsReduction = 0;
+                // Don't calculate enchants if damage is already zero (like 1.8 NMS).
+                // Enchants cap at 80% reduction.
+                if (currentDamage > 0) {
+                    final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(
+                            damagedEntity.getEquipment().getArmorContents(), damageCause, randomness);
+                    enchantsReduction = currentDamage * -enchantsReductionFactor;
+                }
                 damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, enchantsReduction);
                 currentDamage += enchantsReduction;
             }

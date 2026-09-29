@@ -65,6 +65,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 ## Core implementation constraints
 
 - `projectile-knockback` restores knockback through small damage values; full damage resistance can prevent it, as documented in the bundled config comments.
+- Defence recalculation must replace the `MAGIC` damage modifier even when remaining damage is zero, so stale legacy resistance adjustments cannot cause excess damage (#621).
 
 - Module assignment is strict for configurable modules at top-level category scope: every non-internal module must appear in at most one of `always_enabled_modules`, `disabled_modules`, or the aggregate `modesets` category. A module may appear in more than one individual modeset because modesets are alternative player modes.
 - Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed in configurable module groups.
