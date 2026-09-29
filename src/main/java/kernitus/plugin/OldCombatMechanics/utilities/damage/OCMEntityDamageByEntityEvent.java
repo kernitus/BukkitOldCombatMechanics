@@ -150,8 +150,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             if (DamageUtils.isCriticalHit1_9((Player) livingDamager)) {
                 debug(livingDamager, "1.9 Critical hit detected");
                 debug("1.9 Critical hit detected");
-                criticalMultiplier = 1.5;
-                tempDamage /= 1.5;
+                criticalMultiplier = ServerCriticalMultiplier.get(livingDamager.getWorld());
+                if (!Double.isFinite(criticalMultiplier) || criticalMultiplier <= 0) {
+                    // These server values cannot be safely reversed. Preserve the incoming damage.
+                    setCancelled(true);
+                    return;
+                }
+                tempDamage /= criticalMultiplier;
             }
         }
 

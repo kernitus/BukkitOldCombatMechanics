@@ -16,9 +16,11 @@ import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldCriticalHits
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldToolDamage
+import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils
 import kernitus.plugin.OldCombatMechanics.utilities.damage.NewWeaponDamage
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
+import kernitus.plugin.OldCombatMechanics.utilities.damage.ServerCriticalMultiplier
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
@@ -28,6 +30,7 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.attribute.AttributeModifier
+import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -39,6 +42,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.util.Vector
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.Callable
 import kotlin.math.abs
@@ -240,6 +244,8 @@ class OldCriticalHitsIntegrationTest :
         suspend fun hitAndCaptureDamage(
             weapon: ItemStack,
             critical: Boolean,
+            sprinting: Boolean = true,
+            nativeMultiplier: Double? = null,
         ): Double {
             val events = mutableListOf<EntityDamageByEntityEvent>()
             val ocmEvents = mutableListOf<OCMEntityDamageByEntityEvent>()
@@ -281,7 +287,7 @@ class OldCriticalHitsIntegrationTest :
 
                     equip(attacker, weapon)
                 }
-                delayTicks(1)
+                delayTicks(if (nativeMultiplier != null) 25 else 1)
                 if (isLegacy) {
                     // Vanilla 1.12 applies attack cooldown scaling before the Bukkit damage event fires.
                     // Give the fake player a short warmup so the baseline (non-critical) hit is not under-scaled.
@@ -300,7 +306,7 @@ class OldCriticalHitsIntegrationTest :
                     // Give the server one tick to recognise the falling state, then re-apply immediately before the swing
                     // so it does not get cleared by ticking (varies by version / fake player internals).
                     runSync {
-                        attacker.isSprinting = true
+                        attacker.isSprinting = sprinting
                         attacker.teleport(attacker.location.add(0.0, 1.0, 0.0))
                         attacker.velocity = Vector(0.0, -0.1, 0.0)
                         attacker.fallDistance = 2f
@@ -308,7 +314,7 @@ class OldCriticalHitsIntegrationTest :
                     }
                     delayTicks(1)
                     runSync {
-                        attacker.isSprinting = true
+                        attacker.isSprinting = sprinting
                         attacker.velocity = Vector(0.0, -0.1, 0.0)
                         attacker.fallDistance = 2f
                         setOnGround(attacker, false)
@@ -353,7 +359,18 @@ class OldCriticalHitsIntegrationTest :
                     }
                 }
                 delayTicks(4)
-                events.firstOrNull()?.damage?.let { return it }
+                events.firstOrNull()?.damage?.let {
+                    if (nativeMultiplier != null) {
+                        val nativeEvent = ocmEvents.firstOrNull() ?: error("Expected OCM event for native attack")
+                        val expected =
+                            (NewWeaponDamage.getDamageOrNull(weapon.type) ?: error("Unknown weapon")) *
+                                (if (critical) nativeMultiplier else 1.0)
+                        withClue("Native attack damage before OCM recalculation") {
+                            nativeEvent.rawDamage shouldBe (expected plusOrMinus 0.001)
+                        }
+                    }
+                    return it
+                }
                 if (critical) {
                     val ocmEvent = ocmEvents.lastOrNull()
                     if (ocmEvent != null && !ocmEvent.was1_8Crit()) {
@@ -434,6 +451,112 @@ class OldCriticalHitsIntegrationTest :
         afterSpec {
             runSync {
                 fakeAttacker.removePlayer()
+            }
+        }
+
+        test("native critical hits respect server multipliers and configured tool damage") {
+            val originalConfig = ocm.config.saveToString()
+            val purpurMethod = Reflector.getMethod(Bukkit.spigot().javaClass, "getPurpurConfig", 0)
+
+            fun purpurConfig(): YamlConfiguration? = purpurMethod?.invoke(Bukkit.spigot()) as? YamlConfiguration
+            val originalPurpur = purpurConfig()?.saveToString()
+            val purpurFile = File("purpur.yml")
+            val originalPurpurFile = if (purpurFile.exists()) purpurFile.readText() else null
+            val multiplierPath = "gameplay-mechanics.player.critical-damage-multiplier"
+
+            fun setServerMultiplier(worldOverride: Double?) {
+                val config = purpurConfig() ?: return
+                config.set("world-settings.default.$multiplierPath", 2.0)
+                config.set("world-settings.${attacker.world.name}.$multiplierPath", worldOverride)
+                config.save(purpurFile)
+                check(Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "purpur reload"))
+                check(purpurConfig() !== config) { "Purpur reload must replace its configuration object" }
+                purpurConfig()!!.getDouble("world-settings.default.$multiplierPath") shouldBe 2.0
+            }
+
+            fun configureCriticalModule(enabled: Boolean) {
+                val modules = mutableListOf("old-tool-damage", "disable-attack-cooldown")
+                if (enabled) modules.add("old-critical-hits")
+                ocm.config.set("always_enabled_modules", modules)
+                ocm.config.set(
+                    "disabled_modules",
+                    ModuleLoader.getConfigurableModuleNames().filterNot { it in modules },
+                )
+                ocm.config.set("modesets", null)
+                ocm.config.createSection("modesets", mapOf("old" to emptyList<String>()))
+                ocm.config.set("old-critical-hits.multiplier", 1.25)
+                ocm.config.set("old-tool-damage.damages.IRON_AXE", 4.5)
+                ocm.saveConfig()
+                Config.reload()
+            }
+
+            try {
+                for (worldOverride in listOf(null, 2.123456789, null)) {
+                    runSync { setServerMultiplier(worldOverride) }
+                    val serverMultiplier =
+                        if (purpurMethod ==
+                            null
+                        ) {
+                            1.5
+                        } else {
+                            (worldOverride ?: 2.0).toFloat().toDouble()
+                        }
+                    ServerCriticalMultiplier.get(attacker.world) shouldBe serverMultiplier
+                    for (enabled in listOf(true, false)) {
+                        runSync { configureCriticalModule(enabled) }
+                        criticalModule.isEnabled(attacker) shouldBe enabled
+                        val weapon = XMaterial.IRON_AXE.parseItem() ?: error("IRON_AXE unavailable")
+                        val normal = hitAndCaptureDamage(weapon, false, false, serverMultiplier)
+                        val critical = hitAndCaptureDamage(weapon, true, false, serverMultiplier)
+                        withClue("worldOverride=$worldOverride OCM critical module=$enabled server=$serverMultiplier") {
+                            normal shouldBe (4.5 plusOrMinus 0.001)
+                            critical shouldBe ((4.5 * if (enabled) 1.25 else serverMultiplier) plusOrMinus 0.001)
+                        }
+                    }
+                }
+                if (purpurMethod != null) {
+                    // Constructed OCM events cover values for which native damage may emit no event.
+                    runSync {
+                        for (invalid in listOf(
+                            0.0,
+                            -1.0,
+                            Double.NaN,
+                            Double.POSITIVE_INFINITY,
+                            Double.MIN_VALUE,
+                            Double.MAX_VALUE,
+                        )) {
+                            purpurConfig()!!.set("world-settings.${attacker.world.name}.$multiplierPath", invalid)
+                            attacker.isSprinting = false
+                            attacker.fallDistance = 2f
+                            setOnGround(attacker, false)
+                            DamageUtils.isCriticalHit1_9(attacker) shouldBe true
+                            val event =
+                                OCMEntityDamageByEntityEvent(
+                                    attacker,
+                                    attacker,
+                                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                    9.0,
+                                )
+                            withClue("Unreversible server multiplier $invalid") {
+                                event.isCancelled shouldBe true
+                                event.rawDamage shouldBe 9.0
+                            }
+                        }
+                    }
+                }
+            } finally {
+                runSync {
+                    if (originalPurpur != null) {
+                        val config = purpurConfig()!!
+                        config.loadFromString(originalPurpur)
+                        config.save(purpurFile)
+                        check(Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "purpur reload"))
+                        if (originalPurpurFile != null) purpurFile.writeText(originalPurpurFile)
+                    }
+                    ocm.config.loadFromString(originalConfig)
+                    ocm.saveConfig()
+                    Config.reload()
+                }
             }
         }
 

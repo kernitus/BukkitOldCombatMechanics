@@ -655,6 +655,9 @@ for (version in integrationTestVersions) {
             downloadVanillaTask?.let { dependsOn(it) }
             runDirectory.set(runDir)
             minecraftVersion(version)
+            providers.gradleProperty("integrationTestServerJar").orNull?.let {
+                serverJar(layout.projectDirectory.file(it).asFile)
+            }
             jvmArgs("-Dcom.mojang.eula.agree=true")
             kotestSpecFilterProvider.orNull?.takeIf { it.isNotBlank() }?.let {
                 jvmArgs("-Dkotest.filter.specs=$it")
