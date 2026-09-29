@@ -6,6 +6,8 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.BlockingDamageRecalculation;
+import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -39,6 +41,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
     private final Map<UUID, FullyBlockedArmour> fullyBlocked = new HashMap<>();
     private BukkitTask fullyBlockedCleanupTask;
     private long fullyBlockedTickCounter;
+    private boolean warnedRecalculationUnavailable;
 
     public ModuleShieldDamageReduction(OCMMain plugin) {
         super(plugin, "shield-damage-reduction");
@@ -99,7 +102,13 @@ public class ModuleShieldDamageReduction extends OCMModule {
         if (!shieldBlockedDamage(baseDamage, e.getDamage(DamageModifier.BLOCKING))) return;
 
         final double damageReduction = getDamageReduction(baseDamage, e.getCause());
-        e.setDamage(DamageModifier.BLOCKING, -damageReduction);
+        if (!BlockingDamageRecalculation.replaceBlocking(e, -damageReduction)) {
+            if (!warnedRecalculationUnavailable) {
+                warnedRecalculationUnavailable = true;
+                Messenger.warn("Shield damage reduction could not recalculate this server's defences; retaining the original block");
+            }
+            return;
+        }
         final double currentDamage = baseDamage - damageReduction;
 
         debug("Blocking: " + baseDamage + " - " + damageReduction + " = " + currentDamage, player);

@@ -190,6 +190,58 @@ class ModuleInteractionEdgeCasesIntegrationTest :
             }
         }
 
+        test("shield reduction preserves full resistance with old armour disabled") {
+            configure("shield-damage-reduction")
+            ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
+            ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 50)
+            shield.reload()
+            victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 4))
+            val event = blockedHit()
+            Bukkit.getPluginManager().callEvent(event)
+            event.getDamage(DamageModifier.BLOCKING) shouldBe (-4.5 plusOrMinus 0.0001)
+            withClue("full resistance: expected final=0, actual=${event.finalDamage}") {
+                event.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+            }
+        }
+
+        test("shield reduction uses modern armour resistance and absorption when old armour is disabled") {
+            configure("shield-damage-reduction")
+            ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
+            ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 50)
+            shield.reload()
+            victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 0))
+            victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.ABSORPTION.get()), 200, 0))
+            victim.absorptionAmount = 1.0
+            victim.absorptionAmount shouldBe (1.0 plusOrMinus 0.0001)
+            val event = blockedHit(armourPoints = 20.0, toughness = 8.0)
+            Bukkit.getPluginManager().callEvent(event)
+            // 5.5 after blocking, 1.4025 after modern armour, 1.122 after resistance, then 1 absorption.
+            event.finalDamage shouldBe (0.122 plusOrMinus 0.0001)
+        }
+
+        test("shield reduction preserves an earlier plugin flat magic adjustment") {
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.LOWEST)
+                    fun onDamage(event: EntityDamageByEntityEvent) {
+                        if (event.entity == victim) event.setDamage(DamageModifier.MAGIC, -0.25)
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            try {
+                configure("shield-damage-reduction")
+                ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
+                ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 50)
+                shield.reload()
+                val event = blockedHit()
+                Bukkit.getPluginManager().callEvent(event)
+                event.getDamage(DamageModifier.MAGIC) shouldBe (-0.25 plusOrMinus 0.0001)
+                event.finalDamage shouldBe (5.25 plusOrMinus 0.0001)
+            } finally {
+                HandlerList.unregisterAll(listener)
+            }
+        }
+
         test("re-enabling shield reduction through reload preserves defence order and damage") {
             configure("shield-damage-reduction", "old-armour-strength")
             ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
