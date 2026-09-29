@@ -285,6 +285,10 @@ old-player-knockback:
   # Horizontal knockback is reduced by 40% for every successful attack by the player, with no limit
   # Increase to make clicking more important, decrease to make it less important
   knockback-horizontal: 0.4
+  # Divides existing velocity on all three axes once per hit, before adding knockback.
+  # 2.0 retains half the velocity; larger values retain less, values below 1.0 amplify it.
+  # Must be a positive finite number. Missing or invalid values use 2.0.
+  knockback-friction: 2.0
   # Vertical knockback is not reduced by clicking faster
   # Increase to make clicking less important, decrease to make clicking more important
   knockback-vertical: 0.4

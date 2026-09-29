@@ -41,6 +41,7 @@ import java.util.UUID;
  */
 public class ModulePlayerKnockback extends OCMModule {
 
+    private double knockbackFriction;
     private double knockbackHorizontal;
     private double knockbackVertical;
     private double knockbackVerticalLimit;
@@ -68,6 +69,12 @@ public class ModulePlayerKnockback extends OCMModule {
 
     @Override
     public void reload() {
+        final Object configuredFriction = module().get("knockback-friction", 2.0);
+        knockbackFriction = configuredFriction instanceof Number ? ((Number) configuredFriction).doubleValue() : Double.NaN;
+        if (!Double.isFinite(knockbackFriction) || knockbackFriction <= 0) {
+            plugin.getLogger().warning("old-player-knockback.knockback-friction must be a positive finite number; using 2.0.");
+            knockbackFriction = 2.0;
+        }
         knockbackHorizontal = module().getDouble("knockback-horizontal", 0.4);
         knockbackVertical = module().getDouble("knockback-vertical", 0.4);
         knockbackVerticalLimit = module().getDouble("knockback-vertical-limit", 0.4);
@@ -168,9 +175,9 @@ public class ModulePlayerKnockback extends OCMModule {
         final Vector playerVelocity = victim.getVelocity();
 
         // Apply friction, then add base knockback
-        playerVelocity.setX((playerVelocity.getX() / 2) - (d0 / magnitude * knockbackHorizontal));
-        playerVelocity.setY((playerVelocity.getY() / 2) + knockbackVertical);
-        playerVelocity.setZ((playerVelocity.getZ() / 2) - (d1 / magnitude * knockbackHorizontal));
+        playerVelocity.setX((playerVelocity.getX() / knockbackFriction) - (d0 / magnitude * knockbackHorizontal));
+        playerVelocity.setY((playerVelocity.getY() / knockbackFriction) + knockbackVertical);
+        playerVelocity.setZ((playerVelocity.getZ() / knockbackFriction) - (d1 / magnitude * knockbackHorizontal));
 
         // Calculate bonus knockback for sprinting or knockback enchantment levels
         final EntityEquipment equipment = attacker.getEquipment();

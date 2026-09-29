@@ -64,6 +64,7 @@ class PlayerKnockbackIntegrationTest :
         }
 
         suspend fun TestScope.withConfig(block: suspend TestScope.() -> Unit) {
+            val friction = ocm.config.get("old-player-knockback.knockback-friction")
             val horizontal = ocm.config.getDouble("old-player-knockback.knockback-horizontal")
             val vertical = ocm.config.getDouble("old-player-knockback.knockback-vertical")
             val verticalLimit = ocm.config.getDouble("old-player-knockback.knockback-vertical-limit")
@@ -74,6 +75,7 @@ class PlayerKnockbackIntegrationTest :
             try {
                 block()
             } finally {
+                ocm.config.set("old-player-knockback.knockback-friction", friction)
                 ocm.config.set("old-player-knockback.knockback-horizontal", horizontal)
                 ocm.config.set("old-player-knockback.knockback-vertical", vertical)
                 ocm.config.set("old-player-knockback.knockback-vertical-limit", verticalLimit)
@@ -232,6 +234,49 @@ class PlayerKnockbackIntegrationTest :
         }
 
         context("Knockback vectors") {
+            test("friction divides existing velocity before the impulse and changes on reload") {
+                withConfig {
+                    ocm.config.set("old-player-knockback.knockback-horizontal", 0.4)
+                    ocm.config.set("old-player-knockback.knockback-vertical", 0.4)
+                    ocm.config.set("old-player-knockback.knockback-vertical-limit", 4.0)
+                    ocm.config.set("old-player-knockback.enable-knockback-resistance", false)
+
+                    // Synthetic damage calls isolate the formula from native movement and drag.
+                    val cases =
+                        listOf(
+                            2.0 to 2.0,
+                            4.0 to 4.0,
+                            0.5 to 0.5,
+                            null to 2.0,
+                            0.0 to 2.0,
+                            -1.0 to 2.0,
+                            Double.NaN to 2.0,
+                            Double.POSITIVE_INFINITY to 2.0,
+                            Double.NEGATIVE_INFINITY to 2.0,
+                            "invalid" to 2.0,
+                            4.0 to 4.0,
+                        )
+                    for ((configured, divisor) in cases) {
+                        ocm.config.set("old-player-knockback.knockback-friction", configured)
+                        module.reload()
+                        victim.velocity = Vector(0.8, 0.6, -0.4)
+                        val event =
+                            EntityDamageByEntityEvent(
+                                attacker,
+                                victim,
+                                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                4.0,
+                            )
+                        module.onEntityDamageEntity(event)
+                        val vector = getPendingVector(victim.uniqueId) ?: error("No knockback stored for $configured")
+                        vector.x shouldBe (0.8 / divisor + 0.4 plusOrMinus 0.0001)
+                        vector.y shouldBe (0.6 / divisor + 0.4 plusOrMinus 0.0001)
+                        vector.z shouldBe (-0.4 / divisor plusOrMinus 0.0001)
+                        removePending(victim.uniqueId)
+                    }
+                }
+            }
+
             test("base knockback is applied on velocity event") {
                 withConfig {
                     ocm.config.set("old-player-knockback.knockback-horizontal", 0.4)
