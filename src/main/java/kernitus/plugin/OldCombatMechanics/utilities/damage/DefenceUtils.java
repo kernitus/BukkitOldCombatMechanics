@@ -122,7 +122,7 @@ public class DefenceUtils {
             currentDamage += armourReduction;
         }
 
-        // Preserve the 1.8 resistance formula, using source tags when available.
+        // Preserve the 1.8 resistance and enchantment formulae, using source tags when available.
         final boolean bypassEffects = tags.matches("bypasses_effects", damageCause == EntityDamageEvent.DamageCause.STARVATION);
         if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE)) {
             double resistanceReduction = 0;
@@ -134,22 +134,17 @@ public class DefenceUtils {
             damageModifiers.put(EntityDamageEvent.DamageModifier.RESISTANCE, resistanceReduction);
             currentDamage += resistanceReduction;
         }
-        if (damageCause != EntityDamageEvent.DamageCause.STARVATION) {
-            // Apply armour enchants. Always replace the modifier: legacy servers can
-            // leave a positive MAGIC adjustment after resistance reduced damage below zero.
-            if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
-                double enchantsReduction = 0;
-                // Don't calculate enchants if damage is already zero (like 1.8 NMS).
-                // Enchants cap at 80% reduction.
-                if (currentDamage > 0) {
-                    final double enchantsReductionFactor = calculateArmourEnchantmentReductionFactor(
-                            damagedEntity.getEquipment().getArmorContents(), damageCause, randomness);
-                    enchantsReduction = currentDamage * -enchantsReductionFactor;
-                }
-                damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, enchantsReduction);
-                currentDamage += enchantsReduction;
+        // Always replace MAGIC, including zero damage and sources which bypass enchantments (#621).
+        if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
+            double enchantsReduction = 0;
+            if (currentDamage > 0 && !bypassEffects && !tags.matches("bypasses_enchantments", false)) {
+                enchantsReduction = -currentDamage * calculateArmourEnchantmentReductionFactor(
+                        damagedEntity.getEquipment().getArmorContents(), damageCause, randomness, tags);
             }
-
+            damageModifiers.put(EntityDamageEvent.DamageModifier.MAGIC, enchantsReduction);
+            currentDamage += enchantsReduction;
+        }
+        if (damageCause != EntityDamageEvent.DamageCause.STARVATION) {
             // Absorption
             if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.ABSORPTION)) {
                 final double absorptionAmount = getAbsorptionAmount.apply(damagedEntity);
@@ -316,17 +311,18 @@ public class DefenceUtils {
 
     private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents,
             EntityDamageEvent.DamageCause cause, boolean randomness) {
+        return calculateArmourEnchantmentReductionFactor(armourContents, cause, randomness, null);
+    }
+
+    private static double calculateArmourEnchantmentReductionFactor(ItemStack[] armourContents,
+            EntityDamageEvent.DamageCause cause, boolean randomness, DamageTypeTags tags) {
         int totalEpf = 0;
         for (ItemStack armourItem : armourContents) {
             if (armourItem != null && armourItem.getType() != Material.AIR) {
                 warnOnUnknownArmourEnchantments(armourItem);
                 for (EnchantmentType enchantmentType : EnchantmentType.values()) {
-                    if (!enchantmentType.protectsAgainst(cause))
-                        continue;
-
                     int enchantmentLevel = armourItem.getEnchantmentLevel(enchantmentType.getEnchantment());
-
-                    if (enchantmentLevel > 0) {
+                    if (enchantmentLevel > 0 && enchantmentType.protectsAgainst(cause, tags)) {
                         totalEpf += enchantmentType.getEpf(enchantmentLevel);
                     }
                 }
@@ -477,8 +473,19 @@ public class DefenceUtils {
          * @param cause the damage cause
          * @return true if the armour protects against the given damage cause
          */
-        public boolean protectsAgainst(EntityDamageEvent.DamageCause cause) {
-            return protection.contains(cause);
+        public boolean protectsAgainst(EntityDamageEvent.DamageCause cause, DamageTypeTags tags) {
+            final boolean fallback = protection.contains(cause);
+            if (tags == null) return fallback;
+            switch (this) {
+                case PROTECTION:
+                    final Boolean bypass = tags.contains("bypasses_enchantments");
+                    return bypass == null ? fallback : !bypass;
+                case FIRE_PROTECTION: return tags.matches("is_fire", fallback);
+                case BLAST_PROTECTION: return tags.matches("is_explosion", fallback);
+                case PROJECTILE_PROTECTION: return tags.matches("is_projectile", fallback);
+                case FALL_PROTECTION: return tags.matches("is_fall", fallback);
+                default: return fallback;
+            }
         }
 
         /**
