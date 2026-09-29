@@ -10,6 +10,7 @@ import com.cryptomorin.xseries.XAttribute;
 import com.cryptomorin.xseries.XEnchantment;
 import com.cryptomorin.xseries.XPotion;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.SpigotFunctionChooser;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils;
 import org.bukkit.Material;
@@ -122,7 +123,7 @@ public class DefenceUtils {
             if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE) &&
                     damageCause != EntityDamageEvent.DamageCause.VOID &&
                     damagedEntity.hasPotionEffect(XPotion.RESISTANCE.get())) {
-                final int level = damagedEntity.getPotionEffect(XPotion.RESISTANCE.get()).getAmplifier()
+                final int level = PotionEffects.getOrNull(damagedEntity, XPotion.RESISTANCE.get()).getAmplifier()
                         + 1;
                 // Make sure we don't go over 100% protection
                 final double resistanceReductionFactor = Math.min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL);
@@ -179,7 +180,7 @@ public class DefenceUtils {
 
         // Calculate resistance
         if (defender.hasPotionEffect(XPotion.RESISTANCE.get())) {
-            int resistanceLevel = defender.getPotionEffect(XPotion.RESISTANCE.get()).getAmplifier() + 1;
+            int resistanceLevel = PotionEffects.getOrNull(defender, XPotion.RESISTANCE.get()).getAmplifier() + 1;
             finalDamage *= 1.0 - (resistanceLevel * 0.2);
         }
 
