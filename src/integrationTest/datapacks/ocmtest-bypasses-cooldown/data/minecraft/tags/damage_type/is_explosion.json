@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_blast",
+    "ocmtest:tag_explosion_wear",
+    "ocmtest:tag_blast_no_enchants"
+  ]
+}

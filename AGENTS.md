@@ -41,6 +41,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Matrix task examples: `integrationTest1_19_2`, `integrationTest1_21_11`, `integrationTest1_12`, `integrationTest1_9`.
 - Java toolchain override example: `ORG_GRADLE_JAVA_INSTALLATIONS_PATHS=/path/to/jdk8:/path/to/jdk17:/path/to/jdk25 ./gradlew integrationTest`.
 - `checkTestResults<version>` fails the build if `plugins/OldCombatMechanicsTest/test-results.txt` is missing or not `PASS`.
+- Multiple `kotest.filter.specs` alternatives must use a single regex, for example `*(First|Second)IntegrationTest`; comma-separated filters intersect in the active Kotest runner and can select zero tests. Require parsed test counts before accepting a filtered run.
 - `KotestRunner` writes a compact `plugins/OldCombatMechanicsTest/test-failures.txt` summary for CI-friendly failure triage.
 
 ## Skill selection guide
@@ -84,6 +85,10 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - New classes should be written in Kotlin by default where practical, matching `.github/CONTRIBUTING.md`.
 
 ## Integration test essentials
+
+- The issue #864 cases in `InvulnerabilityDamageIntegrationTest` use native command damage on diamond-armoured fake players every two ticks. They require `old-armour-strength` to reduce armour-protected custom damage from 1.5 to 0.3 using the original damage source. The isolated critical-hit cases retain native mitigation.
+
+- The `damage tags` cases in `InvulnerabilityDamageIntegrationTest` use native command damage and test-only custom damage types to check protection enchantments, Resistance bypass tags, recognised explosion armour bypass, shield routing, and explosion armour wear. Numerical cases disable legacy enchantment randomness. Each case records health loss, event modifiers and armour wear in `plugins/OldCombatMechanicsTest/damage-tag-results.txt`; records are appended across runs. Shield cases use a real native shield raised by `FakePlayer.doBlocking`, whose helper sets the native use counter directly, and assert that native blocking occurred.
 
 - `ModuleInteractionEdgeCasesIntegrationTest` covers shield defence recalculation, damage listener ordering after reload, cancelled-hit immunity history, cache expiry after task restarts, fishing cancellation, and preservation of other plugins' exhaustion changes. Constructed events are identified in the spec; `PlayerRegenIntegrationTest` also exercises natural regeneration.
 

@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_normal_no_enchants",
+    "ocmtest:tag_fire_no_enchants",
+    "ocmtest:tag_blast_no_enchants",
+    "ocmtest:tag_projectile_no_enchants",
+    "ocmtest:tag_fall_no_enchants"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_fire",
+    "ocmtest:tag_fire_no_enchants"
+  ]
+}

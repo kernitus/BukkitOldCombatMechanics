@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_fall",
+    "ocmtest:tag_fall_no_enchants"
+  ]
+}

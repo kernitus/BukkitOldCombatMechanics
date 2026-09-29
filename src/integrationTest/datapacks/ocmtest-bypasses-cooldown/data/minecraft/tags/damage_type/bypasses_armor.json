@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_normal",
+    "ocmtest:tag_fire",
+    "ocmtest:tag_blast",
+    "ocmtest:tag_projectile",
+    "ocmtest:tag_fall",
+    "ocmtest:tag_no_resistance",
+    "ocmtest:tag_no_effects",
+    "ocmtest:tag_normal_no_enchants",
+    "ocmtest:tag_fire_no_enchants",
+    "ocmtest:tag_blast_no_enchants",
+    "ocmtest:tag_projectile_no_enchants",
+    "ocmtest:tag_fall_no_enchants"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "ocmtest:tag_projectile",
+    "ocmtest:tag_shield_projectile",
+    "ocmtest:tag_projectile_no_enchants"
+  ]
+}
