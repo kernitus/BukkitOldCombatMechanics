@@ -14,6 +14,9 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.util.Vector;
 
@@ -25,6 +28,7 @@ public class ModuleFishingKnockback extends OCMModule {
     private final SpigotFunctionChooser<PlayerFishEvent, Object, Entity> getHookFunction;
     private final SpigotFunctionChooser<ProjectileHitEvent, Object, Entity> getHitEntityFunction;
     private boolean knockbackNonPlayerEntities;
+    private final Deque<RodDamageAttempt> damageAttempts = new ArrayDeque<>();
 
     public ModuleFishingKnockback(OCMMain plugin) {
         super(plugin, "old-fishing-knockback");
@@ -96,9 +100,39 @@ public class ModuleFishingKnockback extends OCMModule {
         if (damage < 0)
             damage = 0.0001;
 
-        livingEntity.damage(damage, rodder);
+        final RodDamageAttempt attempt = new RodDamageAttempt(rodder, livingEntity);
+        damageAttempts.push(attempt);
+        try {
+            livingEntity.damage(damage, rodder);
+        } finally {
+            damageAttempts.pop();
+        }
+        // Damage can be rejected by another plugin or by the server before an event is raised.
+        // Zero final damage alone is not rejection: resistance and absorption can absorb a valid hit.
+        if (attempt.event == null || attempt.event.isCancelled()) return;
         livingEntity.setVelocity(
                 calculateKnockbackVelocity(livingEntity.getVelocity(), livingEntity.getLocation(), hook.getLocation()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void observeRodDamage(EntityDamageByEntityEvent event) {
+        final RodDamageAttempt attempt = damageAttempts.peek();
+        if (attempt == null || !event.getEntity().getUniqueId().equals(attempt.victim.getUniqueId())
+                || !event.getDamager().getUniqueId().equals(attempt.rodder.getUniqueId())) return;
+        // Nested damage completes first; the enclosing rod event then replaces this reference.
+        // Read cancellation after damage() returns, including later listeners at this priority.
+        attempt.event = event;
+    }
+
+    private static final class RodDamageAttempt {
+        private final Player rodder;
+        private final LivingEntity victim;
+        private EntityDamageByEntityEvent event;
+
+        private RodDamageAttempt(Player rodder, LivingEntity victim) {
+            this.rodder = rodder;
+            this.victim = victim;
+        }
     }
 
     private Entity findNearbyHitEntity(Entity hookEntity) {

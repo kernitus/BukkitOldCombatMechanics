@@ -22,6 +22,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Cow
+import org.bukkit.entity.FishHook
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -31,6 +32,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier
+import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.event.player.PlayerVelocityEvent
 import org.bukkit.inventory.ItemStack
@@ -433,6 +435,73 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                     }
                 }
                 cache(instance, mapName).isEmpty() shouldBe true
+            }
+        }
+
+        test("fishing knockback respects another plugin cancelling the real damage event") {
+            configure("old-fishing-knockback")
+            // Let temporary join protection expire before testing a real player damage event.
+            ticks(80)
+            victim.noDamageTicks = 0
+            victim.isInvulnerable = false
+            var cancellations = 0
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.HIGHEST)
+                    fun onDamage(event: EntityDamageByEntityEvent) {
+                        if (event.entity == victim) {
+                            event.isCancelled = true
+                            cancellations++
+                        }
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            val hook = attacker.launchProjectile(FishHook::class.java)
+            try {
+                victim.velocity = Vector()
+                val initialHealth = victim.health
+                Bukkit.getPluginManager().callEvent(ProjectileHitEvent(hook, victim))
+                cancellations shouldBe 1
+                victim.health shouldBe (initialHealth plusOrMinus 0.0001)
+                withClue("cancelled damage count=$cancellations; health=$initialHealth; velocity=${victim.velocity}") {
+                    victim.velocity.lengthSquared() shouldBe (0.0 plusOrMinus 0.0001)
+                }
+            } finally {
+                hook.remove()
+                HandlerList.unregisterAll(listener)
+            }
+        }
+
+        for (resistance in listOf(false, true)) {
+            test("fishing knockback still applies to an accepted hit with resistance=$resistance") {
+                configure("old-fishing-knockback")
+                ticks(80)
+                victim.noDamageTicks = 0
+                victim.isInvulnerable = false
+                if (resistance) {
+                    victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 4))
+                }
+                var accepted = 0
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                        fun onDamage(event: EntityDamageByEntityEvent) {
+                            if (event.entity == victim) accepted++
+                        }
+                    }
+                Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                val hook = attacker.launchProjectile(FishHook::class.java)
+                try {
+                    victim.velocity = Vector()
+                    val initialHealth = victim.health
+                    Bukkit.getPluginManager().callEvent(ProjectileHitEvent(hook, victim))
+                    accepted shouldBe 1
+                    victim.velocity.y shouldBe (0.4 plusOrMinus 0.0001)
+                    if (resistance) victim.health shouldBe (initialHealth plusOrMinus 0.0001)
+                } finally {
+                    hook.remove()
+                    HandlerList.unregisterAll(listener)
+                }
             }
         }
     })

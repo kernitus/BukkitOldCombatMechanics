@@ -624,7 +624,7 @@ class MixedModePvPIntegrationTest :
             val id = UUID.randomUUID()
             var velocity = Vector(0.0, 0.0, 0.0)
             val handler =
-                InvocationHandler { _, method, args ->
+                InvocationHandler { proxy, method, args ->
                     when (method.name) {
                         "getUniqueId" -> {
                             return@InvocationHandler id
@@ -664,6 +664,18 @@ class MixedModePvPIntegrationTest :
                         }
 
                         "damage" -> {
+                            // Model the damage event as well as velocity so cancellation observers run.
+                            val source = args?.getOrNull(1) as? Entity
+                            if (source != null) {
+                                Bukkit.getPluginManager().callEvent(
+                                    EntityDamageByEntityEvent(
+                                        source,
+                                        proxy as Player,
+                                        EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                        (args[0] as Number).toDouble(),
+                                    ),
+                                )
+                            }
                             return@InvocationHandler null
                         }
 
