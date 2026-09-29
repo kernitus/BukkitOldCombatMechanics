@@ -10,6 +10,7 @@ import com.google.common.base.Function
 import io.kotest.assertions.withClue
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourDurability
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
@@ -21,6 +22,10 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
@@ -29,6 +34,7 @@ import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.event.player.PlayerVelocityEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.potion.PotionEffect
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.util.Vector
 import java.util.EnumMap
@@ -178,6 +184,65 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                 Config.reload()
                 attackerFake.removePlayer()
                 victimFake.removePlayer()
+            }
+        }
+
+        test("re-enabling shield reduction through reload preserves defence order and damage") {
+            configure("shield-damage-reduction", "old-armour-strength")
+            ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
+            ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 50)
+            shield.reload()
+            victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 4))
+            val before = blockedHit()
+            Bukkit.getPluginManager().callEvent(before)
+            before.finalDamage shouldBe (0.0 plusOrMinus 0.0001)
+            configure("old-armour-strength")
+            configure("shield-damage-reduction", "old-armour-strength")
+            victim.noDamageTicks = 0
+            val after = blockedHit()
+            Bukkit.getPluginManager().callEvent(after)
+            val order =
+                EntityDamageEvent
+                    .getHandlerList()
+                    .registeredListeners
+                    .filter { it.listener === shield || it.listener === armour }
+                    .map { it.listener.javaClass.simpleName }
+            withClue("order=$order; damage=${before.finalDamage} -> ${after.finalDamage}") {
+                after.finalDamage shouldBe (before.finalDamage plusOrMinus 0.0001)
+            }
+        }
+
+        test("unchanged reload preserves listener registrations and later plugin adjustments") {
+            configure("shield-damage-reduction", "old-armour-strength")
+            ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 1)
+            ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 50)
+            shield.reload()
+            var calls = 0
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.NORMAL)
+                    fun onDamage(event: EntityDamageByEntityEvent) {
+                        if (event.entity == victim) {
+                            calls++
+                            event.setDamage(DamageModifier.BASE, event.damage + 2.0)
+                        }
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            try {
+                val beforeListeners = EntityDamageEvent.getHandlerList().registeredListeners.toList()
+                val before = blockedHit()
+                Bukkit.getPluginManager().callEvent(before)
+                before.finalDamage shouldBe (7.5 plusOrMinus 0.0001)
+                configure("shield-damage-reduction", "old-armour-strength")
+                EntityDamageEvent.getHandlerList().registeredListeners.toList() shouldBe beforeListeners
+                victim.noDamageTicks = 0
+                val after = blockedHit()
+                Bukkit.getPluginManager().callEvent(after)
+                after.finalDamage shouldBe (7.5 plusOrMinus 0.0001)
+                calls shouldBe 2
+            } finally {
+                HandlerList.unregisterAll(listener)
             }
         }
 

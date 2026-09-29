@@ -23,6 +23,10 @@ public class EventRegistry {
         this.plugin = plugin;
     }
 
+    public boolean isRegistered(Listener listener) {
+        return listeners.contains(listener);
+    }
+
     /**
      * Registers a listener and returns <code>true</code> if the listener was not already registered.
      *

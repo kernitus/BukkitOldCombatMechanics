@@ -36,6 +36,18 @@ public class ModuleLoader {
     }
 
     public static void toggleModules() {
+        // These LOWEST listeners depend on the registration order established in OCMMain.
+        // Re-enabling one alone would append it after its consumers. Refresh this group
+        // only when membership changes, leaving ordinary reloads and other modules alone.
+        final Set<String> damagePipeline = new HashSet<>(Arrays.asList(
+                "entity-damage-listener", "shield-damage-reduction", "old-armour-strength"));
+        final boolean pipelineChanged = modules.stream()
+                .filter(module -> damagePipeline.contains(module.getConfigName()))
+                .anyMatch(module -> eventRegistry.isRegistered(module) != module.isEnabled());
+        if (pipelineChanged) {
+            modules.stream().filter(module -> damagePipeline.contains(module.getConfigName()))
+                    .forEach(eventRegistry::unregisterListener);
+        }
         modules.forEach(module -> setState(module, module.isEnabled()));
     }
 
