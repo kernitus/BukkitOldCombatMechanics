@@ -172,6 +172,7 @@ object KotestRunner {
                             GoldenAppleIntegrationTest::class,
                             OldArmourDurabilityIntegrationTest::class,
                             OldArmourStrengthModesetIntegrationTest::class,
+                            ModuleInteractionEdgeCasesIntegrationTest::class,
                             MixedModePvPIntegrationTest::class,
                             ProjectileKnockbackIntegrationTest::class,
                             PlayerKnockbackIntegrationTest::class,

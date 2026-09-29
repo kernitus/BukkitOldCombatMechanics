@@ -116,7 +116,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
 
     private void ensureFullyBlockedCleanupTaskRunning() {
         if (fullyBlockedCleanupTask != null) return;
-        fullyBlockedTickCounter = 0;
+        // Keep the clock across restarts: pending entries already use this time base.
 
         fullyBlockedCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             fullyBlockedTickCounter++;

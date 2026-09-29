@@ -223,7 +223,7 @@ public class ModulePlayerKnockback extends OCMModule {
 
     private void ensureCleanupTaskRunning() {
         if (pendingCleanupTask != null) return;
-        pendingTickCounter = 0;
+        // Keep the clock across restarts: pending entries already use this time base.
 
         // Delay by 1 tick so we never expire entries in the same tick they were created.
         pendingCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {

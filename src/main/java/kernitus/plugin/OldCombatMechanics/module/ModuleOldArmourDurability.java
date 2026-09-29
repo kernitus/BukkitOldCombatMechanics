@@ -102,7 +102,7 @@ public class ModuleOldArmourDurability extends OCMModule {
 
     private void ensureExplosionCleanupTaskRunning() {
         if (explosionCleanupTask != null) return;
-        explosionTickCounter = 0;
+        // Keep the clock across restarts: pending entries already use this time base.
 
         explosionCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             explosionTickCounter++;
