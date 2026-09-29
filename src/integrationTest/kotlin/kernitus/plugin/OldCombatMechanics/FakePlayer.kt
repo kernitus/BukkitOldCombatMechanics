@@ -45,6 +45,14 @@ class FakePlayer(
     private val isLegacy12 = !Reflector.versionIsNewerOrEqualTo(1, 13, 0) && Reflector.versionIsNewerOrEqualTo(1, 10, 0)
     private val legacyImpl9: LegacyFakePlayer9? = if (isLegacy9) LegacyFakePlayer9(plugin, uuid, name) else null
     private val legacyImpl12: LegacyFakePlayer12? = if (isLegacy12) LegacyFakePlayer12(plugin, uuid, name) else null
+    private val versionedImpl =
+        if (!isLegacy9 && !isLegacy12 &&
+            VersionedFakePlayer.isAvailable()
+        ) {
+            VersionedFakePlayer(uuid, name)
+        } else {
+            null
+        }
     private val reflectionRemapper: ReflectionRemapper =
         try {
             ReflectionRemapper.forReobfMappingsInPaperJar()
@@ -80,6 +88,12 @@ class FakePlayer(
             serverPlayer = legacyImpl12.entityPlayer
                 ?: throw IllegalStateException("Legacy12 entity player not created.")
             bukkitPlayer = legacyImpl12.bukkitPlayer
+            return
+        }
+        versionedImpl?.let {
+            it.spawn(location)
+            serverPlayer = it.entityPlayer
+            bukkitPlayer = it.bukkitPlayer
             return
         }
         plugin.logger.info("Spawn: Starting")
@@ -675,6 +689,7 @@ class FakePlayer(
     }
 
     fun getConnection(serverPlayer: Any): Any {
+        versionedImpl?.let { return it.getConnection(serverPlayer) }
         if (isLegacy9) return legacyImpl9!!.getConnection(serverPlayer)
         if (isLegacy12) return legacyImpl12!!.getConnection(serverPlayer)
         val entityPlayerClass = serverPlayer.javaClass
@@ -686,6 +701,10 @@ class FakePlayer(
     }
 
     fun removePlayer() {
+        versionedImpl?.let {
+            it.removePlayer()
+            return
+        }
         tickTaskId?.let { Bukkit.getScheduler().cancelTask(it) }
         if (isLegacy9) {
             legacyImpl9!!.removePlayer()

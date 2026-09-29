@@ -160,7 +160,10 @@ class PlayerRegenIntegrationTest :
         }
 
         afterSpec {
-            runSync { fakePlayer.removePlayer() }
+            runSync {
+                fakePlayer.removePlayer()
+                Bukkit.getPlayer(fakePlayer.uuid) shouldBe null
+            }
         }
 
         beforeTest {
@@ -279,7 +282,11 @@ class PlayerRegenIntegrationTest :
                     player.health shouldBe (12.0 plusOrMinus 1e-9)
                 }
 
-                // Simulate immediate damage, then attempt to heal again within the interval.
+                // Let the first native charge and its next-tick correction finish before changing exhaustion.
+                waitServerTicks(2L)
+                runSync { player.exhaustion.toDouble() shouldBe (4.0 plusOrMinus 0.0001) }
+
+                // Simulate damage, then attempt to heal again within the interval.
                 runSync {
                     player.health = 10.0
                     player.exhaustion = 1.0f

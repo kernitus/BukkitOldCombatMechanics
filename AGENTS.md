@@ -79,6 +79,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 - `ModuleInteractionEdgeCasesIntegrationTest` covers shield defence recalculation, damage listener ordering after reload, cancelled-hit immunity history, cache expiry after task restarts, fishing cancellation, and preservation of other plugins' exhaustion changes. Constructed events are identified in the spec; `PlayerRegenIntegrationTest` also exercises natural regeneration.
 
+- `VersionedFakePlayer` uses the detected Paper join finaliser for versioned NMS servers such as 1.16.5. Its synthetic connection ticks in the native network phase and must be removed during cleanup; scheduler-driven player ticks can run before delayed plugin corrections.
 - Tests targeting entities through server commands must keep the target chunk loaded, restore its previous state afterwards, and verify the command took effect. A successful `dispatchCommand` return does not prove the target was found.
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
 - RunServer output is redirected to `build/integration-test-logs/<version>.log`; root and user-facing agents must leave any needed log inspection to subagents after compact summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` prove insufficient.
