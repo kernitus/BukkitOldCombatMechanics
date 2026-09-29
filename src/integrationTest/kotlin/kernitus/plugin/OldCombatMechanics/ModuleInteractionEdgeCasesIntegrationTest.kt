@@ -18,6 +18,9 @@ import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -57,6 +60,27 @@ class ModuleInteractionEdgeCasesIntegrationTest :
         lateinit var victimFake: FakePlayer
         lateinit var attacker: Player
         lateinit var victim: Player
+
+        fun absorptionAmount(player: Player): Double =
+            try {
+                player.absorptionAmount
+            } catch (_: NoSuchMethodError) {
+                VersionCompatUtils.getAbsorptionAmount(player).toDouble()
+            }
+
+        fun setAbsorptionAmount(
+            player: Player,
+            amount: Double,
+        ) {
+            try {
+                player.absorptionAmount = amount
+            } catch (_: NoSuchMethodError) {
+                val handle = Reflector.invokeMethod<Any>(Reflector.getMethod(player.javaClass, "getHandle"), player)
+                val setter = checkNotNull(Reflector.getMethod(handle.javaClass, "setAbsorptionHearts", 1))
+                Reflector.invokeMethod<Any?>(setter, handle, amount.toFloat())
+            }
+        }
+
         lateinit var originalConfig: String
         val modules = ModuleLoader.getModules()
         val shield = modules.filterIsInstance<ModuleShieldDamageReduction>().single()
@@ -124,7 +148,7 @@ class ModuleInteractionEdgeCasesIntegrationTest :
             modifiers[DamageModifier.BASE] = 10.0
             modifiers[DamageModifier.BLOCKING] = -10.0
             functions[DamageModifier.BLOCKING] = Function { damage -> -damage }
-            val resistance = victim.getPotionEffect(checkNotNull(XPotion.RESISTANCE.get()))
+            val resistance = PotionEffects.getOrNull(victim, checkNotNull(XPotion.RESISTANCE.get()))
             val resistanceFactor = if (resistance == null) 0.0 else minOf(1.0, (resistance.amplifier + 1) * 0.2)
             functions[DamageModifier.ARMOR] =
                 Function { damage ->
@@ -139,7 +163,7 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                     -damage * effectiveArmour / 25.0
                 }
             functions[DamageModifier.RESISTANCE] = Function { damage -> -damage * resistanceFactor }
-            val absorption = victim.absorptionAmount
+            val absorption = absorptionAmount(victim)
             functions[DamageModifier.ABSORPTION] = Function { damage -> -minOf(absorption, maxOf(0.0, damage)) }
             return EntityDamageByEntityEvent(attacker, victim, DamageCause.ENTITY_ATTACK, modifiers, functions)
         }
@@ -172,7 +196,7 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                     it.lastDamage = 0.0
                     it.velocity = Vector()
                     it.fireTicks = 0
-                    it.absorptionAmount = 0.0
+                    setAbsorptionAmount(it, 0.0)
                     it.health = it.maxHealth
                 }
             }
@@ -213,8 +237,8 @@ class ModuleInteractionEdgeCasesIntegrationTest :
             shield.reload()
             victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 0))
             victim.addPotionEffect(PotionEffect(checkNotNull(XPotion.ABSORPTION.get()), 200, 0))
-            victim.absorptionAmount = 1.0
-            victim.absorptionAmount shouldBe (1.0 plusOrMinus 0.0001)
+            setAbsorptionAmount(victim, 1.0)
+            absorptionAmount(victim) shouldBe (1.0 plusOrMinus 0.0001)
             val event = blockedHit(armourPoints = 20.0, toughness = 8.0)
             Bukkit.getPluginManager().callEvent(event)
             // 5.5 after blocking, 1.4025 after modern armour, 1.122 after resistance, then 1 absorption.
