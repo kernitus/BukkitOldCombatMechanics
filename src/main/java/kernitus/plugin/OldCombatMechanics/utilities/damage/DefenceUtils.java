@@ -122,21 +122,19 @@ public class DefenceUtils {
             currentDamage += armourReduction;
         }
 
-        // This is the applyMagicModifier() calculations from NMS
-        if (damageCause != EntityDamageEvent.DamageCause.STARVATION) {
-            // Apply resistance effect
-            if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE) &&
-                    damageCause != EntityDamageEvent.DamageCause.VOID &&
+        // Preserve the 1.8 resistance formula, using source tags when available.
+        final boolean bypassEffects = tags.matches("bypasses_effects", damageCause == EntityDamageEvent.DamageCause.STARVATION);
+        if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.RESISTANCE)) {
+            double resistanceReduction = 0;
+            if (!bypassEffects && !tags.matches("bypasses_resistance", damageCause == EntityDamageEvent.DamageCause.VOID) &&
                     damagedEntity.hasPotionEffect(XPotion.RESISTANCE.get())) {
-                final int level = PotionEffects.getOrNull(damagedEntity, XPotion.RESISTANCE.get()).getAmplifier()
-                        + 1;
-                // Make sure we don't go over 100% protection
-                final double resistanceReductionFactor = Math.min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL);
-                final double resistanceReduction = -resistanceReductionFactor * currentDamage;
-                damageModifiers.put(EntityDamageEvent.DamageModifier.RESISTANCE, resistanceReduction);
-                currentDamage += resistanceReduction;
+                final int level = PotionEffects.getOrNull(damagedEntity, XPotion.RESISTANCE.get()).getAmplifier() + 1;
+                resistanceReduction = -Math.min(1.0, level * REDUCTION_PER_RESISTANCE_LEVEL) * currentDamage;
             }
-
+            damageModifiers.put(EntityDamageEvent.DamageModifier.RESISTANCE, resistanceReduction);
+            currentDamage += resistanceReduction;
+        }
+        if (damageCause != EntityDamageEvent.DamageCause.STARVATION) {
             // Apply armour enchants. Always replace the modifier: legacy servers can
             // leave a positive MAGIC adjustment after resistance reduced damage below zero.
             if (damageModifiers.containsKey(EntityDamageEvent.DamageModifier.MAGIC)) {
