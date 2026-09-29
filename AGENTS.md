@@ -71,7 +71,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - `old-player-knockback.knockback-friction` divides existing velocity on all three axes once per hit before adding knockback. Reload validates a positive finite number, falling back to 2.0 for missing or invalid values (#847).
 - `projectile-knockback` restores knockback through small damage values; full damage resistance can prevent it, as documented in the bundled config comments.
 - Native critical damage uses Purpur's runtime per-world critical multiplier when its optional configuration API exists, including after Purpur reload. Non-positive or non-finite multipliers leave incoming damage unchanged because they cannot be safely reversed (#833).
-- `DamageTypeTags` reads live Bukkit damage-type tags through cached API accessors, with cause-based fallback when the API or tag is unavailable. Armour, Resistance and enchantments use the original source; vanilla `in_fire` retains legacy armour protection.
+- `DamageTypeTags` reads live Bukkit damage-type tags through cached API accessors, with cause-based fallback when the API or tag is unavailable. Armour, Resistance, enchantments and shield projectile settings use the original source; vanilla `in_fire` retains legacy armour protection. Shield settings still require native blocking.
 - Defence Resistance reads use `PotionEffects` so Bukkit 1.9 can fall back to active effect enumeration. `ModuleInteractionEdgeCasesIntegrationTest` uses a test-only native absorption setter fallback on APIs predating Bukkit absorption accessors.
 - Defence recalculation must replace the `MAGIC` damage modifier even when remaining damage is zero, so stale legacy resistance adjustments cannot cause excess damage (#621).
 

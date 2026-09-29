@@ -7,6 +7,7 @@ package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.BlockingDamageRecalculation;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageTypeTags;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
 import org.bukkit.Bukkit;
@@ -101,7 +102,7 @@ public class ModuleShieldDamageReduction extends OCMModule {
         final double baseDamage = e.getDamage(DamageModifier.BASE) + e.getDamage(DamageModifier.HARD_HAT);
         if (!shieldBlockedDamage(baseDamage, e.getDamage(DamageModifier.BLOCKING))) return;
 
-        final double damageReduction = getDamageReduction(baseDamage, e.getCause());
+        final double damageReduction = getDamageReduction(baseDamage, DamageTypeTags.from(e).matches("is_projectile", e.getCause() == DamageCause.PROJECTILE));
         if (!BlockingDamageRecalculation.replaceBlocking(e, -damageReduction)) {
             if (!warnedRecalculationUnavailable) {
                 warnedRecalculationUnavailable = true;
@@ -167,15 +168,15 @@ public class ModuleShieldDamageReduction extends OCMModule {
         }
     }
 
-    private double getDamageReduction(double damage, DamageCause damageCause) {
+    private double getDamageReduction(double damage, boolean projectile) {
         // 1.8 NMS code, where f is damage done, to calculate new damage.
         // f = (1.0F + f) * 0.5F;
 
         // We subtract, to calculate damage reduction instead of new damage
-        double reduction = damage - (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionAmount : genericDamageReductionAmount);
+        double reduction = damage - (projectile ? projectileDamageReductionAmount : genericDamageReductionAmount);
 
         // Reduce to percentage
-        reduction *= (damageCause == DamageCause.PROJECTILE ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100.0;
+        reduction *= (projectile ? projectileDamageReductionPercentage : genericDamageReductionPercentage) / 100.0;
 
         // Don't reduce by more than the actual damage done
         // As far as I can tell this is not checked in 1.8NMS, and if the damage was low enough
