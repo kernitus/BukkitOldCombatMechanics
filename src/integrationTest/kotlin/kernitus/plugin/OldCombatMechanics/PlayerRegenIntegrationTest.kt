@@ -15,6 +15,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityRegainHealthEvent
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.concurrent.Callable
@@ -184,6 +188,58 @@ class PlayerRegenIntegrationTest :
             }
         }
 
+        test("natural regeneration preserves another plugin exhaustion charge") {
+            withConfig(intervalMs = 0, amount = 2, exhaustion = 1.0) {
+                val observed = java.util.concurrent.CompletableFuture<Double>()
+                var handled = false
+                var customHealObserved = false
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.MONITOR)
+                        fun onRegen(event: EntityRegainHealthEvent) {
+                            if (event.entity != player || handled ||
+                                event.regainReason != EntityRegainHealthEvent.RegainReason.SATIATED
+                            ) {
+                                return
+                            }
+                            handled = true
+                            customHealObserved = event.isCancelled && kotlin.math.abs(player.health - 12.0) < 0.0001
+                            player.exhaustion += 0.75f
+                            Bukkit.getScheduler().runTaskLater(
+                                testPlugin,
+                                Runnable {
+                                    observed.complete(player.exhaustion.toDouble())
+                                },
+                                1L,
+                            )
+                        }
+                    }
+                val oldFood = player.foodLevel
+                val oldGravity = player.hasGravity()
+                try {
+                    runSync {
+                        player.setGravity(false)
+                        player.foodLevel = 20
+                        player.saturation = 1.0f
+                        player.exhaustion = 0.5f
+                        player.health = 10.0
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
+                    kotlinx.coroutines.withTimeout(10000) {
+                        while (!observed.isDone) waitServerTicks(1)
+                    }
+                    customHealObserved shouldBe true
+                    observed.get() shouldBe (2.25 plusOrMinus 0.0001)
+                } finally {
+                    runSync {
+                        HandlerList.unregisterAll(listener)
+                        player.foodLevel = oldFood
+                        player.setGravity(oldGravity)
+                    }
+                }
+            }
+        }
+
         test("SATIATED regen is cancelled and replaced with configured heal + exhaustion") {
             withConfig(intervalMs = 0, amount = 2, exhaustion = 3.0) {
                 runSync {
@@ -197,9 +253,8 @@ class PlayerRegenIntegrationTest :
                     event.isCancelled shouldBe true
                     player.health shouldBe (12.0 plusOrMinus 1e-9)
 
-                    // Simulate vanilla modifying exhaustion despite cancellation;
-                    // OCM applies its own value next tick.
-                    player.exhaustion = 2.0f
+                    // Complete the native regeneration charge, including its Bukkit event where supported.
+                    applyTestExhaustion(player, 6.0)
                 }
 
                 waitServerTicks(2L)
@@ -220,6 +275,7 @@ class PlayerRegenIntegrationTest :
                 val first = runSync { createRegainEvent(player, EntityRegainHealthEvent.RegainReason.SATIATED, 1.0) }
                 runSync {
                     module.onRegen(first)
+                    applyTestExhaustion(player, 6.0)
                     player.health shouldBe (12.0 plusOrMinus 1e-9)
                 }
 
@@ -235,8 +291,7 @@ class PlayerRegenIntegrationTest :
                     second.isCancelled shouldBe true
                     player.health shouldBe (10.0 plusOrMinus 1e-9)
 
-                    // Simulate vanilla exhaustion change; the module should restore to previous exhaustion next tick.
-                    player.exhaustion = 3.5f
+                    applyTestExhaustion(player, 6.0)
                 }
 
                 waitServerTicks(2L)

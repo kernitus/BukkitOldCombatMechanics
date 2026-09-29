@@ -77,6 +77,8 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Integration test essentials
 
+- `ModuleInteractionEdgeCasesIntegrationTest` covers shield defence recalculation, damage listener ordering after reload, cancelled-hit immunity history, cache expiry after task restarts, fishing cancellation, and preservation of other plugins' exhaustion changes. Constructed events are identified in the spec; `PlayerRegenIntegrationTest` also exercises natural regeneration.
+
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
 - RunServer output is redirected to `build/integration-test-logs/<version>.log`; root and user-facing agents must leave any needed log inspection to subagents after compact summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` prove insufficient.
 - Kotlin tests use Kotest 6 for Java 11+ server targets (`KotestRunner`, `KotestProjectConfig`).

@@ -9,7 +9,13 @@ import com.cryptomorin.xseries.XAttribute;
 import kernitus.plugin.OldCombatMechanics.OCMMain;
 import kernitus.plugin.OldCombatMechanics.utilities.MathsHelper;
 import org.bukkit.Bukkit;
-import org.bukkit.attribute.Attribute;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityExhaustionEvent;
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
+import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -43,9 +49,17 @@ public class ModulePlayerRegen extends OCMModule {
     private long intervalTicks;
     private int healAmount;
     private float exhaustionToApply;
+    private final Map<UUID, Deque<RegenCharge>> pendingCharges = new HashMap<>();
+    private final boolean exhaustionEventAvailable;
+    private static final Method FAST_REGEN = Reflector.getMethod(EntityRegainHealthEvent.class, "isFastRegen");
 
     public ModulePlayerRegen(OCMMain plugin) {
         super(plugin, "old-player-regen");
+        exhaustionEventAvailable = hasExhaustionEvent();
+        if (exhaustionEventAvailable) {
+            // Isolate the optional event type in a nested listener for legacy class loading.
+            Bukkit.getPluginManager().registerEvents(new ExhaustionListener(), plugin);
+        }
         reload();
     }
 
@@ -75,10 +89,7 @@ public class ModulePlayerRegen extends OCMModule {
 
         final UUID playerId = p.getUniqueId();
 
-        // We cancel the regen, but saturation and exhaustion need to be adjusted
-        // separately
-        // Exhaustion is modified in the next tick, and saturation in the tick following
-        // that (if exhaustion > 4)
+        // Replace the heal and its exhaustion charge independently.
         e.setCancelled(true);
 
         // Get exhaustion & saturation values before healing modifies them
@@ -94,9 +105,8 @@ public class ModulePlayerRegen extends OCMModule {
                         (lastTick == null ? "?" : (currentTick - lastTick)),
                 p);
 
-        // If we're skipping this heal, we must fix the exhaustion in the following tick
         if (lastTick != null && currentTick - lastTick < intervalTicks) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> p.setExhaustion(previousExhaustion), 1L);
+            replaceRegenerationCharge(p, e, 0);
             return;
         }
 
@@ -108,20 +118,83 @@ public class ModulePlayerRegen extends OCMModule {
             lastHealTick.put(playerId, currentTick);
         }
 
-        // Calculate new exhaustion value, must be between 0 and 4. If above, it will
-        // reduce the saturation in the following tick.
+        replaceRegenerationCharge(p, e, exhaustionToApply);
+    }
+
+    private void replaceRegenerationCharge(Player player, EntityRegainHealthEvent event, float amount) {
+        final UUID uuid = player.getUniqueId();
+        final RegenCharge charge = new RegenCharge(amount,
+                exhaustionEventAvailable ? 0 : legacyRegenerationCost(player, event));
+        pendingCharges.computeIfAbsent(uuid, ignored -> new ArrayDeque<>()).addLast(charge);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // We do this in the next tick because bukkit doesn't stop the exhaustion change
-            // when cancelling the event
-            p.setExhaustion(previousExhaustion + exhaustionToApply);
-            debug("Exh before: " + previousExhaustion + " Now: " + p.getExhaustion() +
-                    " Sat now: " + previousSaturation, p);
+            final Deque<RegenCharge> pending = pendingCharges.get(uuid);
+            if (pending != null) {
+                pending.remove(charge);
+                if (pending.isEmpty()) pendingCharges.remove(uuid);
+            }
+            if (charge.handled || !player.isOnline()) return;
+            // Legacy servers add the native cost directly after the heal event.
+            // Adjust the current total by that cost, preserving intervening changes.
+            // On event-capable servers this also covers synthetic heals with no native charge.
+            player.setExhaustion(Math.max(0, player.getExhaustion() - charge.nativeCost + charge.amount));
         }, 1L);
+    }
+
+    private float legacyRegenerationCost(Player player, EntityRegainHealthEvent event) {
+        boolean fast = player.getFoodLevel() >= 20 && player.getSaturation() > 0;
+        if (FAST_REGEN != null) fast = Reflector.invokeMethod(FAST_REGEN, event);
+        final float cost;
+        if (fast) {
+            cost = Math.min(player.getSaturation(), 6.0f);
+        } else {
+            final YamlConfiguration spigot = Bukkit.spigot().getConfig();
+            final double fallback = spigot.getDouble("world-settings.default.hunger.regen-exhaustion", 6.0);
+            cost = (float) spigot.getDouble(
+                    "world-settings." + player.getWorld().getName() + ".hunger.regen-exhaustion", fallback);
+        }
+        // Legacy FoodMetaData caps its addition at 40 exhaustion.
+        return Math.max(0, Math.min(cost, 40.0f - player.getExhaustion()));
+    }
+
+    private static boolean hasExhaustionEvent() {
+        try {
+            Class.forName("org.bukkit.event.entity.EntityExhaustionEvent");
+            return true;
+        } catch (ClassNotFoundException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private final class ExhaustionListener implements Listener {
+        @EventHandler(priority = EventPriority.LOWEST)
+        public void onExhaustion(EntityExhaustionEvent event) {
+            if (event.getExhaustionReason() != EntityExhaustionEvent.ExhaustionReason.REGEN) return;
+            final UUID uuid = event.getEntity().getUniqueId();
+            final Deque<RegenCharge> pending = pendingCharges.get(uuid);
+            if (pending == null || pending.isEmpty()) return;
+            final RegenCharge charge = pending.removeFirst();
+            if (pending.isEmpty()) pendingCharges.remove(uuid);
+            charge.handled = true;
+            // Later listeners can still modify or cancel this cost normally.
+            event.setExhaustion(charge.amount);
+        }
+    }
+
+    private static final class RegenCharge {
+        private final float amount;
+        private final float nativeCost;
+        private boolean handled;
+
+        private RegenCharge(float amount, float nativeCost) {
+            this.amount = amount;
+            this.nativeCost = nativeCost;
+        }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         lastHealTick.remove(e.getPlayer().getUniqueId());
+        pendingCharges.remove(e.getPlayer().getUniqueId());
         stopTickTaskIfIdle();
     }
 

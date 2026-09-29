@@ -15,6 +15,7 @@ import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourDurability
 import kernitus.plugin.OldCombatMechanics.module.ModuleOldArmourStrength
 import kernitus.plugin.OldCombatMechanics.module.ModulePlayerKnockback
+import kernitus.plugin.OldCombatMechanics.module.ModulePlayerRegen
 import kernitus.plugin.OldCombatMechanics.module.ModuleShieldDamageReduction
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -32,6 +33,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier
+import org.bukkit.event.entity.EntityRegainHealthEvent
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.event.player.PlayerVelocityEvent
@@ -554,6 +556,25 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                     hook.remove()
                     HandlerList.unregisterAll(listener)
                 }
+            }
+        }
+
+        test("regen exhaustion correction preserves an intervening plugin cost") {
+            configure("old-player-regen")
+            ocm.config.set("old-player-regen.exhaustion", 1.0)
+            ocm.config.set("old-player-regen.interval", 0)
+            modules.filterIsInstance<ModulePlayerRegen>().single().reload()
+            victim.health = 10.0
+            victim.exhaustion = 0.5f
+            Bukkit.getPluginManager().callEvent(
+                EntityRegainHealthEvent(victim, 1.0, EntityRegainHealthEvent.RegainReason.SATIATED),
+            )
+            applyTestExhaustion(victim, 6.0)
+            // Model a stamina plugin charging 0.75 exhaustion after OCM handles regeneration.
+            victim.exhaustion += 0.75f
+            ticks(1)
+            withClue("exhaustion: expected=2.25 (0.5 + regen 1.0 + plugin 0.75), actual=${victim.exhaustion}") {
+                victim.exhaustion.toDouble() shouldBe (2.25 plusOrMinus 0.0001)
             }
         }
     })
