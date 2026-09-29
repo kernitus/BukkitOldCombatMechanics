@@ -26,6 +26,17 @@ public class ConfigUtils {
     private static final Set<String> warnedUnknownMaterialListKeys = Collections.synchronizedSet(new HashSet<>());
     private static final Set<String> warnedUnknownMaterialMapKeys = Collections.synchronizedSet(new HashSet<>());
 
+    /** Reads a finite number within an inclusive range, warning and using the default for invalid input. */
+    public static double finiteDouble(ConfigurationSection section, String key, double fallback, double minimum, double maximum) {
+        if (section == null || !section.contains(key)) return fallback;
+        final Object raw = section.get(key);
+        final double value = raw instanceof Number ? ((Number) raw).doubleValue() : Double.NaN;
+        if (Double.isFinite(value) && value >= minimum && value <= maximum) return value;
+        Messenger.warn("Invalid %s.%s: expected a finite number between %s and %s; using %s",
+                section.getCurrentPath(), key, minimum, maximum, fallback);
+        return fallback;
+    }
+
     /**
      * Safely loads all doubles from a configuration section, reading both double and integer values.
      *

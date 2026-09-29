@@ -95,8 +95,11 @@ internal class LegacyFakePlayer9(
         // Ensure CraftServer maps see the player (for Bukkit.getPlayer)
         updateCraftMaps(craftServer, bukkitPlayer!!)
 
-        // Force entity into world lists (safety)
-        runCatching { worldServer.javaClass.getMethod("addEntity", nms("Entity")).invoke(worldServer, ep) }
+        // The real join pipeline normally inserts this entity. Adding it twice makes the
+        // duplicate-UUID path remove and kill the already joined player.
+        if (!bukkitPlayer!!.isValid) {
+            worldServer.javaClass.getMethod("addEntity", nms("Entity")).invoke(worldServer, ep)
+        }
 
         // Ensure chunk tracking in case join path skipped it
         runCatching {

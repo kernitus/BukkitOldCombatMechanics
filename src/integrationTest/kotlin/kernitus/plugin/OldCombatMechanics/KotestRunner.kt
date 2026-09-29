@@ -180,6 +180,8 @@ object KotestRunner {
                             AttackCooldownHeldItemIntegrationTest::class,
                             PlayerRegenIntegrationTest::class,
                             FishingRodVelocityIntegrationTest::class,
+                            FishingGravityIntegrationTest::class,
+                            OldPotionThrowingIntegrationTest::class,
                             SwordSweepIntegrationTest::class,
                             PacketCancellationIntegrationTest::class,
                             EnderpearlCooldownIntegrationTest::class,

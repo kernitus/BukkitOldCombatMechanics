@@ -32,6 +32,14 @@ public class OCMConfigHandler {
     }
 
     public void upgradeConfig() {
+        // Reject invalid modern assignments before renaming or replacing the user's configuration.
+        final YamlConfiguration candidate = YamlConfiguration.loadConfiguration(getFile(CONFIG_NAME));
+        final boolean legacyToggles = ModuleLoader.getModules().stream()
+                .anyMatch(module -> candidate.contains(module.getConfigName() + ".enabled"))
+                || candidate.contains("disable-attack-sounds.enabled")
+                || candidate.contains("disable-sword-sweep-particles.enabled");
+        if (!legacyToggles) validateModernAssignments(candidate);
+
         // Remove old backup file if present
         final File backup = getFile("config-backup.yml");
         if (backup.exists()) backup.delete();
@@ -99,6 +107,28 @@ public class OCMConfigHandler {
         }
     }
 
+    private static void validateModernAssignments(YamlConfiguration config) {
+        final Set<String> internalModules = new HashSet<>(Arrays.asList(
+                "modeset-listener", "attack-cooldown-tracker", "entity-damage-listener"));
+        final Map<String, String> assigned = new LinkedHashMap<>();
+        final Map<String, String> lists = new LinkedHashMap<>();
+        lists.put("always_enabled_modules", "always_enabled_modules");
+        lists.put("disabled_modules", "disabled_modules");
+        final ConfigurationSection modes = config.getConfigurationSection("modesets");
+        if (modes != null) modes.getKeys(false).forEach(name -> lists.put("modesets." + name, "modesets"));
+        for (Map.Entry<String, String> list : lists.entrySet()) {
+            final Set<String> seen = new HashSet<>();
+            for (String entry : config.getStringList(list.getKey())) {
+                final String name = entry.toLowerCase(Locale.ROOT);
+                final String category = assigned.putIfAbsent(name, list.getValue());
+                if (!seen.add(name) || internalModules.contains(name)
+                        || (category != null && !category.equals(list.getValue()))) {
+                    throw new IllegalStateException("Invalid module assignment configuration: " + name + " in " + list.getKey());
+                }
+            }
+        }
+    }
+
     private void migrateModuleLists(YamlConfiguration oldConfig, YamlConfiguration newConfig) {
         final Set<String> internalModules = new HashSet<>(Arrays.asList(
                 "modeset-listener",
@@ -151,7 +181,33 @@ public class OCMConfigHandler {
         final List<String> alwaysEnabled = new ArrayList<>();
         final List<String> disabledModules = new ArrayList<>();
 
+        final boolean hasLegacyToggles = moduleNames.stream().anyMatch(name -> oldConfig.contains(name + ".enabled"));
+        final Set<String> oldAlways = oldConfig.getStringList("always_enabled_modules").stream()
+                .map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        final Set<String> oldDisabled = oldConfig.getStringList("disabled_modules").stream()
+                .map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        if (!hasLegacyToggles) {
+            alwaysEnabled.addAll(oldConfig.getStringList("always_enabled_modules"));
+            disabledModules.addAll(oldConfig.getStringList("disabled_modules"));
+        }
+        // Introduce the independent throwing module in the existing old modeset only.
+        // Custom configurations without that modeset can opt in explicitly.
+        final String potionThrowing = "old-potion-throwing";
+        if (!modulesInModesets.contains(potionThrowing) && !oldAlways.contains(potionThrowing)
+                && !oldDisabled.contains(potionThrowing) && migratedModesets.containsKey("old")) {
+            migratedModesets.get("old").add(potionThrowing);
+            modulesInModesets.add(potionThrowing);
+        }
+
         for (String moduleName : moduleNames) {
+            if (!hasLegacyToggles) {
+                if (oldDisabled.contains(moduleName) || oldAlways.contains(moduleName)) continue;
+                if (modulesInModesets.contains(moduleName)) continue;
+            }
+            if (potionThrowing.equals(moduleName) && !modulesInModesets.contains(moduleName)) {
+                disabledModules.add(moduleName);
+                continue;
+            }
             final String enabledKey = moduleName + ".enabled";
             if ("attack-range".equals(moduleName)) {
                 disabledModules.add(moduleName);
@@ -179,7 +235,7 @@ public class OCMConfigHandler {
         newConfig.set("always_enabled_modules", alwaysEnabled);
         newConfig.set("disabled_modules", disabledModules);
 
-        if (!migratedModesets.isEmpty()) {
+        if (oldModesets != null) {
             ConfigurationSection targetModesets = newConfig.getConfigurationSection("modesets");
             if (targetModesets == null) {
                 targetModesets = newConfig.createSection("modesets");

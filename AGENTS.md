@@ -57,7 +57,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Current project state
 
-- Paper 1.12 integration tests do not yet run the full fake-player test suite; legacy fake-player work needs a dedicated or version-aware NMS path.
+- Legacy fake players have dedicated 1.9 and 1.12 implementations; use focused native-flight validation when changing legacy projectiles.
 - Java 8 compatibility is required for main code. Avoid APIs such as records, pattern matching, `Stream.toList()`, and `Set.of`/`List.of` in Java 8-targeted code.
 - Main Java/Kotlin compilation targets Java 8 (`options.release.set(8)`, Kotlin `jvmTarget = 1.8`).
 - Pre-1.13 integration-test versions use `integrationTestJavaVersionLegacyPre13` (default 8); modern versions use Java 25 for `>=1.20.5` and Java 17 otherwise.
@@ -65,6 +65,9 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Core implementation constraints
 
+- `old-potion-throwing` independently restores player splash-potion launch geometry and Gaussian spread; lingering potions, witches and dispensers retain native launches. Position offsets use legacy Paper post-insertion events or detected modern section insertion before launch completes, avoiding chunk-boundary removal and section-update movement guards. Unsupported servers use a next-tick relative offset. Custom gravity uses one age-aware task and keeps native drag and tick order; the first native tick remains unchanged.
+- `fishing-rod-velocity.gravity` defaults to 0.04. The legacy 1.8 and 1.9 hook uses 0.04; the rewritten hook (already present in 1.12) uses 0.03, detected through its enum state machine. Custom gravity preserves native water handling.
+- `OldPotionThrowingIntegrationTest` and `FishingGravityIntegrationTest` invoke real native item use and record consecutive native flight positions. Their shared helper does not synthesise launch events or advance entity ticks manually.
 - `projectile-knockback` restores knockback through small damage values; full damage resistance can prevent it, as documented in the bundled config comments.
 - Native critical damage uses Purpur's runtime per-world critical multiplier when its optional configuration API exists, including after Purpur reload. Non-positive or non-finite multipliers leave incoming damage unchanged because they cannot be safely reversed (#833).
 - Defence recalculation must replace the `MAGIC` damage modifier even when remaining damage is zero, so stale legacy resistance adjustments cannot cause excess damage (#621).
@@ -81,12 +84,13 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 - `ModuleInteractionEdgeCasesIntegrationTest` covers shield defence recalculation, damage listener ordering after reload, cancelled-hit immunity history, cache expiry after task restarts, fishing cancellation, and preservation of other plugins' exhaustion changes. Constructed events are identified in the spec; `PlayerRegenIntegrationTest` also exercises natural regeneration.
 
+- `LegacyFakePlayer9` must only insert a player entity if the real join pipeline has not already made it valid; duplicate insertion removes the joined player through UUID collision handling.
 - `VersionedFakePlayer` uses the detected Paper join finaliser for versioned NMS servers such as 1.16.5. Its synthetic connection ticks in the native network phase and must be removed during cleanup; scheduler-driven player ticks can run before delayed plugin corrections.
 - Tests targeting entities through server commands must keep the target chunk loaded, restore its previous state afterwards, and verify the command took effect. A successful `dispatchCommand` return does not prove the target was found.
 - Tests run inside a real Paper server started by the Gradle `run-paper` plugin.
 - RunServer output is redirected to `build/integration-test-logs/<version>.log`; root and user-facing agents must leave any needed log inspection to subagents after compact summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` prove insufficient.
 - Kotlin tests use Kotest 6 for Java 11+ server targets (`KotestRunner`, `KotestProjectConfig`).
-- Java 8 targets use `LegacyTestRunner`, currently a smoke-test path rather than the full Kotest suite.
+- The harness currently always invokes Kotest. Pre-1.13 runs need `-PintegrationTestJavaVersionLegacyPre13=17` for Kotest compatibility and `-PintegrationTestServerJar=run/<version>/cache/patched_<version>.jar` to bypass the Java 8-only Paperclip bootstrap.
 - Several integration tests intentionally use synthetic Bukkit events or direct module handler calls. Consult `integration-test-verification` before assuming a test represents a real in-world action.
 
 ## Historical notes index

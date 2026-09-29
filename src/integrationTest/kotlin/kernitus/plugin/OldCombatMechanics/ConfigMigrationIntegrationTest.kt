@@ -124,6 +124,87 @@ class ConfigMigrationIntegrationTest :
             }
         }
 
+        test("modern config upgrade rejects duplicate and conflicting assignments") {
+            runSync {
+                for (conflict in listOf(false, true)) {
+                    withConfigFile {
+                        val configFile = File(ocm.dataFolder, "config.yml")
+                        val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                        oldConfig.set("config-version", oldConfig.getInt("config-version") - 1)
+                        oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                        ModuleLoader.getModules().forEach { oldConfig.set("${it.configName}.enabled", null) }
+                        if (conflict) {
+                            oldConfig.set(
+                                "disabled_modules",
+                                oldConfig.getStringList("disabled_modules") + "fishing-rod-velocity",
+                            )
+                        } else {
+                            oldConfig.set(
+                                "always_enabled_modules",
+                                oldConfig.getStringList("always_enabled_modules") + "fishing-rod-velocity",
+                            )
+                        }
+                        oldConfig.save(configFile)
+                        io.kotest.assertions.throwables
+                            .shouldThrow<IllegalStateException> { Config.reload() }
+                    }
+                }
+            }
+        }
+
+        test("config upgrade preserves explicitly empty modern modesets") {
+            runSync {
+                withConfigFile {
+                    val configFile = File(ocm.dataFolder, "config.yml")
+                    val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                    oldConfig.set("config-version", oldConfig.getInt("config-version") - 1)
+                    oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                    val section = oldConfig.getConfigurationSection("modesets")!!
+                    val modesetModules = section.getKeys(false).flatMap { section.getStringList(it) }
+                    val always =
+                        (oldConfig.getStringList("always_enabled_modules") + modesetModules)
+                            .distinct()
+                            .filter { it != "old-potion-throwing" }
+                    oldConfig.set("always_enabled_modules", always)
+                    oldConfig.set("modesets", emptyMap<String, Any>())
+                    oldConfig.save(configFile)
+                    Config.reload()
+                    ocm.config
+                        .getConfigurationSection("modesets")!!
+                        .getKeys(false)
+                        .isEmpty() shouldBe true
+                    Config.getModesets().isEmpty() shouldBe true
+                    ocm.config.getStringList("always_enabled_modules") shouldBe always
+                    ocm.config.getStringList("disabled_modules").shouldContain("old-potion-throwing")
+                }
+            }
+        }
+
+        test("config upgrade preserves modern assignments and safely introduces potion throwing") {
+            runSync {
+                withConfigFile {
+                    val configFile = File(ocm.dataFolder, "config.yml")
+                    val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                    oldConfig.set("config-version", oldConfig.getInt("config-version") - 1)
+                    oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                    ModuleLoader.getModules().forEach { oldConfig.set("${it.configName}.enabled", null) }
+                    val oldModes = oldConfig.getStringList("modesets.old").filter { it != "old-potion-throwing" }
+                    oldConfig.set("modesets.custom", oldModes)
+                    oldConfig.set("modesets.old", null)
+                    val always = oldConfig.getStringList("always_enabled_modules") + "attack-range"
+                    val disabled = oldConfig.getStringList("disabled_modules").filter { it != "attack-range" }
+                    oldConfig.set("always_enabled_modules", always)
+                    oldConfig.set("disabled_modules", disabled)
+                    oldConfig.save(configFile)
+                    Config.reload()
+                    ocm.config.getStringList("always_enabled_modules") shouldBe always
+                    ocm.config.getStringList("disabled_modules").toSet() shouldBe
+                        (disabled + "old-potion-throwing").toSet()
+                    ocm.config.getStringList("modesets.custom") shouldBe oldModes
+                }
+            }
+        }
+
         test("config upgrade preserves existing default world modesets") {
             runSync {
                 withConfigFile {
@@ -141,6 +222,14 @@ class ConfigMigrationIntegrationTest :
                             "custom" to listOf("disable-offhand"),
                             "alt" to listOf("old-golden-apples"),
                         ),
+                    )
+                    // Keep this modern assignment valid while testing preservation of the world default.
+                    oldConfig.set(
+                        "disabled_modules",
+                        oldConfig.getStringList("disabled_modules").filter {
+                            it !=
+                                "disable-offhand"
+                        },
                     )
                     oldConfig.set("worlds.__default__", listOf("legacy-default"))
                     oldConfig.set("worlds.world", listOf("custom"))

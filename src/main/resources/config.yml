@@ -53,6 +53,7 @@ modesets:
     - "old-player-regen"
     - "old-armour-strength"
     - "old-potion-effects"
+    - "old-potion-throwing"
     - "old-critical-hits"
   new:
     - "old-golden-apples"
@@ -316,7 +317,11 @@ old-fishing-knockback:
 fishing-rod-velocity:
   # In 1.9+ fishing rods go 8 blocks instead of 12 blocks
   # This is due to both gravity and initial launch speed
-  # Set to true to revert back to the old calculations and gravity
+  # Enabled through the module lists above; always uses the 1.8 launch calculation.
+  # Downward acceleration in blocks per tick squared, from 0 to 1.
+  # Vanilla 1.8 and 1.9: 0.04. Vanilla 1.12 and modern servers (including 1.14+): 0.03.
+  # Custom gravity takes effect from the next server tick. Water behaviour stays native.
+  gravity: 0.04
 
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
@@ -394,6 +399,27 @@ old-golden-apples:
   # Enable this if you have another plugin which adds a crafting recipe for
   # enchanted golden apples (requires server restart)
   no-conflict-mode: false
+
+old-potion-throwing:
+  # Independent of old-potion-effects. Only changes player-thrown splash potions.
+  # Lingering potions, witches and dispensers keep their native launch behaviour.
+  # Position offsets precede movement on Paper; servers without a safe insertion hook use the next tick.
+  # Launch speed, in blocks per tick (0 to 10). Vanilla 1.8: 0.5; vanilla 1.9: 0.5.
+  launch-speed: 0.5
+  # Angles in degrees (-180 to 180). Pitch changes the vertical component only.
+  # Vanilla 1.8 and 1.9: pitch -20, yaw 0. Native Gaussian launch spread is retained.
+  pitch-offset: -20.0
+  yaw-offset: 0.0
+  # Blocks right of the shooter's eyes (-4 to 4). Vanilla 1.8: 0.16; vanilla 1.9: 0.
+  sideways-offset: 0.16
+  # Blocks above the eyes (-4 to 4, negative means below). Vanilla 1.8 and 1.9: -0.1.
+  vertical-offset: -0.1
+  # Vanilla 1.8: false; vanilla 1.9: true.
+  # When true, add horizontal player velocity, and vertical velocity only while airborne.
+  inherit-player-velocity: false
+  # Downward acceleration in blocks per tick squared (0 to 1). Vanilla 1.8 and 1.9: 0.05.
+  # Custom gravity takes effect from the next server tick; native drag and tick order are retained.
+  gravity: 0.05
 
 old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
@@ -606,4 +632,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 74
+config-version: 75

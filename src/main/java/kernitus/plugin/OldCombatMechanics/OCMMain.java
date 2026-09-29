@@ -285,6 +285,7 @@ public class OCMMain extends JavaPlugin {
         ModuleLoader.addModule(new ModuleOldBurnDelay(this));
         ModuleLoader.addModule(new ModuleAttackFrequency(this));
         ModuleLoader.addModule(new ModuleFishingRodVelocity(this));
+        ModuleLoader.addModule(new ModuleOldPotionThrowing(this));
 
         ModuleLoader.addModule(new ModuleAttackSounds(this));
         ModuleLoader.addModule(new ModuleSwordSweepParticles(this));
