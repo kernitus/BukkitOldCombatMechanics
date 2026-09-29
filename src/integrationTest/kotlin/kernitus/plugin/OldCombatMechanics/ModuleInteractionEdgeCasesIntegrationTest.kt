@@ -21,6 +21,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.entity.Cow
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -243,6 +244,100 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                 calls shouldBe 2
             } finally {
                 HandlerList.unregisterAll(listener)
+            }
+        }
+
+        test("cancelled damage preserves the previous accepted baseline") {
+            configure("old-armour-strength")
+            val target = victim.world.spawn(Location(victim.world, 12.0, 100.0, 0.0), Cow::class.java)
+            val source = victim.world.spawn(Location(victim.world, 15.0, 100.0, 0.0), Cow::class.java)
+            target.setAI(false)
+            source.setAI(false)
+            target.setGravity(false)
+            source.setGravity(false)
+            var cancelHit = false
+            var cancellations = 0
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+                    fun onDamage(event: EntityDamageByEntityEvent) {
+                        if (event.entity == target && cancelHit) {
+                            event.isCancelled = true
+                            cancellations++
+                        }
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            try {
+                val initial = target.health
+                target.damage(4.0, source)
+                target.health shouldBe (initial - 4.0 plusOrMinus 0.0001)
+                ticks(2)
+                cancelHit = true
+                target.damage(10.0, source)
+                cancellations shouldBe 1
+                target.health shouldBe (initial - 4.0 plusOrMinus 0.0001)
+                ticks(2)
+                cancelHit = false
+                withClue("the third hit must still be inside the original immunity window") {
+                    (target.noDamageTicks > target.maximumNoDamageTicks / 2) shouldBe true
+                }
+                target.damage(6.0, source)
+                withClue("third hit health: expected=${initial - 6.0}, actual=${target.health}") {
+                    target.health shouldBe (initial - 6.0 plusOrMinus 0.0001)
+                }
+            } finally {
+                HandlerList.unregisterAll(listener)
+                target.remove()
+                source.remove()
+            }
+        }
+
+        test("cancelled outer damage preserves nested accepted damage") {
+            configure("old-armour-strength")
+            val target = victim.world.spawn(Location(victim.world, 12.0, 100.0, 0.0), Cow::class.java)
+            val source = victim.world.spawn(Location(victim.world, 15.0, 100.0, 0.0), Cow::class.java)
+            target.setAI(false)
+            source.setAI(false)
+            target.setGravity(false)
+            source.setGravity(false)
+            var replaceHit = false
+            var nested = false
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+                    fun onDamage(event: EntityDamageByEntityEvent) {
+                        if (event.entity == target && replaceHit && !nested) {
+                            nested = true
+                            try {
+                                target.damage(8.0, source)
+                                event.isCancelled = true
+                            } finally {
+                                nested = false
+                            }
+                        }
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+            try {
+                val initial = target.health
+                target.damage(4.0, source)
+                ticks(2)
+                replaceHit = true
+                target.damage(10.0, source)
+                withClue(
+                    "nested 8-damage hit should add 4 above the accepted baseline, despite the outer cancelled 10",
+                ) {
+                    target.health shouldBe (initial - 8.0 plusOrMinus 0.0001)
+                }
+                ticks(2)
+                replaceHit = false
+                target.damage(7.0, source)
+                target.health shouldBe (initial - 8.0 plusOrMinus 0.0001)
+            } finally {
+                HandlerList.unregisterAll(listener)
+                target.remove()
+                source.remove()
             }
         }
 

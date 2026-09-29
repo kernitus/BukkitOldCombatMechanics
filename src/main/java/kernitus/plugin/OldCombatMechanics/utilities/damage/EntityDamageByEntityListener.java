@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.IdentityHashMap;
 
 public class EntityDamageByEntityListener extends OCMModule {
 
@@ -30,6 +31,9 @@ public class EntityDamageByEntityListener extends OCMModule {
     private final Map<UUID, Double> lastDamages;
     private final Map<UUID, Long> lastDamageExpiryTicks;
     private long tickCounter;
+    private final Map<EntityDamageEvent, PendingDamage> pendingDamages = new IdentityHashMap<>();
+    private final Map<UUID, Long> acceptedDamageSequences = new HashMap<>();
+    private long damageSequence;
     private int expirySweepTaskId = -1;
     private static final long EXPIRY_SWEEP_INTERVAL_TICKS = 20L;
     private static final long MIN_LAST_DAMAGE_TTL_TICKS = 20L;
@@ -61,6 +65,8 @@ public class EntityDamageByEntityListener extends OCMModule {
             stopExpirySweeperIfNeeded();
             lastDamages.clear();
             lastDamageExpiryTicks.clear();
+            pendingDamages.clear();
+            acceptedDamageSequences.clear();
         }
     }
 
@@ -99,6 +105,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             final UUID uuid = entry.getKey();
             it.remove();
             lastDamages.remove(uuid);
+            acceptedDamageSequences.remove(uuid);
         }
     }
 
@@ -262,6 +269,16 @@ public class EntityDamageByEntityListener extends OCMModule {
     @EventHandler(priority = EventPriority.MONITOR)
     public void afterEntityDamage(EntityDamageEvent event) {
         final Entity damagee = event.getEntity();
+        final PendingDamage pending = pendingDamages.remove(event);
+        if (pending != null && !event.isCancelled() && damagee instanceof LivingEntity) {
+            final UUID uuid = damagee.getUniqueId();
+            // A nested accepted event must not be overwritten when an older outer event finishes.
+            if (pending.sequence > acceptedDamageSequences.getOrDefault(uuid, -1L)) {
+                lastDamages.put(uuid, pending.damage);
+                acceptedDamageSequences.put(uuid, pending.sequence);
+                touchExpiry((LivingEntity) damagee);
+            }
+        }
 
         if (event instanceof EntityDamageByEntityEvent) {
             if (damagee instanceof LivingEntity && lastDamages.containsKey(damagee.getUniqueId())) {
@@ -273,6 +290,8 @@ public class EntityDamageByEntityListener extends OCMModule {
                 }, 1L);
             }
         } else {
+            // A rejected environmental hit must not discard a successful hit's baseline.
+            if (event.isCancelled()) return;
             // if not EDBYE then we leave last damage as is
             if (damagee instanceof LivingEntity) {
                 final LivingEntity livingDamagee = (LivingEntity) damagee;
@@ -358,10 +377,9 @@ public class EntityDamageByEntityListener extends OCMModule {
                     + " ticks: " + livingDamagee.getNoDamageTicks() + " /" + livingDamagee.getMaximumNoDamageTicks()
             );
         }
-        // Update the last damage done, including when it was overdamage.
-        // This means attacks must keep increasing in value during immunity period to keep dealing overdamage.
-        lastDamages.put(livingDamagee.getUniqueId(), newLastDamage);
-        touchExpiry(livingDamagee);
+        // Other plugins can still reject this hit. Commit its baseline only at MONITOR,
+        // so cancelled hits cannot suppress later or nested accepted damage.
+        pendingDamages.put(event, new PendingDamage(newLastDamage, ++damageSequence));
 
         return newDamage;
     }
@@ -372,6 +390,7 @@ public class EntityDamageByEntityListener extends OCMModule {
         if (expiresAtTick != null && expiresAtTick <= tickCounter) {
             lastDamageExpiryTicks.remove(uuid);
             lastDamages.remove(uuid);
+            acceptedDamageSequences.remove(uuid);
             return null;
         }
         return lastDamages.get(uuid);
@@ -381,6 +400,17 @@ public class EntityDamageByEntityListener extends OCMModule {
         final UUID uuid = damagee.getUniqueId();
         lastDamageExpiryTicks.remove(uuid);
         lastDamages.remove(uuid);
+        acceptedDamageSequences.remove(uuid);
+    }
+
+    private static final class PendingDamage {
+        private final double damage;
+        private final long sequence;
+
+        private PendingDamage(double damage, long sequence) {
+            this.damage = damage;
+            this.sequence = sequence;
+        }
     }
 
     private boolean damageSourceBypassesCooldown(EntityDamageEvent event) {
