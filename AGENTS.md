@@ -64,6 +64,8 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Core implementation constraints
 
+- `projectile-knockback` restores knockback through small damage values; full damage resistance can prevent it, as documented in the bundled config comments.
+
 - Module assignment is strict for configurable modules at top-level category scope: every non-internal module must appear in at most one of `always_enabled_modules`, `disabled_modules`, or the aggregate `modesets` category. A module may appear in more than one individual modeset because modesets are alternative player modes.
 - Internal modules (`modeset-listener`, `attack-cooldown-tracker`, `entity-damage-listener`) are always enabled and must not be listed in configurable module groups.
 - bStats `enabled_modules` reports servers enabling each configurable module. `enabled_modules_count` (pie) and `enabled_modules_count_bar` (bar) report the distribution of enabled configurable module counts per server. All three exclude internal modules; the count charts include zero.

@@ -321,6 +321,8 @@ fishing-rod-velocity:
 projectile-knockback:
   # This adds knockback and/or damage to players when they get hit by snowballs, eggs & enderpearls
   # This has been a Bukkit bug for so long people thought it was vanilla when it was patched
+  # Knockback is triggered by the small damage values below. Full damage resistance
+  # (such as Resistance V or higher) can prevent this knockback.
   # This is the damage done by each projectile
   damage:
     snowball: 0.0001
