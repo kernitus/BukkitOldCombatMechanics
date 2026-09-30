@@ -12,6 +12,7 @@ import com.cryptomorin.xseries.XPotion
 import io.kotest.assertions.withClue
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.core.test.Enabled
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
@@ -21,6 +22,7 @@ import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEnti
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects
 import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.VersionCompatUtils
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -55,6 +57,9 @@ class WeaponDamageBaselineIntegrationTest :
         val plugin = JavaPlugin.getPlugin(OCMTestMain::class.java)
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
         extensions(MainThreadDispatcherExtension(plugin))
+
+        val sweepingEdgeAvailable = XEnchantment.SWEEPING_EDGE.get() != null
+        val sweepingEdgeReason = "Native Sweeping Edge enchantment is absent on this server"
 
         suspend fun ticks(count: Long) {
             suspendCancellableCoroutine<Unit> { continuation ->
@@ -263,10 +268,56 @@ class WeaponDamageBaselineIntegrationTest :
 
         fun weapon(name: String): ItemStack = checkNotNull(XMaterial.matchXMaterial(name).orElseThrow().parseItem())
 
+        fun absorption(entity: LivingEntity): Double =
+            try {
+                entity.absorptionAmount
+            } catch (_: NoSuchMethodError) {
+                VersionCompatUtils.getAbsorptionAmount(entity).toDouble()
+            }
+
+        fun setAbsorption(
+            entity: LivingEntity,
+            amount: Double,
+        ) {
+            // Newer native entities clamp absorption to this optional attribute.
+            XAttribute.MAX_ABSORPTION.get()?.let {
+                checkNotNull(entity.getAttribute(it)) { "Native absorption capacity attribute unavailable" }.baseValue =
+                    amount
+            }
+            try {
+                entity.absorptionAmount = amount
+            } catch (_: NoSuchMethodError) {
+                val handle = Reflector.invokeMethod<Any>(Reflector.getMethod(entity.javaClass, "getHandle"), entity)
+                val setter = checkNotNull(Reflector.getMethod(handle.javaClass, "setAbsorptionHearts", 1))
+                Reflector.invokeMethod<Any?>(setter, handle, amount.toFloat())
+            }
+        }
+
+        data class SweepHit(
+            val incoming: Double,
+            val previousDamage: Double,
+            val immunityTicks: Int,
+            val appliedBase: Double,
+            val bukkitBase: Double,
+            val nativeOverdamageReduction: Double,
+            val finalDamage: Double,
+            val cancelled: Boolean,
+            val health: Double,
+            val absorption: Double,
+        )
+
+        val nativeInvulnerabilityModifier =
+            EntityDamageEvent.DamageModifier
+                .values()
+                .firstOrNull { it.name == "INVULNERABILITY_REDUCTION" }
+
         data class SweepResult(
             val primary: Double,
             val secondary: Double,
             val nativeAttribute: Double,
+            val hits: List<SweepHit>,
+            val healthAfterAttempts: List<Double>,
+            val lastDamageBeforeAttempts: List<Double>,
         )
 
         suspend fun Fixture.sweep(
@@ -280,6 +331,8 @@ class WeaponDamageBaselineIntegrationTest :
             custom: (OCMEntityDamageByEntityEvent) -> Unit = {},
             foreign: (EntityDamageByEntityEvent) -> Unit = {},
             repeat: Boolean = false,
+            followUpItems: List<ItemStack> = emptyList(),
+            nativeWeakerSuppression: Boolean = false,
         ): SweepResult {
             targets.forEach { it.remove() }
             targets.clear()
@@ -290,14 +343,44 @@ class WeaponDamageBaselineIntegrationTest :
             val originalBase = attribute.baseValue
             var secondary: LivingEntity? = null
             var observed = 0
+            var incoming: Double? = null
+            var previousDamage = 0.0
+            var immunityTicks = 0
+            val hits = mutableListOf<SweepHit>()
+            val healthAfterAttempts = mutableListOf<Double>()
+            val lastDamageBeforeAttempts = mutableListOf<Double>()
             val listener =
                 object : Listener {
+                    @EventHandler(priority = EventPriority.LOWEST)
+                    fun nativeEvent(event: EntityDamageByEntityEvent) {
+                        if (event.entity != secondary || event.damager != attacker || incoming != null) return
+                        // With every configurable damage module disabled, the native control has no custom OCM event.
+                        val victim = checkNotNull(secondary)
+                        previousDamage = victim.lastDamage
+                        immunityTicks = victim.noDamageTicks
+                        incoming =
+                            event.damage +
+                            if ((
+                                    nativeInvulnerabilityModifier == null ||
+                                        !event.isApplicable(nativeInvulnerabilityModifier)
+                                ) &&
+                                immunityTicks > victim.maximumNoDamageTicks / 2
+                            ) {
+                                previousDamage
+                            } else {
+                                0.0
+                            }
+                    }
+
                     @EventHandler(priority = EventPriority.HIGHEST)
                     fun customEvent(event: OCMEntityDamageByEntityEvent) {
                         if (event.damagee != secondary || event.damager != attacker) return
                         event.isNativeSweepAttack shouldBe true
                         event.strengthModifier shouldBe 0.0
                         event.weaknessModifier shouldBe 0.0
+                        incoming = event.rawDamage
+                        previousDamage = checkNotNull(secondary).lastDamage
+                        immunityTicks = checkNotNull(secondary).noDamageTicks
                         custom(event)
                     }
 
@@ -311,6 +394,25 @@ class WeaponDamageBaselineIntegrationTest :
                         if (event.entity != secondary || event.damager != attacker) return
                         event.cause.name shouldBe "ENTITY_SWEEP_ATTACK"
                         observed++
+                        val victim = checkNotNull(secondary)
+                        val nativeReduction =
+                            nativeInvulnerabilityModifier
+                                ?.takeIf { event.isApplicable(it) }
+                                ?.let { event.getDamage(it) } ?: 0.0
+                        hits.add(
+                            SweepHit(
+                                checkNotNull(incoming),
+                                previousDamage,
+                                immunityTicks,
+                                event.damage + nativeReduction,
+                                event.damage,
+                                nativeReduction,
+                                event.finalDamage,
+                                event.isCancelled,
+                                victim.health,
+                                absorption(victim),
+                            ),
+                        )
                     }
                 }
             Bukkit.getPluginManager().registerEvents(listener, plugin)
@@ -334,14 +436,51 @@ class WeaponDamageBaselineIntegrationTest :
                 prepare(victim)
                 ticks(3)
                 val nativeAttribute = attribute.value
+                lastDamageBeforeAttempts.add(victim.lastDamage)
                 attack(primary)
                 observed shouldBe 1
+                hits[hits.lastIndex] = hits.last().copy(health = victim.health, absorption = absorption(victim))
+                healthAfterAttempts.add(victim.health)
                 if (repeat) {
                     ticks(2)
+                    incoming = null
+                    lastDamageBeforeAttempts.add(victim.lastDamage)
                     attack(target())
                     observed shouldBe 2
+                    hits[hits.lastIndex] = hits.last().copy(health = victim.health, absorption = absorption(victim))
+                    healthAfterAttempts.add(victim.health)
                 }
-                return SweepResult(40.0 - primary.health, 40.0 - victim.health, nativeAttribute)
+                for ((index, nextItem) in followUpItems.withIndex()) {
+                    equip(nextItem)
+                    check(
+                        victim.noDamageTicks > victim.maximumNoDamageTicks / 2,
+                    ) { "Follow-up must remain inside immunity" }
+                    val count = observed
+                    victim.teleport(location.clone().add(1.0, 0.0, 0.0))
+                    victim.velocity = Vector()
+                    incoming = null
+                    lastDamageBeforeAttempts.add(victim.lastDamage)
+                    attack(target())
+                    withClue("Follow-up ${nextItem.enchantments} hits=$hits victim=${victim.location}") {
+                        observed shouldBe
+                            count + if (nativeWeakerSuppression && index == followUpItems.lastIndex) 0 else 1
+                    }
+                    if (observed >
+                        count
+                    ) {
+                        hits[hits.lastIndex] =
+                            hits.last().copy(health = victim.health, absorption = absorption(victim))
+                    }
+                    healthAfterAttempts.add(victim.health)
+                }
+                return SweepResult(
+                    40.0 - primary.health,
+                    40.0 - victim.health,
+                    nativeAttribute,
+                    hits.toList(),
+                    healthAfterAttempts.toList(),
+                    lastDamageBeforeAttempts.toList(),
+                )
             } finally {
                 HandlerList.unregisterAll(listener)
                 attribute.baseValue = originalBase
@@ -766,12 +905,92 @@ class WeaponDamageBaselineIntegrationTest :
             }
         }
 
-        test("native sweep retains repeated-hit immunity and overdamage bookkeeping") {
+        test("native sweep retains equal-hit immunity") {
             fixture {
                 configure()
                 sweep(speed = 1000.0, repeat = true).secondary shouldBe (1.0 plusOrMinus 0.001)
             }
         }
+
+        for (amount in listOf(0.5, 2.0)) {
+            test("native sweep consumes absorption $amount before health") {
+                fixture {
+                    val results = mutableListOf<SweepResult>()
+                    for (enabled in listOf(false, true)) {
+                        configure(enabled)
+                        val result =
+                            sweep(prepare = {
+                                setAbsorption(it, amount)
+                                absorption(it) shouldBe (amount plusOrMinus 0.001)
+                            })
+                        result.hits.size shouldBe 1
+                        val hit = result.hits.single()
+                        withClue("enabled=$enabled absorption=$amount result=$result") {
+                            hit.incoming shouldBe (1.0 plusOrMinus 0.001)
+                        }
+                        hit.cancelled shouldBe false
+                        hit.absorption shouldBe (maxOf(0.0, amount - 1.0) plusOrMinus 0.001)
+                        val expectedLoss = maxOf(0.0, 1.0 - amount)
+                        hit.finalDamage shouldBe (expectedLoss plusOrMinus 0.001)
+                        result.secondary shouldBe (expectedLoss plusOrMinus 0.001)
+                        results.add(result)
+                    }
+                    results[1].secondary shouldBe (results[0].secondary plusOrMinus 0.001)
+                    results[1].hits.single().absorption shouldBe (results[0].hits.single().absorption plusOrMinus 0.001)
+                }
+            }
+        }
+
+        test("native sweep applies increasing overdamage then rejects a weaker hit")
+            .config(enabledOrReasonIf = { Enabled(sweepingEdgeAvailable, sweepingEdgeReason) }) {
+                fixture {
+                    val stronger =
+                        weapon("DIAMOND_SWORD").apply {
+                            addUnsafeEnchantment(checkNotNull(XEnchantment.SWEEPING_EDGE.get()), 3)
+                        }
+                    val results = mutableListOf<SweepResult>()
+                    for (enabled in listOf(false, true)) {
+                        configure(enabled)
+                        val result =
+                            sweep(
+                                speed = 1000.0,
+                                followUpItems = listOf(stronger, weapon("DIAMOND_SWORD")),
+                                nativeWeakerSuppression = !enabled,
+                            )
+                        withClue("enabled=$enabled hits=${result.hits}") {
+                            result.hits.size shouldBe if (enabled) 3 else 2
+                            val first = result.hits[0]
+                            val second = result.hits[1]
+                            first.incoming shouldBe (1.0 plusOrMinus 0.001)
+                            first.appliedBase shouldBe (1.0 plusOrMinus 0.001)
+                            first.health shouldBe (39.0 plusOrMinus 0.001)
+                            first.cancelled shouldBe false
+                            second.incoming shouldBe (6.25 plusOrMinus 0.001)
+                            second.previousDamage shouldBe (1.0 plusOrMinus 0.001)
+                            (second.immunityTicks > 10) shouldBe true
+                            second.appliedBase shouldBe (5.25 plusOrMinus 0.001)
+                            second.finalDamage shouldBe (5.25 plusOrMinus 0.001)
+                            second.health shouldBe (33.75 plusOrMinus 0.001)
+                            second.cancelled shouldBe false
+                            if (enabled) {
+                                val weaker = result.hits[2]
+                                weaker.incoming shouldBe (1.0 plusOrMinus 0.001)
+                                weaker.previousDamage shouldBe (6.25 plusOrMinus 0.001)
+                                (weaker.immunityTicks > 10) shouldBe true
+                                weaker.cancelled shouldBe true
+                            } else {
+                                // Vanilla rejects the weaker native attack before emitting a Bukkit damage event.
+                                result.lastDamageBeforeAttempts[2] shouldBe (6.25 plusOrMinus 0.001)
+                            }
+                            result.healthAfterAttempts.size shouldBe 3
+                            result.healthAfterAttempts[2] shouldBe (second.health plusOrMinus 0.001)
+                            result.secondary shouldBe (6.25 plusOrMinus 0.001)
+                        }
+                        results.add(result)
+                    }
+                    results[1].secondary shouldBe (results[0].secondary plusOrMinus 0.001)
+                }
+            }
 
         test("native sweep retains real shield blocking") {
             fixture {
