@@ -199,10 +199,9 @@ class OldCriticalHitsIntegrationTest :
         fun equip(
             player: Player,
             item: ItemStack,
-            native: Boolean = false,
         ) {
             if (isLegacy) {
-                // On legacy versions, avoid mutating item meta; directly adjust player attributes instead.
+                // Legacy attack speed uses player attributes; weapon damage follows native equipment ticking.
                 val meta = item.itemMeta
                 if (meta != null) {
                     runCatching {
@@ -214,17 +213,7 @@ class OldCriticalHitsIntegrationTest :
                     item.itemMeta = meta
                 }
 
-                val useDamageAttribute = !Reflector.versionIsNewerOrEqualTo(1, 12, 0)
-                if (useDamageAttribute) {
-                    val attackDamageAttribute = XAttribute.ATTACK_DAMAGE.get()
-                    val damageAttribute = attackDamageAttribute?.let { player.getAttribute(it) }
-                    val configuredDamage =
-                        WeaponDamages.getDamage(item.type).toDouble().takeIf { it > 0 }
-                            ?: (NewWeaponDamage.getDamageOrNull(item.type) ?: 1.0f).toDouble()
-                    // Native equipment ticks supply the held-item modifier; constructed fixtures retain
-                    // their existing injected baseline.
-                    damageAttribute?.baseValue = if (native) 1.0 else configuredDamage
-                }
+                // Native equipment ticks apply weapon damage modifiers to the player's default base.
                 player.inventory.setItemInMainHand(item)
                 applyAttackDamageModifiers(player, item)
                 player.updateInventory()
@@ -367,7 +356,7 @@ class OldCriticalHitsIntegrationTest :
                         }
                     }
 
-                    equip(attacker, weapon, nativeMultiplier != null)
+                    equip(attacker, weapon)
                 }
                 delayTicks(if (nativeMultiplier != null) 25 else 1)
                 if (isLegacy) {
@@ -470,7 +459,7 @@ class OldCriticalHitsIntegrationTest :
                     }
                 }
 
-                if (isLegacy) {
+                if (isLegacy && nativeMultiplier == null) {
                     // As a last resort on legacy, drive damage via Bukkit API to ensure EDBE fires.
                     runSync {
                         val base = WeaponDamages.getDamage(weapon.type).takeIf { it > 0 } ?: 1.0
@@ -823,8 +812,23 @@ class OldCriticalHitsIntegrationTest :
                 val ironAxe =
                     XMaterial.IRON_AXE.parseItem()
                         ?: error("IRON_AXE material not available")
-                val normalDamage = hitAndCaptureDamage(ironAxe, critical = false)
-                val criticalDamage = hitAndCaptureDamage(ironAxe, critical = true)
+                // Check native incoming damage as well as the configured final damage. This path invokes
+                // one native attack and requires its event, so API damage fallback cannot satisfy the test.
+                val nativeMultiplier = ServerCriticalMultiplier.get(attacker.world)
+                val normalDamage =
+                    hitAndCaptureDamage(
+                        ironAxe,
+                        critical = false,
+                        sprinting = false,
+                        nativeMultiplier = nativeMultiplier,
+                    )
+                val criticalDamage =
+                    hitAndCaptureDamage(
+                        ironAxe,
+                        critical = true,
+                        sprinting = false,
+                        nativeMultiplier = nativeMultiplier,
+                    )
                 testPlugin.logger.info("Crit debug (cfg=4.5): normal=$normalDamage critical=$criticalDamage")
                 withClue("normal=$normalDamage critical=$criticalDamage") {
                     normalDamage shouldBe (4.5 plusOrMinus 0.05)
