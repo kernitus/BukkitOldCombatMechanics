@@ -58,8 +58,27 @@ class WeaponDamageBaselineIntegrationTest :
         val ocm = JavaPlugin.getPlugin(OCMMain::class.java)
         extensions(MainThreadDispatcherExtension(plugin))
 
+        val distinctSweepCause = EntityDamageEvent.DamageCause.values().any { it.name == "ENTITY_SWEEP_ATTACK" }
         val sweepingEdgeAvailable = XEnchantment.SWEEPING_EDGE.get() != null
         val sweepingEdgeReason = "Native Sweeping Edge enchantment is absent on this server"
+        val persistentDataAvailable =
+            try {
+                Class.forName("org.bukkit.NamespacedKey")
+                Class.forName("org.bukkit.persistence.PersistentDataType")
+                Class.forName("org.bukkit.persistence.PersistentDataContainer")
+                ItemMeta::class.java.getMethod("getPersistentDataContainer")
+                true
+            } catch (_: ClassNotFoundException) {
+                false
+            } catch (_: NoSuchMethodException) {
+                false
+            }
+        val persistentDataReason = "Bukkit persistent-data API is absent on this server"
+        File(plugin.dataFolder, "weapon-baseline-capabilities.txt").writeText(
+            "distinctSweepCause=$distinctSweepCause\n" +
+                "SweepingEdge: ${if (sweepingEdgeAvailable) "available" else sweepingEdgeReason}\n" +
+                "PersistentData: ${if (persistentDataAvailable) "available" else persistentDataReason}\n",
+        )
 
         suspend fun ticks(count: Long) {
             suspendCancellableCoroutine<Unit> { continuation ->
@@ -375,9 +394,11 @@ class WeaponDamageBaselineIntegrationTest :
                     @EventHandler(priority = EventPriority.HIGHEST)
                     fun customEvent(event: OCMEntityDamageByEntityEvent) {
                         if (event.damagee != secondary || event.damager != attacker) return
-                        event.isNativeSweepAttack shouldBe true
-                        event.strengthModifier shouldBe 0.0
-                        event.weaknessModifier shouldBe 0.0
+                        event.isNativeSweepAttack shouldBe distinctSweepCause
+                        if (distinctSweepCause) {
+                            event.strengthModifier shouldBe 0.0
+                            event.weaknessModifier shouldBe 0.0
+                        }
                         incoming = event.rawDamage
                         previousDamage = checkNotNull(secondary).lastDamage
                         immunityTicks = checkNotNull(secondary).noDamageTicks
@@ -392,7 +413,8 @@ class WeaponDamageBaselineIntegrationTest :
                     @EventHandler(priority = EventPriority.MONITOR)
                     fun capture(event: EntityDamageByEntityEvent) {
                         if (event.entity != secondary || event.damager != attacker) return
-                        event.cause.name shouldBe "ENTITY_SWEEP_ATTACK"
+                        // Target identity identifies the native secondary hit even when it shares the primary cause.
+                        event.cause.name shouldBe if (distinctSweepCause) "ENTITY_SWEEP_ATTACK" else "ENTITY_ATTACK"
                         observed++
                         val victim = checkNotNull(secondary)
                         val nativeReduction =
@@ -499,38 +521,7 @@ class WeaponDamageBaselineIntegrationTest :
             operation: AttributeModifier.Operation,
             amount: Double,
             slot: EquipmentSlot = EquipmentSlot.HAND,
-        ): ItemStack {
-            val item = weapon("DIAMOND_SWORD")
-            val meta = checkNotNull(item.itemMeta)
-            val attribute = checkNotNull(XAttribute.ATTACK_DAMAGE.get())
-            addAttributeModifierCompat(
-                meta,
-                attribute,
-                createAttributeModifier("foreign-damage", amount, operation, slot),
-            )
-            addAttributeModifierCompat(
-                meta,
-                checkNotNull(XAttribute.ATTACK_SPEED.get()),
-                createAttributeModifier(
-                    "foreign-speed",
-                    2.0,
-                    AttributeModifier.Operation.ADD_NUMBER,
-                    EquipmentSlot.HAND,
-                ),
-            )
-            item.itemMeta = meta
-            // Unsupported ItemMeta APIs must not turn a custom-weapon test into a vanilla-weapon pass.
-            check(
-                item.itemMeta!!
-                    .getAttributeModifiers(
-                        attribute,
-                    )?.any { it.amount == amount && it.operation == operation } ==
-                    true,
-            ) {
-                "Custom item attribute fixture unavailable on this Bukkit API"
-            }
-            return item
-        }
+        ): ItemStack = WeaponBaselineNativeCompat.customWeapon(weapon("DIAMOND_SWORD"), operation, amount, slot)
 
         val families =
             listOf(
@@ -580,15 +571,29 @@ class WeaponDamageBaselineIntegrationTest :
                     fixture {
                         configure(enabled)
                         val item = customWeapon(operation, amount)
-                        val originalMeta = item.itemMeta!!.clone()
+                        val originalDamageModifiers =
+                            WeaponBaselineNativeCompat.modifiers(
+                                item,
+                                checkNotNull(XAttribute.ATTACK_DAMAGE.get()),
+                            )
+                        val originalSpeedModifiers =
+                            WeaponBaselineNativeCompat.modifiers(
+                                item,
+                                checkNotNull(XAttribute.ATTACK_SPEED.get()),
+                            )
                         ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
                         reload()
                         damage(item) shouldBe (expected plusOrMinus 0.001)
-                        val heldMeta = attacker.inventory.itemInMainHand.itemMeta!!
-                        heldMeta.getAttributeModifiers(checkNotNull(XAttribute.ATTACK_DAMAGE.get())) shouldBe
-                            originalMeta.getAttributeModifiers(checkNotNull(XAttribute.ATTACK_DAMAGE.get()))
-                        heldMeta.getAttributeModifiers(checkNotNull(XAttribute.ATTACK_SPEED.get())) shouldBe
-                            originalMeta.getAttributeModifiers(checkNotNull(XAttribute.ATTACK_SPEED.get()))
+                        WeaponBaselineNativeCompat.modifiers(
+                            attacker.inventory.itemInMainHand,
+                            checkNotNull(XAttribute.ATTACK_DAMAGE.get()),
+                        ) shouldBe
+                            originalDamageModifiers
+                        WeaponBaselineNativeCompat.modifiers(
+                            attacker.inventory.itemInMainHand,
+                            checkNotNull(XAttribute.ATTACK_SPEED.get()),
+                        ) shouldBe
+                            originalSpeedModifiers
                     }
                 }
             }
@@ -765,7 +770,7 @@ class WeaponDamageBaselineIntegrationTest :
             for (enchanted in listOf(false, true)) {
                 test(
                     "native sweep preserves $effectName damage with ${if (enchanted) "enchanted fast" else "plain slow"} attacks",
-                ) {
+                ).config(enabledOrReasonIf = { Enabled(!enchanted || sweepingEdgeAvailable, sweepingEdgeReason) }) {
                     fixture {
                         configure(true, listOf("old-potion-effects", "old-critical-hits"))
                         ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
@@ -829,21 +834,22 @@ class WeaponDamageBaselineIntegrationTest :
             }
         }
 
-        test("native sweep equal to a weapon baseline retains the incoming amount") {
-            fixture {
-                configure()
-                ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
-                reload()
-                val item = weapon("DIAMOND_SWORD")
-                item.addUnsafeEnchantment(checkNotNull(XEnchantment.SWEEPING_EDGE.get()), 3)
-                val enabled = sweep(item, base = 2.0)
-                configure(false)
-                val control = sweep(item, base = 2.0)
-                enabled.secondary shouldBe (control.secondary plusOrMinus 0.001)
-                enabled.secondary shouldBe (7.0 plusOrMinus 0.001)
-                enabled.primary shouldBe (8.0 plusOrMinus 0.001)
+        test("native sweep equal to a weapon baseline retains the incoming amount")
+            .config(enabledOrReasonIf = { Enabled(sweepingEdgeAvailable, sweepingEdgeReason) }) {
+                fixture {
+                    configure()
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                    reload()
+                    val item = weapon("DIAMOND_SWORD")
+                    item.addUnsafeEnchantment(checkNotNull(XEnchantment.SWEEPING_EDGE.get()), 3)
+                    val enabled = sweep(item, base = 2.0)
+                    configure(false)
+                    val control = sweep(item, base = 2.0)
+                    enabled.secondary shouldBe (control.secondary plusOrMinus 0.001)
+                    enabled.secondary shouldBe (7.0 plusOrMinus 0.001)
+                    enabled.primary shouldBe (8.0 plusOrMinus 0.001)
+                }
             }
-        }
 
         for (adjustment in listOf(
             "custom base",
@@ -999,11 +1005,13 @@ class WeaponDamageBaselineIntegrationTest :
                 ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 100)
                 reload()
                 val defender = FakePlayer(plugin)
+                val defenderFloor = location.clone().add(0.0, -1.0, -1.0).block
+                val originalDefenderFloor = defenderFloor.state
                 try {
+                    defenderFloor.type = Material.STONE
                     defender.spawn(location.clone().add(0.0, 0.0, -1.0))
                     val player = checkNotNull(Bukkit.getPlayer(defender.uuid))
                     player.gameMode = GameMode.SURVIVAL
-                    player.setGravity(false)
                     player.foodLevel = 10
                     player.saturation = 0f
                     checkNotNull(player.getAttribute(checkNotNull(XAttribute.MAX_HEALTH.get()))).baseValue = 100.0
@@ -1021,6 +1029,7 @@ class WeaponDamageBaselineIntegrationTest :
                                 player.health = 40.0
                                 // Raise a native shield; the modern helper sets its use counter directly.
                                 defender.doBlocking()
+                                WeaponBaselineNativeCompat.ensureOffhandUse(player)
                                 // Legacy offhand use needs the native shield activation delay.
                                 ticks(6)
                                 player.isBlocking shouldBe true
@@ -1038,6 +1047,7 @@ class WeaponDamageBaselineIntegrationTest :
                     }
                 } finally {
                     if (Bukkit.getPlayer(defender.uuid) != null) defender.removePlayer()
+                    originalDefenderFloor.update(true, false)
                 }
             }
         }
@@ -1105,15 +1115,15 @@ class WeaponDamageBaselineIntegrationTest :
                 item.itemMeta = foreignMeta
                 equip(item)
                 val originalModifiers =
-                    item.itemMeta!!.getAttributeModifiers(
-                        checkNotNull(XAttribute.ATTACK_DAMAGE.get()),
-                    )
+                    WeaponBaselineNativeCompat.modifiers(item, checkNotNull(XAttribute.ATTACK_DAMAGE.get()))
                 for (mode in listOf("new", "old", "new", "old")) {
                     modeset(mode)
                     reload()
                     damage(attacker.inventory.itemInMainHand) shouldBe (14.0 plusOrMinus 0.001)
-                    attacker.inventory.itemInMainHand.itemMeta!!
-                        .getAttributeModifiers(checkNotNull(XAttribute.ATTACK_DAMAGE.get())) shouldBe originalModifiers
+                    WeaponBaselineNativeCompat.modifiers(
+                        attacker.inventory.itemInMainHand,
+                        checkNotNull(XAttribute.ATTACK_DAMAGE.get()),
+                    ) shouldBe originalModifiers
                     attacker.inventory.itemInMainHand.itemMeta!!
                         .displayName shouldBe "Later foreign edit"
                     attacker.inventory.itemInMainHand.itemMeta!!
@@ -1122,43 +1132,44 @@ class WeaponDamageBaselineIntegrationTest :
             }
         }
 
-        test("foreign persistent data survives held item reload and modeset transitions") {
-            fixture {
-                ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
-                reload()
-                val item = weapon("DIAMOND_SWORD")
-                val meta = item.itemMeta!!
-                meta.setDisplayName("Foreign persistent weapon")
-                meta.lore = listOf("Foreign persistent lore")
-                // Resolve optional Bukkit classes here, keeping the rest of this spec linkable on legacy APIs.
-                val keyClass = Class.forName("org.bukkit.NamespacedKey")
-                val key =
-                    keyClass
-                        .getConstructor(org.bukkit.plugin.Plugin::class.java, String::class.java)
-                        .newInstance(plugin, "foreign-weapon-baseline")
-                val typeClass = Class.forName("org.bukkit.persistence.PersistentDataType")
-                val stringType = typeClass.getField("STRING").get(null)
-                val containerClass = Class.forName("org.bukkit.persistence.PersistentDataContainer")
-                val container = ItemMeta::class.java.getMethod("getPersistentDataContainer").invoke(meta)
-                containerClass
-                    .getMethod("set", keyClass, typeClass, Any::class.java)
-                    .invoke(container, key, stringType, "foreign-value")
-                item.itemMeta = meta
-                equip(item)
-                for (mode in listOf("new", "old", "new", "old")) {
-                    modeset(mode)
+        test("foreign persistent data survives held item reload and modeset transitions")
+            .config(enabledOrReasonIf = { Enabled(persistentDataAvailable, persistentDataReason) }) {
+                fixture {
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
                     reload()
-                    val held = attacker.inventory.itemInMainHand.itemMeta!!
-                    held.displayName shouldBe "Foreign persistent weapon"
-                    held.lore shouldBe listOf("Foreign persistent lore")
-                    val heldContainer = ItemMeta::class.java.getMethod("getPersistentDataContainer").invoke(held)
+                    val item = weapon("DIAMOND_SWORD")
+                    val meta = item.itemMeta!!
+                    meta.setDisplayName("Foreign persistent weapon")
+                    meta.lore = listOf("Foreign persistent lore")
+                    // Resolve optional Bukkit classes here, keeping the rest of this spec linkable on legacy APIs.
+                    val keyClass = Class.forName("org.bukkit.NamespacedKey")
+                    val key =
+                        keyClass
+                            .getConstructor(org.bukkit.plugin.Plugin::class.java, String::class.java)
+                            .newInstance(plugin, "foreign-weapon-baseline")
+                    val typeClass = Class.forName("org.bukkit.persistence.PersistentDataType")
+                    val stringType = typeClass.getField("STRING").get(null)
+                    val containerClass = Class.forName("org.bukkit.persistence.PersistentDataContainer")
+                    val container = ItemMeta::class.java.getMethod("getPersistentDataContainer").invoke(meta)
                     containerClass
-                        .getMethod("get", keyClass, typeClass)
-                        .invoke(heldContainer, key, stringType) shouldBe "foreign-value"
+                        .getMethod("set", keyClass, typeClass, Any::class.java)
+                        .invoke(container, key, stringType, "foreign-value")
+                    item.itemMeta = meta
+                    equip(item)
+                    for (mode in listOf("new", "old", "new", "old")) {
+                        modeset(mode)
+                        reload()
+                        val held = attacker.inventory.itemInMainHand.itemMeta!!
+                        held.displayName shouldBe "Foreign persistent weapon"
+                        held.lore shouldBe listOf("Foreign persistent lore")
+                        val heldContainer = ItemMeta::class.java.getMethod("getPersistentDataContainer").invoke(held)
+                        containerClass
+                            .getMethod("get", keyClass, typeClass)
+                            .invoke(heldContainer, key, stringType) shouldBe "foreign-value"
+                    }
+                    damage(attacker.inventory.itemInMainHand) shouldBe (4.625 plusOrMinus 0.001)
                 }
-                damage(attacker.inventory.itemInMainHand) shouldBe (4.625 plusOrMinus 0.001)
             }
-        }
 
         for (custom in listOf(true, false)) {
             test("native transfer to new-mode player preserves metadata for custom weapon $custom") {
@@ -1209,7 +1220,7 @@ class WeaponDamageBaselineIntegrationTest :
                             }
                         listeners.add(listener)
                         Bukkit.getPluginManager().registerEvents(listener, plugin)
-                        attacker.dropItem(true) shouldBe true
+                        WeaponBaselineNativeCompat.dropSelectedItem(attacker) shouldBe true
                         attacker.inventory.itemInMainHand.type shouldBe Material.AIR
                         val entity = checkNotNull(dropped) { "Native drop did not emit PlayerDropItemEvent" }
                         if (custom) entity.itemStack shouldBe original
