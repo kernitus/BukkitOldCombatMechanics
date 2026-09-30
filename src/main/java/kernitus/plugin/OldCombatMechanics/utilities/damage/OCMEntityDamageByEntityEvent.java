@@ -128,6 +128,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         if (isNativeSweepAttack()) {
             // Native sweep formulae differ between servers. Retain their offensive amount and let
             // the common damage pipeline apply immunity and defence without reversing primary-hit effects.
+            // Known limitation (#890): Sweeping Edge uses the server's native attack damage. Changes
+            // OCM makes to weapon damage or Strength in the primary Bukkit damage event do not feed
+            // into that calculation, so sweep damage can differ from the configured primary damage.
+            // Direct weapon-attribute changes should address the weapon component; verify this across
+            // server versions before changing this path, and account for potion effects separately.
             baseDamage = this.rawDamage;
             return;
         }
