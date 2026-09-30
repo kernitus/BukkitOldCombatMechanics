@@ -33,7 +33,9 @@ import org.bukkit.attribute.AttributeModifier
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.Event
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
@@ -69,6 +71,7 @@ class OldCriticalHitsIntegrationTest :
         extensions(MainThreadDispatcherExtension(testPlugin))
 
         val isLegacy = !Reflector.versionIsNewerOrEqualTo(1, 13, 0)
+        var attackApiUnavailable = false
         val legacySpeedModifierId = UUID.fromString("c1f6010f-4d2e-4b2e-9a2f-3f0d0f1b2e3c")
 
         fun runSync(action: () -> Unit) {
@@ -234,6 +237,13 @@ class OldCriticalHitsIntegrationTest :
         fun spawnVictim(location: Location): LivingEntity {
             val world = location.world ?: error("World missing for victim spawn")
             return world.spawn(location, org.bukkit.entity.Cow::class.java).apply {
+                // The recharge wait must not let the target fall to its death before the native attack.
+                setAI(false)
+                try {
+                    setGravity(false)
+                } catch (_: NoSuchMethodError) {
+                    // Older Bukkit APIs retain native gravity.
+                }
                 maximumNoDamageTicks = 0
                 noDamageTicks = 0
                 isInvulnerable = false
@@ -250,10 +260,58 @@ class OldCriticalHitsIntegrationTest :
             val events = mutableListOf<EntityDamageByEntityEvent>()
             val ocmEvents = mutableListOf<OCMEntityDamageByEntityEvent>()
             lateinit var victim: LivingEntity
+            var preAttackCount = 0
+
+            fun diagnostic(phase: String) {
+                if (nativeMultiplier == null) return
+                File(testPlugin.dataFolder, "critical-native-diagnostics.txt").appendText(
+                    "phase=$phase critical=$critical " +
+                        "attackerHealth=${attacker.health} attackerDead=${attacker.isDead} " +
+                        "attackerValid=${attacker.isValid} online=${attacker.isOnline} " +
+                        "attackerY=${attacker.location.y} victimY=${victim.location.y} " +
+                        "victimHealth=${victim.health} victimDead=${victim.isDead} victimValid=${victim.isValid} " +
+                        "distance=${attacker.location.distance(victim.location)} " +
+                        "chunkLoaded=${victim.world.isChunkLoaded(
+                            victim.location.blockX shr 4,
+                            victim.location.blockZ shr 4,
+                        )} " +
+                        "preAttack=$preAttackCount events=${events.size} cancelled=${events.lastOrNull()?.isCancelled} ocmEvents=${ocmEvents.size}\n",
+                )
+            }
+
+            fun attack() {
+                diagnostic("before attack")
+                if (nativeMultiplier != null) {
+                    withClue("Native critical fixture must retain a living target throughout the recharge wait") {
+                        victim.isValid shouldBe true
+                        victim.isDead shouldBe false
+                        check(victim.health > 0.0)
+                        DamageUtils.getAttackCooldown.apply(attacker).toDouble() shouldBe (1.0 plusOrMinus 0.001)
+                    }
+                    if (!attackApiUnavailable) {
+                        try {
+                            attacker.attack(victim)
+                            diagnostic("after attack")
+                            return
+                        } catch (_: NoSuchMethodError) {
+                            attackApiUnavailable = true
+                        }
+                    }
+                    val handle = attacker.javaClass.getMethod("getHandle").invoke(attacker)
+                    val targetHandle = victim.javaClass.getMethod("getHandle").invoke(victim)
+                    val method =
+                        Reflector.getMethodAssignable(handle.javaClass, "attack", targetHandle.javaClass)
+                            ?: error("Native player attack method unavailable")
+                    method.invoke(handle, targetHandle)
+                } else {
+                    attackCompat(attacker, victim)
+                }
+                diagnostic("after attack")
+            }
 
             val listener =
                 object : Listener {
-                    @EventHandler
+                    @EventHandler(priority = EventPriority.MONITOR)
                     fun onDamage(event: EntityDamageByEntityEvent) {
                         if (event.damager.uniqueId == attacker.uniqueId &&
                             event.entity.uniqueId == victim.uniqueId
@@ -284,6 +342,23 @@ class OldCriticalHitsIntegrationTest :
                     val victimLocation = Location(world, 1.2, 100.0, 0.0)
                     victim = spawnVictim(victimLocation)
                     Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    if (nativeMultiplier != null) {
+                        @Suppress("UNCHECKED_CAST")
+                        val preClass =
+                            runCatching {
+                                Class.forName(
+                                    "io.papermc.paper.event.player.PrePlayerAttackEntityEvent",
+                                ) as Class<out Event>
+                            }.getOrNull()
+                        if (preClass != null) {
+                            Bukkit
+                                .getPluginManager()
+                                .registerEvent(preClass, listener, EventPriority.MONITOR, { _, event ->
+                                    val source = preClass.getMethod("getPlayer").invoke(event) as Player
+                                    if (source.uniqueId == attacker.uniqueId) preAttackCount++
+                                }, testPlugin)
+                        }
+                    }
 
                     equip(attacker, weapon)
                 }
@@ -335,7 +410,7 @@ class OldCriticalHitsIntegrationTest :
                                 "onGround=${attacker.isOnGround}",
                         )
                         attacker.updateInventory()
-                        attackCompat(attacker, victim)
+                        attack()
                     }
                 } else {
                     runSync {
@@ -355,7 +430,7 @@ class OldCriticalHitsIntegrationTest :
                                 "onGround=${attacker.isOnGround}",
                         )
                         attacker.updateInventory()
-                        attackCompat(attacker, victim)
+                        attack()
                     }
                 }
                 delayTicks(4)

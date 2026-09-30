@@ -165,6 +165,17 @@ object KotestRunner {
                             CopperToolsIntegrationTest::class,
                             OldPotionEffectsIntegrationTest::class,
                             InvulnerabilityDamageIntegrationTest::class,
+                            // This Paper experiment is opt-in and is excluded from the cross-version suite.
+                            *if (System
+                                    .getProperty(
+                                        "kotest.filter.specs",
+                                        "",
+                                    ).contains("PreAttackProbeIntegrationTest")
+                            ) {
+                                arrayOf(PreAttackProbeIntegrationTest::class)
+                            } else {
+                                emptyArray()
+                            },
                             FireAspectOverdamageIntegrationTest::class,
                             OldCriticalHitsIntegrationTest::class,
                             OldToolDamageMobIntegrationTest::class,
@@ -187,6 +198,7 @@ object KotestRunner {
                             EnderpearlCooldownIntegrationTest::class,
                             SpigotFunctionChooserIntegrationTest::class,
                             ChorusFruitIntegrationTest::class,
+                            WeaponDamageBaselineIntegrationTest::class,
                             CustomWeaponDamageIntegrationTest::class,
                             ToolDamageTooltipIntegrationTest::class,
                             SwordBlockingIntegrationTest::class,
