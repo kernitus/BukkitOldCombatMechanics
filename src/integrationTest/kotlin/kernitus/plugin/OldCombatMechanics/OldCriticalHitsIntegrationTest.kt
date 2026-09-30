@@ -199,6 +199,7 @@ class OldCriticalHitsIntegrationTest :
         fun equip(
             player: Player,
             item: ItemStack,
+            native: Boolean = false,
         ) {
             if (isLegacy) {
                 // On legacy versions, avoid mutating item meta; directly adjust player attributes instead.
@@ -220,7 +221,9 @@ class OldCriticalHitsIntegrationTest :
                     val configuredDamage =
                         WeaponDamages.getDamage(item.type).toDouble().takeIf { it > 0 }
                             ?: (NewWeaponDamage.getDamageOrNull(item.type) ?: 1.0f).toDouble()
-                    damageAttribute?.baseValue = configuredDamage
+                    // Native equipment ticks supply the held-item modifier; constructed fixtures retain
+                    // their existing injected baseline.
+                    damageAttribute?.baseValue = if (native) 1.0 else configuredDamage
                 }
                 player.inventory.setItemInMainHand(item)
                 applyAttackDamageModifiers(player, item)
@@ -260,6 +263,7 @@ class OldCriticalHitsIntegrationTest :
             val events = mutableListOf<EntityDamageByEntityEvent>()
             val ocmEvents = mutableListOf<OCMEntityDamageByEntityEvent>()
             lateinit var victim: LivingEntity
+            var targetSpawned = false
             var preAttackCount = 0
 
             fun diagnostic(phase: String) {
@@ -340,8 +344,11 @@ class OldCriticalHitsIntegrationTest :
                 runSync {
                     val world = checkNotNull(Bukkit.getWorld("world"))
                     val victimLocation = Location(world, 1.2, 100.0, 0.0)
-                    victim = spawnVictim(victimLocation)
-                    Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    if (nativeMultiplier == null) {
+                        victim = spawnVictim(victimLocation)
+                        targetSpawned = true
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
                     if (nativeMultiplier != null) {
                         @Suppress("UNCHECKED_CAST")
                         val preClass =
@@ -360,7 +367,7 @@ class OldCriticalHitsIntegrationTest :
                         }
                     }
 
-                    equip(attacker, weapon)
+                    equip(attacker, weapon, nativeMultiplier != null)
                 }
                 delayTicks(if (nativeMultiplier != null) 25 else 1)
                 if (isLegacy) {
@@ -370,6 +377,13 @@ class OldCriticalHitsIntegrationTest :
                 }
                 val base = Location(attacker.world, 0.0, 100.0, 0.0)
                 runSync {
+                    if (nativeMultiplier != null) {
+                        // Legacy cows retain gravity. Spawn after recharge so native flight cannot kill
+                        // or injure the target while the attacker waits.
+                        victim = spawnVictim(Location(attacker.world, 1.2, 100.0, 0.0))
+                        targetSpawned = true
+                        Bukkit.getPluginManager().registerEvents(listener, testPlugin)
+                    }
                     attacker.teleport(base)
                     attacker.velocity = Vector(0.0, 0.0, 0.0)
                     attacker.isSprinting = false
@@ -472,7 +486,7 @@ class OldCriticalHitsIntegrationTest :
             } finally {
                 HandlerList.unregisterAll(listener)
                 runSync {
-                    victim.remove()
+                    if (targetSpawned) victim.remove()
                 }
             }
         }

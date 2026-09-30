@@ -11,6 +11,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
+import io.netty.channel.embedded.EmbeddedChannel
 import kernitus.plugin.OldCombatMechanics.utilities.damage.AttackCooldownTracker
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kotlinx.coroutines.delay
@@ -42,14 +43,15 @@ class AttackCooldownTrackerIntegrationTest :
 
         test("attack cooldown tracking is only active where required") {
             val isModern = Reflector.versionIsNewerOrEqualTo(1, 16, 0)
+            lateinit var fake: FakePlayer
 
             val uuid =
                 runSync {
                     val world = Bukkit.getWorld("world") ?: error("world not loaded")
                     val location = Location(world, 0.0, 120.0, 0.0, 0f, 0f)
-                    val fp = FakePlayer(testPlugin)
-                    fp.spawn(location)
-                    fp.uuid
+                    fake = FakePlayer(testPlugin)
+                    fake.spawn(location)
+                    fake.uuid
                 }
 
             try {
@@ -67,11 +69,22 @@ class AttackCooldownTrackerIntegrationTest :
             } finally {
                 // Ensure we remove the fake player regardless of assertions.
                 runSync {
-                    val player = Bukkit.getPlayer(uuid)
-                    player?.let {
-                        // FakePlayer removal fires a quit event; this is enough to validate
-                        // map cleanup on legacy servers.
-                        it.kickPlayer("test")
+                    val legacy = Reflector.getField(fake.javaClass, "legacyImpl9").get(fake) as? LegacyFakePlayer9
+                    val network = legacy?.let { Reflector.getField(it.javaClass, "networkManager").get(it) }
+                    val connections =
+                        legacy?.let { Reflector.getField(it.javaClass, "connectedChannels").get(it) as Collection<*> }
+                    val channel =
+                        legacy?.let { Reflector.getField(it.javaClass, "channel").get(it) as EmbeddedChannel }
+                    fake.removePlayer()
+                    Bukkit.getPlayer(uuid) shouldBe null
+                    legacy?.let {
+                        connections!!.contains(network) shouldBe false
+                        channel!!.isOpen shouldBe false
+                        it.entityPlayer shouldBe null
+                        it.bukkitPlayer shouldBe null
+                        Reflector.getField(it.javaClass, "networkManager").get(it) shouldBe null
+                        Reflector.getField(it.javaClass, "connectedChannels").get(it) shouldBe null
+                        Reflector.getField(it.javaClass, "channel").get(it) shouldBe null
                     }
                 }
                 delay(2 * 50L)

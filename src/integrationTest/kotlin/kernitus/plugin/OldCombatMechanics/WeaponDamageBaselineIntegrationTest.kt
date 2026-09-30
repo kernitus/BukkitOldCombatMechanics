@@ -18,6 +18,7 @@ import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
+import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects
 import kernitus.plugin.OldCombatMechanics.utilities.potions.WeaknessCompensation
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -87,9 +88,10 @@ class WeaponDamageBaselineIntegrationTest :
                         checkNotNull(XAttribute.ATTACK_DAMAGE.get()),
                     )?.value} " +
                         "compensated=${WeaknessCompensation.hasModifier(attacker)} " +
-                        "amplifier=${attacker.getPotionEffect(
+                        "amplifier=${PotionEffects.get(
+                            attacker,
                             org.bukkit.potion.PotionEffectType.WEAKNESS,
-                        )?.amplifier} " +
+                        ).orElse(null)?.amplifier} " +
                         "raw=${event?.rawDamage} base=${event?.baseDamage} weakness=${event?.weaknessModifier}\n",
                 )
             }

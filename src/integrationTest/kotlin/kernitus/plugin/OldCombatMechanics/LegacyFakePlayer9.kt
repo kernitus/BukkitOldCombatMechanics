@@ -7,9 +7,13 @@
 package kernitus.plugin.OldCombatMechanics
 
 import com.mojang.authlib.GameProfile
+import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelOutboundHandlerAdapter
+import io.netty.channel.ChannelPromise
 import io.netty.channel.embedded.EmbeddedChannel
+import io.netty.util.ReferenceCountUtil
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
@@ -39,6 +43,9 @@ internal class LegacyFakePlayer9(
         private set
     var bukkitPlayer: Player? = null
         private set
+    private var channel: EmbeddedChannel? = null
+    private var networkManager: Any? = null
+    private var connectedChannels: MutableCollection<Any>? = null
 
     private fun nms(simple: String): Class<*> =
         Class.forName("net.minecraft.server.$cbVersion.$simple", true, Bukkit.getServer().javaClass.classLoader)
@@ -47,6 +54,16 @@ internal class LegacyFakePlayer9(
         Class.forName("org.bukkit.craftbukkit.$cbVersion.$simple", true, Bukkit.getServer().javaClass.classLoader)
 
     fun spawn(location: Location) {
+        check(entityPlayer == null) { "Legacy fake player is already spawned" }
+        try {
+            spawnInternal(location)
+        } catch (failure: Throwable) {
+            runCatching { removePlayer() }.exceptionOrNull()?.let { failure.addSuppressed(it) }
+            throw failure
+        }
+    }
+
+    private fun spawnInternal(location: Location) {
         val world = location.world ?: error("Location has no world")
         val craftWorld = craft("CraftWorld").cast(world)
         val worldServer = craftWorld.javaClass.getMethod("getHandle").invoke(craftWorld)
@@ -221,59 +238,49 @@ internal class LegacyFakePlayer9(
             }
         }
 
-        // Tick task to keep status/effects progressing
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(
-            plugin,
-            Runnable {
-                runCatching {
-                    // playerTick is "m" in 1.9; fall back to "n" if obf differs
-                    val tick =
-                        ep.javaClass.methods.firstOrNull { it.name == "m" && it.parameterCount == 0 }
-                            ?: ep.javaClass.methods.firstOrNull { it.name == "n" && it.parameterCount == 0 }
-                            ?: ep.javaClass.methods.firstOrNull { it.name == "playerTick" && it.parameterCount == 0 }
-                    tick?.invoke(ep)
-                    // Keep entity alive/valid flags cleared so Bukkit reports the player as valid
-                    runCatching {
-                        val deadField = ep.javaClass.superclass.getDeclaredField("dead")
-                        deadField.isAccessible = true
-                        deadField.setBoolean(ep, false)
-                    }
-                    runCatching {
-                        val craftEntity = Class.forName("org.bukkit.craftbukkit.$cbVersion.entity.CraftEntity")
-                        val validField = craftEntity.getDeclaredField("valid")
-                        validField.isAccessible = true
-                        validField.setBoolean(bukkitPlayer, true)
-                    }
-                }
-                // keep chunk tracking fresh
-                runCatching {
-                    val worldServer = ep.javaClass.getMethod("getWorld").invoke(ep)
-                    val pcm = worldServer.javaClass.getMethod("getPlayerChunkMap").invoke(worldServer)
-                    pcm.javaClass.methods
-                        .firstOrNull { it.name == "movePlayer" && it.parameterCount == 1 }
-                        ?.invoke(pcm, ep)
-                }
-                // Apply queued effects/fire ticks
-                runCatching {
-                    // Force entity base tick for fire/water checks
-                    ep.javaClass.methods
-                        .firstOrNull { it.name == "ae" && it.parameterCount == 0 } // baseTick in 1.9 obf
-                        ?.invoke(ep)
-                }
-                // Ensure water extinguishes burning for fake players on legacy
-                runCatching {
-                    val bp = bukkitPlayer
-                    if (bp != null && bp.fireTicks > 0 && bp.location.block.isLiquid) {
-                        bp.fireTicks = 0
-                    }
-                }
-            },
-            1L,
-            1L,
-        )
+        // Native connection ticking reaches EntityPlayer#k_, which applies held-item attributes and effects.
+        val serverConnection = mcServer.javaClass.getMethod("getServerConnection").invoke(mcServer)
+
+        @Suppress("UNCHECKED_CAST")
+        val connections =
+            Reflector
+                .getField(
+                    serverConnection.javaClass,
+                    "h",
+                ).get(serverConnection) as MutableCollection<Any>
+        synchronized(connections) { connections.add(nm) }
+        connectedChannels = connections
     }
 
     fun removePlayer() {
+        connectedChannels?.let { connections ->
+            synchronized(connections) { connections.remove(networkManager) }
+        }
+        connectedChannels = null
+        networkManager = null
+        try {
+            removeNativePlayer()
+        } finally {
+            try {
+                channel?.let { embedded ->
+                    try {
+                        embedded.finishAndReleaseAll()
+                    } catch (_: NoSuchMethodError) {
+                        // Netty 4.0 predates the combined finish-and-release helper.
+                        embedded.finish()
+                        while (true) ReferenceCountUtil.release(embedded.readInbound<Any>() ?: break)
+                        while (true) ReferenceCountUtil.release(embedded.readOutbound<Any>() ?: break)
+                    }
+                }
+            } finally {
+                channel = null
+                entityPlayer = null
+                bukkitPlayer = null
+            }
+        }
+    }
+
+    private fun removeNativePlayer() {
         val ep = entityPlayer ?: return
         val bp = bukkitPlayer ?: return
         val craftServer = craft("CraftServer").cast(Bukkit.getServer())
@@ -281,10 +288,8 @@ internal class LegacyFakePlayer9(
         val playerList = mcServer.javaClass.getMethod("getPlayerList").invoke(mcServer)
 
         bp.kickPlayer("§e$name left the game")
-        runCatching {
+        if (Bukkit.getPlayer(uuid) != null) {
             playerList.javaClass.getMethod("disconnect", nms("EntityPlayer")).invoke(playerList, ep)
-        }.onFailure {
-            runCatching { playerList.javaClass.getMethod("remove", nms("EntityPlayer")).invoke(playerList, ep) }
         }
         runCatching {
             val pcm = getPlayerChunkMap(ep)
@@ -370,17 +375,46 @@ internal class LegacyFakePlayer9(
         val dirClass = nms("EnumProtocolDirection")
         val clientbound = dirClass.getField("CLIENTBOUND").get(null)
         val nm = nmClass.getConstructor(dirClass).newInstance(clientbound)
+        networkManager = nm
         // Dummy channel with predictable address
         val remote = java.net.InetSocketAddress("127.0.0.1", 25565)
-        val channel = EmbeddedChannel(ChannelInboundHandlerAdapter())
-        val pipeline = channel.pipeline()
+        val keepAliveOut = nms("PacketPlayOutKeepAlive")
+        val keepAliveIn = nms("PacketPlayInKeepAlive")
+        val outgoingId = keepAliveOut.declaredFields.single { it.type == Int::class.javaPrimitiveType }
+        val incomingId = keepAliveIn.declaredFields.single { it.type == Int::class.javaPrimitiveType }
+        outgoingId.isAccessible = true
+        incomingId.isAccessible = true
+        val receiveKeepAlive = nms("PlayerConnection").getMethod("a", keepAliveIn)
+        val embedded =
+            EmbeddedChannel(
+                object : ChannelOutboundHandlerAdapter() {
+                    override fun write(
+                        context: ChannelHandlerContext,
+                        message: Any,
+                        promise: ChannelPromise,
+                    ) {
+                        try {
+                            if (keepAliveOut.isInstance(message)) {
+                                val response = keepAliveIn.getConstructor().newInstance()
+                                incomingId.setInt(response, outgoingId.getInt(message))
+                                receiveKeepAlive.invoke(getConnection(checkNotNull(entityPlayer)), response)
+                            }
+                            promise.setSuccess()
+                        } finally {
+                            ReferenceCountUtil.release(message)
+                        }
+                    }
+                },
+            )
+        channel = embedded
+        val pipeline = embedded.pipeline()
         if (pipeline.get("decoder") == null) {
             pipeline.addLast("decoder", ChannelInboundHandlerAdapter())
         }
         if (pipeline.get("encoder") == null) {
             pipeline.addLast("encoder", ChannelOutboundHandlerAdapter())
         }
-        nmClass.getField("channel").set(nm, channel)
+        Reflector.getField(nmClass, "channel").set(nm, embedded)
         runCatching { nmClass.getField("socketAddress").set(nm, remote) }
 
         val pcClass = nms("PlayerConnection")
