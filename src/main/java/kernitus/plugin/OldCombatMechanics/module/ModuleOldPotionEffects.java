@@ -337,6 +337,7 @@ public class ModuleOldPotionEffects extends OCMModule {
 
     @EventHandler(ignoreCancelled = true)
     public void onDamageByEntity(OCMEntityDamageByEntityEvent event) {
+        if (event.isNativeSweepAttack()) return;
         final Entity damager = event.getDamager();
         if (!isEnabled(damager, event.getDamagee())) return;
 

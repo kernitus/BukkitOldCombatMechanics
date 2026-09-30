@@ -131,7 +131,8 @@ attack-range:
 
 old-tool-damage:
   # This is to set the tool damage as in pre-1.9
-  # IMPORTANT: Also enable disable-sword-sweep module or sweeps will have the damage value of the weapon in hand
+  # When the server identifies sweep attacks separately, their native damage is preserved.
+  # Enable disable-sword-sweep to remove sweeping attacks for 1.8 behaviour.
   # NOTE: this will modify the damage, however the vanilla attribute tooltip will still show the 1.9+ values.
   # The tooltip section below is enabled by default so players can see the configured damage in-game.
   # Use old sharpness calculations, i.e. each level adds 1.25 damage

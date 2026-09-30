@@ -170,57 +170,59 @@ public class EntityDamageByEntityListener extends OCMModule {
             // Hurt components order: Overdamage - Armour - Resistance - Armour enchants - Absorption
             double newDamage = e.getBaseDamage();
 
-            debug("Base: " + e.getBaseDamage(), damager);
-            debug("Base: " + e.getBaseDamage());
+            if (!e.isNativeSweepAttack()) {
+                debug("Base: " + e.getBaseDamage(), damager);
+                debug("Base: " + e.getBaseDamage());
 
-            // Weakness potion
-            final double weaknessModifier = e.getWeaknessModifier() * e.getWeaknessLevel();
-            final double weaknessAddend = e.isWeaknessModifierMultiplier() ? newDamage * weaknessModifier : weaknessModifier;
-            // Don't modify newDamage yet so both potion effects are calculated off of the base damage
-            debug("Weak: " + weaknessAddend);
-            debug("Weak: " + weaknessAddend, damager);
+                // Weakness potion
+                final double weaknessModifier = e.getWeaknessModifier() * e.getWeaknessLevel();
+                final double weaknessAddend = e.isWeaknessModifierMultiplier() ? newDamage * weaknessModifier : weaknessModifier;
+                // Don't modify newDamage yet so both potion effects are calculated off of the base damage
+                debug("Weak: " + weaknessAddend);
+                debug("Weak: " + weaknessAddend, damager);
 
-            // Strength potion
-            debug("Strength level: " + e.getStrengthLevel());
-            debug("Strength level: " + e.getStrengthLevel(), damager);
-            double strengthModifier = e.getStrengthModifier() * e.getStrengthLevel();
-            if (!e.isStrengthModifierMultiplier()) newDamage += strengthModifier;
-            else if (e.isStrengthModifierAddend()) newDamage *= ++strengthModifier;
-            else newDamage *= strengthModifier;
+                // Strength potion
+                debug("Strength level: " + e.getStrengthLevel());
+                debug("Strength level: " + e.getStrengthLevel(), damager);
+                double strengthModifier = e.getStrengthModifier() * e.getStrengthLevel();
+                if (!e.isStrengthModifierMultiplier()) newDamage += strengthModifier;
+                else if (e.isStrengthModifierAddend()) newDamage *= ++strengthModifier;
+                else newDamage *= strengthModifier;
 
-            debug("Strength: " + strengthModifier);
-            debug("Strength: " + strengthModifier, damager);
+                debug("Strength: " + strengthModifier);
+                debug("Strength: " + strengthModifier, damager);
 
-            newDamage += weaknessAddend;
+                newDamage += weaknessAddend;
 
-            // Scale by attack delay
-            // float currentItemAttackStrengthDelay = 1.0D / GenericAttributes.ATTACK_SPEED * 20.0D
-            // attack strength ticker goes up by 1 every tick, is reset to 0 after an attack
-            // float f2 = MathHelper.clamp((attackStrengthTicker + 0.5) / currentItemAttackStrengthDelay, 0.0F, 1.0F);
-            // f *= 0.2F + f2 * f2 * 0.8F;
-            // the multiplier is equivalent to y = 0.8x^2 + 0.2
-            // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
-            // this implies 40 speed is the minimum to always have full attack strength
-            if (damager instanceof HumanEntity) {
-                final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F); // i.e. f2
-                debug("Scale by attack delay: " + newDamage + " *= 0.2 + " + cooldown + "^2 * 0.8");
-                newDamage *= 0.2F + cooldown * cooldown * 0.8F;
+                // Scale by attack delay
+                // float currentItemAttackStrengthDelay = 1.0D / GenericAttributes.ATTACK_SPEED * 20.0D
+                // attack strength ticker goes up by 1 every tick, is reset to 0 after an attack
+                // float f2 = MathHelper.clamp((attackStrengthTicker + 0.5) / currentItemAttackStrengthDelay, 0.0F, 1.0F);
+                // f *= 0.2F + f2 * f2 * 0.8F;
+                // the multiplier is equivalent to y = 0.8x^2 + 0.2
+                // because x (f2) is always between 0 and 1, the multiplier will always be between 0.2 and 1
+                // this implies 40 speed is the minimum to always have full attack strength
+                if (damager instanceof HumanEntity) {
+                    final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F); // i.e. f2
+                    debug("Scale by attack delay: " + newDamage + " *= 0.2 + " + cooldown + "^2 * 0.8");
+                    newDamage *= 0.2F + cooldown * cooldown * 0.8F;
+                }
+
+                // Critical hit
+                final double criticalMultiplier = e.getCriticalMultiplier();
+                debug("Crit " + newDamage + " *= " + criticalMultiplier);
+                newDamage *= criticalMultiplier;
+
+                // Enchantment damage, scaled by attack cooldown
+                double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
+                if (damager instanceof HumanEntity) {
+                    final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
+                    debug("Scale enchantments by attack delay: " + enchantmentDamage + " *= " + cooldown);
+                    enchantmentDamage *= cooldown;
+                }
+                newDamage += enchantmentDamage;
+                debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);
             }
-
-            // Critical hit
-            final double criticalMultiplier = e.getCriticalMultiplier();
-            debug("Crit " + newDamage + " *= " + criticalMultiplier);
-            newDamage *= criticalMultiplier;
-
-            // Enchantment damage, scaled by attack cooldown
-            double enchantmentDamage = e.getMobEnchantmentsDamage() + e.getSharpnessDamage();
-            if (damager instanceof HumanEntity) {
-                final float cooldown = DamageUtils.getAttackCooldown.apply((HumanEntity) damager, 0.5F);
-                debug("Scale enchantments by attack delay: " + enchantmentDamage + " *= " + cooldown);
-                enchantmentDamage *= cooldown;
-            }
-            newDamage += enchantmentDamage;
-            debug("Mob " + e.getMobEnchantmentsDamage() + " Sharp: " + e.getSharpnessDamage() + " Scaled: " + enchantmentDamage, damager);
 
             // Paper sword blocking (consumable-based, no shield)
             final ModuleSwordBlocking swordBlocking = ModuleSwordBlocking.getInstance();

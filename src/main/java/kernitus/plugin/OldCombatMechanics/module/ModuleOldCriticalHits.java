@@ -29,6 +29,7 @@ public class ModuleOldCriticalHits extends OCMModule {
 
     @EventHandler
     public void onOCMDamage(OCMEntityDamageByEntityEvent e) {
+        if (e.isNativeSweepAttack()) return;
         if (!isEnabled(e.getDamager(), e.getDamagee())) return;
 
         boolean isCritical = e.was1_8Crit();

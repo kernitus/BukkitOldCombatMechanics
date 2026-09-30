@@ -31,6 +31,15 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private boolean cancelled;
     private static final HandlerList handlers = new HandlerList();
+    private static final DamageCause nativeSweepCause = findNativeSweepCause();
+
+    private static DamageCause findNativeSweepCause() {
+        try {
+            return DamageCause.valueOf("ENTITY_SWEEP_ATTACK");
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
 
     @Override
     public HandlerList getHandlers() {
@@ -115,6 +124,13 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         if (weapon == null) weapon = new ItemStack(Material.AIR);
         // Technically the weapon could be in the offhand, i.e. a bow.
         // However, we are only concerned with melee weapons here, which will always be in the main hand.
+
+        if (isNativeSweepAttack()) {
+            // Native sweep formulae differ between servers. Retain their offensive amount and let
+            // the common damage pipeline apply immunity and defence without reversing primary-hit effects.
+            baseDamage = this.rawDamage;
+            return;
+        }
 
         final EntityType damageeType = damagee.getType();
 
@@ -266,6 +282,10 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public DamageCause getCause() {
         return cause;
+    }
+
+    public boolean isNativeSweepAttack() {
+        return nativeSweepCause != null && cause == nativeSweepCause;
     }
 
     public double getRawDamage() {

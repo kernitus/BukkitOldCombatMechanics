@@ -29,6 +29,7 @@ import org.bukkit.Material
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.entity.Cow
 import org.bukkit.entity.Item
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -192,7 +193,7 @@ class WeaponDamageBaselineIntegrationTest :
                 }
 
             fun attack(
-                target: Cow,
+                target: LivingEntity,
                 source: Player = attacker,
             ) {
                 source.isSprinting = false
@@ -261,6 +262,93 @@ class WeaponDamageBaselineIntegrationTest :
         }
 
         fun weapon(name: String): ItemStack = checkNotNull(XMaterial.matchXMaterial(name).orElseThrow().parseItem())
+
+        data class SweepResult(
+            val primary: Double,
+            val secondary: Double,
+            val nativeAttribute: Double,
+        )
+
+        suspend fun Fixture.sweep(
+            item: ItemStack = weapon("DIAMOND_SWORD"),
+            speed: Double = 4.0,
+            base: Double = 1.0,
+            effect: PotionEffect? = null,
+            matchingAttribute: Double? = null,
+            victimFactory: () -> LivingEntity = { target() },
+            prepare: suspend (LivingEntity) -> Unit = {},
+            custom: (OCMEntityDamageByEntityEvent) -> Unit = {},
+            foreign: (EntityDamageByEntityEvent) -> Unit = {},
+            repeat: Boolean = false,
+        ): SweepResult {
+            targets.forEach { it.remove() }
+            targets.clear()
+            attacker.activePotionEffects.forEach { attacker.removePotionEffect(it.type) }
+            val floor = location.clone().subtract(0.0, 1.0, 0.0).block
+            val previousFloor = floor.state
+            val attribute = checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_DAMAGE.get())))
+            val originalBase = attribute.baseValue
+            var secondary: LivingEntity? = null
+            var observed = 0
+            val listener =
+                object : Listener {
+                    @EventHandler(priority = EventPriority.HIGHEST)
+                    fun customEvent(event: OCMEntityDamageByEntityEvent) {
+                        if (event.damagee != secondary || event.damager != attacker) return
+                        event.isNativeSweepAttack shouldBe true
+                        event.strengthModifier shouldBe 0.0
+                        event.weaknessModifier shouldBe 0.0
+                        custom(event)
+                    }
+
+                    @EventHandler(priority = EventPriority.HIGHEST)
+                    fun foreignEvent(event: EntityDamageByEntityEvent) {
+                        if (event.entity == secondary && event.damager == attacker) foreign(event)
+                    }
+
+                    @EventHandler(priority = EventPriority.MONITOR)
+                    fun capture(event: EntityDamageByEntityEvent) {
+                        if (event.entity != secondary || event.damager != attacker) return
+                        event.cause.name shouldBe "ENTITY_SWEEP_ATTACK"
+                        observed++
+                    }
+                }
+            Bukkit.getPluginManager().registerEvents(listener, plugin)
+            try {
+                floor.type = Material.STONE
+                attacker.teleport(location)
+                attribute.baseValue = base
+                equip(item)
+                if (effect != null) attacker.addPotionEffect(effect)
+                checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = speed
+                ticks(30)
+                if (matchingAttribute != null) {
+                    // Compare real native attacks with the same source attribute, including live potion compensation.
+                    attribute.baseValue += matchingAttribute - attribute.value
+                    ticks(1)
+                }
+                check(attacker.isOnGround) { "Native sweep requires a grounded attacker" }
+                val primary = target()
+                val victim = victimFactory()
+                secondary = victim
+                prepare(victim)
+                ticks(3)
+                val nativeAttribute = attribute.value
+                attack(primary)
+                observed shouldBe 1
+                if (repeat) {
+                    ticks(2)
+                    attack(target())
+                    observed shouldBe 2
+                }
+                return SweepResult(40.0 - primary.health, 40.0 - victim.health, nativeAttribute)
+            } finally {
+                HandlerList.unregisterAll(listener)
+                attribute.baseValue = originalBase
+                attacker.activePotionEffects.forEach { attacker.removePotionEffect(it.type) }
+                previousFloor.update(true, false)
+            }
+        }
 
         fun configKey(item: ItemStack): String =
             item.type.name
@@ -534,50 +622,203 @@ class WeaponDamageBaselineIntegrationTest :
                 damage(item) shouldBe (7.125 plusOrMinus 0.001)
             }
         }
-        test("native sweep preserves configured potion damage after the primary attack") {
-            fixture {
-                val floor = location.clone().subtract(0.0, 1.0, 0.0).block
-                val originalFloor = floor.state
-                val cooldowns = mutableMapOf<String, Double>()
-                val listener =
-                    object : Listener {
-                        @EventHandler
-                        fun capture(event: OCMEntityDamageByEntityEvent) {
-                            if (event.damager.uniqueId == attacker.uniqueId && event.damagee in targets) {
-                                cooldowns[event.cause.name] = DamageUtils.getAttackCooldown.apply(attacker).toDouble()
+        for (effectName in listOf("plain", "default Strength", "additive Strength", "Weakness")) {
+            for (enchanted in listOf(false, true)) {
+                test(
+                    "native sweep preserves $effectName damage with ${if (enchanted) "enchanted fast" else "plain slow"} attacks",
+                ) {
+                    fixture {
+                        configure(true, listOf("old-potion-effects", "old-critical-hits"))
+                        ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                        ocm.config.set("old-tool-damage.old-sharpness", true)
+                        ocm.config.set(
+                            "old-potion-effects.strength.modifier",
+                            if (effectName ==
+                                "additive Strength"
+                            ) {
+                                4.0
+                            } else {
+                                1.3
+                            },
+                        )
+                        ocm.config.set("old-potion-effects.strength.multiplier", effectName != "additive Strength")
+                        ocm.config.set("old-potion-effects.strength.addend", true)
+                        ocm.config.set("old-potion-effects.weakness.modifier", -0.5)
+                        ocm.config.set("old-potion-effects.weakness.multiplier", false)
+                        reload()
+                        val item = weapon("DIAMOND_SWORD")
+                        if (enchanted) {
+                            item.addUnsafeEnchantment(checkNotNull(XEnchantment.SWEEPING_EDGE.get()), 2)
+                            item.addUnsafeEnchantment(checkNotNull(XEnchantment.SHARPNESS.get()), 2)
+                        }
+                        val effect =
+                            when (effectName) {
+                                "default Strength", "additive Strength" -> {
+                                    PotionEffect(
+                                        checkNotNull(XPotion.STRENGTH.get()),
+                                        200,
+                                        0,
+                                    )
+                                }
+
+                                "Weakness" -> {
+                                    PotionEffect(checkNotNull(XPotion.WEAKNESS.get()), 200, 0)
+                                }
+
+                                else -> {
+                                    null
+                                }
                             }
+                        val speed = if (enchanted) 16.0 else 4.0
+                        val enabled = sweep(item, speed, effect = effect)
+                        val primary =
+                            when (effectName) {
+                                "default Strength" -> 4.625 * 2.3
+                                "additive Strength" -> 8.625
+                                "Weakness" -> 4.125
+                                else -> 4.625
+                            } + if (enchanted) 2.5 else 0.0
+                        enabled.primary shouldBe (primary plusOrMinus 0.001)
+                        configure(false)
+                        val control = sweep(item, speed, effect = effect, matchingAttribute = enabled.nativeAttribute)
+                        withClue("Native control=$control configured=$enabled") {
+                            enabled.secondary shouldBe (control.secondary plusOrMinus 0.001)
+                            if (!enchanted) enabled.secondary shouldBe (1.0 plusOrMinus 0.001)
                         }
                     }
-                listeners.add(listener)
-                Bukkit.getPluginManager().registerEvents(listener, plugin)
-                try {
-                    floor.type = Material.STONE
-                    for (enabled in listOf(false, true)) {
-                        targets.forEach { it.remove() }
-                        targets.clear()
-                        configure(false, if (enabled) listOf("old-potion-effects") else emptyList())
-                        ocm.config.set("old-potion-effects.strength.modifier", 4.0)
-                        ocm.config.set("old-potion-effects.strength.multiplier", false)
-                        reload()
-                        attacker.teleport(location)
-                        equip(weapon("DIAMOND_SWORD"))
-                        attacker.addPotionEffect(PotionEffect(checkNotNull(XPotion.STRENGTH.get()), 200, 0))
-                        checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
-                        ticks(30)
-                        check(attacker.isOnGround) { "Native sweep requires a grounded attacker" }
-                        val primary = target()
-                        val secondary = target()
-                        attack(primary)
-                        withClue("enabled=$enabled health=${secondary.health} cooldowns=$cooldowns") {
-                            // Native sweep damage is 1.0. The API path already exposes reset recharge for sweeps;
-                            // the legacy tracker retains the primary sample. Preserve both existing semantics.
-                            val hasCooldownApi = Reflector.getMethod(Player::class.java, "getAttackCooldown", 0) != null
-                            val configuredLoss = if (hasCooldownApi) 1.20128 else 2.0
-                            secondary.health shouldBe ((40.0 - if (enabled) configuredLoss else 1.0) plusOrMinus 0.001)
+                }
+            }
+        }
+
+        test("native sweep equal to a weapon baseline retains the incoming amount") {
+            fixture {
+                configure()
+                ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                reload()
+                val item = weapon("DIAMOND_SWORD")
+                item.addUnsafeEnchantment(checkNotNull(XEnchantment.SWEEPING_EDGE.get()), 3)
+                val enabled = sweep(item, base = 2.0)
+                configure(false)
+                val control = sweep(item, base = 2.0)
+                enabled.secondary shouldBe (control.secondary plusOrMinus 0.001)
+                enabled.secondary shouldBe (7.0 plusOrMinus 0.001)
+                enabled.primary shouldBe (8.0 plusOrMinus 0.001)
+            }
+        }
+
+        for (adjustment in listOf(
+            "custom base",
+            "custom cancellation",
+            "Bukkit damage",
+            "Bukkit cancellation",
+            "sword cancellation",
+        )) {
+            test("native sweep preserves $adjustment handling") {
+                fixture {
+                    configure(
+                        true,
+                        if (adjustment ==
+                            "sword cancellation"
+                        ) {
+                            listOf("disable-sword-sweep")
+                        } else {
+                            emptyList()
+                        },
+                    )
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                    reload()
+                    val result =
+                        sweep(
+                            custom = {
+                                if (adjustment == "custom base") it.baseDamage += 2.0
+                                if (adjustment == "custom cancellation") {
+                                    it.baseDamage += 2.0
+                                    // Cancelling the custom event leaves the original Bukkit damage unchanged.
+                                    it.isCancelled = true
+                                }
+                            },
+                            foreign = {
+                                if (adjustment == "Bukkit damage") it.damage += 2.0
+                                if (adjustment == "Bukkit cancellation") it.isCancelled = true
+                            },
+                        )
+                    result.primary shouldBe (4.625 plusOrMinus 0.001)
+                    val expected =
+                        when (adjustment) {
+                            "custom base", "Bukkit damage" -> 3.0
+                            "Bukkit cancellation", "sword cancellation" -> 0.0
+                            else -> 1.0
                         }
+                    result.secondary shouldBe (expected plusOrMinus 0.001)
+                }
+            }
+        }
+
+        test("native sweep retains armour and Resistance defence") {
+            fixture {
+                configure(true, listOf("old-armour-strength"))
+                val result =
+                    sweep(prepare = {
+                        it.equipment!!.chestplate = weapon("DIAMOND_CHESTPLATE")
+                        it.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 0))
+                    })
+                result.secondary shouldBe (0.544 plusOrMinus 0.001)
+            }
+        }
+
+        test("native sweep retains repeated-hit immunity and overdamage bookkeeping") {
+            fixture {
+                configure()
+                sweep(speed = 1000.0, repeat = true).secondary shouldBe (1.0 plusOrMinus 0.001)
+            }
+        }
+
+        test("native sweep retains real shield blocking") {
+            fixture {
+                configure(true, listOf("shield-damage-reduction"))
+                ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 0)
+                ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 100)
+                reload()
+                val defender = FakePlayer(plugin)
+                try {
+                    defender.spawn(location.clone().add(0.0, 0.0, -1.0))
+                    val player = checkNotNull(Bukkit.getPlayer(defender.uuid))
+                    player.gameMode = GameMode.SURVIVAL
+                    player.setGravity(false)
+                    player.foodLevel = 10
+                    player.saturation = 0f
+                    checkNotNull(player.getAttribute(checkNotNull(XAttribute.MAX_HEALTH.get()))).baseValue = 100.0
+                    player.health = 40.0
+                    // Native players retain join protection briefly after spawning.
+                    ticks(65)
+                    var blocked = false
+                    var blockingDiagnostic = ""
+                    val result =
+                        sweep(
+                            victimFactory = { player },
+                            prepare = {
+                                player.teleport(location.clone().add(0.0, 0.0, -1.0))
+                                player.noDamageTicks = 0
+                                player.health = 40.0
+                                // Raise a native shield; the modern helper sets its use counter directly.
+                                defender.doBlocking()
+                                // Legacy offhand use needs the native shield activation delay.
+                                ticks(6)
+                                player.isBlocking shouldBe true
+                            },
+                            foreign = {
+                                blocked = it.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING) &&
+                                    it.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) < 0.0
+                                blockingDiagnostic =
+                                    "blocking=${player.isBlocking} position=${player.location} attacker=${attacker.location} damage=${it.damage} final=${it.finalDamage}"
+                            },
+                        )
+                    withClue("$result $blockingDiagnostic") {
+                        blocked shouldBe true
+                        result.secondary shouldBe (0.0 plusOrMinus 0.001)
                     }
                 } finally {
-                    originalFloor.update(true, false)
+                    if (Bukkit.getPlayer(defender.uuid) != null) defender.removePlayer()
                 }
             }
         }
