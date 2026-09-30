@@ -946,7 +946,9 @@ class WeaponDamageBaselineIntegrationTest :
                 fixture {
                     val recipientFake = FakePlayer(plugin)
                     var dropped: Item? = null
-                    val floor = location.clone().add(0.0, -1.0, 0.0).block
+                    val pickupHistory = mutableListOf<java.util.UUID>()
+                    val pickupLocation = location.clone().add(5.0, 0.0, 0.0)
+                    val floor = pickupLocation.clone().add(0.0, -1.0, 0.0).block
                     val originalFloor = floor.state
                     try {
                         floor.type = Material.STONE
@@ -973,6 +975,18 @@ class WeaponDamageBaselineIntegrationTest :
                                 fun onDrop(event: PlayerDropItemEvent) {
                                     if (event.player.uniqueId == attacker.uniqueId) dropped = event.itemDrop
                                 }
+
+                                @Suppress("DEPRECATION")
+                                @EventHandler(priority = EventPriority.MONITOR)
+                                fun onPickup(event: org.bukkit.event.player.PlayerPickupItemEvent) {
+                                    if (event.item.uniqueId == dropped?.uniqueId) {
+                                        if (!event.isCancelled &&
+                                            event.remaining == 0
+                                        ) {
+                                            pickupHistory.add(event.player.uniqueId)
+                                        }
+                                    }
+                                }
                             }
                         listeners.add(listener)
                         Bukkit.getPluginManager().registerEvents(listener, plugin)
@@ -984,21 +998,27 @@ class WeaponDamageBaselineIntegrationTest :
                         entity.itemStack.itemMeta!!.displayName shouldBe original.itemMeta!!.displayName
                         entity.itemStack.itemMeta!!.lore shouldBe original.itemMeta!!.lore
                         entity.itemStack.enchantments shouldBe original.enchantments
-                        attacker.teleport(location.clone().add(5.0, 0.0, 0.0))
-                        recipientFake.spawn(location)
+                        attacker.canPickupItems = false
+                        attacker.teleport(location.clone().add(16.0, 0.0, 0.0)) shouldBe true
+                        recipientFake.spawn(pickupLocation)
                         val recipient = checkNotNull(Bukkit.getPlayer(recipientFake.uuid))
                         recipient.gameMode = GameMode.SURVIVAL
                         recipient.inventory.clear()
                         recipient.canPickupItems = true
-                        entity.teleport(location)
+                        entity.teleport(pickupLocation) shouldBe true
                         entity.velocity = Vector(0.0, 0.0, 0.0)
                         entity.pickupDelay = 0
                         ticks(5)
                         entity.isValid shouldBe false
-                        val received =
+                        pickupHistory shouldBe listOf(recipient.uniqueId)
+                        val matching =
                             recipient.inventory.contents
                                 .filterNotNull()
-                                .single { it.type == original.type }
+                                .filter { it.type == original.type }
+                        withClue("custom=$custom pickup=$pickupHistory recipient=${recipient.uniqueId}") {
+                            matching.size shouldBe 1
+                        }
+                        val received = matching.single()
                         if (custom) received shouldBe original
                         recipient.inventory.setItemInMainHand(received)
                         checkNotNull(Bukkit.getServicesManager().load(OldCombatMechanicsAPI::class.java))

@@ -37,6 +37,7 @@ internal class LegacyFakePlayer12(
         private set
     var bukkitPlayer: Player? = null
         private set
+    private var playerTickTask: Int? = null
 
     private fun nmsClass(simpleName: String): Class<*> = Class.forName("net.minecraft.server.$cbVersion.$simpleName")
 
@@ -82,43 +83,50 @@ internal class LegacyFakePlayer12(
         sendSpawnPackets(entityPlayer)
         addEntityToWorld(worldServer, entityPlayer)
 
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(
-            plugin,
-            Runnable {
-                runCatching { invokeMethod(entityPlayer, "playerTick") }
-            },
-            1L,
-            1L,
-        )
+        playerTickTask =
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                plugin,
+                Runnable {
+                    runCatching { invokeMethod(entityPlayer, "playerTick") }
+                },
+                1L,
+                1L,
+            )
 
         plugin.logger.info("Spawn: completed successfully (legacy)")
     }
 
     fun removePlayer() {
+        playerTickTask?.let { Bukkit.getScheduler().cancelTask(it) }
+        playerTickTask = null
         val entityPlayer = entityPlayer ?: return
         val bukkitPlayer = bukkitPlayer ?: return
+        try {
+            val craftServer = craftClass("CraftServer").cast(Bukkit.getServer())
+            val minecraftServer = craftServer.javaClass.getMethod("getServer").invoke(craftServer)
+            val playerList = minecraftServer.javaClass.getMethod("getPlayerList").invoke(minecraftServer)
 
-        val craftServer = craftClass("CraftServer").cast(Bukkit.getServer())
-        val minecraftServer = craftServer.javaClass.getMethod("getServer").invoke(craftServer)
-        val playerList = minecraftServer.javaClass.getMethod("getPlayerList").invoke(minecraftServer)
+            val quitMessage = "§e$name left the game"
+            val quitEvent = PlayerQuitEvent(bukkitPlayer, quitMessage)
+            Bukkit.getPluginManager().callEvent(quitEvent)
 
-        val quitMessage = "§e$name left the game"
-        val quitEvent = PlayerQuitEvent(bukkitPlayer, quitMessage)
-        Bukkit.getPluginManager().callEvent(quitEvent)
+            val worldServer = getWorldServer(entityPlayer)
+            val playerChunkMap = getPlayerChunkMap(worldServer)
+            invokeMethodIfExists(playerChunkMap, "removePlayer", entityPlayer)
+            invokeMethodIfExists(worldServer, "removeEntity", entityPlayer)
 
-        val worldServer = getWorldServer(entityPlayer)
-        val playerChunkMap = getPlayerChunkMap(worldServer)
-        invokeMethodIfExists(playerChunkMap, "removePlayer", entityPlayer)
-        invokeMethodIfExists(worldServer, "removeEntity", entityPlayer)
+            bukkitPlayer.kickPlayer(quitMessage)
 
-        bukkitPlayer.kickPlayer(quitMessage)
+            removeFromPlayerList(playerList, entityPlayer)
+            removeFromPlayerMaps(playerList, entityPlayer)
 
-        removeFromPlayerList(playerList, entityPlayer)
-        removeFromPlayerMaps(playerList, entityPlayer)
+            sendRemovePackets(entityPlayer)
 
-        sendRemovePackets(entityPlayer)
-
-        invokeMethodIfExists(playerList, "savePlayerFile", entityPlayer)
+            invokeMethodIfExists(playerList, "savePlayerFile", entityPlayer)
+        } finally {
+            this.entityPlayer = null
+            this.bukkitPlayer = null
+        }
     }
 
     fun startUsingOffhand() {
