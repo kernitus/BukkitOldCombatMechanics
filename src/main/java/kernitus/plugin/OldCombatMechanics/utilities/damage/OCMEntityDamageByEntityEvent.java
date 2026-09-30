@@ -201,7 +201,8 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
             debug(livingDamager, "Weakness compensated; skipping base weakness modifier");
         }
 
-        baseDamage = tempDamage + weaknessForBase - (strengthModifier * strengthLevel);
+        // Reverse native potion modifiers before listeners apply the configured effects.
+        baseDamage = tempDamage - weaknessForBase - (strengthModifier * strengthLevel);
         debug(livingDamager, "Base tool damage: " + baseDamage);
     }
 
