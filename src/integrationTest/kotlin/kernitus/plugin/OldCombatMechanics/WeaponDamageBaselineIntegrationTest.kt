@@ -34,6 +34,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.EquipmentSlot
@@ -531,24 +532,102 @@ class WeaponDamageBaselineIntegrationTest :
                 damage(item) shouldBe (7.125 plusOrMinus 0.001)
             }
         }
-        test("partial native cooldown scales configured damage like the disabled control") {
+        test("native sweep preserves configured potion damage after the primary attack") {
             fixture {
-                suspend fun partial(enabled: Boolean): Double {
+                val floor = location.clone().subtract(0.0, 1.0, 0.0).block
+                val originalFloor = floor.state
+                val cooldowns = mutableMapOf<String, Double>()
+                val listener =
+                    object : Listener {
+                        @EventHandler
+                        fun capture(event: OCMEntityDamageByEntityEvent) {
+                            if (event.damager.uniqueId == attacker.uniqueId && event.damagee in targets) {
+                                cooldowns[event.cause.name] = DamageUtils.getAttackCooldown.apply(attacker).toDouble()
+                            }
+                        }
+                    }
+                listeners.add(listener)
+                Bukkit.getPluginManager().registerEvents(listener, plugin)
+                try {
+                    floor.type = Material.STONE
+                    for (enabled in listOf(false, true)) {
+                        targets.forEach { it.remove() }
+                        targets.clear()
+                        configure(false, if (enabled) listOf("old-potion-effects") else emptyList())
+                        ocm.config.set("old-potion-effects.strength.modifier", 4.0)
+                        ocm.config.set("old-potion-effects.strength.multiplier", false)
+                        reload()
+                        attacker.teleport(location)
+                        equip(weapon("DIAMOND_SWORD"))
+                        attacker.addPotionEffect(PotionEffect(checkNotNull(XPotion.STRENGTH.get()), 200, 0))
+                        checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                        ticks(30)
+                        check(attacker.isOnGround) { "Native sweep requires a grounded attacker" }
+                        val primary = target()
+                        val secondary = target()
+                        attack(primary)
+                        withClue("enabled=$enabled health=${secondary.health} cooldowns=$cooldowns") {
+                            // Native sweep damage is 1.0. The API path already exposes reset recharge for sweeps;
+                            // the legacy tracker retains the primary sample. Preserve both existing semantics.
+                            val hasCooldownApi = Reflector.getMethod(Player::class.java, "getAttackCooldown", 0) != null
+                            val configuredLoss = if (hasCooldownApi) 1.20128 else 2.0
+                            secondary.health shouldBe ((40.0 - if (enabled) configuredLoss else 1.0) plusOrMinus 0.001)
+                        }
+                    }
+                } finally {
+                    originalFloor.update(true, false)
+                }
+            }
+        }
+
+        test("constructed melee damage does not consume native attack recharge") {
+            fixture {
+                for (enabled in listOf(false, true)) {
                     configure(enabled)
                     ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
                     reload()
                     equip(weapon("DIAMOND_SWORD"))
                     checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
                     ticks(30)
-                    attack(target())
+                    Bukkit.getPluginManager().callEvent(
+                        EntityDamageByEntityEvent(attacker, target(), EntityDamageEvent.DamageCause.ENTITY_ATTACK, 7.0),
+                    )
+                    val victim = target()
+                    attack(victim)
+                    victim.health shouldBe ((40.0 - if (enabled) 4.625 else 7.0) plusOrMinus 0.001)
+                }
+            }
+        }
+
+        test("partial native cooldown scales configured damage like the disabled control") {
+            fixture {
+                suspend fun partial(
+                    enabled: Boolean,
+                    cancelFirst: Boolean,
+                ): Double {
+                    configure(enabled)
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                    reload()
+                    equip(weapon("DIAMOND_SWORD"))
+                    checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                    ticks(30)
+                    cancelled = cancelFirst
+                    val first = target()
+                    attack(first)
+                    if (cancelFirst) first.health shouldBe 40.0
+                    cancelled = false
                     val victim = target()
                     attack(victim)
                     return 40.0 - victim.health
                 }
-                val vanilla = partial(false)
-                check(vanilla > 0.0 && vanilla < 7.0) { "Control must exercise partial native recharge: $vanilla" }
-                val configured = partial(true)
-                configured shouldBe ((vanilla * 4.625 / 7.0) plusOrMinus 0.001)
+                for (cancelFirst in listOf(false, true)) {
+                    val vanilla = partial(false, cancelFirst)
+                    check(vanilla > 0.0 && vanilla <= 7.0 && (cancelFirst || vanilla < 7.0)) {
+                        "Control must exercise native recharge after cancellation=$cancelFirst: $vanilla"
+                    }
+                    val configured = partial(true, cancelFirst)
+                    configured shouldBe ((vanilla * 4.625 / 7.0) plusOrMinus 0.001)
+                }
             }
         }
 

@@ -145,6 +145,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             debug("Attack damage (before defence): " + newDamage);
 
         } else {
+            AttackCooldownTracker.prepareAttack((EntityDamageByEntityEvent) event);
             final Entity damager = ((EntityDamageByEntityEvent) event).getDamager();
 
             // Call event constructor before setting lastDamage back, because we need it for calculations
