@@ -131,7 +131,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Compatibility, Java 8, reflection, NMS, and version strategy details: `compatibility-strategy`.
 - Module configuration, modeset, migration, and option-change details: `module-config-change`.
 - Commit preparation, pre-commit hooks, Spotless, staging, validation-before-commit, and conventional commit details: `commit-preparation`.
-- Publishing, release workflow, licence, and asset notes: `release-readiness-review`.
+- Publishing, release workflow, licence, asset notes, and the final Spigot handoff (direct download URL, version, title and BBCode message): `release-readiness-review`.
 - User-facing `CHANGELOG.md`, GitHub release-note, and Release Please changelog rewrites: `user-facing-changelog`.
 - PR summary templates and reviewer-facing change grouping: `pr-draft-summary`.
 

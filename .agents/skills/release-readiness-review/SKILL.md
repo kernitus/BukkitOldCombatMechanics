@@ -1,6 +1,6 @@
 ---
 name: release-readiness-review
-description: Use for GitHub release, Hangar, CurseForge/BukkitDev upload, licence, asset naming, supported-version, and workflow readiness checks; do not use for day-to-day feature implementation, test authoring, or PR prose only.
+description: Use for GitHub release, Hangar, CurseForge/BukkitDev upload, Spigot release handoff, licence, asset naming, supported-version, and workflow readiness checks; do not use for day-to-day feature implementation, test authoring, or PR prose only.
 ---
 
 # Release Readiness Review
@@ -57,6 +57,17 @@ Use this skill before changing or reviewing release workflows, publishing metada
 - Secrets touched: none / list variable names only
 - Remaining manual steps:
 ```
+
+## Final step: Spigot update details
+
+When preparing or completing a release, finish by providing all four fields for Spigot's **Post Resource Update** form together. Also provide them when the user requests a Spigot release handoff. Do not add this handoff to unrelated workflow or licence questions.
+
+- **Direct download URL:** Use the version-specific GitHub release asset URL for `OldCombatMechanics.jar`, such as `https://github.com/kernitus/BukkitOldCombatMechanics/releases/download/v<VERSION>/OldCombatMechanics.jar`. Resolve the actual tag and asset from the intended release; do not use a moving latest-release URL. Verify the asset exists before presenting it as ready. If publishing has not completed, label the URL as pending and still prepare the remaining fields.
+- **Version String:** Use the stable release version without the tag's leading `v`. Do not copy the next development `-SNAPSHOT` version from the working branch.
+- **Update Title:** Provide a concise title containing the version and the main user-visible changes.
+- **Message:** Provide one fenced `bbcode` block ready to paste into the editor's BBCode mode. Convert the matching curated release notes using `[b]`, `[list]`, `[*]` and `[url=...]` tags. Preserve material compatibility limitations and useful issue links; omit Release Please's robot header and attribution. End with a link to the full GitHub release and `Report issues on [url=https://github.com/kernitus/BukkitOldCombatMechanics/issues]GitHub[/url].`
+
+Use the published release body as the source, or the matching curated changelog section when publication is pending. Resolve material discrepancies before calling the message ready. Follow `user-facing-changelog` when rewriting the prose, retaining British English. Keep the handoff in chat unless the user requests a file. Preparing these fields does not authorise website submission.
 
 ## References
 
