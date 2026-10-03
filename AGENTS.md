@@ -58,6 +58,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Current project state
 
+- The 2.7.0 section in `CHANGELOG.md` contains curated user-facing release notes. Keep the matching Release Please PR section synchronised before release, including the issue-reporting footer and the documented sweep and Bukkit 1.9 cooldown limitations.
 - Legacy fake players have dedicated 1.9 and 1.12 implementations; use focused native-flight validation when changing legacy projectiles.
 - Java 8 compatibility is required for main code. Avoid APIs such as records, pattern matching, `Stream.toList()`, and `Set.of`/`List.of` in Java 8-targeted code.
 - Main Java/Kotlin compilation targets Java 8 (`options.release.set(8)`, Kotlin `jvmTarget = 1.8`).

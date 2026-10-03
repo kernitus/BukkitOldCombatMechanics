@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.7.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.6.0...v2.7.0) (2026-10-03)
+
+This release adds configurable splash-potion throwing, fishing gravity and knockback friction, improves combat damage calculations, and restores compatibility with Minecraft 26.3.
+
+### Configuration
+
+- Added `old-potion-throwing` to restore 1.8-style player splash-potion launches independently of `old-potion-effects`. Configure launch speed, angles, position offsets, gravity and whether potions inherit player movement. The module is included in the default `old` modeset; lingering potions, witches and dispensers keep their native launches. [#844](https://github.com/kernitus/BukkitOldCombatMechanics/issues/844).
+- Added `fishing-rod-velocity.gravity`, defaulting to the 1.8 value of `0.04`, to adjust how quickly fishing hooks fall while preserving native water behaviour.
+- Added `old-player-knockback.knockback-friction` to control how much existing velocity remains before each hit adds knockback. The default `2.0` retains half the velocity on each axis and preserves the previous behaviour. [#847](https://github.com/kernitus/BukkitOldCombatMechanics/issues/847).
+
+### Fixes
+
+- Fixed Weakness reducing attack damage twice when OCM recalculates damage. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Preserved native sword-sweep damage on servers that identify sweep attacks separately, while retaining OCM's defence and hit-immunity handling. Sweeping Edge still uses the server's native weapon damage, so it may differ from OCM's configured primary-hit damage. Bukkit 1.9 retains the previous sweep handling. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Corrected legacy attack-cooldown tracking between attacks in the same tick on servers that identify sweep attacks separately. Bukkit 1.9 retains its existing per-tick fallback. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Fixed critical-hit calculations when Purpur uses a custom critical multiplier, including after a Purpur reload. [#833](https://github.com/kernitus/BukkitOldCombatMechanics/issues/833).
+- Made armour, protection enchantments, Resistance and shield projectile settings respect damage-source tags where the server exposes them, including custom damage types. Related to [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864).
+- Fixed excess damage when Resistance should fully absorb a hit, and restored Resistance calculations on Bukkit 1.9. Related to [#621](https://github.com/kernitus/BukkitOldCombatMechanics/issues/621) and [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864).
+- Fixed defence calculations after shield damage reduction.
+- Preserved hit-immunity history when a later damage event is cancelled, and corrected combat-cache expiry after cleanup tasks restart.
+- Fixed damage-handler ordering after reloading with different modules enabled.
+- Prevented fishing-rod knockback when its damage event is cancelled.
+- Preserved exhaustion changes made by other plugins during legacy regeneration.
+
+### Compatibility
+
+- Restored Minecraft 26.3 compatibility. [#955](https://github.com/kernitus/BukkitOldCombatMechanics/pull/955).
+
+Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
+
 ## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-09-01)
 
 This release adds optional per-modeset permissions and improves item handling when players change hotbar slots or swap hands. It also fixes inventory compatibility errors and prevents sword item data from disconnecting players when shared through chat plugins.
