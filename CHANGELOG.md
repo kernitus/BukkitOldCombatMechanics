@@ -2,31 +2,33 @@
 
 ## [2.7.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.6.0...v2.7.0) (2026-10-03)
 
+This release adds configurable splash-potion throwing, fishing gravity and knockback friction, improves combat damage calculations, and restores compatibility with Minecraft 26.3.
 
-### Features
+### Configuration
 
-* **knockback:** make friction configurable ([#847](https://github.com/kernitus/BukkitOldCombatMechanics/issues/847)) ([ec87dbe](https://github.com/kernitus/BukkitOldCombatMechanics/commit/ec87dbe410fdfb9c90788845ff3195ea6743fb2b))
-* restore configurable 1.8 potion throwing and fishing gravity ([#844](https://github.com/kernitus/BukkitOldCombatMechanics/issues/844)) ([4ea7b6d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/4ea7b6df48c2693cb909e2df4f7bf049e0e7c5ba))
+- Added `old-potion-throwing` to restore 1.8-style player splash-potion launches independently of `old-potion-effects`. Configure launch speed, angles, position offsets, gravity and whether potions inherit player movement. The module is included in the default `old` modeset; lingering potions, witches and dispensers keep their native launches. [#844](https://github.com/kernitus/BukkitOldCombatMechanics/issues/844).
+- Added `fishing-rod-velocity.gravity`, defaulting to the 1.8 value of `0.04`, to adjust how quickly fishing hooks fall while preserving native water behaviour.
+- Added `old-player-knockback.knockback-friction` to control how much existing velocity remains before each hit adds knockback. The default `2.0` retains half the velocity on each axis and preserves the previous behaviour. [#847](https://github.com/kernitus/BukkitOldCombatMechanics/issues/847).
 
+### Fixes
 
-### Bug Fixes
+- Fixed Weakness reducing attack damage twice when OCM recalculates damage. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Preserved native sword-sweep damage on servers that identify sweep attacks separately, while retaining OCM's defence and hit-immunity handling. Sweeping Edge still uses the server's native weapon damage, so it may differ from OCM's configured primary-hit damage. Bukkit 1.9 retains the previous sweep handling. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Corrected legacy attack-cooldown tracking between attacks in the same tick on servers that identify sweep attacks separately. Bukkit 1.9 retains its existing per-tick fallback. Related to [#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890).
+- Fixed critical-hit calculations when Purpur uses a custom critical multiplier, including after a Purpur reload. [#833](https://github.com/kernitus/BukkitOldCombatMechanics/issues/833).
+- Made armour, protection enchantments, Resistance and shield projectile settings respect damage-source tags where the server exposes them, including custom damage types. Related to [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864).
+- Fixed excess damage when Resistance should fully absorb a hit, and restored Resistance calculations on Bukkit 1.9. Related to [#621](https://github.com/kernitus/BukkitOldCombatMechanics/issues/621) and [#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864).
+- Fixed defence calculations after shield damage reduction.
+- Preserved hit-immunity history when a later damage event is cancelled, and corrected combat-cache expiry after cleanup tasks restart.
+- Fixed damage-handler ordering after reloading with different modules enabled.
+- Prevented fishing-rod knockback when its damage event is cancelled.
+- Preserved exhaustion changes made by other plugins during legacy regeneration.
 
-* **armour:** prevent excess damage under full resistance ([#621](https://github.com/kernitus/BukkitOldCombatMechanics/issues/621)) ([36027f7](https://github.com/kernitus/BukkitOldCombatMechanics/commit/36027f7e92e09128cf1de23e5acbb23ffc23d53f))
-* **armour:** respect damage-source armour tags ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)) ([3302336](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3302336ebb8fc0f8f78f2f01dbe5c3fd6caed919))
-* **cache:** expire combat entries correctly after cleanup tasks restart ([d251865](https://github.com/kernitus/BukkitOldCombatMechanics/commit/d251865c59da5712fc73c8a58b0f9835e9d9824b))
-* **compat:** restore Resistance calculations on Bukkit 1.9 ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)) ([7239755](https://github.com/kernitus/BukkitOldCombatMechanics/commit/7239755051a74ce7ad4c8bc9191082416eddd10c))
-* **damage:** preserve accepted hit history when later damage is cancelled ([092d684](https://github.com/kernitus/BukkitOldCombatMechanics/commit/092d684bbde3f71125cd4036cc482f4a5ae0f427))
-* **damage:** preserve native sword sweep damage ([#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890)) ([9c8433e](https://github.com/kernitus/BukkitOldCombatMechanics/commit/9c8433e69662f1941173c8c17388aa13d4c0829d))
-* **damage:** prevent Weakness from reducing attack damage twice ([#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890)) ([167655b](https://github.com/kernitus/BukkitOldCombatMechanics/commit/167655b8a58ba214d2aeba0d67b6f374b27c9da7))
-* **damage:** refresh legacy cooldown between attacks in the same tick ([#890](https://github.com/kernitus/BukkitOldCombatMechanics/issues/890)) ([d5e508d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/d5e508d987d07349afcfa4fd131aedabab4e3258))
-* **damage:** respect Purpur custom critical multipliers ([#833](https://github.com/kernitus/BukkitOldCombatMechanics/issues/833)) ([acdecf1](https://github.com/kernitus/BukkitOldCombatMechanics/commit/acdecf155348d930f1756d0ea13deb832ffaab59))
-* **enchantments:** respect damage-source protection tags ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)) ([3c0472a](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3c0472a350d75eb24fadaa73a0e76dfa09330aea))
-* **fishing:** respect cancelled damage before applying rod knockback ([c432022](https://github.com/kernitus/BukkitOldCombatMechanics/commit/c432022e0aa5f8e629b62f462ac9f157f9fc06cb))
-* **regeneration:** preserve exhaustion changes made by other plugins ([01e211e](https://github.com/kernitus/BukkitOldCombatMechanics/commit/01e211e0712974a02369a34cacccf98265f8ce70))
-* **reload:** preserve damage listener order when modules change ([b2db1a9](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b2db1a988a2182f8c6123da7eb3aaf9efdc36b29))
-* **resistance:** honour damage-source effect bypass tags ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)) ([aa4e9e6](https://github.com/kernitus/BukkitOldCombatMechanics/commit/aa4e9e6a87800474ecb01ec0de688e31e900b481))
-* **shields:** classify blocked projectiles by damage-source tags ([#864](https://github.com/kernitus/BukkitOldCombatMechanics/issues/864)) ([7668d4f](https://github.com/kernitus/BukkitOldCombatMechanics/commit/7668d4f4fec926bcaa52e6d09cc06c0dd881ca0e))
-* **shields:** recalculate defences after shield damage reduction ([f2a4632](https://github.com/kernitus/BukkitOldCombatMechanics/commit/f2a4632bd0e5a1cbac3e190c290ee33a9eca864e))
+### Compatibility
+
+- Restored Minecraft 26.3 compatibility. [#955](https://github.com/kernitus/BukkitOldCombatMechanics/pull/955).
+
+Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
 
 ## [2.6.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.5.1...v2.6.0) (2026-09-01)
 
