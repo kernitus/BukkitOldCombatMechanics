@@ -14,6 +14,7 @@ import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.damage.WeaponDamages
 import kotlinx.coroutines.delay
+import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Location
@@ -81,6 +82,63 @@ class ToolDamageTooltipIntegrationTest :
             return match.value.toDoubleOrNull()
         }
 
+        fun nativeDamageDisplay(item: ItemStack): Component? {
+            val valued = Class.forName("io.papermc.paper.datacomponent.DataComponentType\$Valued")
+            val type =
+                Class
+                    .forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                    .getField("ATTRIBUTE_MODIFIERS")
+                    .get(null)
+            val modifiers = item.javaClass.getMethod("getData", valued).invoke(item, type)
+            val entries = modifiers.javaClass.getMethod("modifiers").invoke(modifiers) as List<*>
+            val damage = org.bukkit.attribute.Attribute::class.java.getField("ATTACK_DAMAGE").get(null)
+            val entry = entries.first { it != null && it.javaClass.getMethod("attribute").invoke(it) == damage }
+            val display = entry!!.javaClass.getMethod("display").invoke(entry)
+            return if (Class
+                    .forName(
+                        "io.papermc.paper.datacomponent.item.attribute.AttributeModifierDisplay\$OverrideText",
+                    ).isInstance(display)
+            ) {
+                display.javaClass.getMethod("text").invoke(display) as Component
+            } else {
+                null
+            }
+        }
+
+        fun nativeModifiers(item: ItemStack): List<Any> {
+            val valued = Class.forName("io.papermc.paper.datacomponent.DataComponentType\$Valued")
+            val type =
+                Class
+                    .forName(
+                        "io.papermc.paper.datacomponent.DataComponentTypes",
+                    ).getField("ATTRIBUTE_MODIFIERS")
+                    .get(null)
+            val modifiers = item.javaClass.getMethod("getData", valued).invoke(item, type)
+            val entries = modifiers.javaClass.getMethod("modifiers").invoke(modifiers) as List<*>
+            return entries.map { it!!.javaClass.getMethod("modifier").invoke(it) }
+        }
+
+        fun hasNativeDisplayApi(): Boolean =
+            runCatching {
+                val valued = Class.forName("io.papermc.paper.datacomponent.DataComponentType\$Valued")
+                val type = Class.forName("io.papermc.paper.datacomponent.DataComponentType")
+                Class.forName("io.papermc.paper.datacomponent.item.attribute.AttributeModifierDisplay\$OverrideText")
+                ItemStack::class.java.getMethod("getData", valued)
+                ItemStack::class.java.getMethod("isDataOverridden", type)
+                Material::class.java.getMethod("getDefaultData", valued)
+            }.isSuccess
+
+        fun dataOverridden(item: ItemStack): Boolean {
+            val type = Class.forName("io.papermc.paper.datacomponent.DataComponentType")
+            val component =
+                Class
+                    .forName(
+                        "io.papermc.paper.datacomponent.DataComponentTypes",
+                    ).getField("ATTRIBUTE_MODIFIERS")
+                    .get(null)
+            return item.javaClass.getMethod("isDataOverridden", type).invoke(item, component) as Boolean
+        }
+
         fun setLore(
             item: ItemStack,
             lines: List<String>?,
@@ -138,6 +196,7 @@ class ToolDamageTooltipIntegrationTest :
                     ?: emptyMap<String, Any?>()
             val tooltipEnabledSnapshot = ocm.config.get("old-tool-damage.tooltip.enabled")
             val tooltipPrefixSnapshot = ocm.config.get("old-tool-damage.tooltip.prefix")
+            val nativeAttributeSnapshot = ocm.config.get("old-tool-damage.tooltip.native-attribute")
 
             fun reloadAll() {
                 ocm.saveConfig()
@@ -150,6 +209,7 @@ class ToolDamageTooltipIntegrationTest :
                 ocm.config.set("old-tool-damage.damages.$weaponMaterialKey", weaponDamage)
                 ocm.config.set("old-tool-damage.tooltip.enabled", true)
                 ocm.config.set("old-tool-damage.tooltip.prefix", lorePrefix)
+                ocm.config.set("old-tool-damage.tooltip.native-attribute", false)
                 ocm.config.set("disabled_modules", disabledModules.filterNot { it == "old-tool-damage" })
                 val oldModeset = ocm.config.getStringList("modesets.old").toMutableList()
                 if (!oldModeset.contains("old-tool-damage")) {
@@ -165,6 +225,7 @@ class ToolDamageTooltipIntegrationTest :
                 damagesSnapshot.forEach { (k, v) -> ocm.config.set("old-tool-damage.damages.$k", v) }
                 ocm.config.set("old-tool-damage.tooltip.enabled", tooltipEnabledSnapshot)
                 ocm.config.set("old-tool-damage.tooltip.prefix", tooltipPrefixSnapshot)
+                ocm.config.set("old-tool-damage.tooltip.native-attribute", nativeAttributeSnapshot)
                 reloadAll()
             }
         }
@@ -203,6 +264,61 @@ class ToolDamageTooltipIntegrationTest :
                 val loreLines = findOcmLines(held)
                 loreLines.size shouldBe 1
                 parseFirstDamage(held) shouldBe (7.0 plusOrMinus 0.01)
+                cleanup(p)
+            }
+        }
+
+        test("Paper shows configured attack damage without changing the weapon modifier") {
+            withConfig(weaponMaterialKey = "DIAMOND_AXE", weaponDamage = 7.0) {
+                runSync {
+                    ocm.config.set("old-tool-damage.tooltip.enabled", !hasNativeDisplayApi())
+                    ocm.config.set("old-tool-damage.tooltip.native-attribute", true)
+                    ocm.saveConfig()
+                    Config.reload()
+                    WeaponDamages.initialise(ocm)
+                    ModuleLoader.toggleModules()
+                }
+                val world = checkNotNull(Bukkit.getWorld("world"))
+                val p = spawnFake(Location(world, 0.0, 100.0, 0.0))
+                val axe = ItemStack(Material.DIAMOND_AXE)
+                setLore(axe, listOf("$lorePrefix 5"))
+                val original = axe.clone()
+                runSync {
+                    p.player.inventory.setItem(0, axe)
+                    p.player.inventory.setItem(1, ItemStack(Material.STICK))
+                    p.player.inventory.heldItemSlot = 1
+                    switchHotbar(p.player, from = 1, to = 0)
+                }
+
+                val held =
+                    runSyncAndGet {
+                        p.player.inventory.itemInMainHand
+                            .clone()
+                    }
+                if (hasNativeDisplayApi()) {
+                    val nativeDisplay = checkNotNull(nativeDamageDisplay(held))
+                    nativeDisplay.toString().contains("7") shouldBe true
+                    nativeDamageDisplay(held)?.insertion() shouldBe "ocm:old-tool-damage-tooltip"
+                    nativeModifiers(held) shouldBe nativeModifiers(original)
+                    findOcmLines(held).size shouldBe 0
+                } else {
+                    parseFirstDamage(held) shouldBe (7.0 plusOrMinus 0.01)
+                }
+
+                runSync { switchHotbar(p.player, from = 0, to = 1) }
+                val released =
+                    runSyncAndGet {
+                        p.player.inventory
+                            .getItem(0)
+                            ?.clone() ?: error("Missing axe")
+                    }
+                if (hasNativeDisplayApi()) {
+                    nativeDamageDisplay(released) shouldBe null
+                    nativeModifiers(released) shouldBe nativeModifiers(original)
+                    dataOverridden(released) shouldBe false
+                } else {
+                    findOcmLines(released).size shouldBe 0
+                }
                 cleanup(p)
             }
         }

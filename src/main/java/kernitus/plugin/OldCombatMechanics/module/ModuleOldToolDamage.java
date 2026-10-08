@@ -42,6 +42,7 @@ public class ModuleOldToolDamage extends OCMModule {
     private static final boolean HAS_TRIDENT;
     private boolean oldSharpness;
     private boolean tooltipEnabled;
+    private boolean nativeAttributeTooltip;
     private String tooltipPrefix;
     private final TooltipListener tooltipListener;
 
@@ -69,6 +70,7 @@ public class ModuleOldToolDamage extends OCMModule {
     public void reload() {
         oldSharpness = module().getBoolean("old-sharpness", true);
         tooltipEnabled = module().getBoolean("tooltip.enabled", false);
+        nativeAttributeTooltip = module().getBoolean("tooltip.native-attribute", true);
         tooltipPrefix = module().getString("tooltip.prefix", "OCM Damage:");
         if (tooltipPrefix == null || tooltipPrefix.trim().isEmpty()) {
             tooltipPrefix = "OCM Damage:";
@@ -176,11 +178,6 @@ public class ModuleOldToolDamage extends OCMModule {
         debug("Applied custom thrown trident damage: " + configured, event.getDamager());
     }
 
-    private boolean shouldApplyTooltip(Player player) {
-        if (!tooltipEnabled) return false;
-        return isEnabled(player);
-    }
-
     private boolean isEnabledForAttacker(Entity damager) {
         // Tool damage is offensive, so player attackers and projectile shooters own the modeset check.
         if (damager instanceof HumanEntity) {
@@ -195,7 +192,7 @@ public class ModuleOldToolDamage extends OCMModule {
         return isEnabled(damager.getWorld());
     }
 
-    private String formatDamage(double value) {
+    static String formatDamage(double value) {
         if (value == (long) value) {
             return Long.toString((long) value);
         }
@@ -221,7 +218,7 @@ public class ModuleOldToolDamage extends OCMModule {
             stripTooltip(item);
             return;
         }
-        if (!shouldApplyTooltip(player)) {
+        if (!isEnabled(player)) {
             stripTooltip(item);
             return;
         }
@@ -231,6 +228,12 @@ public class ModuleOldToolDamage extends OCMModule {
             stripTooltip(item);
             return;
         }
+
+        stripLore(item);
+        if (nativeAttributeTooltip && PaperToolDamageTooltip.apply(item, configured)) return;
+
+        PaperToolDamageTooltip.strip(item);
+        if (!tooltipEnabled) return;
 
         final org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
@@ -242,6 +245,11 @@ public class ModuleOldToolDamage extends OCMModule {
 
     private void stripTooltip(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) return;
+        PaperToolDamageTooltip.strip(item);
+        stripLore(item);
+    }
+
+    private void stripLore(ItemStack item) {
         final org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
         if (meta == null || meta.getLore() == null) return;
         final List<String> updated = removeExistingTooltip(meta.getLore());
