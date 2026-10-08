@@ -52,6 +52,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     private Map<UUID, LastEaten> lastEaten;
     private Cooldown cooldown;
+    private boolean showItemCooldown;
 
     private String normalCooldownMessage, enchantedCooldownMessage;
     private static ModuleGoldenApple INSTANCE;
@@ -71,6 +72,9 @@ public class ModuleGoldenApple extends OCMModule {
                 module().getLong("cooldown.normal"),
                 module().getLong("cooldown.enchanted"),
                 module().getBoolean("cooldown.is-shared"));
+        // Pre-1.13 enchanted apples share the GOLDEN_APPLE material, so a material cooldown would hit both types
+        showItemCooldown = module().getBoolean("cooldown.show-item-cooldown")
+                && kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector.versionIsNewerOrEqualTo(1, 13, 0);
         lastEaten = new WeakHashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("enchanted-golden-apple-effects");
@@ -178,6 +182,15 @@ public class ModuleGoldenApple extends OCMModule {
 
         lastEaten.get(uuid).setForItem(originalItem);
 
+        if (showItemCooldown) {
+            if (cooldown.sharedCooldown) {
+                showItemCooldown(player, Material.GOLDEN_APPLE, cooldown.normal);
+                showItemCooldown(player, Material.ENCHANTED_GOLDEN_APPLE, cooldown.enchanted);
+            } else {
+                showItemCooldown(player, consumedMaterial, cooldown.getCooldownForItem(originalItem));
+            }
+        }
+
         if (!isSettingEnabled("old-potion-effects"))
             return;
 
@@ -200,6 +213,11 @@ public class ModuleGoldenApple extends OCMModule {
             // Add new custom effects from eating the apple
             applyEffects(player, newEffects);
         }, 1L);
+    }
+
+    private void showItemCooldown(Player player, Material material, long seconds) {
+        if (seconds > 0)
+            player.setCooldown(material, (int) Math.min(seconds * 20, Integer.MAX_VALUE));
     }
 
     private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {

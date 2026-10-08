@@ -11,6 +11,7 @@ import com.cryptomorin.xseries.XMaterial
 import com.cryptomorin.xseries.XPotion
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.core.test.Enabled
 import io.kotest.core.test.TestScope
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
@@ -19,6 +20,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kernitus.plugin.OldCombatMechanics.TesterUtils.getPotionEffectCompat
 import kernitus.plugin.OldCombatMechanics.module.ModuleGoldenApple
+import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.bukkit.Bukkit
@@ -51,6 +53,7 @@ class GoldenAppleIntegrationTest :
             val normalCooldown = ocm.config.getLong("old-golden-apples.cooldown.normal")
             val enchantedCooldown = ocm.config.getLong("old-golden-apples.cooldown.enchanted")
             val sharedCooldown = ocm.config.getBoolean("old-golden-apples.cooldown.is-shared")
+            val showItemCooldown = ocm.config.getBoolean("old-golden-apples.cooldown.show-item-cooldown")
             val crafting = ocm.config.getBoolean("old-golden-apples.enchanted-golden-apple-crafting")
             val noConflict = ocm.config.getBoolean("old-golden-apples.no-conflict-mode")
 
@@ -61,6 +64,7 @@ class GoldenAppleIntegrationTest :
                 ocm.config.set("old-golden-apples.cooldown.normal", normalCooldown)
                 ocm.config.set("old-golden-apples.cooldown.enchanted", enchantedCooldown)
                 ocm.config.set("old-golden-apples.cooldown.is-shared", sharedCooldown)
+                ocm.config.set("old-golden-apples.cooldown.show-item-cooldown", showItemCooldown)
                 ocm.config.set("old-golden-apples.enchanted-golden-apple-crafting", crafting)
                 ocm.config.set("old-golden-apples.no-conflict-mode", noConflict)
                 module.reload()
@@ -351,6 +355,60 @@ class GoldenAppleIntegrationTest :
                     module.getNappleCooldown(player.uniqueId).shouldBeBetween(1, 5)
                 }
             }
+        }
+
+        context("Item cooldown indicator") {
+            val modernMaterials =
+                Enabled(
+                    Reflector.versionIsNewerOrEqualTo(1, 13, 0),
+                    "Enchanted golden apples share the GOLDEN_APPLE material before 1.13",
+                )
+
+            fun configureIndicator(
+                shared: Boolean,
+                show: Boolean = true,
+            ) {
+                ocm.config.set("old-golden-apples.cooldown.normal", 10)
+                ocm.config.set("old-golden-apples.cooldown.enchanted", 30)
+                ocm.config.set("old-golden-apples.cooldown.is-shared", shared)
+                ocm.config.set("old-golden-apples.cooldown.show-item-cooldown", show)
+                module.reload()
+                player.setCooldown(Material.GOLDEN_APPLE, 0)
+                player.setCooldown(Material.ENCHANTED_GOLDEN_APPLE, 0)
+            }
+
+            test("eating shows the cooldown on that apple type only")
+                .config(enabledOrReasonIf = { modernMaterials }) {
+                    withConfig {
+                        configureIndicator(shared = false)
+                        callConsume(ItemStack(Material.GOLDEN_APPLE)).isCancelled shouldBe false
+
+                        player.getCooldown(Material.GOLDEN_APPLE) shouldBe 200
+                        player.getCooldown(Material.ENCHANTED_GOLDEN_APPLE) shouldBe 0
+                    }
+                }
+
+            test("shared cooldown shows each apple type's own cooldown")
+                .config(enabledOrReasonIf = { modernMaterials }) {
+                    withConfig {
+                        configureIndicator(shared = true)
+                        callConsume(ItemStack(Material.GOLDEN_APPLE)).isCancelled shouldBe false
+
+                        player.getCooldown(Material.GOLDEN_APPLE) shouldBe 200
+                        player.getCooldown(Material.ENCHANTED_GOLDEN_APPLE) shouldBe 600
+                    }
+                }
+
+            test("disabled indicator leaves item cooldowns untouched")
+                .config(enabledOrReasonIf = { modernMaterials }) {
+                    withConfig {
+                        configureIndicator(shared = true, show = false)
+                        callConsume(ItemStack(Material.GOLDEN_APPLE)).isCancelled shouldBe false
+
+                        player.getCooldown(Material.GOLDEN_APPLE) shouldBe 0
+                        player.getCooldown(Material.ENCHANTED_GOLDEN_APPLE) shouldBe 0
+                    }
+                }
         }
 
         context("Crafting") {

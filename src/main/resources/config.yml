@@ -389,6 +389,9 @@ old-golden-apples:
     #   Eating an enchanted apple will prevent any *enchanted* apple type from being eaten before the cooldown is over
     #   Eating a normal apple will prevent any *normal* apple type from being eaten before the normal cooldown is over
     is-shared: false
+    # Show the cooldown on the apple items in the hotbar, like ender pearls (1.13+).
+    # The client then refuses to eat apples on cooldown, so the cooldown messages are rarely shown.
+    show-item-cooldown: false
   # If you want to allow enchanted golden apple crafting
   enchanted-golden-apple-crafting: true
   # Enabling this makes the potion effects gained by eating golden apples
@@ -654,4 +657,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 76
+config-version: 77
