@@ -415,37 +415,87 @@ class ProjectileLaunchFidelityIntegrationTest :
             }
         }
 
-        for (charge in listOf(5, 22)) {
-            test("native bow force after $charge ticks controls legacy arrow speed") {
-                if (charge == 5) configure(listOf(trajectory, offset))
+        // Use the server owner's configured registry entries, never a server-specific material list.
+        val customBows =
+            ocm.config.getStringList("projectile-launch.custom-bows").map { name ->
+                checkNotNull(Material.matchMaterial(name.trim())) { "Unregistered custom bow fixture: $name" }
+            }.distinct().filterNot { it == Material.BOW }
+        for (bow in listOf(Material.BOW) + customBows) {
+            for (charge in listOf(5, 22)) {
+                test("native ${bow.name} force after $charge ticks controls legacy arrow speed") {
+                    if (charge == 5) configure(listOf(trajectory, offset))
+                    player.inventory.addItem(ItemStack(Material.ARROW, 64))
+                    useProjectileItem(player, bow)
+                    delay(charge * 50L)
+                    if (modern) moveThroughConnection(false, false)
+                    val inherited = if (modern && charge == 5) nativeMotion() else Vector()
+                    releaseProjectileItem(player)
+                    val arrow = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                    entities.add(arrow)
+                    if (modern) {
+                        (force > 0.0) shouldBe true
+                        assertVector(
+                            arrow.velocity,
+                            expectedDirection(Material.BOW, 3.0 * force).add(inherited),
+                            0.15,
+                        )
+                        arrow.velocity
+                            .clone()
+                            .subtract(inherited)
+                            .length() shouldBe (3.0 * force plusOrMinus 0.08)
+                        val yaw = Math.toRadians(player.location.yaw.toDouble())
+                        assertVector(
+                            arrow.location.toVector(),
+                            player.location.toVector().add(
+                                Vector(
+                                    -cos(yaw) * 0.16,
+                                    1.52,
+                                    -sin(yaw) * 0.16,
+                                ),
+                            ),
+                            1e-6,
+                        )
+                    } else {
+                        assertVector(arrow.velocity, checkNotNull(incoming))
+                    }
+                }
+            }
+        }
+
+        for (bow in customBows) {
+            test("custom ${bow.name} eligibility changes on reload") {
+                ocm.config.set("projectile-launch.custom-bows", emptyList<String>())
+                ocm.saveConfig()
+                Config.reload()
                 player.inventory.addItem(ItemStack(Material.ARROW, 64))
-                useProjectileItem(player, Material.BOW)
-                delay(charge * 50L)
-                if (modern) moveThroughConnection(false, false)
-                val inherited = if (modern && charge == 5) nativeMotion() else Vector()
+                useProjectileItem(player, bow)
+                delay(1100)
                 releaseProjectileItem(player)
-                val arrow = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
-                entities.add(arrow)
+                val native = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                entities.add(native)
+                assertVector(native.velocity, checkNotNull(incoming))
+                assertVector(native.location.toVector(), checkNotNull(incomingPosition))
+                remove(native)
+
+                ocm.config.set("projectile-launch.custom-bows", listOf(bow.name))
+                ocm.saveConfig()
+                Config.reload()
+                useProjectileItem(player, bow)
+                delay(1100)
+                if (modern) moveThroughConnection(false, false)
+                releaseProjectileItem(player)
+                val corrected = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                entities.add(corrected)
                 if (modern) {
-                    (force > 0.0) shouldBe true
-                    arrow.velocity
-                        .clone()
-                        .subtract(inherited)
-                        .length() shouldBe (3.0 * force plusOrMinus 0.08)
+                    assertVector(corrected.velocity, expectedDirection(Material.BOW, 3.0 * force), 0.15)
                     val yaw = Math.toRadians(player.location.yaw.toDouble())
                     assertVector(
-                        arrow.location.toVector(),
-                        player.location.toVector().add(
-                            Vector(
-                                -cos(yaw) * 0.16,
-                                1.52,
-                                -sin(yaw) * 0.16,
-                            ),
-                        ),
+                        corrected.location.toVector(),
+                        player.location.toVector().add(Vector(-cos(yaw) * 0.16, 1.52, -sin(yaw) * 0.16)),
                         1e-6,
                     )
                 } else {
-                    assertVector(arrow.velocity, checkNotNull(incoming))
+                    assertVector(corrected.velocity, checkNotNull(incoming))
                 }
             }
         }
