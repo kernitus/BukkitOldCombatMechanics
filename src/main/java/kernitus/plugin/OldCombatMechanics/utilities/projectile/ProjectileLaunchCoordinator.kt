@@ -84,7 +84,8 @@ class ProjectileLaunchCoordinator(
                 val player = event.entity as? Player
                 val projectile = event.projectile as? Projectile
                 val bow = event.bow
-                if (player != null && projectile != null && bow != null && (bow.type == Material.BOW || bow.type in customBows) &&
+                if (player != null && projectile != null && bow != null &&
+                    (bow.type == Material.BOW || bow.type in customBows) &&
                     !projectile.isValid && projectile.shooter == player &&
                     projectile.type.name in setOf("ARROW", "SPECTRAL_ARROW", "TIPPED_ARROW") &&
                     identity.nativeDispatch(true) && identity.mainHand(player, bow)
@@ -119,11 +120,13 @@ class ProjectileLaunchCoordinator(
 
     private fun reloadCustomBows() {
         customBows =
-            plugin.config.getStringList("projectile-launch.custom-bows").mapNotNull { name ->
-                Material.matchMaterial(name.trim()).also {
-                    if (it == null) plugin.logger.warning("Unknown projectile-launch.custom-bows material: $name")
-                }
-            }.toSet()
+            plugin.config
+                .getStringList("projectile-launch.custom-bows")
+                .mapNotNull { name ->
+                    Material.matchMaterial(name.trim()).also {
+                        if (it == null) plugin.logger.warning("Unknown projectile-launch.custom-bows material: $name")
+                    }
+                }.toSet()
     }
 
     private fun registerThrowables() {

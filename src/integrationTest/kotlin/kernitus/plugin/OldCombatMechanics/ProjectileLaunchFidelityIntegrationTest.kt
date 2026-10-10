@@ -417,9 +417,12 @@ class ProjectileLaunchFidelityIntegrationTest :
 
         // Use the server owner's configured registry entries, never a server-specific material list.
         val customBows =
-            ocm.config.getStringList("projectile-launch.custom-bows").map { name ->
-                checkNotNull(Material.matchMaterial(name.trim())) { "Unregistered custom bow fixture: $name" }
-            }.distinct().filterNot { it == Material.BOW }
+            ocm.config
+                .getStringList("projectile-launch.custom-bows")
+                .map { name ->
+                    checkNotNull(Material.matchMaterial(name.trim())) { "Unregistered custom bow fixture: $name" }
+                }.distinct()
+                .filterNot { it == Material.BOW }
         for (bow in listOf(Material.BOW) + customBows) {
             for (charge in listOf(5, 22)) {
                 test("native ${bow.name} force after $charge ticks controls legacy arrow speed") {
