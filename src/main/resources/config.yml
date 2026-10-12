@@ -447,6 +447,7 @@ old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
 
   # DURATION: (in seconds)
+  # Durations are seconds; fractional values are rounded to the nearest server tick.
   potion-durations:
     drinkable:
       regeneration: 45

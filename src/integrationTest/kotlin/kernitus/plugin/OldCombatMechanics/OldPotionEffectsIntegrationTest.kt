@@ -195,7 +195,7 @@ class OldPotionEffectsIntegrationTest :
                     ?: return emptyList()
 
             return drinkable.getKeys(false).mapNotNull { key ->
-                if (!splash.isInt(key)) return@mapNotNull null
+                if (!splash.contains(key)) return@mapNotNull null
                 val parsed = parsePotionKey(key)
                 val potion = XPotion.of(parsed.baseName).orElse(null) ?: return@mapNotNull null
                 if (excludedPotionTypes.contains(parsed.debugName)) return@mapNotNull null
@@ -208,8 +208,8 @@ class OldPotionEffectsIntegrationTest :
                     isStrong = parsed.isStrong,
                     isExtended = parsed.isExtended,
                     potion = potion,
-                    drinkableTicks = drinkable.getInt(key) * 20,
-                    splashTicks = splash.getInt(key) * 20,
+                    drinkableTicks = Math.round(drinkable.getDouble(key) * 20.0).toInt(),
+                    splashTicks = Math.round(splash.getDouble(key) * 20.0).toInt(),
                 )
             }
         }
@@ -586,6 +586,27 @@ class OldPotionEffectsIntegrationTest :
                 val playerData = getPlayerData(player.uniqueId)
                 playerData.setModesetForWorld(player.world.uid, "old")
                 setPlayerData(player.uniqueId, playerData)
+            }
+        }
+
+        test("fractional seconds retain exact drinkable and splash ticks") {
+            val potionCase = loadPotionCases().first { it.key == "strong_regeneration" }
+            withConfig {
+                ocm.config.set("old-potion-effects.potion-durations.drinkable.strong_regeneration", 22.5)
+                ocm.config.set("old-potion-effects.potion-durations.splash.strong_regeneration", 16.9)
+                module.reload()
+                val drink = callConsume(createPotionItem(Material.POTION, potionCase))
+                assertAdjusted(drink, potionCase.baseName, true, potionCase.potion, 450)
+                val splash = callThrow(createPotionItem(Material.SPLASH_POTION, potionCase))
+                assertAdjusted(splash, potionCase.baseName, true, potionCase.potion, 338)
+                // Integer configuration remains compatible and nearest-tick rounding is explicit.
+                ocm.config.set("old-potion-effects.potion-durations.drinkable.strong_regeneration", 23)
+                ocm.config.set("old-potion-effects.potion-durations.splash.strong_regeneration", 16.925)
+                module.reload()
+                val integerDrink = callConsume(createPotionItem(Material.POTION, potionCase))
+                assertAdjusted(integerDrink, potionCase.baseName, true, potionCase.potion, 460)
+                val roundedSplash = callThrow(createPotionItem(Material.SPLASH_POTION, potionCase))
+                assertAdjusted(roundedSplash, potionCase.baseName, true, potionCase.potion, 339)
             }
         }
 
