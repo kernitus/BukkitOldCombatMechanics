@@ -103,6 +103,8 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Paper sword-blocking damage reduction has optional amount and percentage overrides under `sword-blocking`; each missing option independently inherits its shield counterpart. Config upgrades preserve explicitly configured overrides, including zero, and leave missing overrides absent. Native shield settings and legacy temporary shields remain unchanged.
 - Potion duration seconds may be fractional; conversion rounds once to the nearest tick after multiplication by 20. Integer durations retain their previous values.
 
+- Golden apple native cooldown indicators are opt-in and require distinct enchanted-apple materials. One shared task defers writes until consume cancellation is final, reconciles wall-clock expiry and releases owned restrictions on reload, shutdown, quit or inactive player settings. Native countdown ownership is compared before writes and clears; existing and changed foreign cooldowns survive, while same-valued foreign writes remain indistinguishable. GoldenAppleIntegrationTest dispatches synthetic consume events but waits for real native cooldown ticks.
+
 ## Integration test essentials
 
 - Native sweep coverage separately checks equal-hit immunity, fully and partially consumed absorption, and increasing Sweeping Edge damage followed by a weaker hit. Increasing-overdamage snapshots record incoming damage, restored damage history, immunity ticks, applied Bukkit damage and actual health. Configurable damage modules are disabled for independent native controls; these can suppress a weaker hit before Bukkit emits an event, while the enabled OCM pipeline emits and cancels that hit.
