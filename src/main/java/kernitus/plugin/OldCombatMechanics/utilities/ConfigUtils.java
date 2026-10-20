@@ -156,8 +156,8 @@ public class ConfigUtils {
 
         for (String newPotionTypeName : drinkableSection.getKeys(false)) {
             // Get durations in seconds and convert to ticks
-            final int drinkableDuration = drinkableSection.getInt(newPotionTypeName) * 20;
-            final int splashDuration = splashSection.getInt(newPotionTypeName) * 20;
+            final int drinkableDuration = (int) Math.round(drinkableSection.getDouble(newPotionTypeName) * 20.0);
+            final int splashDuration = (int) Math.round(splashSection.getDouble(newPotionTypeName) * 20.0);
 
             Optional<PotionKey> potionKey = PotionKey.fromConfigKey(newPotionTypeName);
             if (potionKey.isPresent()) {
