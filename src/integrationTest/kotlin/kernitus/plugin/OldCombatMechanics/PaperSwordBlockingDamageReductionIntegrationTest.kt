@@ -254,6 +254,9 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
                         ocm.config.set(swordPercentageKey, null)
                         module.applyPaperBlockingReduction(event, 2.5) shouldBe 1.25
                         ocm.config.set(swordAmountKey, null)
+                        ocm.config.set(swordPercentageKey, 25)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.375
+                        ocm.config.set(swordPercentageKey, null)
                         ocm.config.set(shieldAmountKey, 2)
                         ocm.config.set(shieldPercentageKey, 25)
                         module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.125
