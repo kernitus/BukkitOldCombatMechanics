@@ -67,6 +67,62 @@ class ConfigMigrationIntegrationTest :
             }
         }
 
+        test("version 77 upgrade adds native tooltip option and preserves disabled master switch") {
+            runSync {
+                withConfigFile {
+                    val configFile = File(ocm.dataFolder, "config.yml")
+                    val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                    val currentVersion = oldConfig.getInt("config-version")
+                    oldConfig.set("config-version", 77)
+                    oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                    oldConfig.set("old-tool-damage.tooltip.enabled", false)
+                    oldConfig.set("old-tool-damage.tooltip.native-attribute", null)
+                    oldConfig.save(configFile)
+                    Config.reload()
+                    val upgraded = YamlConfiguration.loadConfiguration(configFile)
+                    upgraded.getInt("config-version") shouldBe currentVersion
+                    upgraded.getBoolean("old-tool-damage.tooltip.native-attribute") shouldBe true
+                    upgraded.getBoolean("old-tool-damage.tooltip.enabled") shouldBe false
+                }
+            }
+        }
+
+        for ((amount, percentage) in listOf(
+            null to null,
+            2 to null,
+            0 to null,
+            null to 25,
+            null to 0,
+            2 to 25,
+            0 to 0,
+        )) {
+            test("config upgrade preserves optional sword overrides amount=$amount percentage=$percentage") {
+                runSync {
+                    withConfigFile {
+                        val configFile = File(ocm.dataFolder, "config.yml")
+                        val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                        val currentVersion = oldConfig.getInt("config-version")
+                        val amountKey = "sword-blocking.generalDamageReductionAmount"
+                        val percentageKey = "sword-blocking.generalDamageReductionPercentage"
+                        oldConfig.set("config-version", currentVersion - 1)
+                        oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                        oldConfig.set(amountKey, amount)
+                        oldConfig.set(percentageKey, percentage)
+                        oldConfig.save(configFile)
+                        Config.reload()
+                        val upgradedConfig = YamlConfiguration.loadConfiguration(configFile)
+                        upgradedConfig.getInt("config-version") shouldBe currentVersion
+                        for ((key, value) in listOf(amountKey to amount, percentageKey to percentage)) {
+                            upgradedConfig.contains(key) shouldBe (value != null)
+                            upgradedConfig.get(key) shouldBe value
+                            ocm.config.contains(key) shouldBe (value != null)
+                            ocm.config.get(key) shouldBe value
+                        }
+                    }
+                }
+            }
+        }
+
         for (explicit in listOf(false, true)) {
             test("fishing mob migration preserves explicit false=$explicit") {
                 runSync {

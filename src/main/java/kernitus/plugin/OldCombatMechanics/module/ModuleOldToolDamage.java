@@ -63,6 +63,7 @@ public class ModuleOldToolDamage extends OCMModule {
         super(plugin, "old-tool-damage");
         tooltipListener = new TooltipListener();
         Bukkit.getPluginManager().registerEvents(tooltipListener, plugin);
+        plugin.addDisableListener(tooltipListener::shutdown);
         reload();
     }
 
@@ -78,6 +79,11 @@ public class ModuleOldToolDamage extends OCMModule {
 
         // Update online players so config changes take effect immediately
         Bukkit.getOnlinePlayers().forEach(tooltipListener::applyToHeld);
+    }
+
+    @Override
+    public void onModesetChange(Player player) {
+        tooltipListener.applyToHeld(player);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -218,7 +224,7 @@ public class ModuleOldToolDamage extends OCMModule {
             stripTooltip(item);
             return;
         }
-        if (!isEnabled(player)) {
+        if (!tooltipEnabled || !isEnabled(player)) {
             stripTooltip(item);
             return;
         }
@@ -240,7 +246,7 @@ public class ModuleOldToolDamage extends OCMModule {
         final List<String> base = meta.getLore() == null ? new java.util.ArrayList<>() : removeExistingTooltip(meta.getLore());
         base.add(ChatColor.BLUE + tooltipPrefix + " " + formatDamage(configured));
         meta.setLore(base);
-        item.setItemMeta(meta);
+        PaperToolDamageTooltip.setLoreMeta(item, meta);
     }
 
     private void stripTooltip(ItemStack item) {
@@ -259,7 +265,7 @@ public class ModuleOldToolDamage extends OCMModule {
         } else {
             meta.setLore(updated);
         }
-        item.setItemMeta(meta);
+        PaperToolDamageTooltip.setLoreMeta(item, meta);
     }
 
     /**
@@ -275,18 +281,97 @@ public class ModuleOldToolDamage extends OCMModule {
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onHotbar(org.bukkit.event.player.PlayerItemHeldEvent event) {
             cleanHand(event.getPlayer(), event.getPreviousSlot());
-            applyToHeld(event.getPlayer());
+            applyTooltip(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getNewSlot()));
+            defer(event.getPlayer());
         }
 
         @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
         public void onSwap(org.bukkit.event.player.PlayerSwapHandItemsEvent event) {
             stripTooltip(event.getMainHandItem());
             stripTooltip(event.getOffHandItem());
-            applyTooltip(event.getPlayer(), event.getOffHandItem()); // new main hand after swap
-            stripTooltip(event.getMainHandItem()); // new offhand should stay clean
+            applyTooltip(event.getPlayer(), event.getMainHandItem());
+            defer(event.getPlayer());
+        }
+
+        private final java.util.Map<java.util.UUID, org.bukkit.scheduler.BukkitTask> pending = new java.util.HashMap<>();
+
+        private void defer(Player player) {
+            if (pending.containsKey(player.getUniqueId())) return;
+            pending.put(player.getUniqueId(), Bukkit.getScheduler().runTask(plugin, () -> {
+                pending.remove(player.getUniqueId());
+                if (player.isOnline()) applyToHeld(player);
+            }));
+        }
+
+        void shutdown() {
+            pending.values().forEach(org.bukkit.scheduler.BukkitTask::cancel);
+            pending.clear();
+            Bukkit.getOnlinePlayers().forEach(this::cleanInventory);
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onPickup(org.bukkit.event.player.PlayerPickupItemEvent event) {
+            defer(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR)
+        public void onWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+            applyToHeld(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR)
+        public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+            cleanInventory(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDrop(org.bukkit.event.player.PlayerDropItemEvent event) {
+            ItemStack dropped = event.getItemDrop().getItemStack();
+            stripTooltip(dropped);
+            event.getItemDrop().setItemStack(dropped);
+            defer(event.getPlayer());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR)
+        public void onDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
+            event.getDrops().forEach(ModuleOldToolDamage.this::stripTooltip);
+            cleanInventory(event.getEntity());
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+            stripTooltip(event.getCurrentItem());
+            stripTooltip(event.getCursor());
+            if (event.getWhoClicked() instanceof Player) {
+                Player player = (Player) event.getWhoClicked();
+                cleanInventory(player);
+                defer(player);
+            }
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+            ItemStack cursor = event.getCursor();
+            stripTooltip(cursor);
+            event.setCursor(cursor);
+            event.getNewItems().values().forEach(ModuleOldToolDamage.this::stripTooltip);
+            if (event.getWhoClicked() instanceof Player) defer((Player) event.getWhoClicked());
+        }
+
+        void cleanInventory(Player player) {
+            for (ItemStack item : player.getInventory().getContents()) stripTooltip(item);
+            ItemStack cursor = player.getItemOnCursor();
+            ItemStack original = cursor.clone();
+            stripTooltip(cursor);
+            if (!cursor.equals(original)) player.setItemOnCursor(cursor);
         }
 
         void applyToHeld(Player player) {
+            int held = player.getInventory().getHeldItemSlot();
+            ItemStack[] contents = player.getInventory().getContents();
+            for (int slot = 0; slot < contents.length; slot++) {
+                if (slot != held) stripTooltip(contents[slot]);
+            }
             final ItemStack item = player.getInventory().getItemInMainHand();
             applyTooltip(player, item);
         }

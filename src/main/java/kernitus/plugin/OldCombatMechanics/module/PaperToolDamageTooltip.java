@@ -26,8 +26,10 @@ final class PaperToolDamageTooltip {
 
     private final Object type;
     private final Method getData;
+    private final Method isDataOverridden;
     private final Method setData;
     private final Method resetData;
+    private final Method unsetData;
     private final Method defaultData;
     private final Method modifiers;
     private final Method builder;
@@ -53,8 +55,10 @@ final class PaperToolDamageTooltip {
         Field field = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes").getField("ATTRIBUTE_MODIFIERS");
         type = field.get(null);
         getData = ItemStack.class.getMethod("getData", valued);
+        isDataOverridden = ItemStack.class.getMethod("isDataOverridden", dataType);
         setData = ItemStack.class.getMethod("setData", valued, Object.class);
         resetData = ItemStack.class.getMethod("resetData", dataType);
+        unsetData = ItemStack.class.getMethod("unsetData", dataType);
         defaultData = Material.class.getMethod("getDefaultData", valued);
         modifiers = attributes.getMethod("modifiers");
         builder = attributes.getMethod("itemAttributes");
@@ -76,6 +80,24 @@ final class PaperToolDamageTooltip {
 
     static void strip(ItemStack item) {
         if (INSTANCE != null) INSTANCE.restore(item);
+    }
+
+    static void setLoreMeta(ItemStack item, org.bukkit.inventory.meta.ItemMeta meta) {
+        if (INSTANCE == null) {
+            item.setItemMeta(meta);
+            return;
+        }
+        // Bukkit ItemMeta does not retain Paper's per-entry display settings.
+        Object attributes = Reflector.invokeMethod(INSTANCE.getData, item, INSTANCE.type);
+        boolean explicit = Boolean.TRUE.equals(Reflector.invokeMethod(INSTANCE.isDataOverridden, item, INSTANCE.type));
+        item.setItemMeta(meta);
+        if (explicit && attributes != null) {
+            Reflector.invokeMethod(INSTANCE.setData, item, INSTANCE.type, attributes);
+        } else if (explicit) {
+            Reflector.invokeMethod(INSTANCE.unsetData, item, INSTANCE.type);
+        } else {
+            Reflector.invokeMethod(INSTANCE.resetData, item, INSTANCE.type);
+        }
     }
 
     private static PaperToolDamageTooltip create() {
@@ -120,12 +142,21 @@ final class PaperToolDamageTooltip {
         if (current == null) return false;
         List<?> entries = entries(current);
         if (entries.stream().noneMatch(this::damageEntry)) return false;
+        // Only default-derived components are ours to change. Explicit foreign components,
+        // including vanilla-equivalent ones, retain their original display and patch state.
+        if (entries.stream().noneMatch(this::owned)
+                && Boolean.TRUE.equals(Reflector.invokeMethod(isDataOverridden, item, type))) return false;
+        Object nativeDisplay = Reflector.invokeMethod(resetDisplay, null);
+        if (entries.stream().anyMatch(entry -> damageEntry(entry) && !owned(entry)
+                && !sameDisplay(Reflector.invokeMethod(display, entry), nativeDisplay))) return false;
 
         String amount = ModuleOldToolDamage.formatDamage(damage);
         Component text = Component.text(" ").append(Component.translatable("attribute.modifier.equals.0",
                 Component.text(amount), Component.translatable("attribute.name.attack_damage")))
                 .color(NamedTextColor.DARK_GREEN).insertion(OWNER);
         Object shown = Reflector.invokeMethod(override, null, text);
+        if (entries.stream().filter(this::damageEntry)
+                .allMatch(entry -> sameDisplay(Reflector.invokeMethod(display, entry), shown))) return true;
         Reflector.invokeMethod(setData, item, type, rewritten(entries, shown, false));
         return true;
     }
