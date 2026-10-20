@@ -231,6 +231,39 @@ class PaperSwordBlockingDamageReductionIntegrationTest :
                 // Also sanity-check sign: the module is supposed to write BLOCKING as a negative modifier downstream.
                 // (We don't assert it here because synthetic events may not expose/apply that modifier consistently.)
                 reduction shouldBeLessThan 2.5
+
+                val swordAmountKey = "sword-blocking.generalDamageReductionAmount"
+                val swordPercentageKey = "sword-blocking.generalDamageReductionPercentage"
+                val shieldAmountKey = "shield-damage-reduction.generalDamageReductionAmount"
+                val shieldPercentageKey = "shield-damage-reduction.generalDamageReductionPercentage"
+                val keys = listOf(swordAmountKey, swordPercentageKey, shieldAmountKey, shieldPercentageKey)
+                val original = keys.associateWith { ocm.config.get(it) }
+                try {
+                    runSync {
+                        ocm.config.set(shieldAmountKey, 1)
+                        ocm.config.set(shieldPercentageKey, 50)
+                        ocm.config.set(swordAmountKey, null)
+                        ocm.config.set(swordPercentageKey, null)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.75
+                        ocm.config.set(swordAmountKey, 0)
+                        ocm.config.set(swordPercentageKey, 0)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.0
+                        ocm.config.getInt(shieldAmountKey) shouldBe 1
+                        ocm.config.getInt(shieldPercentageKey) shouldBe 50
+                        // Each absent sword option falls back independently, without mutating shield settings.
+                        ocm.config.set(swordPercentageKey, null)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 1.25
+                        ocm.config.set(swordAmountKey, null)
+                        ocm.config.set(swordPercentageKey, 25)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.375
+                        ocm.config.set(swordPercentageKey, null)
+                        ocm.config.set(shieldAmountKey, 2)
+                        ocm.config.set(shieldPercentageKey, 25)
+                        module.applyPaperBlockingReduction(event, 2.5) shouldBe 0.125
+                    }
+                } finally {
+                    runSync { original.forEach { (key, value) -> ocm.config.set(key, value) } }
+                }
             } finally {
                 runSync {
                     zombie.remove()

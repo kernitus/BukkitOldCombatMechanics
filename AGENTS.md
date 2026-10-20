@@ -100,6 +100,7 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - When adding new integration test specs, add them to the explicit `.withClasses(...)` list in `KotestRunner` because autoscan is disabled.
 - New classes should be written in Kotlin by default where practical, matching `.github/CONTRIBUTING.md`.
 
+- Paper sword-blocking damage reduction has optional amount and percentage overrides under `sword-blocking`; each missing option independently inherits its shield counterpart. Config upgrades preserve explicitly configured overrides, including zero, and leave missing overrides absent. Native shield settings and legacy temporary shields remain unchanged.
 - Potion duration seconds may be fractional; conversion rounds once to the nearest tick after multiplication by 20. Integer durations retain their previous values.
 
 ## Integration test essentials

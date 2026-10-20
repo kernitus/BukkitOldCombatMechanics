@@ -261,6 +261,9 @@ shield-damage-reduction:
   projectileDamageReductionPercentage: 50
 
 sword-blocking:
+  # Optional Paper-animation overrides: generalDamageReductionAmount and generalDamageReductionPercentage.
+  # Each omitted value follows the corresponding shield-damage-reduction setting.
+  # Set both to 0 to leave sword damage reduction to another plugin without changing shields.
   # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
   # Paper 1.20.5+ uses a consumable-based blocking animation. Older/Paperless servers fall back to an offhand shield.
   # With ViaVersion, clients older than 1.20.5 will also fall back to the shield behaviour.
