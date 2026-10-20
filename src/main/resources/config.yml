@@ -46,6 +46,14 @@ disabled_modules:
   # Missing native attribution leaves launches unchanged; missing movement access leaves velocity unchanged.
   # Unsupported capabilities produce a diagnostic when these modules are enabled.
 
+# Shared by old-projectile-trajectory, projectile-shoot-offset and relative-projectile-velocity.
+projectile-launch:
+  # Additional registered Bukkit Material names (or namespaced keys) treated as bows.
+  # Vanilla BOW is always eligible. Entries must still fire through native BowItem dispatch;
+  # this does not turn other weapons or plugin-created projectiles into native bow launches.
+  # Unknown materials are ignored with a warning. Changes take effect on OCM reload.
+  custom-bows: []
+
 modesets:
   # Modesets are lists of modules that are enabled for a player in that mode.
   # You can create, remove, and rename as many modesets as you like by modifying the list below.
@@ -669,4 +677,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 78
+config-version: 79

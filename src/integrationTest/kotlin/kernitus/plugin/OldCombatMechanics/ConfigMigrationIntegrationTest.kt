@@ -67,6 +67,29 @@ class ConfigMigrationIntegrationTest :
             }
         }
 
+        for (bows in listOf(null, listOf("BOW", "OCM_CUSTOM_BOW"))) {
+            test("version 78 upgrade adds bow defaults and preserves configured entries $bows") {
+                runSync {
+                    withConfigFile {
+                        val configFile = File(ocm.dataFolder, "config.yml")
+                        val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                        val currentVersion = oldConfig.getInt("config-version")
+                        oldConfig.set("config-version", 78)
+                        oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                        oldConfig.set("projectile-launch.custom-bows", bows)
+                        oldConfig.set("old-tool-damage.tooltip.native-attribute", false)
+                        oldConfig.save(configFile)
+                        Config.reload()
+                        val upgraded = YamlConfiguration.loadConfiguration(configFile)
+                        upgraded.getInt("config-version") shouldBe currentVersion
+                        upgraded.contains("projectile-launch.custom-bows") shouldBe true
+                        upgraded.getStringList("projectile-launch.custom-bows") shouldBe (bows ?: emptyList())
+                        upgraded.getBoolean("old-tool-damage.tooltip.native-attribute") shouldBe false
+                    }
+                }
+            }
+        }
+
         test("version 77 upgrade adds native tooltip option and preserves disabled master switch") {
             runSync {
                 withConfigFile {

@@ -66,6 +66,8 @@ class ProjectileLaunchFidelityIntegrationTest :
         lateinit var saved: String
         lateinit var fake: FakePlayer
         lateinit var player: Player
+        lateinit var fixtureChunk: org.bukkit.Chunk
+        var previouslyForceLoaded: Boolean? = null
         val listeners = mutableListOf<Listener>()
         val entities = mutableListOf<Projectile>()
         var incoming: Vector? = null
@@ -239,8 +241,16 @@ class ProjectileLaunchFidelityIntegrationTest :
         }
 
         beforeTest {
+            check(
+                plugin.dataFolder.isDirectory || plugin.dataFolder.mkdirs(),
+            ) { "Cannot create test diagnostics directory" }
             saved = ocm.config.saveToString()
             configure(all)
+            // Fake connections do not reliably keep the fixture chunk ticking outside native spawn.
+            fixtureChunk = checkNotNull(Bukkit.getWorld("world")).getChunkAt(0, 0)
+            fixtureChunk.load()
+            previouslyForceLoaded = runCatching { fixtureChunk.isForceLoaded }.getOrNull()
+            if (previouslyForceLoaded != null) fixtureChunk.isForceLoaded = true
             fake = FakePlayer(plugin)
             fake.spawn(Location(Bukkit.getWorld("world"), 8.0, 180.0, 8.0, 37f, 24f))
             player = fake.requireBukkitPlayer()
@@ -284,6 +294,7 @@ class ProjectileLaunchFidelityIntegrationTest :
             entities.clear()
             nativeTestProjectiles(player).forEach { it.remove() }
             fake.removePlayer()
+            previouslyForceLoaded?.let { fixtureChunk.isForceLoaded = it }
             ocm.config.loadFromString(saved)
             ocm.saveConfig()
             Config.reload()
@@ -415,37 +426,149 @@ class ProjectileLaunchFidelityIntegrationTest :
             }
         }
 
-        for (charge in listOf(5, 22)) {
-            test("native bow force after $charge ticks controls legacy arrow speed") {
-                if (charge == 5) configure(listOf(trajectory, offset))
+        test("bow configuration accepts registered names and duplicates and ignores unknown materials across reload") {
+            val warnings = mutableListOf<String>()
+            val handler =
+                object : java.util.logging.Handler() {
+                    override fun publish(record: java.util.logging.LogRecord) {
+                        warnings.add(record.message)
+                    }
+
+                    override fun flush() {}
+
+                    override fun close() {}
+                }
+            ocm.logger.addHandler(handler)
+            try {
+                for (entries in listOf(
+                    listOf(" BOW ", "minecraft:bow", "BOW", "OCM_UNKNOWN_BOW_FIXTURE"),
+                    emptyList(),
+                )) {
+                    ocm.config.set("projectile-launch.custom-bows", entries)
+                    configure(listOf(offset))
+                    player.inventory.addItem(ItemStack(Material.ARROW, 64))
+                    useProjectileItem(player, Material.BOW)
+                    delay(1100)
+                    releaseProjectileItem(player)
+                    val arrow = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                    entities.add(arrow)
+                    assertVector(arrow.velocity, checkNotNull(incoming))
+                    if (modern) {
+                        val yaw = Math.toRadians(player.location.yaw.toDouble())
+                        assertVector(
+                            arrow.location.toVector(),
+                            player.location.toVector().add(Vector(-cos(yaw) * 0.16, 1.52, -sin(yaw) * 0.16)),
+                            1e-6,
+                        )
+                    } else {
+                        assertVector(arrow.location.toVector(), checkNotNull(incomingPosition))
+                    }
+                    remove(arrow)
+                }
+                warnings.any {
+                    it == "Unknown projectile-launch.custom-bows material: OCM_UNKNOWN_BOW_FIXTURE"
+                } shouldBe
+                    true
+                warnings.none { it == "Unknown projectile-launch.custom-bows material:  BOW " } shouldBe true
+                warnings.none { it == "Unknown projectile-launch.custom-bows material: minecraft:bow" } shouldBe true
+            } finally {
+                ocm.logger.removeHandler(handler)
+            }
+        }
+
+        // Use the server owner's configured registry entries, never a server-specific material list.
+        val customBows =
+            ocm.config
+                .getStringList("projectile-launch.custom-bows")
+                .mapNotNull { name -> Material.matchMaterial(name.trim()) }
+                .distinct()
+                .filterNot { it == Material.BOW }
+        if (customBows.isEmpty()) {
+            test("custom native bow launch requires a configured server fixture").config(
+                enabledOrReasonIf = {
+                    io.kotest.core.test.Enabled(
+                        false,
+                        "No registered non-BOW projectile-launch.custom-bows fixture; custom native dispatch is unverified",
+                    )
+                },
+            ) {}
+        }
+        for (bow in listOf(Material.BOW) + customBows) {
+            for (charge in listOf(5, 22)) {
+                test("native ${bow.name} force after $charge ticks controls legacy arrow speed") {
+                    if (charge == 5) configure(listOf(trajectory, offset))
+                    player.inventory.addItem(ItemStack(Material.ARROW, 64))
+                    useProjectileItem(player, bow)
+                    delay(charge * 50L)
+                    if (modern) moveThroughConnection(false, false)
+                    val inherited = if (modern && charge == 5) nativeMotion() else Vector()
+                    releaseProjectileItem(player)
+                    val arrow = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                    entities.add(arrow)
+                    if (modern) {
+                        (force > 0.0) shouldBe true
+                        assertVector(
+                            arrow.velocity,
+                            expectedDirection(Material.BOW, 3.0 * force).add(inherited),
+                            0.15,
+                        )
+                        arrow.velocity
+                            .clone()
+                            .subtract(inherited)
+                            .length() shouldBe (3.0 * force plusOrMinus 0.08)
+                        val yaw = Math.toRadians(player.location.yaw.toDouble())
+                        assertVector(
+                            arrow.location.toVector(),
+                            player.location.toVector().add(
+                                Vector(
+                                    -cos(yaw) * 0.16,
+                                    1.52,
+                                    -sin(yaw) * 0.16,
+                                ),
+                            ),
+                            1e-6,
+                        )
+                    } else {
+                        assertVector(arrow.velocity, checkNotNull(incoming))
+                    }
+                }
+            }
+        }
+
+        for (bow in customBows) {
+            test("custom ${bow.name} eligibility changes on reload") {
+                ocm.config.set("projectile-launch.custom-bows", emptyList<String>())
+                ocm.saveConfig()
+                Config.reload()
                 player.inventory.addItem(ItemStack(Material.ARROW, 64))
-                useProjectileItem(player, Material.BOW)
-                delay(charge * 50L)
-                if (modern) moveThroughConnection(false, false)
-                val inherited = if (modern && charge == 5) nativeMotion() else Vector()
+                useProjectileItem(player, bow)
+                delay(1100)
                 releaseProjectileItem(player)
-                val arrow = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
-                entities.add(arrow)
+                val native = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                entities.add(native)
+                assertVector(native.velocity, checkNotNull(incoming))
+                assertVector(native.location.toVector(), checkNotNull(incomingPosition))
+                remove(native)
+
+                ocm.config.set("projectile-launch.custom-bows", listOf(bow.name))
+                ocm.saveConfig()
+                Config.reload()
+                useProjectileItem(player, bow)
+                delay(1100)
+                if (modern) moveThroughConnection(false, false)
+                releaseProjectileItem(player)
+                val corrected = nativeTestProjectiles(player).filterIsInstance<Arrow>().single()
+                entities.add(corrected)
                 if (modern) {
-                    (force > 0.0) shouldBe true
-                    arrow.velocity
-                        .clone()
-                        .subtract(inherited)
-                        .length() shouldBe (3.0 * force plusOrMinus 0.08)
+                    assertVector(corrected.velocity, expectedDirection(Material.BOW, 3.0 * force), 0.15)
                     val yaw = Math.toRadians(player.location.yaw.toDouble())
                     assertVector(
-                        arrow.location.toVector(),
-                        player.location.toVector().add(
-                            Vector(
-                                -cos(yaw) * 0.16,
-                                1.52,
-                                -sin(yaw) * 0.16,
-                            ),
-                        ),
+                        corrected.location.toVector(),
+                        player.location.toVector().add(Vector(-cos(yaw) * 0.16, 1.52, -sin(yaw) * 0.16)),
                         1e-6,
                     )
                 } else {
-                    assertVector(arrow.velocity, checkNotNull(incoming))
+                    assertVector(corrected.velocity, checkNotNull(incoming))
                 }
             }
         }
@@ -909,6 +1032,9 @@ class ProjectileLaunchFidelityIntegrationTest :
         ) {
             val material = Material.matchMaterial("CROSSBOW")
             if (material != null) {
+                // Listing a registered weapon cannot bypass the native BowItem dispatch guard.
+                ocm.config.set("projectile-launch.custom-bows", listOf(material.name))
+                configure(all)
                 useProjectileItem(player, material) { item ->
                     val meta = item.itemMeta!!
                     meta.javaClass
