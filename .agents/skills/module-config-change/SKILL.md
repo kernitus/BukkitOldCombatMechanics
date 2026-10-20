@@ -42,7 +42,7 @@ Use this skill when changing module configuration, defaults, migration, or runti
 
 ## Useful known behaviours
 
-- `old-tool-damage.tooltip.enabled` is enabled by default so players can see configured damage in-game.
+- Modern Paper corrects the native attack damage text when `old-tool-damage.tooltip.native-attribute` is enabled. `old-tool-damage.tooltip.enabled` is the master switch for both native display and lore fallback. Native correction only changes default-derived attribute components; explicit foreign components retain their state and use lore. Neither path changes the item attribute modifier or combat damage.
 - `attack-range` is listed in `disabled_modules` by default and is Paper 1.21.11+ only.
 - `sword-blocking.paper-animation` defaults to `true`; when false, sword blocking uses the legacy shield fallback and strips stale Paper consumable state.
 - Attack cooldown supports `disable-attack-cooldown.held-item-attack-speeds.<MATERIAL>` with XMaterial/Material matching and restores vanilla attack speed when disabled.

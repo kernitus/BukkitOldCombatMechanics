@@ -144,14 +144,17 @@ old-tool-damage:
   # This is to set the tool damage as in pre-1.9
   # When the server identifies sweep attacks separately, their native damage is preserved.
   # Enable disable-sword-sweep to remove sweeping attacks for 1.8 behaviour.
-  # NOTE: this will modify the damage, however the vanilla attribute tooltip will still show the 1.9+ values.
-  # The tooltip section below is enabled by default so players can see the configured damage in-game.
+  # Combat damage is changed by OCM; the tooltip below shows the configured value when enabled.
   # Use old sharpness calculations, i.e. each level adds 1.25 damage
   # In 1.9+, sharpness adds 1 + 0.5 * level damage
   old-sharpness: true
   tooltip:
-    # Optionally adds a lore line showing the configured damage from old-tool-damage.damages (the actual damage OCM applies).
-    # This is a cosmetic helper to reduce confusion, but can interact with other plugins that rewrite item lore.
+    # Correct only the native attack damage text when Paper supports per-attribute display overrides.
+    # Disable this to retain the legacy lore below on every server.
+    native-attribute: true
+    # Master switch for native display and lore fallback.
+    # Explicit custom attribute components retain their display and use lore instead.
+    # Lore can interact with plugins that rewrite it.
     enabled: true
     prefix: "OCM Damage:"
   # Damage values are in 1.9+ "actual damage" terms (1 damage = half a heart).
@@ -666,4 +669,4 @@ debug:
   enabled: false
 
 # DO NOT CHANGE THIS NUMBER AS IT WILL RESET YOUR CONFIG
-config-version: 77
+config-version: 78

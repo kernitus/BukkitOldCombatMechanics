@@ -67,6 +67,26 @@ class ConfigMigrationIntegrationTest :
             }
         }
 
+        test("version 77 upgrade adds native tooltip option and preserves disabled master switch") {
+            runSync {
+                withConfigFile {
+                    val configFile = File(ocm.dataFolder, "config.yml")
+                    val oldConfig = YamlConfiguration.loadConfiguration(configFile)
+                    val currentVersion = oldConfig.getInt("config-version")
+                    oldConfig.set("config-version", 77)
+                    oldConfig.set("force-below-1-18-1-config-upgrade", true)
+                    oldConfig.set("old-tool-damage.tooltip.enabled", false)
+                    oldConfig.set("old-tool-damage.tooltip.native-attribute", null)
+                    oldConfig.save(configFile)
+                    Config.reload()
+                    val upgraded = YamlConfiguration.loadConfiguration(configFile)
+                    upgraded.getInt("config-version") shouldBe currentVersion
+                    upgraded.getBoolean("old-tool-damage.tooltip.native-attribute") shouldBe true
+                    upgraded.getBoolean("old-tool-damage.tooltip.enabled") shouldBe false
+                }
+            }
+        }
+
         for ((amount, percentage) in listOf(
             null to null,
             2 to null,
