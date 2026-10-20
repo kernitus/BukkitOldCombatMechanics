@@ -756,8 +756,10 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!isHoldingSword(player.getInventory().getItemInMainHand().getType())) return 0;
         if (!isPaperSwordBlocking(player)) return 0;
 
-        final int amount = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionAmount", 1);
-        final int percent = plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionPercentage", 50);
+        final int amount = plugin.getConfig().getInt("sword-blocking.generalDamageReductionAmount",
+                plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionAmount", 1));
+        final int percent = plugin.getConfig().getInt("sword-blocking.generalDamageReductionPercentage",
+                plugin.getConfig().getInt("shield-damage-reduction.generalDamageReductionPercentage", 50));
         double reduction = (incomingDamage - amount) * (percent / 100.0);
         if (reduction > incomingDamage) reduction = incomingDamage;
         return reduction;

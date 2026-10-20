@@ -21,6 +21,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
@@ -52,6 +54,11 @@ public class ModuleGoldenApple extends OCMModule {
 
     private Map<UUID, LastEaten> lastEaten;
     private Cooldown cooldown;
+    private boolean showItemCooldown;
+    private final Map<Player, Map<Material, ItemCooldown>> itemCooldowns = new HashMap<>();
+    private final Map<Player, Map<Material, ItemCooldown>> pendingItemCooldowns = new HashMap<>();
+    private BukkitTask itemCooldownTask;
+    private long itemCooldownGeneration;
 
     private String normalCooldownMessage, enchantedCooldownMessage;
     private static ModuleGoldenApple INSTANCE;
@@ -59,11 +66,13 @@ public class ModuleGoldenApple extends OCMModule {
     public ModuleGoldenApple(OCMMain plugin) {
         super(plugin, "old-golden-apples");
         INSTANCE = this;
+        plugin.addDisableListener(this::clearItemCooldowns);
     }
 
     @SuppressWarnings("deprecated")
     @Override
     public void reload() {
+        clearItemCooldowns();
         normalCooldownMessage = module().getString("cooldown.message-normal");
         enchantedCooldownMessage = module().getString("cooldown.message-enchanted");
 
@@ -71,6 +80,9 @@ public class ModuleGoldenApple extends OCMModule {
                 module().getLong("cooldown.normal"),
                 module().getLong("cooldown.enchanted"),
                 module().getBoolean("cooldown.is-shared"));
+        // Pre-1.13 enchanted apples share the GOLDEN_APPLE material, so a material cooldown would hit both types
+        showItemCooldown = module().getBoolean("cooldown.show-item-cooldown")
+                && Material.getMaterial("ENCHANTED_GOLDEN_APPLE") != null;
         lastEaten = new WeakHashMap<>();
 
         enchantedGoldenAppleEffects = getPotionEffects("enchanted-golden-apple-effects");
@@ -178,6 +190,15 @@ public class ModuleGoldenApple extends OCMModule {
 
         lastEaten.get(uuid).setForItem(originalItem);
 
+        if (showItemCooldown) {
+            if (cooldown.sharedCooldown) {
+                showItemCooldown(e, Material.GOLDEN_APPLE, cooldown.normal);
+                showItemCooldown(e, Material.ENCHANTED_GOLDEN_APPLE, cooldown.enchanted);
+            } else {
+                showItemCooldown(e, consumedMaterial, cooldown.getCooldownForItem(originalItem));
+            }
+        }
+
         if (!isSettingEnabled("old-potion-effects"))
             return;
 
@@ -200,6 +221,149 @@ public class ModuleGoldenApple extends OCMModule {
             // Add new custom effects from eating the apple
             applyEffects(player, newEffects);
         }, 1L);
+    }
+
+    private void showItemCooldown(PlayerItemConsumeEvent event, Material material, long seconds) {
+        if (seconds <= 0) return;
+        pendingItemCooldowns.computeIfAbsent(event.getPlayer(), ignored -> new EnumMap<>(Material.class))
+                .put(material, new ItemCooldown(event, seconds));
+        if (itemCooldownTask == null)
+            itemCooldownTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tickItemCooldowns, 1L, 1L);
+    }
+
+    private void tickItemCooldowns() {
+        final long generation = itemCooldownGeneration;
+        // Deferred writes observe cancellation by later listeners, including other HIGHEST listeners.
+        Map<Player, Map<Material, ItemCooldown>> pendingBatch = new HashMap<>(pendingItemCooldowns);
+        for (Map.Entry<Player, Map<Material, ItemCooldown>> entry : pendingBatch.entrySet()) {
+            Player player = entry.getKey();
+            if (!player.isOnline() || !isEnabled(player)) {
+                pendingItemCooldowns.remove(player);
+                continue;
+            }
+            Map<Material, ItemCooldown> owned = itemCooldowns.computeIfAbsent(player,
+                    ignored -> new EnumMap<>(Material.class));
+            for (Map.Entry<Material, ItemCooldown> pending : new EnumMap<>(entry.getValue()).entrySet()) {
+                ItemCooldown next = pending.getValue();
+                entry.getValue().remove(pending.getKey());
+                if (entry.getValue().isEmpty()) pendingItemCooldowns.remove(player);
+                if (next.event.isCancelled()) continue;
+                Material material = pending.getKey();
+                ItemCooldown previous = owned.get(material);
+                int current = player.getCooldown(material);
+                if (previous == null ? current != 0 : !previous.matches(player, current)) continue;
+                next.event = null;
+                boolean applied = next.write(player, material, next.remainingTicks());
+                if (generation != itemCooldownGeneration) {
+                    if (applied && next.matches(player, player.getCooldown(material))) player.setCooldown(material, 0);
+                    return;
+                }
+                if (applied) owned.put(material, next);
+                else owned.remove(material);
+            }
+        }
+        Iterator<Map.Entry<Player, Map<Material, ItemCooldown>>> players = itemCooldowns.entrySet().iterator();
+        while (players.hasNext()) {
+            Map.Entry<Player, Map<Material, ItemCooldown>> entry = players.next();
+            Player player = entry.getKey();
+            boolean active = player.isOnline() && !player.isDead() && isEnabled(player);
+            Iterator<Map.Entry<Material, ItemCooldown>> materials = entry.getValue().entrySet().iterator();
+            while (materials.hasNext()) {
+                Map.Entry<Material, ItemCooldown> material = materials.next();
+                ItemCooldown owned = material.getValue();
+                int current = player.getCooldown(material.getKey());
+                if (!owned.matches(player, current)) {
+                    materials.remove();
+                    continue;
+                }
+                int desired = active ? owned.remainingTicks() : 0;
+                // Avoid resending packets for rounding noise, but never retain an expired restriction.
+                // Very long durations use renewable one-day windows to avoid native integer overflow.
+                if (desired == ItemCooldown.MAX_DISPLAY_TICKS && current > 0) continue;
+                if (desired == 0 || Math.abs((long) desired - current) > 1) {
+                    boolean applied = owned.write(player, material.getKey(), desired);
+                    if (generation != itemCooldownGeneration) {
+                        if (applied && owned.matches(player, player.getCooldown(material.getKey())))
+                            player.setCooldown(material.getKey(), 0);
+                        return;
+                    }
+                    if (!applied) {
+                        materials.remove();
+                        continue;
+                    }
+                }
+                if (desired == 0) materials.remove();
+            }
+            if (entry.getValue().isEmpty()) players.remove();
+        }
+        stopItemCooldownTaskIfEmpty();
+    }
+
+    private void releaseItemCooldowns(Player player) {
+        itemCooldownGeneration++;
+        pendingItemCooldowns.remove(player);
+        Map<Material, ItemCooldown> owned = itemCooldowns.remove(player);
+        if (owned != null) owned.forEach((material, value) -> {
+            if (value.matches(player, player.getCooldown(material))) player.setCooldown(material, 0);
+        });
+        stopItemCooldownTaskIfEmpty();
+    }
+
+    private void clearItemCooldowns() {
+        itemCooldownGeneration++;
+        pendingItemCooldowns.clear();
+        for (Player player : new ArrayList<>(itemCooldowns.keySet())) releaseItemCooldowns(player);
+        stopItemCooldownTaskIfEmpty();
+    }
+
+    private void stopItemCooldownTaskIfEmpty() {
+        if (itemCooldowns.isEmpty() && pendingItemCooldowns.isEmpty() && itemCooldownTask != null) {
+            itemCooldownTask.cancel();
+            itemCooldownTask = null;
+        }
+    }
+
+    @Override
+    public void onModesetChange(Player player) {
+        if (!isEnabled(player)) releaseItemCooldowns(player);
+    }
+
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        onModesetChange(event.getPlayer());
+    }
+
+    private static final class ItemCooldown {
+        private static final int MAX_DISPLAY_TICKS = 24 * 60 * 60 * 20;
+        private PlayerItemConsumeEvent event;
+        private final Instant started = Instant.now();
+        private final long seconds;
+        private int writtenTicks;
+        private int writtenAge;
+
+        private ItemCooldown(PlayerItemConsumeEvent event, long seconds) {
+            this.event = event;
+            this.seconds = seconds;
+        }
+
+        private int remainingTicks() {
+            Duration elapsed = Duration.between(started, Instant.now());
+            double remaining = seconds - elapsed.getSeconds() - elapsed.getNano() / 1_000_000_000.0;
+            return (int) Math.max(0, Math.min(MAX_DISPLAY_TICKS, Math.ceil(remaining * 20.0)));
+        }
+
+        private boolean matches(Player player, int current) {
+            int elapsedTicks = player.getTicksLived() - writtenAge;
+            // Same-valued foreign writes cannot be distinguished through Bukkit's cooldown API.
+            return elapsedTicks >= 0 && current == Math.max(0, writtenTicks - elapsedTicks);
+        }
+
+        private boolean write(Player player, Material material, int ticks) {
+            player.setCooldown(material, ticks);
+            writtenTicks = ticks;
+            writtenAge = player.getTicksLived();
+            return player.getCooldown(material) == ticks;
+        }
     }
 
     private void applyEffects(LivingEntity target, List<PotionEffect> newEffects) {
@@ -282,6 +446,7 @@ public class ModuleGoldenApple extends OCMModule {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
+        releaseItemCooldowns(e.getPlayer());
         final UUID uuid = e.getPlayer().getUniqueId();
         if (lastEaten != null)
             lastEaten.remove(uuid);
