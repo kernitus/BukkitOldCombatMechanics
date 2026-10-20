@@ -75,6 +75,14 @@ public class OCMConfigHandler {
                 }
             }
 
+            // Optional sword overrides are deliberately absent from the bundled defaults.
+            for (String key : Arrays.asList("sword-blocking.generalDamageReductionAmount",
+                    "sword-blocking.generalDamageReductionPercentage")) {
+                if (oldConfig.contains(key) && !oldConfig.isConfigurationSection(key)) {
+                    newConfig.set(key, oldConfig.get(key));
+                }
+            }
+
             migrateModuleLists(oldConfig, newConfig);
 
             // Save the final, merged config

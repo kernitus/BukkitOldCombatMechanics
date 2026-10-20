@@ -261,6 +261,9 @@ shield-damage-reduction:
   projectileDamageReductionPercentage: 50
 
 sword-blocking:
+  # Optional Paper-animation overrides: generalDamageReductionAmount and generalDamageReductionPercentage.
+  # Each omitted value follows the corresponding shield-damage-reduction setting.
+  # Set both to 0 to leave sword damage reduction to another plugin without changing shields.
   # This is to allow players to block with swords again, by getting a shield while they hold right click with a sword
   # Paper 1.20.5+ uses a consumable-based blocking animation. Older/Paperless servers fall back to an offhand shield.
   # With ViaVersion, clients older than 1.20.5 will also fall back to the shield behaviour.
@@ -391,6 +394,11 @@ old-golden-apples:
     is-shared: false
     # Show the cooldown on the apple items in the hotbar, like ender pearls (1.13+).
     # The client then refuses to eat apples on cooldown, so the cooldown messages are rarely shown.
+    # Applied on the next tick after accepted consumption and kept in step with the elapsed real time.
+    # Durations above one day use renewable one-day indicators; the configured restriction is unchanged.
+    # Existing cooldowns from other plugins are preserved; later changes relinquish OCM ownership.
+    # Same-valued writes by another plugin cannot be distinguished. OCM clears its own indicator
+    # on reload, shutdown or when the module becomes inactive for the player.
     show-item-cooldown: false
   # If you want to allow enchanted golden apple crafting
   enchanted-golden-apple-crafting: true
@@ -450,6 +458,7 @@ old-potion-effects:
   # This is to restore the 1.8 potion effects and duration
 
   # DURATION: (in seconds)
+  # Durations are seconds; fractional values are rounded to the nearest server tick.
   potion-durations:
     drinkable:
       regeneration: 45
