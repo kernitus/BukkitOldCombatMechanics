@@ -18,6 +18,9 @@ This release requires Paper or a compatible fork and adds projectile launch opti
 
 ### Fixes
 
+- Fixed incorrect melee and critical-hit damage on newer Paper builds, including 26.3, when the server resets attack cooldown before damage is processed.
+- Corrected stronger repeated hits during damage immunity on newer Paper, including armour and absorption calculations, while preserving other plugins' damage adjustments.
+- Fixed `old-armour-durability` applying ordinary-hit armour wear to explosions reported as custom damage on newer Paper. Explosions retain native armour wear, while ordinary hits still use the configured reduction.
 - Fixed repeated player-attributed custom damage, such as `/damage ... by <player>`, incorrectly increasing when the damage type bypasses hit immunity. Custom damage also retains its supplied amount instead of being recalculated as a weapon attack. [#968](https://github.com/kernitus/BukkitOldCombatMechanics/issues/968).
 - Fixed fractional potion durations being truncated to whole seconds. Durations now retain fractional seconds and round to the nearest game tick. [#973](https://github.com/kernitus/BukkitOldCombatMechanics/issues/973).
 - Corrected blocking calculations for fractional damage and prevented OCM's tiny fishing and projectile knockback hits from being amplified by blocking.
@@ -31,6 +34,7 @@ This release requires Paper or a compatible fork and adds projectile launch opti
 
 - Unrelated combat modules now remain available if PacketEvents fails. Warnings identify affected attack-sound suppression, sweep-particle suppression or sword client detection.
 - Fishing-hook gravity and hooked targets now use available public APIs, retaining older-server fallbacks and the existing scheduled gravity correction.
+- Known legacy limitations remain: on Paper 1.12, attacks triggered inside another damage handler and synthetic damage events can confuse attack-cooldown tracking. Paper 1.9.4 also retains known same-tick cooldown and potion-affected sword-sweep inaccuracies.
 
 Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
 
