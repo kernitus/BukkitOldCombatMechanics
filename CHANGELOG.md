@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.8.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.7.0...v2.8.0) (2026-10-26)
 
 This release requires Paper or a compatible fork and adds projectile launch options, golden apple cooldown indicators and improved damage tooltips, alongside combat and compatibility fixes.
 
