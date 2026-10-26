@@ -55,4 +55,6 @@ Use this skill when a change must behave across legacy and modern Bukkit/Paper v
 
 ## References
 
+- Remaining insertion, movement, identity, provenance and blocking API gaps: `references/public-api-audit.md`.
+
 - Broader test-harness and historical notes: `../integration-test-verification/references/relocated-agents-notes.md`.
