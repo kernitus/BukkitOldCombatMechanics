@@ -88,7 +88,7 @@ public class ModuleOldToolDamage extends OCMModule {
 
     @EventHandler(ignoreCancelled = true)
     public void onEntityDamaged(OCMEntityDamageByEntityEvent event) {
-        if (event.isNativeSweepAttack()) return;
+        if (!event.isPrimaryMeleeAttack()) return;
         final Entity damager = event.getDamager();
         if (event.getCause() == EntityDamageEvent.DamageCause.THORNS) return;
 

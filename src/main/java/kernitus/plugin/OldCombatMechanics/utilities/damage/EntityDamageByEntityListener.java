@@ -150,7 +150,8 @@ public class EntityDamageByEntityListener extends OCMModule {
 
             // Call event constructor before setting lastDamage back, because we need it for calculations
             final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
-                    (damager, damagee, event.getCause(), event.getDamage());
+                    (damager, damagee, event.getCause(), event.getDamage(),
+                            isPrimaryMeleeAttack(event), damageSourceBypassesCooldown(event));
 
             // Set last damage to actual value for other modules and plugins to use
             // This will be set back to 0 in MONITOR listener on the next tick to detect all potential overdamages.
@@ -182,7 +183,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             // Hurt components order: Overdamage - Armour - Resistance - Armour enchants - Absorption
             double newDamage = e.getBaseDamage();
 
-            if (!e.isNativeSweepAttack()) {
+            if (e.isPrimaryMeleeAttack()) {
                 debug("Base: " + e.getBaseDamage(), damager);
                 debug("Base: " + e.getBaseDamage());
 
@@ -275,6 +276,16 @@ public class EntityDamageByEntityListener extends OCMModule {
             debug("New Damage: " + newDamage, damager);
             debug("Attack damage (before defence): " + newDamage);
         }
+    }
+
+    private static boolean isPrimaryMeleeAttack(EntityDamageEvent event) {
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return false;
+        // Bukkit also labels attributed custom command damage ENTITY_ATTACK. Only native melee
+        // types carry the attacker's offensive components; legacy APIs retain cause-based routing.
+        final String key = DamageTypeTags.from(event).getKey();
+        return key == null || key.equals("minecraft:player_attack") || key.equals("minecraft:mob_attack")
+                || key.equals("minecraft:mob_attack_no_aggro") || key.equals("minecraft:sting")
+                || key.equals("minecraft:mace_smash") || key.equals("minecraft:spear");
     }
 
     /**

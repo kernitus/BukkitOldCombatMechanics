@@ -52,6 +52,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     private final Entity damager, damagee;
     private final DamageCause cause;
+    private final boolean primaryMeleeAttack;
     private double rawDamage;
 
     private ItemStack weapon;
@@ -78,9 +79,15 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
     // Performs the opposite of the following:
     // (Base + Potion effects, scaled by attack delay) + Critical Hit + (Enchantments, scaled by attack delay), Overdamage, Armour
     public OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage) {
+        this(damager, damagee, cause, rawDamage, cause == DamageCause.ENTITY_ATTACK, false);
+    }
+
+    OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage,
+                               boolean primaryMeleeAttack, boolean bypassesCooldown) {
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
+        this.primaryMeleeAttack = primaryMeleeAttack;
 
         // We ignore attacks like arrows etc. because we do not need to change the attack side of those
         // Other modules such as old armour strength work independently of this event
@@ -98,7 +105,7 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         We artificially set the last damage to 0 between events so that all hits will register,
         however we only do this for DamageByEntity, so there could still be environmental damage (e.g. cactus).
         */
-        if (damagee instanceof LivingEntity) {
+        if (!bypassesCooldown && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
                 // NMS code also checks if current damage is higher that previous damage. However, here the event
@@ -125,7 +132,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         // Technically the weapon could be in the offhand, i.e. a bow.
         // However, we are only concerned with melee weapons here, which will always be in the main hand.
 
-        if (isNativeSweepAttack()) {
+        if (!primaryMeleeAttack) {
+            // Attribution alone does not make command or custom-type damage a melee attack.
+            // Preserve its native amount without applying the attributed entity's combat state.
             // Native sweep formulae differ between servers. Retain their offensive amount and let
             // the common damage pipeline apply immunity and defence without reversing primary-hit effects.
             // Known limitation (#890): Sweeping Edge uses the server's native attack damage. Changes
@@ -287,6 +296,14 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     public DamageCause getCause() {
         return cause;
+    }
+
+    /**
+     * Whether the original public damage source has native primary-melee offensive components.
+     * Servers without damage-source access and the legacy constructor use the Bukkit cause instead.
+     */
+    public boolean isPrimaryMeleeAttack() {
+        return primaryMeleeAttack;
     }
 
     public boolean isNativeSweepAttack() {
