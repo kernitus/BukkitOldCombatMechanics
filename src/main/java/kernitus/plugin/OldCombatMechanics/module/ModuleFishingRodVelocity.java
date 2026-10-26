@@ -34,7 +34,10 @@ public class ModuleFishingRodVelocity extends OCMModule {
 
     private Random random;
     private double gravity;
-    private Double nativeGravity;
+    private Boolean rewrittenHook;
+    private Double legacyGravity;
+    private boolean hasDefaultGravityApi = true;
+    private boolean legacyTargetResolved;
     private java.lang.reflect.Method getHandle;
     private java.lang.reflect.Field legacyHooked;
     private boolean hasWaterApi = true;
@@ -103,28 +106,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
 
         fishHook.setVelocity(new Vector(velocityX, velocityY, velocityZ));
 
-        if (nativeGravity == null) {
-            // The rewritten hook has an enum state machine and uses 0.03 gravity (including 1.12).
-            // Its predecessor in 1.8 and 1.9 has no enum field and uses 0.04.
-            try {
-                getHandle = Reflector.getMethod(fishHook.getClass(), "getHandle");
-                final Object handle = Reflector.invokeMethod(getHandle, fishHook);
-                Class<?> hookType = handle.getClass();
-                while (hookType.getSuperclass() != null && !hookType.getSimpleName().equals("EntityFishingHook")
-                        && !hookType.getSimpleName().equals("FishingHook")) hookType = hookType.getSuperclass();
-                nativeGravity = java.util.Arrays.stream(hookType.getDeclaredFields())
-                        .anyMatch(field -> field.getType().isEnum()) ? 0.03 : 0.04;
-                legacyHooked = java.util.Arrays.stream(hookType.getDeclaredFields())
-                        .filter(field -> field.getType().getSimpleName().equals("Entity"))
-                        .findFirst().orElse(null);
-                if (legacyHooked != null) legacyHooked.setAccessible(true);
-            } catch (RuntimeException exception) {
-                // Unknown server wrappers: preserve the established native baseline rather than fail the cast.
-                nativeGravity = Reflector.versionIsNewerOrEqualTo(1, 12, 0) ? 0.03 : 0.04;
-                Messenger.warn("Could not inspect native fishing hook gravity; using %s", nativeGravity);
-            }
-        }
-        if (Math.abs(gravity - nativeGravity) < 1e-8) return;
+        if (Math.abs(gravity - nativeGravity(fishHook)) < 1e-8) return;
 
         // Adjust gravity on every tick unless it's in water.
         // Performance: on 1.14+ this used to schedule one repeating task per cast/hook. When players spam rods,
@@ -166,7 +148,7 @@ public class ModuleFishingRodVelocity extends OCMModule {
                         final Vector fVelocity = hook.getVelocity();
                         // Rewritten hooks subtract gravity, move, then apply 0.92 drag: correct the upcoming tick.
                         // Legacy hooks move, subtract gravity, then drag: replace the previous tick's dragged gravity.
-                        final double correction = (gravity - nativeGravity) * (nativeGravity == 0.04 ? 0.92 : 1.0);
+                        final double correction = (gravity - nativeGravity(hook)) * (isRewrittenHook(hook) ? 1.0 : 0.92);
                         fVelocity.setY(fVelocity.getY() - correction);
                         hook.setVelocity(fVelocity);
                     }
@@ -180,6 +162,48 @@ public class ModuleFishingRodVelocity extends OCMModule {
         };
         gravityTask.runTaskTimer(plugin, 1, 1);
     }
+    private double nativeGravity(FishHook hook) {
+        if (hasDefaultGravityApi) {
+            try {
+                // Read each hook's live baseline. getGravity() instead returns zero when gravity is disabled.
+                return hook.getDefaultGravity();
+            } catch (NoSuchMethodError ignored) {
+                hasDefaultGravityApi = false;
+            }
+        }
+        if (legacyGravity == null) legacyGravity = isRewrittenHook(hook) ? 0.03 : 0.04;
+        return legacyGravity;
+    }
+
+    private boolean isRewrittenHook(FishHook hook) {
+        if (rewrittenHook == null) {
+            try {
+                // CraftFishHook exposes the rewritten native state machine through this public API.
+                // Its tick subtracts gravity before moving; this is independent of the gravity magnitude.
+                hook.getState();
+                rewrittenHook = true;
+            } catch (NoSuchMethodError ignored) {
+                try {
+                    rewrittenHook = java.util.Arrays.stream(nativeHookType(hook).getDeclaredFields())
+                            .anyMatch(field -> field.getType().isEnum());
+                } catch (RuntimeException exception) {
+                    // Preserve the established fallback for unknown legacy wrappers only.
+                    rewrittenHook = Reflector.versionIsNewerOrEqualTo(1, 12, 0);
+                    Messenger.warn("Could not inspect native fishing hook timing; using rewritten=%s", rewrittenHook);
+                }
+            }
+        }
+        return rewrittenHook;
+    }
+
+    private Class<?> nativeHookType(FishHook hook) {
+        if (getHandle == null) getHandle = Reflector.getMethod(hook.getClass(), "getHandle");
+        Class<?> hookType = Reflector.invokeMethod(getHandle, hook).getClass();
+        while (hookType.getSuperclass() != null && !hookType.getSimpleName().equals("EntityFishingHook")
+                && !hookType.getSimpleName().equals("FishingHook")) hookType = hookType.getSuperclass();
+        return hookType;
+    }
+
     private boolean usesGravity(FishHook hook) {
         if (hasGravityApi) {
             try {
@@ -211,7 +235,20 @@ public class ModuleFishingRodVelocity extends OCMModule {
                 hasHookedEntityApi = false;
             }
         }
-        if (legacyHooked != null && getHandle != null) {
+        if (!legacyTargetResolved) {
+            // Old Paper has no public hooked-entity accessor. Discover its native target only on this path.
+            try {
+                legacyHooked = java.util.Arrays.stream(nativeHookType(hook).getDeclaredFields())
+                        .filter(field -> field.getType().getSimpleName().equals("Entity"))
+                        .findFirst().orElse(null);
+                if (legacyHooked != null) legacyHooked.setAccessible(true);
+            } catch (RuntimeException exception) {
+                legacyHooked = null;
+                Messenger.warn("Could not inspect native fishing hook target; target detection is unavailable");
+            }
+            legacyTargetResolved = true;
+        }
+        if (legacyHooked != null) {
             try {
                 return legacyHooked.get(Reflector.invokeMethod(getHandle, hook)) != null;
             } catch (IllegalAccessException exception) {

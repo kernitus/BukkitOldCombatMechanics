@@ -35,6 +35,7 @@ class FishingGravityIntegrationTest :
         extensions(MainThreadDispatcherExtension(testPlugin))
         test("real fishing item use respects configured gravity throughout native flight") {
             val previous = ocm.config.get("fishing-rod-velocity.gravity")
+            val apiSamples = mutableListOf<String>()
             for (gravity in listOf(0.0, 0.03, 0.04, 0.1)) {
                 val fake = FakePlayer(testPlugin)
                 var hook: FishHook? = null
@@ -50,12 +51,58 @@ class FishingGravityIntegrationTest :
                             nativeTestProjectiles(player).filterIsInstance<FishHook>().single().also {
                                 hook = it
                                 it.velocity = Vector(0.0, 0.2, 0.4)
+                                if (FishHook::class.java.methods.any { method -> method.name == "getDefaultGravity" }) {
+                                    val baseline = it.defaultGravity
+                                    val enabled = it.gravity
+                                    it.setGravity(false)
+                                    val disabled = it.gravity
+                                    val disabledBaseline = it.defaultGravity
+                                    it.setGravity(true)
+                                    apiSamples.add(
+                                        "configured=$gravity default=$baseline enabled=$enabled disabled=$disabled disabledDefault=$disabledBaseline",
+                                    )
+                                    abs(baseline - 0.03) shouldBeLessThan 1e-8
+                                    enabled shouldBe baseline
+                                    disabled shouldBe 0.0
+                                    disabledBaseline shouldBe baseline
+                                }
                             }
                         }
+                    if (FishHook::class.java.methods.any { it.name == "getState" } &&
+                        FishHook::class.java.methods.any { it.name == "getHookedEntity" }
+                    ) {
+                        module.javaClass
+                            .getDeclaredField(
+                                "getHandle",
+                            ).apply { isAccessible = true }
+                            .get(module) shouldBe
+                            null
+                        module.javaClass
+                            .getDeclaredField(
+                                "legacyTargetResolved",
+                            ).apply { isAccessible = true }
+                            .getBoolean(module) shouldBe
+                            false
+                    }
                     val displacement = samples.zipWithNext { a, b -> b.position.clone().subtract(a.position) }
                     // First native tick precedes the task. Legacy hooks move before gravity; rewritten hooks subtract 0.03 first.
                     minOf(abs(displacement[0].y - 0.17), abs(displacement[0].y - 0.2)) shouldBeLessThan 1e-6
                     val gravityFactor = if (abs(displacement[0].y - 0.2) < 1e-6) 0.92 else 1.0
+                    val rewritten =
+                        module.javaClass
+                            .getDeclaredMethod("isRewrittenHook", FishHook::class.java)
+                            .apply { isAccessible = true }
+                            .invoke(module, hook) as Boolean
+                    val baseline =
+                        module.javaClass
+                            .getDeclaredMethod("nativeGravity", FishHook::class.java)
+                            .apply { isAccessible = true }
+                            .invoke(module, hook) as Double
+                    rewritten shouldBe (gravityFactor == 1.0)
+                    abs(baseline - if (rewritten) 0.03 else 0.04) shouldBeLessThan 1e-8
+                    apiSamples.add(
+                        "configured=$gravity selectedBaseline=$baseline rewritten=$rewritten firstMovement=${displacement[0].y}",
+                    )
                     displacement.zipWithNext().forEachIndexed { index, (before, after) ->
                         io.kotest.assertions.withClue("gravity=$gravity tick=$index samples=$samples") {
                             abs(after.y - (before.y * 0.92 - gravity * gravityFactor)) shouldBeLessThan 2e-6
@@ -69,6 +116,57 @@ class FishingGravityIntegrationTest :
                     module.reload()
                 }
             }
+            File(testPlugin.dataFolder, "fishing-gravity-api-diagnostics.txt")
+                .writeText(apiSamples.joinToString("\n", postfix = "\n"))
+        }
+        test("public gravity reads each hook without discovering a native fallback").config(
+            enabledOrReasonIf = {
+                io.kotest.core.test.Enabled(
+                    FishHook::class.java.methods.any { it.name == "getDefaultGravity" },
+                    "Default gravity getter is absent from this Paper API",
+                )
+            },
+        ) {
+            val getter =
+                module.javaClass.getDeclaredMethod("nativeGravity", FishHook::class.java).apply {
+                    isAccessible =
+                        true
+                }
+            val target =
+                module.javaClass.getDeclaredMethod("isHooked", FishHook::class.java).apply {
+                    isAccessible =
+                        true
+                }
+            var liveGravity = 0.02
+            var hasTarget = false
+            val hook =
+                java.lang.reflect.Proxy.newProxyInstance(
+                    FishHook::class.java.classLoader,
+                    arrayOf(FishHook::class.java),
+                ) { proxy, method, _ ->
+                    when (method.name) {
+                        "getDefaultGravity" -> liveGravity
+                        "getHookedEntity" -> if (hasTarget) proxy else null
+                        else -> error("Unexpected call ${method.name}; this hook has no native handle")
+                    }
+                } as FishHook
+            for (value in listOf(0.02, 0.06)) {
+                liveGravity = value
+                getter.invoke(module, hook) shouldBe value
+                target.invoke(module, hook) shouldBe false
+            }
+            hasTarget = true
+            target.invoke(module, hook) shouldBe true
+            module.javaClass
+                .getDeclaredField("getHandle")
+                .apply { isAccessible = true }
+                .get(module) shouldBe null
+            module.javaClass
+                .getDeclaredField(
+                    "legacyTargetResolved",
+                ).apply { isAccessible = true }
+                .getBoolean(module) shouldBe
+                false
         }
         test("real cancelled cast and disabled shooter do not start gravity tracking") {
             val previous = ocm.config.get("fishing-rod-velocity.gravity")
