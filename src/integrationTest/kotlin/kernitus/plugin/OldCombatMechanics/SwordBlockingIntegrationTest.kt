@@ -212,6 +212,97 @@ class SwordBlockingIntegrationTest :
             )
         }
 
+        "public activation runs once and ordinary failures never resolve the native route" {
+            val publicMethod =
+                runCatching {
+                    Player::class.java.getMethod(
+                        "startUsingItem",
+                        EquipmentSlot::class.java,
+                    )
+                }.getOrNull()
+            if (publicMethod == null) {
+                println("Skipping: public item activation API unavailable")
+            } else {
+                val method =
+                    ModuleSwordBlocking::class.java.getDeclaredMethod(
+                        "startUsingItemIfSupported",
+                        Player::class.java,
+                        EquipmentSlot::class.java,
+                    )
+                method.isAccessible = true
+                val cacheField = ModuleSwordBlocking::class.java.getDeclaredField("nmsStartUsingItemCache")
+                cacheField.isAccessible = true
+                val cacheBefore = (cacheField.get(module) as Map<*, *>).toMap()
+                var calls = 0
+                var fail = false
+                val proxy =
+                    java.lang.reflect.Proxy.newProxyInstance(
+                        Player::class.java.classLoader,
+                        arrayOf(Player::class.java),
+                    ) { _, called, _ ->
+                        check(called.name == "startUsingItem") { "Unexpected player call: ${called.name}" }
+                        calls++
+                        if (fail) throw IllegalStateException("injected ordinary activation failure")
+                        null
+                    } as Player
+                runSync {
+                    method.invoke(module, proxy, EquipmentSlot.HAND)
+                    calls shouldBe 1
+                    fail = true
+                    method.invoke(module, proxy, EquipmentSlot.HAND)
+                    calls shouldBe 2
+                    (cacheField.get(module) as Map<*, *>) shouldBe cacheBefore
+                }
+            }
+        }
+
+        "legacy shield activation retains the held native stack and releases after native ticks" {
+            withPaperAnimationEnabled(enabled = false) {
+                val ground =
+                    runSync {
+                        player.location
+                            .clone()
+                            .subtract(0.0, 1.0, 0.0)
+                            .block
+                    }
+                val originalGround = runSync { ground.state }
+                try {
+                    runSync {
+                        ground.type = Material.STONE
+                        SwordNativeUseChecks.stop(player)
+                        player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                        player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                    }
+                    // The interaction event is synthetic; activation and subsequent entity ticks are native.
+                    rightClickWithMainHand()
+                    delayTicks(8)
+                    runSync {
+                        player.inventory.itemInOffHand.type shouldBe Material.SHIELD
+                        (
+                            SwordNativeUseChecks.activeStack(player) ===
+                                SwordNativeUseChecks.heldStack(player.inventory.itemInOffHand)
+                        ) shouldBe
+                            true
+                        player.isBlocking shouldBe true
+                        SwordNativeUseChecks.stop(player)
+                    }
+                    delayTicks(2)
+                    runSync {
+                        player.isBlocking shouldBe false
+                        (
+                            SwordNativeUseChecks.activeStack(player) ===
+                                SwordNativeUseChecks.heldStack(player.inventory.itemInOffHand)
+                        ) shouldBe
+                            false
+                    }
+                    forceRestoreViaHotbarChange()
+                    runSync { player.inventory.itemInOffHand.type shouldBe Material.APPLE }
+                } finally {
+                    runSync { originalGround.update(true, false) }
+                }
+            }
+        }
+
         "initialises the Paper consumable component path when the data component API is present" {
             val paperDataComponentApiPresent =
                 try {

@@ -37,7 +37,6 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
-import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.Callable
 
@@ -230,139 +229,25 @@ class ConsumableComponentIntegrationTest :
             }
         }
 
-        fun nmsItemStack(stack: ItemStack?): Any? {
-            if (stack == null) return null
-            var handle: Any? = null
-            try {
-                var type: Class<*>? = stack.javaClass
-                while (type != null && type != Any::class.java) {
-                    val field =
-                        try {
-                            type.getDeclaredField("handle")
-                        } catch (_: NoSuchFieldException) {
-                            type = type.superclass
-                            continue
-                        }
-                    field.isAccessible = true
-                    handle = runCatching { field.get(stack) }.getOrNull()
-                    break
-                }
-            } catch (_: Throwable) {
-                handle = null
-            }
-            if (handle != null) return handle
-            return try {
-                val craftItemStack = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
-                val asNmsCopy = craftItemStack.getMethod("asNMSCopy", ItemStack::class.java)
-                asNmsCopy.invoke(null, stack)
-            } catch (t: Throwable) {
-                throw IllegalStateException(
-                    "Failed to obtain NMS ItemStack (${t::class.java.simpleName}: ${t.message})",
-                    t,
-                )
-            }
-        }
+        fun craftMirrorStack(type: Material): ItemStack = ItemStack(type).ensureServerConversions()
 
-        fun craftMirrorStack(type: Material): ItemStack {
-            val craftItemStack = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
-            val nmsItemStackClass = Class.forName("net.minecraft.world.item.ItemStack")
-            val asNmsCopy = craftItemStack.getMethod("asNMSCopy", ItemStack::class.java)
-            val asCraftMirror = craftItemStack.getMethod("asCraftMirror", nmsItemStackClass)
-            val nms = asNmsCopy.invoke(null, ItemStack(type))
-            return asCraftMirror.invoke(null, nms) as ItemStack
-        }
+        fun hasConsumableRemoval(stack: ItemStack?): Boolean = SwordComponentCapabilityChecks.hasRemoval(stack)
 
-        fun consumablePatchEntry(stack: ItemStack?): Optional<*>? {
-            val nmsStack = nmsItemStack(stack) ?: return null
-            return try {
-                val patch = nmsStack.javaClass.getMethod("getComponentsPatch").invoke(nmsStack) ?: return null
-                val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
-                val dataComponents = Class.forName("net.minecraft.core.component.DataComponents")
-                val consumableType = dataComponents.getField("CONSUMABLE").get(null)
-                val getMethod =
-                    try {
-                        patch.javaClass.getMethod("get", dataComponentType)
-                    } catch (_: NoSuchMethodException) {
-                        null
-                    }
-                if (getMethod != null) {
-                    getMethod.invoke(patch, consumableType) as? Optional<*>
-                } else {
-                    val entries = patch.javaClass.getMethod("entrySet").invoke(patch) as? Set<*> ?: return null
-                    entries
-                        .filterIsInstance<Map.Entry<*, *>>()
-                        .firstOrNull { it.key === consumableType }
-                        ?.value as? Optional<*>
-                }
-            } catch (t: Throwable) {
-                throw IllegalStateException(
-                    "Failed to inspect data component patch (${t::class.java.simpleName}: ${t.message})",
-                    t,
-                )
-            }
-        }
+        fun hasConsumableComponent(stack: ItemStack?): Boolean = SwordComponentCapabilityChecks.hasComponent(stack)
 
-        fun hasConsumableRemoval(stack: ItemStack?): Boolean {
-            val entry = consumablePatchEntry(stack) ?: return false
-            return !entry.isPresent
-        }
-
-        fun nmsConsumableType(): Any =
-            Class.forName("net.minecraft.core.component.DataComponents").getField("CONSUMABLE").get(null)
-
-        fun nmsConsumableComponent(): Any {
-            val nmsConsumable = Class.forName("net.minecraft.world.item.component.Consumable")
-            val builder = nmsConsumable.getMethod("builder").invoke(null)
-            val nmsUseAnim = Class.forName("net.minecraft.world.item.ItemUseAnimation")
-            val blockAnim = nmsUseAnim.getField("BLOCK").get(null)
-            val withSeconds =
-                builder.javaClass
-                    .getMethod("consumeSeconds", Float::class.javaPrimitiveType)
-                    .invoke(builder, 1.6f)
-            val withAnim = withSeconds.javaClass.getMethod("animation", nmsUseAnim).invoke(withSeconds, blockAnim)
-            return withAnim.javaClass.getMethod("build").invoke(withAnim)
-        }
-
-        fun hasConsumableComponent(stack: ItemStack?): Boolean {
-            val nmsStack = nmsItemStack(stack) ?: return false
-            return try {
-                val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
-                val consumableType = nmsConsumableType()
-                val hasMethod = nmsStack.javaClass.getMethod("has", dataComponentType)
-                val result = hasMethod.invoke(nmsStack, consumableType)
-                result is Boolean && result
-            } catch (_: Throwable) {
-                false
-            }
-        }
-
+        // Synthetic lifecycle setup, with the same ownership marker as a real OCM application.
         fun applyConsumableComponent(stack: ItemStack?) {
-            val nmsStack = nmsItemStack(stack) ?: return
-            try {
-                val dataComponentType = Class.forName("net.minecraft.core.component.DataComponentType")
-                val consumableType = nmsConsumableType()
-                val consumableComponent = nmsConsumableComponent()
-                val setMethod =
-                    nmsStack.javaClass.methods.firstOrNull { m ->
-                        m.name == "set" &&
-                            m.parameterCount == 2 &&
-                            m.parameterTypes[0] == dataComponentType
-                    } ?: error("NMS ItemStack#set(DataComponentType, value) not found")
-                setMethod.invoke(nmsStack, consumableType, consumableComponent)
-            } catch (t: Throwable) {
-                throw IllegalStateException(
-                    "Failed to apply NMS consumable component (${t::class.java.simpleName}: ${t.message})",
-                    t,
-                )
-            }
+            if (stack == null) return
+            kernitus.plugin.OldCombatMechanics.paper
+                .PaperSwordBlocking()
+                .applyComponents(stack)
         }
 
         fun assertNoConsumableRemoval(
             stack: ItemStack?,
             label: String,
         ) {
-            val entry = consumablePatchEntry(stack)
-            if (entry != null && !entry.isPresent) {
+            if (hasConsumableRemoval(stack)) {
                 error("$label gained !minecraft:consumable")
             }
         }
@@ -580,6 +465,108 @@ class ConsumableComponentIntegrationTest :
                 player.setItemOnCursor(ItemStack(Material.AIR))
                 player.inventory.heldItemSlot = 0
                 player.updateInventory()
+            }
+        }
+
+        test("public sword use retains native held identity reduces native damage and releases") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+            val ground =
+                runSync {
+                    player.location
+                        .clone()
+                        .subtract(0.0, 1.0, 0.0)
+                        .block
+                }
+            val originalGround = runSync { ground.state }
+            val attacker =
+                runSync {
+                    player.world.spawn(
+                        player.location.clone().add(0.0, 0.0, 2.0),
+                        org.bukkit.entity.Zombie::class.java,
+                    )
+                }
+            try {
+                withPacketEventsClientVersion(player, "V_1_21_11") {
+                    runSync {
+                        ground.type = Material.STONE
+                        SwordNativeUseChecks.stop(player)
+                        player.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
+                        player.inventory.setItemInOffHand(ItemStack(Material.APPLE))
+                    }
+                    val joinDamageControl =
+                        runSync {
+                            player.noDamageTicks = 0
+                            val before = player.health
+                            player.damage(4.0, attacker)
+                            before - player.health
+                        }
+                    // Let the native join immunity expire before comparing actual damage.
+                    delayTicks(65)
+                    // Synthetic interaction and client classification, followed by native use, ticks and damage.
+                    rightClickMainHand(player)
+                    delayTicks(3)
+                    val blockingDamage =
+                        runSync {
+                            player.inventory.itemInOffHand.type shouldBe Material.APPLE
+                            swordBlocking.isPaperSwordBlocking(player) shouldBe true
+                            (
+                                SwordNativeUseChecks.activeStack(player) ===
+                                    SwordNativeUseChecks.heldStack(player.inventory.itemInMainHand)
+                            ) shouldBe
+                                true
+                            player.noDamageTicks = 0
+                            val before = player.health
+                            player.damage(4.0, attacker)
+                            before - player.health
+                        }
+                    runSync { SwordNativeUseChecks.stop(player) }
+                    delayTicks(2)
+                    val releasedDamage =
+                        runSync {
+                            swordBlocking.isPaperSwordBlocking(player) shouldBe false
+                            player.noDamageTicks = 0
+                            val before = player.health
+                            player.damage(4.0, attacker)
+                            before - player.health
+                        }
+                    java.io.File(testPlugin.dataFolder, "sword-native-use.txt").appendText(
+                        "${Bukkit.getBukkitVersion()} joinControl=$joinDamageControl " +
+                            "blocking=$blockingDamage released=$releasedDamage " +
+                            "valid=${player.isValid} dead=${player.isDead} health=${player.health}\n",
+                    )
+                    io.kotest.assertions.withClue("blocking=$blockingDamage released=$releasedDamage") {
+                        (blockingDamage < releasedDamage) shouldBe true
+                    }
+                    (releasedDamage > 0.0) shouldBe true
+                }
+            } finally {
+                runSync {
+                    SwordNativeUseChecks.stop(player)
+                    attacker.remove()
+                    originalGround.update(true, false)
+                }
+            }
+        }
+
+        test("public sword components preserve defaults removals and foreign overrides") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+            runSync { SwordComponentCapabilityChecks.preservesOwnership() }
+        }
+
+        test("public sword components and inspection work with native patch discovery unavailable issue 976") {
+            if (!paperConsumablePathAvailable()) {
+                println("Skipping: Paper consumable component path unavailable")
+                return@test
+            }
+            runSync {
+                player.clearActiveItem()
+                SwordComponentCapabilityChecks.worksWithoutNativeDiscovery(player)
             }
         }
 

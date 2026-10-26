@@ -50,8 +50,8 @@ public class ModuleSwordBlocking extends OCMModule {
     private java.lang.reflect.Method paperClear;
     private java.lang.reflect.Method paperHasConsumable;
     private java.lang.reflect.Method paperIsBlockingSword;
-    private Method startUsingItemMethod;
-    private boolean startUsingItemMethodResolved;
+    private boolean startUsingItemApiMissing;
+    private boolean itemUseFailureReported;
     private boolean playerIsHandRaisedUnavailable;
     private Method craftPlayerGetHandleMethod;
     private final Map<Class<?>, Method> nmsStartUsingItemCache = new HashMap<>();
@@ -144,10 +144,8 @@ public class ModuleSwordBlocking extends OCMModule {
 
     private void initialisePaperAdapter() {
         try {
-            // Paper-only optimisation: use Paper's item data components to give swords a BLOCK use animation
-            // (and the BLOCKING component where available). We keep this behind reflection so the plugin can
-            // still compile against Spigot, and we cache the reflective handles once during initialisation to
-            // keep the hot path allocation-free.
+            // Isolate optional modern types from legacy JVM verification. The adapter independently selects
+            // public components and active-item inspection before resolving any native fallback.
             final Class<?> adapterClass = Class.forName("kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking");
             paperAdapter = adapterClass.getConstructor().newInstance();
             paperApply = adapterClass.getMethod("applyComponents", ItemStack.class);
@@ -413,7 +411,6 @@ public class ModuleSwordBlocking extends OCMModule {
             // Best-effort: ask the server to start using the offhand item so blocking becomes visible immediately
             // (and works for fake players / synthetic events). If the API is not present, we fall back silently.
             startUsingItemIfSupported(player, EquipmentSlot.OFF_HAND);
-            startUsingItemNmsIfSupported(player, true);
         }
         // Legacy path: per-player state is required because we temporarily equip a shield. We restore the
         // original offhand item once the player stops blocking or after a configurable delay.
@@ -804,27 +801,25 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private void startUsingItemIfSupported(Player player, EquipmentSlot slot) {
-        // Feature-gated: Paper exposes LivingEntity#startUsingItem(EquipmentSlot). Spigot does not.
-        // Without this, some server/client combinations do not transition into the "hand raised" state, even if the
-        // item has a BLOCK use animation (or a shield is injected on legacy path).
         if (player == null || slot == null) return;
-
-        if (!startUsingItemMethodResolved) {
-            startUsingItemMethodResolved = true;
+        if (!startUsingItemApiMissing) {
             try {
-                final Class<?> livingEntityClass = Class.forName("org.bukkit.entity.LivingEntity");
-                startUsingItemMethod = livingEntityClass.getMethod("startUsingItem", EquipmentSlot.class);
-            } catch (Throwable ignored) {
-                startUsingItemMethod = null;
+                player.startUsingItem(slot);
+                return;
+            } catch (NoSuchMethodError missing) {
+                startUsingItemApiMissing = true;
+            } catch (RuntimeException failure) {
+                reportItemUseFailure(failure);
+                return;
             }
         }
+        startUsingItemNmsIfSupported(player, slot == EquipmentSlot.OFF_HAND);
+    }
 
-        final java.lang.reflect.Method m = startUsingItemMethod;
-        if (m == null) return;
-        try {
-            m.invoke(player, slot);
-        } catch (Throwable ignored) {
-        }
+    private void reportItemUseFailure(Throwable failure) {
+        if (itemUseFailureReported) return;
+        itemUseFailureReported = true;
+        plugin.getLogger().warning("Sword blocking item activation failed: " + failure);
     }
 
     private void startUsingItemNmsIfSupported(Player player, boolean offhand) {
@@ -832,9 +827,7 @@ public class ModuleSwordBlocking extends OCMModule {
         // We reflect into NMS to call LivingEntity#startUsingItem(InteractionHand/EnumHand).
         if (player == null) return;
         try {
-            final Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit.entity.CraftPlayer");
-            if (!craftPlayerClass.isInstance(player)) return;
-
+            final Class<?> craftPlayerClass = player.getClass();
             Method getHandle = craftPlayerGetHandleMethod;
             if (getHandle == null) {
                 getHandle = Reflector.getMethod(craftPlayerClass, "getHandle");
@@ -846,7 +839,7 @@ public class ModuleSwordBlocking extends OCMModule {
 
             final Class<?> handleClass = handle.getClass();
             Method startUsing = nmsStartUsingItemCache.get(handleClass);
-            if (startUsing == null) {
+            if (!nmsStartUsingItemCache.containsKey(handleClass)) {
                 startUsing = resolveNmsStartUsingItem(handleClass);
                 nmsStartUsingItemCache.put(handleClass, startUsing);
             }
@@ -858,7 +851,8 @@ public class ModuleSwordBlocking extends OCMModule {
             if (hand == null) return;
 
             startUsing.invoke(handle, hand);
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            reportItemUseFailure(failure);
         }
     }
 
@@ -924,10 +918,8 @@ public class ModuleSwordBlocking extends OCMModule {
     private boolean stripConsumable(ItemStack item) {
         if (!paperSupported || paperAdapter == null || paperClear == null || item == null) return false;
         if (item.getType() == Material.AIR || !isHoldingSword(item.getType())) return false;
-        if (!hasConsumableComponent(item)) return false;
         try {
-            paperClear.invoke(paperAdapter, item);
-            return true;
+            return Boolean.TRUE.equals(paperClear.invoke(paperAdapter, item));
         } catch (Throwable ignored) {
             return false;
         }
