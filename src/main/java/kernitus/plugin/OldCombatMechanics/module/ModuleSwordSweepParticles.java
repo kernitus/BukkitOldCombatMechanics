@@ -5,7 +5,6 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -31,10 +30,7 @@ public class ModuleSwordSweepParticles extends OCMModule {
 
     @Override
     public void reload() {
-        if (isEnabled())
-            PacketEvents.getAPI().getEventManager().registerListener(particleListener);
-        else
-            PacketEvents.getAPI().getEventManager().unregisterListener(particleListener);
+        plugin.getPacketSupport().update("sweep particle suppression", particleListener, isEnabled());
     }
 
     /**
@@ -46,7 +42,7 @@ public class ModuleSwordSweepParticles extends OCMModule {
 
         @Override
         public void onPacketSend(PacketSendEvent packetEvent) {
-            if (disabledDueToError || packetEvent.isCancelled())
+            if (disabledDueToError || !plugin.getPacketSupport().isActive(this) || packetEvent.isCancelled())
                 return;
 
             try {

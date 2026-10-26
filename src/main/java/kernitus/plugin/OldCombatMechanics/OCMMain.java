@@ -5,8 +5,7 @@
  */
 package kernitus.plugin.OldCombatMechanics;
 
-import com.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import kernitus.plugin.OldCombatMechanics.utilities.PacketSupport;
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI;
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPIImpl;
 import kernitus.plugin.OldCombatMechanics.commands.OCMCommandCompleter;
@@ -64,7 +63,9 @@ public class OCMMain extends JavaPlugin {
     private final List<Hook> hooks = new ArrayList<>();
     private OldCombatMechanicsAPI api;
     private boolean supportedPlatform;
-    private boolean packetEventsLoaded;
+    private PacketSupport packetSupport;
+
+    public PacketSupport getPacketSupport() { return packetSupport; }
     private boolean storageInitialised;
     public OCMMain() {
         super();
@@ -75,9 +76,8 @@ public class OCMMain extends JavaPlugin {
         supportedPlatform = PaperPlatform.isAvailable(getServer().getClass().getClassLoader());
         if (!supportedPlatform) return;
 
-        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
-        PacketEvents.getAPI().load();
-        packetEventsLoaded = true;
+        packetSupport = new PacketSupport(this);
+        packetSupport.load();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class OCMMain extends JavaPlugin {
 
         // Initialise the Messenger utility
         Messenger.initialise(this);
-        PacketEvents.getAPI().init();
+        packetSupport.initialise();
 
         // Register all the modules
         registerModules();
@@ -242,10 +242,7 @@ public class OCMMain extends JavaPlugin {
             api = null;
         }
 
-        if (packetEventsLoaded) {
-            PacketEvents.getAPI().terminate();
-            packetEventsLoaded = false;
-        }
+        if (packetSupport != null) packetSupport.close();
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");

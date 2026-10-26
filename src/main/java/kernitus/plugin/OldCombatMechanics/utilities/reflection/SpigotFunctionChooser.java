@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.utilities.reflection;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Chooses a Spigot API function to use
@@ -28,7 +29,8 @@ public class SpigotFunctionChooser<T, U, R> {
     private final BiFunction<T, U, Boolean> test;
     private final BiFunction<T, U, R> trueBranch;
     private final BiFunction<T, U, R> falseBranch;
-    private BiFunction<T, U, R> chosen;
+    private volatile BiFunction<T, U, R> chosen;
+    private ExceptionalFunction<T, U, R> initialAction;
 
     /**
      * Creates a new {@link SpigotFunctionChooser}, which chooses between two given
@@ -57,7 +59,19 @@ public class SpigotFunctionChooser<T, U, R> {
         if (chosen == null) {
             synchronized (this) {
                 if (chosen == null) {
-                    chosen = test.apply(target, parameters) ? trueBranch : falseBranch;
+                    if (initialAction != null) {
+                        try {
+                            R result = initialAction.applyWithException(target, parameters);
+                            chosen = trueBranch;
+                            return result;
+                        } catch (Throwable e) {
+                            Throwable cause = e instanceof ExceptionalFunction.WrappedException ? rootCause(e) : e;
+                            if (!isCompatibilityFailure(cause)) throw propagate(cause);
+                            chosen = falseBranch;
+                        }
+                    } else {
+                        chosen = test.apply(target, parameters) ? trueBranch : falseBranch;
+                    }
                 }
             }
         }
@@ -77,8 +91,7 @@ public class SpigotFunctionChooser<T, U, R> {
      * the action completes without an
      * exception and otherwise uses the failure parameter.
      * <p>
-     * The action is, per the doc for {@link SpigotFunctionChooser} only called
-     * <em>once</em>.
+     * The first action result is returned directly, without repeating the action.
      *
      * @param action  the action to invoke
      * @param success the branch to take when no exception occurs
@@ -92,25 +105,20 @@ public class SpigotFunctionChooser<T, U, R> {
     private static <T, U, R> SpigotFunctionChooser<T, U, R> onException(ExceptionalFunction<T, U, R> action,
             BiFunction<T, U, R> success,
             BiFunction<T, U, R> failure) {
-        return new SpigotFunctionChooser<>(
-                (t, u) -> {
-                    try {
-                        action.apply(t, u);
-                        return true;
-                    } catch (ExceptionalFunction.WrappedException e) {
-                        final Throwable failureCause = rootCause(e);
-                        if (isCompatibilityFailure(failureCause)) {
-                            return false;
-                        }
-                        throw propagate(failureCause);
-                    }
-                },
-                success, failure);
+        SpigotFunctionChooser<T, U, R> chooser = new SpigotFunctionChooser<>(null, (target, parameters) -> {
+            try {
+                return success.apply(target, parameters);
+            } catch (ExceptionalFunction.WrappedException e) {
+                throw propagate(rootCause(e));
+            }
+        }, failure);
+        chooser.initialAction = action;
+        return chooser;
     }
 
     private static Throwable rootCause(Throwable throwable) {
         Throwable current = throwable;
-        while (current.getCause() != null && current.getCause() != current) {
+        while (current instanceof ExceptionalFunction.WrappedException && current.getCause() != null) {
             current = current.getCause();
         }
         return current;
@@ -176,7 +184,29 @@ public class SpigotFunctionChooser<T, U, R> {
     public static <T, U, R> SpigotFunctionChooser<T, U, R> apiCompatReflectionCall(ExceptionalFunction<T, U, R> apiCall,
             Class<T> clazz, String name,
             String... argTypes) {
-        return onException(apiCall, apiCall, Reflector.memoiseMethodInvocation(clazz, name, argTypes));
+        return apiCompatLazyCall(apiCall, () -> Reflector.memoiseMethodInvocation(clazz, name, argTypes));
+    }
+
+    static <T, U, R> SpigotFunctionChooser<T, U, R> apiCompatLazyCall(
+            ExceptionalFunction<T, U, R> apiCall, Supplier<BiFunction<T, U, R>> discovery) {
+        return onException(apiCall, apiCall, new BiFunction<T, U, R>() {
+            private BiFunction<T, U, R> invocation;
+            private Throwable discoveryFailure;
+
+            @Override
+            public synchronized R apply(T target, U parameters) {
+                if (discoveryFailure != null) throw propagate(discoveryFailure);
+                if (invocation == null) {
+                    try {
+                        invocation = discovery.get();
+                    } catch (RuntimeException | LinkageError e) {
+                        discoveryFailure = e;
+                        throw e;
+                    }
+                }
+                return invocation.apply(target, parameters);
+            }
+        });
     }
 
     /**

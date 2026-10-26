@@ -5,7 +5,6 @@
  */
 package kernitus.plugin.OldCombatMechanics.module;
 
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -43,10 +42,7 @@ public class ModuleAttackSounds extends OCMModule {
         blockedSounds.clear();
         blockedSounds.addAll(getBlockedSounds());
 
-        if (isEnabled() && !blockedSounds.isEmpty())
-            PacketEvents.getAPI().getEventManager().registerListener(soundListener);
-        else
-            PacketEvents.getAPI().getEventManager().unregisterListener(soundListener);
+        plugin.getPacketSupport().update("attack sound suppression", soundListener, isEnabled() && !blockedSounds.isEmpty());
     }
 
     private Collection<String> getBlockedSounds() {
@@ -89,7 +85,7 @@ public class ModuleAttackSounds extends OCMModule {
 
         @Override
         public void onPacketSend(PacketSendEvent packetEvent) {
-            if (disabledDueToError || packetEvent.isCancelled())
+            if (disabledDueToError || !plugin.getPacketSupport().isActive(this) || packetEvent.isCancelled())
                 return;
             if (blockedSounds.isEmpty())
                 return;

@@ -178,6 +178,7 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private void initialisePacketEventsClientVersion() {
+        if (!plugin.getPacketSupport().isReady()) return;
         try {
             final ClassLoader loader = plugin.getClass().getClassLoader();
             final Class<?> packetEventsClass = Class.forName("kernitus.plugin.OldCombatMechanics.lib.packetevents.api.PacketEvents", true, loader);
@@ -237,6 +238,7 @@ public class ModuleSwordBlocking extends OCMModule {
     }
 
     private boolean supportsPaperAnimation(Player player) {
+        if (!plugin.getPacketSupport().isReady()) return false;
         if (!paperSupported || paperAdapter == null) return false;
         if (player == null) return false;
         if (!isPaperAnimationEnabled()) return false;

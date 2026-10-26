@@ -16,6 +16,18 @@ import java.util.concurrent.atomic.AtomicInteger
 @OptIn(ExperimentalKotest::class)
 class SpigotFunctionChooserIntegrationTest :
     StringSpec({
+        "public action runs once with an absent reflective fallback" {
+            var actions = 0
+            val chooser =
+                SpigotFunctionChooser.apiCompatReflectionCall<String, Any, Int>(
+                    { _, _ -> ++actions },
+                    String::class.java,
+                    "absentFallback",
+                )
+            chooser.apply("target", Any()) shouldBe 1
+            chooser.apply("target", Any()) shouldBe 2
+        }
+
         "compatibility failures choose fallback and stay cached" {
             val compatibilityFailures =
                 listOf<Throwable>(

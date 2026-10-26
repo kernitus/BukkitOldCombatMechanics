@@ -232,6 +232,7 @@ public class Reflector {
      */
     public static <T, U, R> BiFunction<T, U, R> memoiseMethodInvocation(Class<T> clazz, String name, String... argTypes) {
         final Method method = getMethod(clazz, name, argTypes);
+        if (method == null) throw new IllegalStateException("Missing compatibility method " + clazz.getName() + "." + name);
         return (t, u) -> {
             // If they did not want to send any arguments, should be zero-length array
             // This check is necessary cause of varargs, otherwise we get 1 length array of 0-length array

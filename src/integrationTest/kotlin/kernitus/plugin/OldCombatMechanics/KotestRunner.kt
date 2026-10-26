@@ -201,6 +201,7 @@ object KotestRunner {
                             PacketCancellationIntegrationTest::class,
                             EnderpearlCooldownIntegrationTest::class,
                             SpigotFunctionChooserIntegrationTest::class,
+                            PacketLifecycleIntegrationTest::class,
                             ChorusFruitIntegrationTest::class,
                             WeaponDamageBaselineIntegrationTest::class,
                             CustomWeaponDamageIntegrationTest::class,
