@@ -197,6 +197,11 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                 attacker.setGravity(false)
                 victim.setGravity(false)
             }
+            // Legacy players expose login immunity through getNoDamageTicks, but its setter
+            // only clears ordinary hit immunity. Let the native login countdown finish.
+            ticks(maxOf(attacker.noDamageTicks, victim.noDamageTicks).toLong() + 1)
+            attacker.noDamageTicks shouldBe 0
+            victim.noDamageTicks shouldBe 0
         }
 
         beforeTest {
