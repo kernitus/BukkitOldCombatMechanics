@@ -29,18 +29,18 @@ This reference preserves detailed repository context that previously made the ro
 
 ## Kotlin runner split
 
-- Kotest 6 (Java 11+) is used for 1.19.2 and 1.21.11.
+- The current Kotest harness requires Java 17 or newer on every tested server.
 - Kotest runner class: `kernitus.plugin.OldCombatMechanics.KotestRunner`.
 - Project config: `KotestProjectConfig`.
-- Java 8 uses `kernitus.plugin.OldCombatMechanics.LegacyTestRunner`.
-- The Java 8 path is currently a smoke test only, verifying the plugin is enabled and `WeaponDamages` is loaded.
+- `OCMTestMain` now always invokes Kotest. Override the pre-1.13 default with `-PintegrationTestJavaVersionLegacyPre13=17` and use `-PintegrationTestServerJar=run/<version>/cache/patched_<version>.jar` for 1.12 and 1.9.4.
+- Java 8 startup checks use the independent `platformTest` observer.
 
 ## Fake player notes
 
 - Primary implementation: `src/integrationTest/kotlin/kernitus/plugin/OldCombatMechanics/FakePlayer.kt`.
 - It uses `xyz.jpenilla:reflection-remapper` to map modern NMS names.
 - On legacy servers, mappings are unavailable and code falls back to `ReflectionRemapper.noop()`.
-- As-is, `FakePlayer` uses modern NMS class names; Paper 1.12 needs a dedicated fake-player path or version-aware class mapping.
+- `FakePlayer` selects dedicated `LegacyFakePlayer12` and `LegacyFakePlayer9` adapters for legacy native tests.
 - Fake player implementations use simulated login/network plumbing with `EmbeddedChannel` and manual login/join/quit events, not a real networked client.
 - `FakePlayer` uses a plain `EmbeddedChannel` with dummy `decoder`/`encoder` handlers so PacketEvents treats it as fake and does not disallow login.
 - Modern fake players schedule a manual NMS tick, preferring `doTick`, then `tick`, then `baseTick`.
@@ -60,7 +60,7 @@ This reference preserves detailed repository context that previously made the ro
 - `OldToolDamageMobIntegrationTest`, `WeaponDurabilityIntegrationTest`, `DisableOffhandIntegrationTest`, `ToolDamageTooltipIntegrationTest`, `PacketCancellationIntegrationTest`, `ModesetRulesIntegrationTest`, `ConfigMigrationIntegrationTest`, `ChorusFruitIntegrationTest`, `DisableOffhandReflectionIntegrationTest`, `AttackRangeIntegrationTest`, `PaperSwordBlockingDamageReductionIntegrationTest`, and `ConsumableComponentIntegrationTest` have all been registered historically.
 - `Kotest` filters (`kotest.filter.specs`, `kotest.filter.tests`) pass through Gradle into the run-paper JVM args.
 - `WeaponDurabilityIntegrationTest` and `OldToolDamageMobIntegrationTest` resolve debug paths relative to the repo root rather than hard-coded home paths.
-- `1.9` integration tests are currently on hold per user request.
+- Paper 1.9.4 is the approved representative for the 1.9 family; use the Java 17 patched-jar Kotest route.
 - 1.21.11 servers may log hostname and Unsafe warnings; tests can still pass.
 
 ## PacketEvents and packet cancellation history
@@ -71,8 +71,8 @@ This reference preserves detailed repository context that previously made the ro
 
 ## Sword blocking and consumable component history
 
-- Paper-only sword blocking uses runtime-gated helper `kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking` to apply consumable and blocking components via cached reflection.
-- 1.8-style reduction is applied via `EntityDamageByEntityListener` using the `BLOCKING` modifier, while legacy/non-Paper keeps the shield swap path.
+- `PaperSwordBlocking` selects public component operations, active-use inspection and activation independently; native component and use adapters initialise only when needed.
+- 1.8-style reduction is applied via `EntityDamageByEntityListener` using the `BLOCKING` modifier, while older Paper retains the shield swap path.
 - `ModuleSwordBlocking` gates the Paper consumable animation by PacketEvents client version `>=1.20.5`; older clients fall back to offhand shield behaviour.
 - Unknown PacketEvents client versions fall back to shield behaviour only when a PacketEvents `User` exists; early-login/synthetic players keep animation support unless resolver failure requires fail-safe fallback.
 - Inventory-click and drag handlers follow a minimal-mutation policy; lifecycle and transition handlers clean stale consumable state.

@@ -13,7 +13,7 @@ Use this skill when a change must behave across legacy and modern Bukkit/Paper v
 - NMS, CraftBukkit, Paper, PacketEvents, XSeries, or reflection-sensitive changes.
 - Fake-player internals, attack delivery, fire ticks, entity ticking, or synthetic network plumbing.
 - Decisions about feature detection versus hard-coded Minecraft version checks.
-- Fallback behaviour on Spigot, Paper, legacy 1.12/1.9, or modern 1.20.5+ servers.
+- Fallback behaviour on Paper and compatible forks, including legacy 1.12 and 1.9 or modern servers.
 
 ## When not to use
 
@@ -23,7 +23,8 @@ Use this skill when a change must behave across legacy and modern Bukkit/Paper v
 
 ## Required stance
 
-- Prefer direct supported APIs when present.
+- Require Paper or compatible forks; plain Spigot and CraftBukkit are rejected at startup. No Folia support is claimed.
+- Prefer direct supported APIs when present. A successful public path must never initialise an internal fallback; detect capabilities independently.
 - Use reflection only as a fallback or compatibility bridge, especially off hot paths.
 - Prefer feature detection by class, method, field, component, or capability over hard-coded version numbers.
 - Keep Java 8-targeted code free of Java 9+ collection factories, `Stream.toList()`, records, pattern matching, and other newer language/runtime features.
@@ -44,12 +45,12 @@ Use this skill when a change must behave across legacy and modern Bukkit/Paper v
 - Use `collect(Collectors.toList())` instead of `Stream.toList()`.
 - Use mutable collections wrapped with `Collections.unmodifiable*` where immutable Java 9 factories would otherwise be tempting.
 - Avoid records, sealed classes, switch expressions, pattern matching, and `var` in Java source.
-- Main build config targets Java 8 via `options.release.set(8)` and Kotlin `jvmTarget = 1.8`.
+- Build compilation requires JDK 25; server JVM requirements remain separate. Main build config targets Java 8 via `options.release.set(8)` and Kotlin `jvmTarget = 1.8`.
 
 ## Fake-player and NMS reminders
 
 - The primary fake-player path is modern-NMS-oriented and relies on reflection remapping.
-- Legacy 1.12 uses versioned NMS and currently needs dedicated or version-aware handling for realistic fake-player tests.
+- Legacy 1.12 and 1.9 use dedicated native fake-player adapters; run their Kotest cases on Java 17 with patched server jars.
 - Fake players are simulated login/network entities, not real network clients.
 - PacketEvents may need fake users or explicit client-version seeding in synthetic scenarios.
 

@@ -41,8 +41,9 @@ Use this skill for the repository's Paper-backed integration-test harness and fo
 - Test plugin entrypoint: `kernitus.plugin.OldCombatMechanics.OCMTestMain`.
 - Success handoff: `plugins/OldCombatMechanicsTest/test-results.txt` contains `PASS`.
 - Failure summary: `plugins/OldCombatMechanicsTest/test-failures.txt` contains a compact list, capped for CI readability.
-- Java 11+ server targets use Kotest 6 (`KotestRunner`, `KotestProjectConfig`).
-- Java 8 targets use `LegacyTestRunner`, currently only a smoke path.
+- The current `OCMTestMain` always launches Kotest; use Java 17 or newer. Legacy Paper 1.12 and 1.9.4 require `-PintegrationTestJavaVersionLegacyPre13=17` and `-PintegrationTestServerJar=run/<version>/cache/patched_<version>.jar`. The Gradle pre-1.13 default of 8 cannot run Kotest.
+- Use the independent `platformTest` observer for Java 8 startup checks; the old `LegacyTestRunner` smoke split is no longer active.
+- Pass multiple spec alternatives as one regex, for example `-Dkotest.filter.specs='*(First|Second)IntegrationTest'`. Require nonzero parsed counts and distinguish explicit capability skips from return-based cases that the runner counts as passed.
 
 ## Validation selection template
 

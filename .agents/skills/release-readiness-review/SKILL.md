@@ -23,6 +23,9 @@ Use this skill before changing or reviewing release workflows, publishing metada
 
 ## Current release notes
 
+- Development builds require Paper or compatible forks; plain Spigot and CraftBukkit are rejected. SpigotMC and BukkitDev remain distribution venues, and Bukkit-category metadata remains intact. No Folia support is claimed.
+- The first stable Paper-only release is unassigned. Published 2.7.0 advertises Spigot support; do not infer a stable release number from `2.7.1-SNAPSHOT`. See `docs/paper-support-handoff.md` for local handoff text.
+
 - GitHub release asset uses stable filename `OldCombatMechanics.jar` without a version suffix.
 - Release Please uses the `java` strategy. After each stable release it opens a separate `autorelease: snapshot` pull request that updates the Gradle version to the next `-SNAPSHOT` version. Merge that pull request before expecting development builds to publish to Hangar; while it remains pending, Release Please prioritises it over the next stable release pull request.
 - Release Please parses the merged release PR body to create the GitHub release. Keep its release section aligned with `CHANGELOG.md`; use `user-facing-changelog` for the wording and synchronisation procedure.
@@ -30,11 +33,11 @@ Use this skill before changing or reviewing release workflows, publishing metada
 - CurseForge upload uses the same path.
 - Bukkit-compatible CurseForge game-version entries use `1:<version>` prefixes so type-1 Bukkit versions are selected.
 - `gradle.properties` keeps platform metadata separate. `paperVersions` is the Hangar range and `gameVersions` is the exact CurseForge Bukkit-version list.
-- Hangar supports ranges and wildcards. Keep `paperVersions` aligned with the complete supported Paper range; its current value is `1.9-26.2`.
+- Hangar supports ranges and wildcards. Keep `paperVersions` aligned with the complete supported Paper range; its current value is `1.9-26.3`.
 - Before merging every Release Please pull request, compare `gameVersions` with the current stable Bukkit versions offered by CurseForge. Include every supported stable subversion and exclude every entry labelled `Snapshot`.
 - Hangar publish configuration expects `HANGAR_API_TOKEN`.
 - README licence note: source remains MPL-2.0; pre-built jars bundling PacketEvents are distributed under GPLv3; builds without PacketEvents can remain MPL-2.0.
-- `gameVersions` currently covers every stable Bukkit version from 1.9 through 26.2.
+- `gameVersions` currently covers every stable Bukkit version from 1.9 through 26.3.
 
 ## Review checklist
 

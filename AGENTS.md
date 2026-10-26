@@ -28,9 +28,9 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Repo overview
 
-- Project: OldCombatMechanics, a Bukkit/Paper plugin.
+- Project: OldCombatMechanics, a Paper plugin with compatible-fork support.
 - Branch context: working from `kotlin-tests`.
-- Build tool: Gradle wrapper, currently 9.8.0.
+- Build tool: Gradle wrapper, currently 9.8.2.
 - JDKs used locally: 8, 11, 17, 25.
 - Main integration tests live in `src/integrationTest/kotlin` and are packaged into `OldCombatMechanics-<version>-tests.jar`.
 - Entrypoint test plugin class: `kernitus.plugin.OldCombatMechanics.OCMTestMain`.
@@ -61,10 +61,13 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Current project state
 
+- The Paper-only boundary is unreleased. Published 2.7.0 still advertises Spigot support; `2.7.1-SNAPSHOT` does not establish the next stable release number. Local external-documentation handoff: `docs/paper-support-handoff.md`. No Folia support is claimed.
+
 - The 2.7.0 section in `CHANGELOG.md` contains curated user-facing release notes. Keep the matching Release Please PR section synchronised before release, including the issue-reporting footer and the documented sweep and Bukkit 1.9 cooldown limitations.
 - Legacy fake players have dedicated 1.9 and 1.12 implementations; use focused native-flight validation when changing legacy projectiles.
 - Java 8 compatibility is required for main code. Avoid APIs such as records, pattern matching, `Stream.toList()`, and `Set.of`/`List.of` in Java 8-targeted code.
-- Main Java/Kotlin compilation targets Java 8 (`options.release.set(8)`, Kotlin `jvmTarget = 1.8`).
+- Compilation requires JDK 25 and the pinned Paper API. Main Java/Kotlin compilation targets Java 8 (`options.release.set(8)`, Kotlin `jvmTarget = 1.8`).
+- The current Kotest harness requires Java 17 or newer. Legacy 1.12 and 1.9.4 runs must override `integrationTestJavaVersionLegacyPre13=17` and use `integrationTestServerJar=run/<version>/cache/patched_<version>.jar`; Java 8 startup uses the independent `platformTest` observer.
 - Pre-1.13 integration-test versions use `integrationTestJavaVersionLegacyPre13` (default 8); modern versions use Java 25 for `>=1.20.5` and Java 17 otherwise.
 - Legacy vanilla jars for `<=1.12` are downloaded by `downloadVanilla<version>` into `run/<version>/cache/mojang_<version>.jar`.
 

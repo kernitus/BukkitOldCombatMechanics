@@ -14,6 +14,10 @@ Contributions are expected to include automated test coverage within the existin
 New classes should be written in Kotlin by default. If you are modifying an existing Java class, keep the surrounding file consistent unless there is a clear reason to migrate it as part of the same change.
 
 ## Local setup
+Build with JDK 25. All source sets compile against the pinned Paper API; main Java and Kotlin output remains Java 8 bytecode. The JVM that runs each test server is a separate choice dictated by that server and the test harness.
+
+Runtime support requires Paper or compatible forks. Prefer supported public APIs and detect optional capabilities independently. A successful public path must never initialise an internal fallback. Keep legacy adapters lazy where public APIs cannot provide equivalent behaviour; document the precise gap in the [public API audit](../.agents/skills/compatibility-strategy/references/public-api-audit.md).
+
 Install [pre-commit](https://pre-commit.com/) with your preferred Python package manager, for example:
 
 ```shell
@@ -35,6 +39,15 @@ Before committing or opening a pull request, run:
 ```
 
 Also run the relevant integration tests when behaviour, compatibility, or bug-fix work warrants them, such as `./gradlew integrationTest` or a targeted task like `./gradlew integrationTest1_19_2`.
+
+The current Kotest harness requires Java 17 or newer, including on legacy Paper. For 1.12 and 1.9.4 use Java 17 and an already prepared patched server jar, rather than launching the old bootstrap on Java 17:
+
+```shell
+./gradlew integrationTest -PintegrationTestVersions=1.12 -PintegrationTestJavaVersionLegacyPre13=17 -PintegrationTestServerJar=run/1.12/cache/patched_1.12.jar
+./gradlew integrationTest -PintegrationTestVersions=1.9.4 -PintegrationTestJavaVersionLegacyPre13=17 -PintegrationTestServerJar=run/1.9.4/cache/patched_1.9.4.jar
+```
+
+The pre-1.13 Gradle default remains Java 8, which cannot run this Kotest harness. Java 8 plugin startup is checked separately by `platformTest`. For multiple focused specs, use one regex, for example `-Dkotest.filter.specs='*(ConsumableComponent|SwordBlocking)IntegrationTest'`. Require nonzero parsed case counts and inspect compact `test-failures.txt` summaries. Capability skips and tests omitted by filters are distinct from exercised assertions.
 
 ## Module system
 OldCombatMechanics uses a modular system to make sure each feature is completely independent from any other, and can be toggled off and have no impact on server performance. This means each new module must extend the `Module` class, and implement a public constructor which takes an instance of the plugin and passes the module name to the superconstructor. The `Module` class also provides an overloadable `reload()` method which is called whenever the plugin is reloaded. If you are using any class-level variables they should probably be updated in here. This should also be used for any initialisation that might need to be done if the config section is changed and `ocm reload` is called. You may then call `reload()` from the constructor.

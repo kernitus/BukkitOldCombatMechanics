@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Require Paper or a compatible fork. Plain Spigot and CraftBukkit now stop cleanly before configuration or combat modules initialise. The Minecraft support range remains 1.9 to latest; this change does not claim Folia support.
+- Keep unrelated combat features working if PacketEvents fails, with bounded warnings naming the affected packet features.
+- Fix Paper sword blocking failing when native component internals are unavailable despite working public APIs. Preserve foreign item components and activate item use once. Related to [#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976); real-client animation remains unverified.
+- Read fishing-hook gravity and targets through available public APIs while preserving legacy flight and configured gravity.
+
+Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
+
 ## [2.7.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.6.0...v2.7.0) (2026-10-03)
 
 This release adds configurable splash-potion throwing, fishing gravity and knockback friction, improves combat damage calculations, and restores compatibility with Minecraft 26.3.
