@@ -2,10 +2,35 @@
 
 ## Unreleased
 
-- Require Paper or a compatible fork. Plain Spigot and CraftBukkit now stop cleanly before configuration or combat modules initialise. The Minecraft support range remains 1.9 to latest; this change does not claim Folia support.
-- Keep unrelated combat features working if PacketEvents fails, with bounded warnings naming the affected packet features.
-- Fix Paper sword blocking failing when native component internals are unavailable despite working public APIs. Preserve foreign item components and activate item use once. Related to [#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976); real-client animation remains unverified.
-- Read fishing-hook gravity and targets through available public APIs while preserving legacy flight and configured gravity.
+This release requires Paper or a compatible fork and adds projectile launch options, golden apple cooldown indicators and improved damage tooltips, alongside combat and compatibility fixes.
+
+### Breaking compatibility change
+
+- **Paper or a compatible fork is now required.** Plain Spigot and CraftBukkit are no longer supported and the plugin stops with an explanatory message before loading combat modules. The Minecraft support range remains 1.9 to latest, with Paper 1.9.4 used for the 1.9 family. Folia support is not included.
+
+### Features and configuration
+
+- Added three independently selectable projectile modules: `old-projectile-trajectory` restores legacy launch trajectories, `projectile-shoot-offset` restores legacy launch positions, and `relative-projectile-velocity` removes inherited shooter movement. All three are disabled by default. Enabled `old-potion-throwing` continues to control splash-potion launches independently. Unsupported servers preserve native launches; the launch-position fallback may approximate the first collision.
+- Added `projectile-launch.custom-bows` for additional native bow materials registered by server forks. Vanilla bows remain eligible, and the setting does not turn other items into bows. [#970](https://github.com/kernitus/BukkitOldCombatMechanics/issues/970).
+- Added optional golden apple cooldown overlays through `old-golden-apples.cooldown.show-item-cooldown`, disabled by default. On supported servers with separate normal and enchanted apple materials, the native indicator shows the remaining cooldown and prevents eating that apple type until it expires. [#966](https://github.com/kernitus/BukkitOldCombatMechanics/issues/966).
+- Tool damage tooltips can now show the configured damage in the native attack-damage line on supported Paper versions, without changing combat attributes. `old-tool-damage.tooltip.enabled` controls both native display and lore; `tooltip.native-attribute` selects the native display where available. Custom attribute components retain their existing display and use the lore fallback. [#962](https://github.com/kernitus/BukkitOldCombatMechanics/issues/962).
+- Added independent Paper sword-blocking reduction settings, `sword-blocking.generalDamageReductionAmount` and `generalDamageReductionPercentage`. Each omitted setting inherits its shield counterpart; actual shields and the legacy temporary-shield fallback retain their existing settings. [#975](https://github.com/kernitus/BukkitOldCombatMechanics/pull/975).
+
+### Fixes
+
+- Fixed repeated player-attributed custom damage, such as `/damage ... by <player>`, incorrectly increasing when the damage type bypasses hit immunity. Custom damage also retains its supplied amount instead of being recalculated as a weapon attack. [#968](https://github.com/kernitus/BukkitOldCombatMechanics/issues/968).
+- Fixed fractional potion durations being truncated to whole seconds. Durations now retain fractional seconds and round to the nearest game tick. [#973](https://github.com/kernitus/BukkitOldCombatMechanics/issues/973).
+- Corrected blocking calculations for fractional damage and prevented OCM's tiny fishing and projectile knockback hits from being amplified by blocking.
+- Corrected fishing-rod knockback direction and strength, prevented duplicate melee knockback, and preserved cancellation by other plugins.
+- Restored legacy arrow base knockback where the server exposes the required knockback events, while preserving native Punch enchantment effects. Older servers without those events retain native arrow knockback.
+- Corrected configured health-regeneration intervals and exhaustion handling, while preserving other plugins' changes to regeneration rates and healing events.
+- Fixed temporary sword-blocking shields remaining after a reload disables the feature, without replacing unrelated offhand items.
+- Fixed Paper sword blocking falling back unnecessarily when public item APIs work but internal compatibility code is unavailable. This addresses a related compatibility problem identified during [#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976); the reported resource-pack visual glitch remains unverified.
+
+### Compatibility
+
+- Unrelated combat modules now remain available if PacketEvents fails. Warnings identify affected attack-sound suppression, sweep-particle suppression or sword client detection.
+- Fishing-hook gravity and hooked targets now use available public APIs, retaining older-server fallbacks and the existing scheduled gravity correction.
 
 Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
 
