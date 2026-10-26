@@ -34,6 +34,32 @@ This release requires Paper or a compatible fork and adds projectile launch opti
 
 Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
 
+## [2.8.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.7.0...v2.8.0) (2026-10-26)
+
+
+### Features
+
+* **golden-apples:** show apple cooldowns on the item like ender pearls ([#966](https://github.com/kernitus/BukkitOldCombatMechanics/issues/966)) ([#967](https://github.com/kernitus/BukkitOldCombatMechanics/issues/967)) ([b7734cf](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b7734cf7ef736d577d401498b7e37b8fcbf8f952))
+* **platform:** require Paper or a compatible server fork ([3049dd1](https://github.com/kernitus/BukkitOldCombatMechanics/commit/3049dd10d492c1019aedc567e0811622a6a1721d))
+* **projectiles:** add legacy trajectory, launch offset and motion options ([48520d6](https://github.com/kernitus/BukkitOldCombatMechanics/commit/48520d6b896864b494c9e7b005865a9182a49556))
+* **sword-blocking:** configure Paper sword reduction independently ([#975](https://github.com/kernitus/BukkitOldCombatMechanics/issues/975)) ([db2302d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/db2302d05ff0833d4dd8465bf93a38e42d63d340))
+
+
+### Bug Fixes
+
+* **armour:** preserve native wear for tagged explosion damage ([1a15475](https://github.com/kernitus/BukkitOldCombatMechanics/commit/1a15475f00fdef8da857928883c2c6dd2b82f91b))
+* **blocking:** clear legacy shield state safely on reload ([7814048](https://github.com/kernitus/BukkitOldCombatMechanics/commit/7814048083958636201312e5d881a9dfad87cf89))
+* **combat:** restore fractional blocking and accurate fishing knockback ([0922b81](https://github.com/kernitus/BukkitOldCombatMechanics/commit/0922b814a5b6f39728cb88332f0e17682448db93))
+* **compatibility:** isolate packet failures and initialise fallbacks lazily ([9e52a70](https://github.com/kernitus/BukkitOldCombatMechanics/commit/9e52a701be6a9b4f7385d5568d2787bc6ee46206))
+* **damage:** preserve attack strength and immunity across native cooldown resets ([b06313b](https://github.com/kernitus/BukkitOldCombatMechanics/commit/b06313b40d9fe89eb1930463a18edb7819b83975))
+* **damage:** preserve attributed custom damage and cooldown bypass ([#968](https://github.com/kernitus/BukkitOldCombatMechanics/issues/968)) ([6f79e12](https://github.com/kernitus/BukkitOldCombatMechanics/commit/6f79e122efef151f0c62e8da0e47569b266730b6))
+* **knockback:** restore arrow base motion while preserving native Punch ([ecc31a0](https://github.com/kernitus/BukkitOldCombatMechanics/commit/ecc31a00bde916e60d2076f45e10e668ac60131a))
+* **potions:** retain fractional potion durations ([#973](https://github.com/kernitus/BukkitOldCombatMechanics/issues/973)) ([#974](https://github.com/kernitus/BukkitOldCombatMechanics/issues/974)) ([72572d4](https://github.com/kernitus/BukkitOldCombatMechanics/commit/72572d4dfce54cbcd10c9b60992a6747af17b333))
+* **projectiles:** configure native custom bows for legacy launches ([#970](https://github.com/kernitus/BukkitOldCombatMechanics/issues/970)) ([#971](https://github.com/kernitus/BukkitOldCombatMechanics/issues/971)) ([4893dcf](https://github.com/kernitus/BukkitOldCombatMechanics/commit/4893dcfdb5a69789edfc673d66ca6e921841d5bb))
+* **regeneration:** restore native healing intervals and preserve rate ownership ([fe59dd9](https://github.com/kernitus/BukkitOldCombatMechanics/commit/fe59dd9fe6702fb56f5084be76f858fd9d3bc251))
+* **sword-blocking:** isolate public APIs from native fallbacks ([#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976)) ([a959c82](https://github.com/kernitus/BukkitOldCombatMechanics/commit/a959c829ce1e81e2fa1950d79cb44d7da1dad134))
+* **tool-damage:** correct native damage tooltip ([#962](https://github.com/kernitus/BukkitOldCombatMechanics/issues/962)) ([#963](https://github.com/kernitus/BukkitOldCombatMechanics/issues/963)) ([0777794](https://github.com/kernitus/BukkitOldCombatMechanics/commit/07777945811dab472d45b040fd790899b490777b))
+
 ## [2.7.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.6.0...v2.7.0) (2026-10-03)
 
 This release adds configurable splash-potion throwing, fishing gravity and knockback friction, improves combat damage calculations, and restores compatibility with Minecraft 26.3.
