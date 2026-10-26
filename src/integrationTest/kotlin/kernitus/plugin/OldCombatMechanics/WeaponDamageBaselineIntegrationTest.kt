@@ -17,6 +17,7 @@ import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.api.OldCombatMechanicsAPI
 import kernitus.plugin.OldCombatMechanics.utilities.Config
+import kernitus.plugin.OldCombatMechanics.utilities.damage.BlockingDamageRecalculation
 import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageUtils
 import kernitus.plugin.OldCombatMechanics.utilities.damage.OCMEntityDamageByEntityEvent
 import kernitus.plugin.OldCombatMechanics.utilities.potions.PotionEffects
@@ -33,6 +34,8 @@ import org.bukkit.entity.Cow
 import org.bukkit.entity.Item
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.Cancellable
+import org.bukkit.event.Event
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
@@ -219,9 +222,10 @@ class WeaponDamageBaselineIntegrationTest :
             fun attack(
                 target: LivingEntity,
                 source: Player = attacker,
+                preserveFalling: Boolean = false,
             ) {
                 source.isSprinting = false
-                source.fallDistance = 0f
+                if (!preserveFalling) source.fallDistance = 0f
                 try {
                     source.attack(target)
                 } catch (_: NoSuchMethodError) {
@@ -1069,6 +1073,530 @@ class WeaponDamageBaselineIntegrationTest :
                     victim.health shouldBe ((40.0 - if (enabled) 4.625 else 7.0) plusOrMinus 0.001)
                 }
             }
+        }
+
+        test("native cooldown snapshot preserves charged critical damage at ordinary speed") {
+            fixture {
+                for (enabled in listOf(false, true)) {
+                    configure(enabled, if (enabled) listOf("old-critical-hits") else emptyList())
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                    ocm.config.set("old-critical-hits.multiplier", 1.25)
+                    reload()
+                    equip(weapon("DIAMOND_SWORD"))
+                    checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                    attacker.teleport(location)
+                    attacker.velocity = Vector(0.0, 0.0, 0.0)
+                    ticks(30)
+                    attacker.fallDistance = 2f
+                    attacker.isSprinting = false
+                    DamageUtils.isCriticalHit1_8(attacker) shouldBe true
+                    val victim = target()
+                    attack(victim, preserveFalling = true)
+                    File(plugin.dataFolder, "attack-cooldown-diagnostics.txt").appendText(
+                        "critical enabled=$enabled raw=${rawDamages.lastOrNull()} " +
+                            "final=${damages.last()} health=${victim.health}\n",
+                    )
+                    val expected = if (enabled) 4.625 * 1.25 else 7.0 * 1.5
+                    (40.0 - victim.health) shouldBe (expected plusOrMinus 0.001)
+                }
+            }
+        }
+
+        for (gap in listOf(0L, 3L, 10L, 30L)) {
+            test("native cooldown snapshot preserves configured damage after $gap ticks") {
+                fixture {
+                    suspend fun sample(enabled: Boolean): Double {
+                        configure(enabled)
+                        ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                        reload()
+                        equip(weapon("DIAMOND_SWORD"))
+                        checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                        ticks(30)
+                        attack(target())
+                        if (gap > 0) ticks(gap)
+                        val victim = target()
+                        val beforeCooldown = DamageUtils.getAttackCooldown.apply(attacker)
+                        attack(victim)
+                        File(plugin.dataFolder, "attack-cooldown-diagnostics.txt").appendText(
+                            "gap=$gap enabled=$enabled before=$beforeCooldown " +
+                                "after=${DamageUtils.getAttackCooldown.apply(attacker)} " +
+                                "raw=${rawDamages.lastOrNull()} final=${damages.last()} health=${victim.health}\n",
+                        )
+                        return 40.0 - victim.health
+                    }
+                    val control = sample(false)
+                    check(control > 0.0 && control <= 7.001)
+                    sample(true) shouldBe ((control * 4.625 / 7.0) plusOrMinus 0.001)
+                }
+            }
+        }
+
+        for (cancelFirst in listOf(false, true)) {
+            test("native cooldown snapshot isolates nested attacks after cancellation $cancelFirst") {
+                fixture {
+                    suspend fun sample(enabled: Boolean): List<Double> {
+                        configure(enabled)
+                        ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                        reload()
+                        equip(weapon("DIAMOND_SWORD"))
+                        checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                        ticks(30)
+                        cancelled = cancelFirst
+                        attack(target())
+                        cancelled = false
+                        ticks(5)
+                        val outer = target()
+                        val inner = target()
+                        val foreign = target()
+                        var foreignStrength: Float? = null
+                        var nested = false
+                        var callbackFailure: Throwable? = null
+
+                        fun captureCallback(action: () -> Unit) {
+                            runCatching(action).onFailure { callbackFailure = callbackFailure ?: it }
+                        }
+                        val listener =
+                            object : Listener {
+                                @EventHandler(priority = EventPriority.LOWEST)
+                                fun nestedAttack(event: OCMEntityDamageByEntityEvent) =
+                                    captureCallback {
+                                        if (event.damagee == foreign) {
+                                            foreignStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                                        }
+                                        if (enabled && event.damagee == outer && !nested) {
+                                            nested = true
+                                            val outerStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                                            val live =
+                                                try {
+                                                    attacker.attackCooldown
+                                                } catch (_: NoSuchMethodError) {
+                                                    // Legacy synthetic damage uses the existing per-tick tracker.
+                                                    outerStrength
+                                                }
+                                            Bukkit.getPluginManager().callEvent(
+                                                EntityDamageByEntityEvent(
+                                                    attacker,
+                                                    foreign,
+                                                    EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                                    7.0,
+                                                ),
+                                            )
+                                            foreignStrength shouldBe live
+                                            attack(inner)
+                                            DamageUtils.getAttackCooldown.apply(attacker) shouldBe outerStrength
+                                        }
+                                    }
+
+                                @EventHandler(priority = EventPriority.LOWEST)
+                                fun nativeControl(event: EntityDamageByEntityEvent) =
+                                    captureCallback {
+                                        if (!enabled && event.entity == outer && !nested) {
+                                            nested = true
+                                            attack(inner)
+                                        }
+                                    }
+                            }
+                        Bukkit.getPluginManager().registerEvents(listener, plugin)
+                        try {
+                            attack(outer)
+                            callbackFailure?.let { throw it }
+                            nested shouldBe true
+                            return listOf(40.0 - outer.health, 40.0 - inner.health)
+                        } finally {
+                            HandlerList.unregisterAll(listener)
+                        }
+                    }
+                    val control = sample(false)
+                    sample(true).zip(control).forEach { (actual, native) ->
+                        actual shouldBe ((native * 4.625 / 7.0) plusOrMinus 0.001)
+                    }
+                }
+            }
+        }
+
+        test("native cooldown snapshot retains increasing and weaker immunity hits") {
+            fixture {
+                suspend fun sample(enabled: Boolean): List<Double> {
+                    configure(false)
+                    val listener =
+                        object : Listener {
+                            fun record(
+                                event: EntityDamageByEntityEvent,
+                                phase: String,
+                            ) {
+                                if (event.damager != attacker) return
+                                val victim = event.entity as? LivingEntity ?: return
+                                val modifiers =
+                                    EntityDamageEvent.DamageModifier
+                                        .values()
+                                        .filter { event.isApplicable(it) }
+                                        .associate { it.name to event.getDamage(it) }
+                                File(plugin.dataFolder, "attack-cooldown-diagnostics.txt").appendText(
+                                    "immunity enabled=$enabled phase=$phase modifiers=$modifiers " +
+                                        "lastDamage=${victim.lastDamage} health=${victim.health} " +
+                                        "immunity=${victim.noDamageTicks} cancelled=${event.isCancelled}\n",
+                                )
+                            }
+
+                            @EventHandler(priority = EventPriority.LOWEST)
+                            fun before(event: EntityDamageByEntityEvent) = record(event, "before")
+
+                            @EventHandler(priority = EventPriority.MONITOR)
+                            fun after(event: EntityDamageByEntityEvent) = record(event, "after")
+                        }
+                    listeners.add(listener)
+                    Bukkit.getPluginManager().registerEvents(listener, plugin)
+                    configure(enabled)
+                    ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                    reload()
+                    equip(weapon("DIAMOND_SWORD"))
+                    checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                    ticks(30)
+                    attack(target())
+                    val victim = target()
+                    attack(victim)
+                    val first = 40.0 - victim.health
+                    ticks(3)
+                    attack(victim)
+                    val stronger = 40.0 - victim.health
+                    attack(victim)
+                    val weaker = 40.0 - victim.health
+                    File(plugin.dataFolder, "attack-cooldown-diagnostics.txt").appendText(
+                        "immunity enabled=$enabled first=$first stronger=$stronger weaker=$weaker " +
+                            "lastDamage=${victim.lastDamage} immunity=${victim.noDamageTicks}\n",
+                    )
+                    check(first > 0.0 && stronger > first)
+                    weaker shouldBe (stronger plusOrMinus 0.001)
+                    HandlerList.unregisterAll(listener)
+                    return listOf(first, stronger, weaker)
+                }
+                val control = sample(false)
+                sample(true).zip(control).forEach { (actual, native) ->
+                    actual shouldBe ((native * 4.625 / 7.0) plusOrMinus 0.001)
+                }
+            }
+        }
+
+        test("native cooldown snapshot recalculates armour and absorption after stronger same-tick hits") {
+            fixture {
+                suspend fun sample(enabled: Boolean): List<Double> {
+                    configure(false, if (enabled) listOf("old-critical-hits") else emptyList())
+                    attacker.inventory.clear()
+                    checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                    ticks(30)
+                    val damage = checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_DAMAGE.get())))
+                    val victim = target()
+                    checkNotNull(victim.getAttribute(checkNotNull(XAttribute.ARMOR.get()))).baseValue = 12.0
+                    setAbsorption(victim, 6.0)
+                    damage.baseValue = 8.0
+                    attack(victim)
+                    val first = 40.0 - victim.health
+                    val remaining = absorption(victim)
+                    check(remaining > 0 && remaining < 6.0)
+                    damage.baseValue = 80.0
+                    attack(victim)
+                    val stronger = 40.0 - victim.health
+                    check(stronger > first)
+                    absorption(victim) shouldBe (0.0 plusOrMinus 0.001)
+                    damage.baseValue = 50.0
+                    attack(victim)
+                    val weaker = 40.0 - victim.health
+                    weaker shouldBe (stronger plusOrMinus 0.001)
+                    File(plugin.dataFolder, "attack-cooldown-diagnostics.txt").appendText(
+                        "defence enabled=$enabled first=$first absorption=$remaining stronger=$stronger weaker=$weaker\n",
+                    )
+                    return listOf(first, remaining, stronger, weaker)
+                }
+                val control = sample(false)
+                sample(true).zip(control).forEach { (actual, native) ->
+                    actual shouldBe (native plusOrMinus 0.001)
+                }
+            }
+        }
+
+        val nativeImmunityModifier =
+            EntityDamageEvent.DamageModifier
+                .values()
+                .firstOrNull { it.name == "INVULNERABILITY_REDUCTION" }
+        test("native cooldown snapshot restores native damage and history when defence recalculation fails")
+            .config(
+                enabledOrReasonIf = { Enabled(nativeImmunityModifier != null, "Native immunity modifier is absent") },
+            ) {
+                fixture {
+                    suspend fun sample(enabled: Boolean): List<Double> {
+                        configure(false)
+                        val modifier = checkNotNull(nativeImmunityModifier)
+                        val victim = target()
+                        var injected = false
+                        var failureReached = false
+                        var injectedEvent: EntityDamageByEntityEvent? = null
+                        var originalModifiers = emptyMap<EntityDamageEvent.DamageModifier, Double>()
+                        var restoreFunction: (() -> Unit)? = null
+                        val listener =
+                            object : Listener {
+                                @EventHandler(priority = EventPriority.LOWEST)
+                                fun inject(event: EntityDamageByEntityEvent) {
+                                    if (!enabled || injected || event.entity != victim ||
+                                        event.getOriginalDamage(modifier) >= 0.0
+                                    ) {
+                                        return
+                                    }
+                                    @Suppress("UNCHECKED_CAST")
+                                    val functions =
+                                        Reflector
+                                            .getField(EntityDamageEvent::class.java, "modifierFunctions")
+                                            .get(event) as MutableMap<
+                                            EntityDamageEvent.DamageModifier,
+                                            com.google.common.base.Function<Double, Double>,
+                                        >
+                                    val original = checkNotNull(functions[modifier])
+                                    originalModifiers =
+                                        EntityDamageEvent.DamageModifier
+                                            .values()
+                                            .filter { event.isApplicable(it) }
+                                            .associateWith { event.getDamage(it) }
+                                    injectedEvent = event
+                                    functions[modifier] =
+                                        com.google.common.base.Function { input ->
+                                            // Other plugins may recalculate this event afterwards. Fail only
+                                            // at OCM's correction boundary, leaving their native evaluations intact.
+                                            if (Thread.currentThread().stackTrace.any {
+                                                    it.className == BlockingDamageRecalculation::class.java.name &&
+                                                        it.methodName == "removeNativeImmunity"
+                                                }
+                                            ) {
+                                                failureReached = true
+                                                error("Injected immunity function failure")
+                                            }
+                                            original.apply(input)
+                                        }
+                                    restoreFunction = { functions[modifier] = original }
+                                    injected = true
+                                }
+                            }
+                        listeners.add(listener)
+                        Bukkit.getPluginManager().registerEvents(listener, plugin)
+                        configure(false, if (enabled) listOf("old-critical-hits") else emptyList())
+                        attacker.inventory.clear()
+                        checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                        ticks(30)
+                        val damage = checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_DAMAGE.get())))
+                        damage.baseValue = 8.0
+                        attack(victim)
+                        damage.baseValue = 80.0
+                        try {
+                            attack(victim)
+                        } finally {
+                            restoreFunction?.invoke()
+                        }
+                        if (enabled) {
+                            injected shouldBe true
+                            failureReached shouldBe true
+                            val restored = checkNotNull(injectedEvent)
+                            restored.isCancelled shouldBe false
+                            originalModifiers.keys.associateWith { restored.getDamage(it) } shouldBe originalModifiers
+                        }
+                        val afterFallback = 40.0 - victim.health
+                        // A previous MONITOR scheduled a native-history clear. The fallback's accepted
+                        // baseline must survive it, so the next native hit subtracts the correct amount.
+                        ticks(2)
+                        damage.baseValue = 80.0
+                        attack(victim)
+                        val afterNextTick = 40.0 - victim.health
+                        HandlerList.unregisterAll(listener)
+                        return listOf(afterFallback, afterNextTick)
+                    }
+                    val control = sample(false)
+                    sample(true).zip(control).forEach { (actual, native) ->
+                        actual shouldBe (native plusOrMinus 0.001)
+                    }
+                }
+            }
+
+        test("native cooldown snapshot excludes earlier same-pair synthetic damage") {
+            fixture {
+                configure(false)
+                val victim = target()
+                var insideSynthetic = false
+                var injected = false
+                var nativeStrength: Float? = null
+                var syntheticStrength: Float? = null
+                var liveStrength: Float? = null
+                val listener =
+                    object : Listener {
+                        @EventHandler(priority = EventPriority.LOWEST)
+                        fun inject(event: EntityDamageByEntityEvent) {
+                            if (event.entity != victim || event.damager != attacker || injected) return
+                            injected = true
+                            liveStrength =
+                                try {
+                                    attacker.attackCooldown
+                                } catch (_: NoSuchMethodError) {
+                                    DamageUtils.getAttackCooldown.apply(attacker)
+                                }
+                            insideSynthetic = true
+                            try {
+                                Bukkit.getPluginManager().callEvent(
+                                    EntityDamageByEntityEvent(
+                                        attacker,
+                                        victim,
+                                        EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                        7.0,
+                                    ),
+                                )
+                            } finally {
+                                insideSynthetic = false
+                            }
+                        }
+
+                        @EventHandler
+                        fun capture(event: OCMEntityDamageByEntityEvent) {
+                            if (event.damagee != victim || event.damager != attacker) return
+                            if (insideSynthetic) {
+                                syntheticStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                            } else {
+                                nativeStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                            }
+                        }
+                    }
+                listeners.add(listener)
+                Bukkit.getPluginManager().registerEvents(listener, plugin)
+                // Register the shared damage listener after our LOWEST injection callback.
+                configure(true)
+                ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                reload()
+                equip(weapon("DIAMOND_SWORD"))
+                checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get()))).baseValue = 4.0
+                ticks(30)
+                attack(victim)
+                injected shouldBe true
+                syntheticStrength shouldBe liveStrength
+                nativeStrength shouldBe 1.0f
+                (40.0 - victim.health) shouldBe (4.625 plusOrMinus 0.001)
+            }
+        }
+
+        for (scenario in listOf(
+            "nested preattack",
+            "cancelled preattack",
+            "suppressed attack",
+            "fabricated preattack",
+        )) {
+            val preClass =
+                try {
+                    Class
+                        .forName("io.papermc.paper.event.player.PrePlayerAttackEntityEvent")
+                        .asSubclass(Event::class.java)
+                } catch (_: ClassNotFoundException) {
+                    null
+                }
+            test("native cooldown snapshot isolates $scenario and foreign damage")
+                .config(enabledOrReasonIf = { Enabled(preClass != null, "Public preattack event is absent") }) {
+                    fixture {
+                        suspend fun sample(enabled: Boolean): Double {
+                            configure(enabled)
+                            ocm.config.set("old-tool-damage.damages.DIAMOND_SWORD", 4.625)
+                            reload()
+                            equip(weapon("DIAMOND_SWORD"))
+                            val attackSpeed =
+                                checkNotNull(attacker.getAttribute(checkNotNull(XAttribute.ATTACK_SPEED.get())))
+                            attackSpeed.baseValue = 4.0
+                            ticks(30)
+                            val first = target()
+                            val victim = target()
+                            val nested = target()
+                            var observed = false
+                            var callbackFailure: Throwable? = null
+                            val listener = object : Listener {}
+                            val eventClass = checkNotNull(preClass)
+                            Bukkit.getPluginManager().registerEvent(
+                                eventClass,
+                                listener,
+                                EventPriority.LOWEST,
+                                { _, event ->
+                                    runCatching {
+                                        val source = eventClass.getMethod("getPlayer").invoke(event) as Player
+                                        val attacked = eventClass.getMethod("getAttacked").invoke(event)
+                                        if (source == attacker && attacked == first && !observed) {
+                                            observed = true
+                                            when (scenario) {
+                                                "nested preattack" -> {
+                                                    attack(nested)
+                                                }
+
+                                                "cancelled preattack" -> {
+                                                    (event as Cancellable).isCancelled = true
+                                                }
+
+                                                "fabricated preattack" -> {
+                                                    val fabricated =
+                                                        eventClass
+                                                            .getConstructor(
+                                                                Player::class.java,
+                                                                org.bukkit.entity.Entity::class.java,
+                                                                Boolean::class.javaPrimitiveType,
+                                                            ).newInstance(attacker, first, true)
+                                                    fabricated.callEvent()
+                                                }
+                                            }
+                                        }
+                                    }.onFailure { callbackFailure = callbackFailure ?: it }
+                                },
+                                plugin,
+                            )
+                            try {
+                                if (scenario == "suppressed attack") first.isInvulnerable = true
+                                attack(first)
+                                callbackFailure?.let { throw it }
+                                observed shouldBe true
+                                if (scenario == "cancelled preattack" || scenario == "suppressed attack") {
+                                    first.health shouldBe 40.0
+                                }
+                                // A stale preattack must never lend its full strength to unrelated plugin damage.
+                                val live = DamageUtils.getAttackCooldown.apply(attacker)
+                                var foreignStrength: Float? = null
+                                val foreign = target()
+                                val observer =
+                                    object : Listener {
+                                        @EventHandler
+                                        fun observe(event: OCMEntityDamageByEntityEvent) {
+                                            if (event.damagee == foreign) {
+                                                foreignStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                                            }
+                                        }
+
+                                        @EventHandler
+                                        fun nativeControl(event: EntityDamageByEntityEvent) {
+                                            if (!enabled && event.entity == foreign) {
+                                                foreignStrength = DamageUtils.getAttackCooldown.apply(attacker)
+                                            }
+                                        }
+                                    }
+                                Bukkit.getPluginManager().registerEvents(observer, plugin)
+                                try {
+                                    Bukkit.getPluginManager().callEvent(
+                                        EntityDamageByEntityEvent(
+                                            attacker,
+                                            foreign,
+                                            EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                                            7.0,
+                                        ),
+                                    )
+                                    foreignStrength shouldBe live
+                                } finally {
+                                    HandlerList.unregisterAll(observer)
+                                }
+                                attack(victim)
+                                callbackFailure?.let { throw it }
+                                return 40.0 - victim.health
+                            } finally {
+                                HandlerList.unregisterAll(listener)
+                            }
+                        }
+                        val control = sample(false)
+                        sample(true) shouldBe ((control * 4.625 / 7.0) plusOrMinus 0.001)
+                    }
+                }
         }
 
         test("partial native cooldown scales configured damage like the disabled control") {

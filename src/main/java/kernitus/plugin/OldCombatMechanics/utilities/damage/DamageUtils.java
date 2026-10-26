@@ -34,7 +34,10 @@ public class DamageUtils {
     // Method added in 1.16. Default parameter for reflected method is 0.5F
     public static final SpigotFunctionChooser<HumanEntity, Object, Float> getAttackCooldown =
             SpigotFunctionChooser.apiCompatCall(
-                    (he, params) -> he.getAttackCooldown(),
+                    (he, params) -> {
+                        final Float snapshot = AttackCooldownSnapshot.strength(he);
+                        return snapshot != null ? snapshot : he.getAttackCooldown();
+                    },
                     (he, params) -> getAttackCooldown(he)
             );
 
@@ -44,6 +47,8 @@ public class DamageUtils {
      * @return The attack cooldown, as a value between 0 and 1
      */
     private static float getAttackCooldown(HumanEntity humanEntity){
+        final Float snapshot = AttackCooldownSnapshot.strength(humanEntity);
+        if (snapshot != null) return snapshot;
         final Float cooldown = AttackCooldownTracker.getLastCooldown(humanEntity.getUniqueId());
         if(cooldown == null){
             Messenger.debug("Last attack cooldown null for " + humanEntity.getName() + ", assuming full attack strength");

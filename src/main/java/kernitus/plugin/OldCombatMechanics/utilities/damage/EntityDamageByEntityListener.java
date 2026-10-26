@@ -40,12 +40,14 @@ public class EntityDamageByEntityListener extends OCMModule {
     private static final String[] DAMAGE_TYPE_REGISTRIES = {"damage_type", "damage_types"};
     private static final String BYPASSES_COOLDOWN_TAG = "bypasses_cooldown";
     private DamageSourceCooldownBypassSupport damageSourceCooldownBypassSupport;
+    private boolean warnedImmunityRecalculation;
 
     public EntityDamageByEntityListener(OCMMain plugin) {
         super(plugin, "entity-damage-listener");
         INSTANCE = this;
         lastDamages = new HashMap<>();
         lastDamageExpiryTicks = new HashMap<>();
+        AttackCooldownSnapshot.register(plugin);
     }
 
     public static EntityDamageByEntityListener getINSTANCE() {
@@ -111,6 +113,12 @@ public class EntityDamageByEntityListener extends OCMModule {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
+        try (AttackCooldownSnapshot.Scope scope = AttackCooldownSnapshot.enter(event)) {
+            processEntityDamage(event, BlockingDamageRecalculation.captureImmunityState(event));
+        }
+    }
+
+    private void processEntityDamage(EntityDamageEvent event, BlockingDamageRecalculation.OriginalDamage original) {
         final Entity damagee = event.getEntity();
 
         if (!(event instanceof EntityDamageByEntityEvent)) {
@@ -141,7 +149,7 @@ public class EntityDamageByEntityListener extends OCMModule {
             }
 
             // Set damage, this should scale effects in the 1.9 way in case some of our modules are disabled
-            event.setDamage(newDamage);
+            setDamageAfterImmunity(event, newDamage, 0, original);
             debug("Attack damage (before defence): " + newDamage);
 
         } else {
@@ -151,7 +159,8 @@ public class EntityDamageByEntityListener extends OCMModule {
             // Call event constructor before setting lastDamage back, because we need it for calculations
             final OCMEntityDamageByEntityEvent e = new OCMEntityDamageByEntityEvent
                     (damager, damagee, event.getCause(), event.getDamage(),
-                            isPrimaryMeleeAttack(event), damageSourceBypassesCooldown(event));
+                            isPrimaryMeleeAttack(event), damageSourceBypassesCooldown(event),
+                            BlockingDamageRecalculation.hasImmunityModifier(event));
 
             // Set last damage to actual value for other modules and plugins to use
             // This will be set back to 0 in MONITOR listener on the next tick to detect all potential overdamages.
@@ -264,17 +273,50 @@ public class EntityDamageByEntityListener extends OCMModule {
 
             // Recalculate the native defences once, after immunity. Calling setDamage again
             // after replacing BLOCKING would reset the downstream native modifier functions.
-            if (paperBlockReduction != 0 && event instanceof EntityDamageByEntityEvent && !event.isCancelled()) {
-                final double baseDamage = Math.max(0, newDamage + paperBlockReduction);
-                event.setDamage(baseDamage);
-                if (!BlockingDamageRecalculation.replaceBlocking(event, newDamage - baseDamage)) {
-                    event.setDamage(newDamage);
-                }
-            } else {
-                event.setDamage(newDamage);
-            }
+            setDamageAfterImmunity(event, newDamage, paperBlockReduction, original);
             debug("New Damage: " + newDamage, damager);
             debug("Attack damage (before defence): " + newDamage);
+        }
+    }
+
+    private void setDamageAfterImmunity(EntityDamageEvent event, double appliedDamage, double paperBlockReduction,
+                                       BlockingDamageRecalculation.OriginalDamage original) {
+        final boolean modernImmunity = BlockingDamageRecalculation.hasImmunityModifier(event);
+        final double block = event.isCancelled() ? 0 : paperBlockReduction;
+        final double baseDamage = Math.max(0, appliedDamage + block);
+        event.setDamage(baseDamage);
+        if (modernImmunity) {
+            // OCM BASE already contains the immunity delta. The native function captured the
+            // pre-listener history, so remove its second subtraction and update downstream defences.
+            if (!removeNativeImmunity(event, original)) return;
+        }
+        if (block != 0 && !BlockingDamageRecalculation.replaceBlocking(event, -block)) {
+            if (modernImmunity) {
+                retainOriginalNativeDamage(event, original);
+                return;
+            }
+            event.setDamage(appliedDamage);
+        }
+    }
+
+    private boolean removeNativeImmunity(EntityDamageEvent event, BlockingDamageRecalculation.OriginalDamage original) {
+        if (BlockingDamageRecalculation.removeNativeImmunity(event)) return true;
+        retainOriginalNativeDamage(event, original);
+        return false;
+    }
+
+    private void retainOriginalNativeDamage(EntityDamageEvent event, BlockingDamageRecalculation.OriginalDamage original) {
+        final PendingDamage pending = pendingDamages.remove(event);
+        if (original != null) original.restore();
+        if (original != null && !event.isCancelled() && event.getEntity() instanceof LivingEntity) {
+            // MONITOR must retain the accepted native baseline, because an earlier hit may already
+            // have scheduled the usual next-tick history clear. Keep this event's ordering token.
+            pendingDamages.put(event, new PendingDamage(original.getNativeBaseline(),
+                    pending != null ? pending.sequence : ++damageSequence));
+        }
+        if (!warnedImmunityRecalculation) {
+            warnedImmunityRecalculation = true;
+            plugin.getLogger().warning("Could not recalculate native immunity defences; retaining the original native damage");
         }
     }
 

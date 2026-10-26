@@ -84,6 +84,11 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
 
     OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage,
                                boolean primaryMeleeAttack, boolean bypassesCooldown) {
+        this(damager, damagee, cause, rawDamage, primaryMeleeAttack, bypassesCooldown, false);
+    }
+
+    OCMEntityDamageByEntityEvent(Entity damager, Entity damagee, DamageCause cause, double rawDamage,
+                               boolean primaryMeleeAttack, boolean bypassesCooldown, boolean fullNativeDamage) {
         this.damager = damager;
         this.damagee = damagee;
         this.cause = cause;
@@ -105,7 +110,9 @@ public class OCMEntityDamageByEntityEvent extends Event implements Cancellable {
         We artificially set the last damage to 0 between events so that all hits will register,
         however we only do this for DamageByEntity, so there could still be environmental damage (e.g. cactus).
         */
-        if (!bypassesCooldown && damagee instanceof LivingEntity) {
+        // Modern native events expose full BASE and a separate immunity modifier. Their history
+        // must not be added again, even when that modifier currently happens to be zero.
+        if (!bypassesCooldown && !fullNativeDamage && damagee instanceof LivingEntity) {
             final LivingEntity livingDamagee = (LivingEntity) damagee;
             if ((float) livingDamagee.getNoDamageTicks() > (float) livingDamagee.getMaximumNoDamageTicks() / 2.0F) {
                 // NMS code also checks if current damage is higher that previous damage. However, here the event
