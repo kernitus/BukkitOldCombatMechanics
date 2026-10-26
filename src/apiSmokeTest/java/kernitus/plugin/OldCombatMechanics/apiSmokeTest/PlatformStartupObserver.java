@@ -46,14 +46,16 @@ public final class PlatformStartupObserver extends JavaPlugin {
                 require(ocm != null, "OCM was not loaded");
                 require(ocm.isEnabled() == expected, "Unexpected enabled state");
                 require(flag(ocm, "supportedPlatform") == expected, "Unexpected marker result");
-                require(flag(ocm, "packetEventsLoaded") == expected, "Unexpected packet initialisation");
+                final Object packetSupport = ocm.getClass().getMethod("getPacketSupport").invoke(ocm);
+                require((packetSupport != null) == expected, "Unexpected packet support acquisition");
                 require(flag(ocm, "storageInitialised") == expected, "Unexpected storage initialisation");
                 if (expected) {
+                    require(packetReady(packetSupport), "Packet backend was not ready after startup");
                     require(new File(ocm.getDataFolder(), "config.yml").isFile(), "Missing configuration");
                     require(Bukkit.getServicesManager().getRegistrations(ocm).size() > 0, "Missing public service");
                     Bukkit.getPluginManager().disablePlugin(ocm);
                     require(!ocm.isEnabled(), "Plugin remained enabled after shutdown");
-                    require(!flag(ocm, "packetEventsLoaded"), "Packet shutdown did not finish");
+                    require(!packetReady(packetSupport), "Packet backend remained ready after shutdown");
                     require(!flag(ocm, "storageInitialised"), "Storage shutdown did not finish");
                 } else {
                     final Class<?> packets = Class.forName(
@@ -76,6 +78,10 @@ public final class PlatformStartupObserver extends JavaPlugin {
                 Bukkit.shutdown();
             }
         }, 20L);
+    }
+
+    private static boolean packetReady(Object packetSupport) throws Exception {
+        return (Boolean) packetSupport.getClass().getMethod("isReady").invoke(packetSupport);
     }
 
     private static boolean flag(Plugin plugin, String name) throws Exception {
