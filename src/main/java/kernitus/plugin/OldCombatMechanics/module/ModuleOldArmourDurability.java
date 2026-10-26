@@ -6,6 +6,7 @@
 package kernitus.plugin.OldCombatMechanics.module;
 
 import kernitus.plugin.OldCombatMechanics.OCMMain;
+import kernitus.plugin.OldCombatMechanics.utilities.damage.DamageTypeTags;
 import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -88,8 +89,10 @@ public class ModuleOldArmourDurability extends OCMModule {
         if (e.isCancelled()) return;
         if (e.getEntityType() != EntityType.PLAYER) return;
         final EntityDamageEvent.DamageCause cause = e.getCause();
-        if (cause != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION &&
-                cause != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) return;
+        final boolean explosionCause = cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION ||
+                cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION;
+        // Tagged explosions can have a CUSTOM Bukkit cause; preserve their native armour wear.
+        if (!DamageTypeTags.from(e).matches("is_explosion", explosionCause)) return;
 
         final Player player = (Player) e.getEntity();
         final UUID uuid = player.getUniqueId();
