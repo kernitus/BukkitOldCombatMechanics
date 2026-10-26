@@ -75,8 +75,6 @@ idea {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    // Spigot API
-    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://oss.sonatype.org/content/repositories/central")
     // PacketEvents
@@ -96,9 +94,8 @@ description = "OldCombatMechanics"
 
 java {
     toolchain {
-        // We can build with Java 17 but still support MC >=1.9
-        // This is because MC >=1.9 server can be run with higher Java versions
-        languageVersion.set(JavaLanguageVersion.of(17))
+        // Read the modern Paper API while retaining Java 8 plugin bytecode below.
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
@@ -128,14 +125,16 @@ configurations {
 }
 
 configurations.named("compileClasspath") {
-    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
 }
 configurations.named("integrationTestCompileClasspath") {
-    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
 }
 configurations.named("apiSmokeTestCompileClasspath") {
-    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
 }
+
+val paperApi = "io.papermc.paper:paper-api:26.3.build.223-stable"
 
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.2.1")
@@ -146,8 +145,8 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.12.3")
     // For BSON file serialisation
     implementation("org.mongodb:bson:5.13.0")
-    // Spigot
-    compileOnly("org.spigotmc:spigot-api:26.3-R0.1-SNAPSHOT")
+    // Paper is supplied by the server and must remain compile-only.
+    compileOnly(paperApi)
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core-jvm:5.9.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -176,13 +175,13 @@ dependencies {
     add("integrationTestImplementation", "io.kotest:kotest-runner-junit5-jvm:5.9.1")
     add("integrationTestImplementation", "io.kotest:kotest-assertions-core-jvm:5.9.1")
     add("integrationTestImplementation", "xyz.jpenilla:reflection-remapper:0.1.3")
-    add("integrationTestCompileOnly", "org.spigotmc:spigot-api:26.3-R0.1-SNAPSHOT")
+    add("integrationTestCompileOnly", paperApi)
     add("integrationTestCompileOnly", "com.mojang:authlib:6.0.54")
     add("integrationTestCompileOnly", "io.netty:netty-all:4.0.23.Final")
 
     // Java-only API smoke plugin dependencies
     add("apiSmokeTestCompileOnly", sourceSets.main.get().output)
-    add("apiSmokeTestCompileOnly", "org.spigotmc:spigot-api:26.3-R0.1-SNAPSHOT")
+    add("apiSmokeTestCompileOnly", paperApi)
 }
 
 // Substitute ${pluginVersion} in plugin.yml with version defined above
@@ -264,7 +263,7 @@ tasks.assemble {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(25)
 }
 
 tasks.withType<KotlinCompile>().configureEach {

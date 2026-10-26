@@ -244,7 +244,7 @@ class OldArmourStrengthModesetIntegrationTest :
             runSync {
                 player.inventory.clear()
                 player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
-                player.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                player.inventory.setChestplate(ItemStack(Material.DIAMOND_CHESTPLATE))
             }
         }
 
@@ -370,7 +370,7 @@ class OldArmourStrengthModesetIntegrationTest :
                     try {
                         offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
                         val offlinePlayer = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
-                        offlinePlayer.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                        offlinePlayer.inventory.setChestplate(ItemStack(Material.DIAMOND_CHESTPLATE))
                         setModeset(offlinePlayer, "old")
 
                         offlineFake.removePlayer()

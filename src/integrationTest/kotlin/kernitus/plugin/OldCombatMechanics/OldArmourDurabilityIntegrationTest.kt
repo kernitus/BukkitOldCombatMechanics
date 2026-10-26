@@ -128,7 +128,7 @@ class OldArmourDurabilityIntegrationTest :
                     module.reload()
 
                     val helmet = ItemStack(Material.DIAMOND_HELMET)
-                    player.inventory.helmet = helmet
+                    player.inventory.setHelmet(helmet)
 
                     val event = createItemDamageEvent(helmet, 5)
                     Bukkit.getPluginManager().callEvent(event)
@@ -158,7 +158,7 @@ class OldArmourDurabilityIntegrationTest :
                     module.reload()
 
                     val elytra = ItemStack(Material.ELYTRA)
-                    player.inventory.chestplate = elytra
+                    player.inventory.setChestplate(elytra)
 
                     val event = createItemDamageEvent(elytra, 5)
                     Bukkit.getPluginManager().callEvent(event)
@@ -175,7 +175,7 @@ class OldArmourDurabilityIntegrationTest :
                     module.reload()
 
                     val helmet = ItemStack(Material.DIAMOND_HELMET)
-                    player.inventory.helmet = helmet
+                    player.inventory.setHelmet(helmet)
 
                     val explosion = EntityDamageEvent(player, EntityDamageEvent.DamageCause.BLOCK_EXPLOSION, 6.0)
                     Bukkit.getPluginManager().callEvent(explosion)

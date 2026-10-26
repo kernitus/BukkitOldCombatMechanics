@@ -792,7 +792,7 @@ class MixedModePvPIntegrationTest :
                     player.inventory.clear()
                     player.activePotionEffects.forEach { player.removePotionEffect(it.type) }
                 }
-                defender.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                defender.inventory.setChestplate(ItemStack(Material.DIAMOND_CHESTPLATE))
                 attacker.inventory.setItemInMainHand(ItemStack(Material.DIAMOND_SWORD))
             }
         }
@@ -948,7 +948,7 @@ class MixedModePvPIntegrationTest :
                         try {
                             offlineFake.spawn(Location(world, 4.5, 100.0, 0.0))
                             val offlineDefender = checkNotNull(Bukkit.getPlayer(offlineFake.uuid))
-                            offlineDefender.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                            offlineDefender.inventory.setChestplate(ItemStack(Material.DIAMOND_CHESTPLATE))
                             setModeset(offlineDefender, "old")
 
                             offlineFake.removePlayer()

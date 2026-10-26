@@ -463,7 +463,7 @@ class ModuleInteractionEdgeCasesIntegrationTest :
                 ocm.config.set("shield-damage-reduction.generalDamageReductionAmount", 0)
                 ocm.config.set("shield-damage-reduction.generalDamageReductionPercentage", 100)
                 shield.reload()
-                victim.inventory.chestplate = ItemStack(Material.DIAMOND_CHESTPLATE)
+                victim.inventory.setChestplate(ItemStack(Material.DIAMOND_CHESTPLATE))
                 val instance: Any
                 val mapName: String
                 val taskName: String

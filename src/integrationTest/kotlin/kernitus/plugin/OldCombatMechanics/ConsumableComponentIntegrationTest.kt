@@ -637,7 +637,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryAction.PICKUP_ALL,
                             )
                         click.currentItem = slotItem
-                        click.cursor = cursorItem
+                        click.setCursor(cursorItem)
                         click
                     }
 
@@ -687,7 +687,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryAction.PICKUP_ALL,
                             )
                         click.currentItem = slotItem
-                        click.cursor = cursorItem
+                        click.setCursor(cursorItem)
                         click
                     }
 
@@ -791,7 +791,7 @@ class ConsumableComponentIntegrationTest :
                                 InventoryAction.PICKUP_ALL,
                             )
                         click.currentItem = slotItem
-                        click.cursor = cursorItem
+                        click.setCursor(cursorItem)
                         click
                     }
 
@@ -840,7 +840,7 @@ class ConsumableComponentIntegrationTest :
                                     InventoryAction.PICKUP_ALL,
                                 )
                             click.currentItem = slotItem
-                            click.cursor = cursorItem
+                            click.setCursor(cursorItem)
                             click
                         }
 

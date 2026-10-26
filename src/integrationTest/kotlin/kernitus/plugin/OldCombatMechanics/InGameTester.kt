@@ -451,7 +451,7 @@ class InGameTester(
                 Arrays
                     .stream(armourContents)
                     .filter { obj: ItemStack? -> Objects.nonNull(obj) }
-                    .map { `is`: ItemStack -> `is`.type.name }
+                    .map { item: ItemStack? -> checkNotNull(item).type.name }
                     .reduce { a: String, b: String -> "$a, $b" }
                     .orElse("none"),
         )

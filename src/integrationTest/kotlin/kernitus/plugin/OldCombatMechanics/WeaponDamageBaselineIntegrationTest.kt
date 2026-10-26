@@ -904,7 +904,7 @@ class WeaponDamageBaselineIntegrationTest :
                 configure(true, listOf("old-armour-strength"))
                 val result =
                     sweep(prepare = {
-                        it.equipment!!.chestplate = weapon("DIAMOND_CHESTPLATE")
+                        it.equipment!!.setChestplate(weapon("DIAMOND_CHESTPLATE"))
                         it.addPotionEffect(PotionEffect(checkNotNull(XPotion.RESISTANCE.get()), 200, 0))
                     })
                 result.secondary shouldBe (0.544 plusOrMinus 0.001)
