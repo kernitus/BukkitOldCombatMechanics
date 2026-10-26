@@ -17,6 +17,9 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Root and user-facing agents must not open or read `build/integration-test-logs/*.log` directly. Log inspection is allowed only by subagents, and only when needed for integration-test triage or when explicitly requested. Prefer compact console summaries and `plugins/OldCombatMechanicsTest/test-failures.txt` first.
 - Never hard-code absolute filesystem paths in tests or production code; resolve locations relative to the repo root, plugin data folder, or server run directory.
 - Prefer feature detection over hard-coded Minecraft version gates because server implementations may backport APIs.
+- Always prefer the supported public Spigot or Paper API when it can provide the required behaviour. Check available public APIs before introducing or retaining NMS access, reflection or packet handling.
+- Use NMS, reflection and packet handling only as last-resort fallbacks for older versions or compatibility requirements that public APIs cannot satisfy. Document the missing capability and why the fallback is necessary; preserve established legacy adapters where appropriate.
+- A working public API path must never depend on successful initialisation of an internal fallback. Select capabilities independently, initialise fallbacks only when needed, and contain fallback failures so they cannot disable a supported API path or unrelated features.
 - For NMS/reflection access, prefer the project `utilities.reflection.Reflector` helpers over ad-hoc reflection where practical.
 - Reflection should be a compatibility fallback, not the first choice on hot paths.
 - For optional methods on already-present Bukkit types, especially in hot paths, prefer direct calls with cached `NoSuchMethodError` or narrow linkage fallbacks over reflective invocation. Use reflection when classes, parameter or return types, signatures, NMS shapes, or cross-version linkage would make direct calls unsafe.
@@ -66,6 +69,8 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Legacy vanilla jars for `<=1.12` are downloaded by `downloadVanilla<version>` into `run/<version>/cache/mojang_<version>.jar`.
 
 ## Core implementation constraints
+
+- Startup requires the public Paper `EntityAddToWorldEvent` marker, discovered without initialisation before PacketEvents loads. Unsupported platforms are rejected before configuration, storage or modules initialise. `platformTest` runs an independent observer with `platformTestVersion`, `platformTestServerJar`, `platformTestJavaVersion`, `platformTestExpectedPaper` and optional `platformTestRunName` overrides; it requires fresh OCM data in `run/platform-<run-name>` (the version by default). Paper 1.9.4 passed startup validation on Java 8 and is the user-approved representative for the claimed 1.9 range.
 
 - The historical `no-deflect-fire-projectile` module remains rejected: pinned 1.8.9 `EntityLivingBase.attackEntityFrom` accepts excess stronger damage during immunity, including after fire damage. Blanket projectile removal suppresses valid hits and does not reproduce 1.8 behaviour. No fire module or configuration entry is intended.
 - Blocking reductions are signed for positive incoming damage: the legacy default maps 0.25 to 0.625. Zero remains zero. Only exact events attributed to OCM's default 0.0001 projectile or fishing injection avoid the half-point amplification; foreign equal-valued damage follows normal blocking. The exception also requires the current pre-block damage to retain the tiny injection value, so foreign Bukkit or offensive OCM adjustments receive normal blocking.

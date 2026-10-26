@@ -790,6 +790,79 @@ tasks.register("integrationTestMatrix") {
     dependsOn(integrationTestMatrixTasks)
 }
 
+// Independent startup observer has no dependency on OCM and can verify rejected platforms.
+val platformObserverJarTask =
+    tasks.register<Jar>("platformObserverJar") {
+        archiveClassifier.set("platform-observer")
+        dependsOn("apiSmokeTestClasses")
+        from(sourceSets["apiSmokeTest"].output) { include("**/PlatformStartupObserver*.class") }
+        from("src/apiSmokeTest/platform-plugin.yml") { rename { "plugin.yml" } }
+    }
+val platformVersion = providers.gradleProperty("platformTestVersion").getOrElse("1.19.2")
+val platformRunName = providers.gradleProperty("platformTestRunName").getOrElse(platformVersion)
+val platformRunDir = file("run/platform-$platformRunName")
+val platformResult = platformRunDir.resolve("plugins/OldCombatMechanicsPlatformObserver/test-results.txt")
+val platformProperties =
+    tasks.register<WriteProperties>("writePlatformProperties") {
+        destinationFile.set(platformRunDir.resolve("server.properties"))
+        property("online-mode", false)
+        property("server-port", 25575)
+        property("view-distance", 2)
+        property("spawn-protection", 0)
+    }
+val platformRun =
+    tasks.register<RunServer>("runPlatformServer") {
+        dependsOn(platformProperties, shadowJarTask, platformObserverJarTask)
+        runDirectory.set(platformRunDir)
+        minecraftVersion(platformVersion)
+        providers.gradleProperty("platformTestServerJar").orNull?.let { serverJar(file(it)) }
+        jvmArgs(
+            "-Dcom.mojang.eula.agree=true",
+            "-DIReallyKnowWhatIAmDoingISwear=true",
+            "-Docm.platform.expected=${providers.gradleProperty("platformTestExpectedPaper").getOrElse("true")}",
+        )
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(
+                    JavaLanguageVersion.of(
+                        providers
+                            .gradleProperty(
+                                "platformTestJavaVersion",
+                            ).orNull
+                            ?.toInt() ?: requiredJavaVersion(platformVersion),
+                    ),
+                )
+            },
+        )
+        pluginJars.from(shadowJarTask.flatMap { it.archiveFile }, platformObserverJarTask.flatMap { it.archiveFile })
+        doFirst {
+            // Refuse old plugin state: callers must choose a fresh fixture directory.
+            if (platformRunDir.resolve("plugins/OldCombatMechanics").exists()) {
+                throw GradleException("Platform startup requires fresh OCM data: $platformRunDir")
+            }
+            platformResult.delete()
+            platformRunDir.resolve("eula.txt").writeText("eula=true\n")
+            val log = file("build/integration-test-logs/platform-$platformRunName.log")
+            log.parentFile.mkdirs()
+            standardOutput = log.outputStream()
+            errorOutput = standardOutput
+        }
+        doLast { (standardOutput as? Closeable)?.close() }
+    }
+val platformCheck =
+    tasks.register("checkPlatformResults") {
+        doLast {
+            val result = if (platformResult.exists()) platformResult.readText().trim() else "MISSING"
+            logger.lifecycle("Platform startup $platformVersion: $result")
+            if (result != "PASS") throw GradleException("Platform startup failed: $result")
+        }
+    }
+tasks.register("platformTest") {
+    group = "verification"
+    dependsOn(platformRun)
+    finalizedBy(platformCheck)
+}
+
 val apiSmokeTestSuffix = versionTaskSuffix(apiSmokeTestMinecraftVersion)
 val apiSmokeRunDir = file("run/api-smoke-$apiSmokeTestMinecraftVersion")
 val apiSmokeResultFile = apiSmokeRunDir.resolve("plugins/OldCombatMechanicsApiSmokeTest/test-results.txt")

@@ -17,6 +17,7 @@ import kernitus.plugin.OldCombatMechanics.module.*;
 import kernitus.plugin.OldCombatMechanics.updater.ModuleUpdateChecker;
 import kernitus.plugin.OldCombatMechanics.utilities.Config;
 import kernitus.plugin.OldCombatMechanics.utilities.Messenger;
+import kernitus.plugin.OldCombatMechanics.utilities.PaperPlatform;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.AttackCooldownTracker;
 import kernitus.plugin.OldCombatMechanics.utilities.damage.EntityDamageByEntityListener;
 import kernitus.plugin.OldCombatMechanics.utilities.reflection.Reflector;
@@ -62,18 +63,31 @@ public class OCMMain extends JavaPlugin {
     private final List<Runnable> enableListeners = new ArrayList<>();
     private final List<Hook> hooks = new ArrayList<>();
     private OldCombatMechanicsAPI api;
+    private boolean supportedPlatform;
+    private boolean packetEventsLoaded;
+    private boolean storageInitialised;
     public OCMMain() {
         super();
     }
 
     @Override
     public void onLoad() {
+        supportedPlatform = PaperPlatform.isAvailable(getServer().getClass().getClassLoader());
+        if (!supportedPlatform) return;
+
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
         PacketEvents.getAPI().load();
+        packetEventsLoaded = true;
     }
 
     @Override
     public void onEnable() {
+        if (!supportedPlatform) {
+            logger.severe("OldCombatMechanics requires Paper or a compatible fork. Spigot and CraftBukkit are unsupported.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         INSTANCE = this;
 
         // Setting up config.yml
@@ -81,6 +95,7 @@ public class OCMMain extends JavaPlugin {
 
         // Initialise persistent player storage
         PlayerStorage.initialise(this);
+        storageInitialised = true;
 
         // Initialise ModuleLoader utility
         ModuleLoader.initialise(this);
@@ -187,6 +202,8 @@ public class OCMMain extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (!supportedPlatform) return;
+
         final PluginDescriptionFile pdfFile = this.getDescription();
 
         disableListeners.forEach(Runnable::run);
@@ -213,7 +230,10 @@ public class OCMMain extends JavaPlugin {
             });
         });
 
-        PlayerStorage.instantSave();
+        if (storageInitialised) {
+            PlayerStorage.instantSave();
+            storageInitialised = false;
+        }
 
         PlayerModuleOverrides.clearAll();
 
@@ -222,7 +242,10 @@ public class OCMMain extends JavaPlugin {
             api = null;
         }
 
-        PacketEvents.getAPI().terminate();
+        if (packetEventsLoaded) {
+            PacketEvents.getAPI().terminate();
+            packetEventsLoaded = false;
+        }
 
         // Logging to console the disabling of OCM
         logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");

@@ -1,0 +1,5 @@
+main: kernitus.plugin.OldCombatMechanics.apiSmokeTest.PlatformStartupObserver
+name: OldCombatMechanicsPlatformObserver
+version: 1.0.0
+load: STARTUP
+loadbefore: [OldCombatMechanics]
