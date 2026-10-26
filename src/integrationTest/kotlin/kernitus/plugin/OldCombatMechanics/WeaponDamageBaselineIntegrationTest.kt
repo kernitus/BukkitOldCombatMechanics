@@ -105,6 +105,73 @@ class WeaponDamageBaselineIntegrationTest :
             var cancelled = false
             var foreignAdjustment = 0.0
             var diagnosticLabel: String? = null
+            var releaseNativeConnection: (() -> Unit)? = null
+
+            private fun useNativeConnectionPhase() {
+                val adapter = Reflector.getField(fake.javaClass, "legacyImpl12").get(fake) ?: return
+                // LegacyFakePlayer12 normally invokes playerTick in the scheduler. Real 1.12
+                // players tick through ServerConnection.c -> NetworkManager.a -> PlayerConnection.e,
+                // after the scheduler. Sampling and attacking in the scheduler must observe the
+                // same recharge tick; a second scheduler task otherwise advances only the fixture.
+                val scheduled = Reflector.getField(adapter.javaClass, "playerTickTask")
+                val handle = Reflector.invokeMethod<Any>(Reflector.getMethod(attacker.javaClass, "getHandle"), attacker)
+                val connection = Reflector.getField(handle.javaClass, "playerConnection").get(handle)
+                val network = Reflector.getField(connection.javaClass, "networkManager").get(connection)
+                val channelField = Reflector.getField(network.javaClass, "channel")
+                val oldChannel = channelField.get(network)
+                val channel =
+                    io.netty.channel.embedded.EmbeddedChannel(
+                        object : io.netty.channel.ChannelOutboundHandlerAdapter() {
+                            override fun write(
+                                context: io.netty.channel.ChannelHandlerContext,
+                                message: Any,
+                                promise: io.netty.channel.ChannelPromise,
+                            ) {
+                                io.netty.util.ReferenceCountUtil
+                                    .release(message)
+                                promise.setSuccess()
+                            }
+                        },
+                    )
+                channel.pipeline().addLast("decoder", io.netty.channel.ChannelInboundHandlerAdapter())
+                channel.pipeline().addLast("encoder", io.netty.channel.ChannelOutboundHandlerAdapter())
+                val server =
+                    Reflector.invokeMethod<Any>(
+                        Reflector.getMethod(Bukkit.getServer().javaClass, "getServer", 0),
+                        Bukkit.getServer(),
+                    )
+                val serverConnection =
+                    Reflector.invokeMethod<Any>(
+                        Reflector.getMethod(server.javaClass, "getServerConnection", 0),
+                        server,
+                    )
+
+                @Suppress("UNCHECKED_CAST")
+                val connections =
+                    Reflector
+                        .getField(
+                            serverConnection.javaClass,
+                            "h",
+                        ).get(serverConnection) as MutableCollection<Any>
+                releaseNativeConnection = {
+                    synchronized(connections) { connections.remove(network) }
+                    channelField.set(network, oldChannel)
+                    channel.finish()
+                    while (true) {
+                        io.netty.util.ReferenceCountUtil
+                            .release(channel.readOutbound<Any>() ?: break)
+                    }
+                    while (true) {
+                        io.netty.util.ReferenceCountUtil
+                            .release(channel.readInbound<Any>() ?: break)
+                    }
+                }
+                channelField.set(network, channel)
+                synchronized(connections) { check(connections.add(network)) }
+                // The fixture removes this player on close, so the scheduler task need not resume.
+                (scheduled.get(adapter) as? Int)?.let { Bukkit.getScheduler().cancelTask(it) }
+                scheduled.set(adapter, null)
+            }
 
             fun diagnostic(
                 phase: String,
@@ -156,6 +223,7 @@ class WeaponDamageBaselineIntegrationTest :
                 chunk.load()
                 fake.spawn(location)
                 attacker = checkNotNull(Bukkit.getPlayer(fake.uuid))
+                useNativeConnectionPhase()
                 attacker.gameMode = GameMode.SURVIVAL
                 attacker.inventory.clear()
                 attacker.isSprinting = false
@@ -272,7 +340,12 @@ class WeaponDamageBaselineIntegrationTest :
             fun close() {
                 listeners.forEach { HandlerList.unregisterAll(it) }
                 targets.forEach { it.remove() }
-                if (Bukkit.getPlayer(fake.uuid) != null) fake.removePlayer()
+                try {
+                    releaseNativeConnection?.invoke()
+                } finally {
+                    releaseNativeConnection = null
+                    if (Bukkit.getPlayer(fake.uuid) != null) fake.removePlayer()
+                }
                 if (!wasLoaded) chunk.unload()
                 ocm.config.loadFromString(originalConfig)
                 reload()
@@ -770,6 +843,8 @@ class WeaponDamageBaselineIntegrationTest :
                 damage(item) shouldBe (7.125 plusOrMinus 0.001)
             }
         }
+        // Paper 1.9 reports sweeps as primary attacks, leaving three known potion sweep failures.
+        // Keep these strict controls visible; a separate legacy reconstruction is unlikely to be worthwhile.
         for (effectName in listOf("plain", "default Strength", "additive Strength", "Weakness")) {
             for (enchanted in listOf(false, true)) {
                 test(
@@ -1131,6 +1206,8 @@ class WeaponDamageBaselineIntegrationTest :
             }
         }
 
+        // Legacy per-tick tracking cannot isolate nested attacks. These known failures remain enabled;
+        // redesigning provenance for these old servers is unlikely to justify the added complexity.
         for (cancelFirst in listOf(false, true)) {
             test("native cooldown snapshot isolates nested attacks after cancellation $cancelFirst") {
                 fixture {
@@ -1413,6 +1490,8 @@ class WeaponDamageBaselineIntegrationTest :
                 }
             }
 
+        // The legacy tracker can mistake earlier synthetic damage for another attack. Keep this known
+        // failure visible; a provenance redesign for these old versions is outside the intended scope.
         test("native cooldown snapshot excludes earlier same-pair synthetic damage") {
             fixture {
                 configure(false)
@@ -1599,6 +1678,8 @@ class WeaponDamageBaselineIntegrationTest :
                 }
         }
 
+        // Paper 1.9 shares the primary and sweep causes, retaining its known same-tick limitation.
+        // These old-server edge cases are unlikely to justify a more complex legacy tracker.
         test("partial native cooldown scales configured damage like the disabled control") {
             fixture {
                 suspend fun partial(
