@@ -144,7 +144,7 @@ dependencies {
     // Placeholder API
     compileOnly("me.clip:placeholderapi:2.12.3")
     // For BSON file serialisation
-    implementation("org.mongodb:bson:5.13.0")
+    implementation("org.mongodb:bson:5.14.0")
     // Paper is supplied by the server and must remain compile-only.
     compileOnly(paperApi)
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
