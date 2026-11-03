@@ -134,7 +134,7 @@ configurations.named("apiSmokeTestCompileClasspath") {
     attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
 }
 
-val paperApi = "io.papermc.paper:paper-api:26.3.build.223-stable"
+val paperApi = "io.papermc.paper:paper-api:26.3.build.227-stable"
 
 dependencies {
     implementation("org.bstats:bstats-bukkit:3.2.1")
