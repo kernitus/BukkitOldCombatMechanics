@@ -12,7 +12,7 @@ public class PaperSwordBlocking {
     private NativeSwordUse nativeUse;
 
     interface Components {
-        void applyComponents(ItemStack stack);
+        boolean applyComponents(ItemStack stack);
         boolean clearComponents(ItemStack stack);
         boolean hasConsumableComponent(ItemStack stack);
     }
@@ -28,8 +28,8 @@ public class PaperSwordBlocking {
         components = selected;
     }
 
-    public void applyComponents(ItemStack stack) {
-        components.applyComponents(stack);
+    public boolean applyComponents(ItemStack stack) {
+        return components.applyComponents(stack);
     }
 
     public boolean clearComponents(ItemStack stack) {

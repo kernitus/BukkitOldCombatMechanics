@@ -20,6 +20,7 @@ final class LegacySwordComponents implements PaperSwordBlocking.Components {
     private final MethodHandle nmsPatchEntrySet;
     private final Object nmsConsumableType;
     private final Object nmsConsumableComponent;
+    private final Object previousConsumableComponent;
     private volatile Field craftItemStackHandleField;
     private final MethodHandle nmsGetComponent;
     private final MethodHandle nmsGetComponents;
@@ -37,6 +38,13 @@ final class LegacySwordComponents implements PaperSwordBlocking.Components {
             .invoke(nmsConsumableBuilder, 2_592_000.0f); // needs to be less than 2_147_483_647
         final Object nmsConsumableValue2 = nmsConsumableValue.getClass().getMethod("animation", nmsUseAnim)
             .invoke(nmsConsumableValue, nmsBlockAnim);
+        previousConsumableComponent = nmsConsumableValue2.getClass().getMethod("build").invoke(nmsConsumableValue2);
+        // Older Paper lacks the public component API. Suppress the native builder's food defaults too.
+        final Class<?> holder = Class.forName("net.minecraft.core.Holder");
+        final Object emptySound = Class.forName("net.minecraft.sounds.SoundEvents").getField("EMPTY").get(null);
+        final Object soundHolder = holder.getMethod("direct", Object.class).invoke(null, emptySound);
+        nmsConsumableValue2.getClass().getMethod("sound", holder).invoke(nmsConsumableValue2, soundHolder);
+        nmsConsumableValue2.getClass().getMethod("hasConsumeParticles", boolean.class).invoke(nmsConsumableValue2, false);
         final Object consumableComponent = nmsConsumableValue2.getClass().getMethod("build").invoke(nmsConsumableValue2);
         nmsConsumableComponent = consumableComponent;
 
@@ -96,19 +104,24 @@ final class LegacySwordComponents implements PaperSwordBlocking.Components {
         return resolveCraftItemStackHandleField(stack).get(stack);
     }
 
-    public void applyComponents(ItemStack stack) {
-        if (stack == null || !isSword(stack.getType())) return;
+    public boolean applyComponents(ItemStack stack) {
+        if (stack == null || !isSword(stack.getType())) return false;
         try {
             final Object nms = nativeStack(stack);
-            if (nms == null || nmsGetComponent.invoke(nms, nmsConsumableType) != null) return;
+            if (nms == null) return false;
+            final org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+            final Object current = nmsGetComponent.invoke(nms, nmsConsumableType);
+            final boolean outdated = meta.getPersistentDataContainer().has(marker, org.bukkit.persistence.PersistentDataType.BYTE)
+                    && previousConsumableComponent.equals(current);
+            if (!outdated && current != null) return false;
             final Object patch = nmsGetComponentsPatch.invoke(nms);
             for (Object value : (Set<?>) nmsPatchEntrySet.invoke(patch)) {
-                if (((Map.Entry<?, ?>) value).getKey() == nmsConsumableType) return;
+                if (!outdated && ((Map.Entry<?, ?>) value).getKey() == nmsConsumableType) return false;
             }
-            final org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
             meta.getPersistentDataContainer().set(marker, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
             stack.setItemMeta(meta);
             nmsSetComponent.invoke(nativeStack(stack), nmsConsumableType, nmsConsumableComponent);
+            return true;
         } catch (Throwable failure) {
             throw new IllegalStateException("Cannot apply legacy sword component", failure);
         }
@@ -119,7 +132,8 @@ final class LegacySwordComponents implements PaperSwordBlocking.Components {
         try {
             final org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
             if (!meta.getPersistentDataContainer().has(marker, org.bukkit.persistence.PersistentDataType.BYTE)) return false;
-            final boolean owned = nmsConsumableComponent.equals(nmsGetComponent.invoke(nativeStack(stack), nmsConsumableType));
+            final Object current = nmsGetComponent.invoke(nativeStack(stack), nmsConsumableType);
+            final boolean owned = nmsConsumableComponent.equals(current) || previousConsumableComponent.equals(current);
             meta.getPersistentDataContainer().remove(marker);
             stack.setItemMeta(meta);
             if (!owned) return true;

@@ -48,7 +48,6 @@ public class ModuleSwordBlocking extends OCMModule {
     private Object paperAdapter;
     private java.lang.reflect.Method paperApply;
     private java.lang.reflect.Method paperClear;
-    private java.lang.reflect.Method paperHasConsumable;
     private java.lang.reflect.Method paperIsBlockingSword;
     private boolean startUsingItemApiMissing;
     private boolean itemUseFailureReported;
@@ -150,7 +149,6 @@ public class ModuleSwordBlocking extends OCMModule {
             paperAdapter = adapterClass.getConstructor().newInstance();
             paperApply = adapterClass.getMethod("applyComponents", ItemStack.class);
             paperClear = adapterClass.getMethod("clearComponents", ItemStack.class);
-            paperHasConsumable = adapterClass.getMethod("hasConsumableComponent", ItemStack.class);
             paperIsBlockingSword = adapterClass.getMethod("isBlockingSword", Player.class);
             paperSupported = true;
             if (isPaperDataComponentApiPresent()) {
@@ -161,7 +159,6 @@ public class ModuleSwordBlocking extends OCMModule {
             paperAdapter = null;
             paperApply = null;
             paperClear = null;
-            paperHasConsumable = null;
             paperIsBlockingSword = null;
             // Feature-gated warning: only warn when the Paper data component API is present, otherwise this is a
             // normal Spigot/non-Paper environment where the Paper path is not expected to work.
@@ -787,10 +784,9 @@ public class ModuleSwordBlocking extends OCMModule {
         if (!supportsPaperAnimation(player) || paperApply == null) return false;
         if (item == null || item.getType() == Material.AIR || !isHoldingSword(item.getType())) return false;
         if (!isEnabled(player)) return false;
-        if (hasConsumableComponent(item)) return false;
         try {
-            paperApply.invoke(paperAdapter, item);
-            return true;
+            // The adapter also repairs exact marked components from older OCM builds.
+            return Boolean.TRUE.equals(paperApply.invoke(paperAdapter, item));
         } catch (Throwable ignored) {
             return false;
         }
@@ -920,16 +916,6 @@ public class ModuleSwordBlocking extends OCMModule {
         if (item.getType() == Material.AIR || !isHoldingSword(item.getType())) return false;
         try {
             return Boolean.TRUE.equals(paperClear.invoke(paperAdapter, item));
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    private boolean hasConsumableComponent(ItemStack item) {
-        if (!paperSupported || paperAdapter == null || paperHasConsumable == null || item == null) return false;
-        try {
-            final Object result = paperHasConsumable.invoke(paperAdapter, item);
-            return result instanceof Boolean && (Boolean) result;
         } catch (Throwable ignored) {
             return false;
         }

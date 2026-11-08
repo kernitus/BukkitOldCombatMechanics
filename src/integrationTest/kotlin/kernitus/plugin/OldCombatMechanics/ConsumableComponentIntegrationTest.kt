@@ -10,6 +10,7 @@ import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kernitus.plugin.OldCombatMechanics.module.ModuleSwordBlocking
+import kernitus.plugin.OldCombatMechanics.paper.PaperSwordBlocking
 import kernitus.plugin.OldCombatMechanics.utilities.Config
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.getPlayerData
 import kernitus.plugin.OldCombatMechanics.utilities.storage.PlayerStorage.setPlayerData
@@ -99,6 +100,17 @@ class ConsumableComponentIntegrationTest :
             } catch (_: Throwable) {
                 false
             }
+        }
+
+        fun requireConsumablePathWhenPresent(): Boolean {
+            try {
+                Class.forName("io.papermc.paper.datacomponent.item.Consumable")
+            } catch (_: ClassNotFoundException) {
+                println("Skipping: Paper consumable API absent")
+                return false
+            }
+            paperConsumablePathAvailable() shouldBe true
+            return true
         }
 
         fun packetEventsClass(name: String): Class<*> = Class.forName(name, true, ocm.javaClass.classLoader)
@@ -547,6 +559,79 @@ class ConsumableComponentIntegrationTest :
                     SwordNativeUseChecks.stop(player)
                     attacker.remove()
                     originalGround.update(true, false)
+                }
+            }
+        }
+
+        test("sword component settings and migration prevent consumption issue 976") {
+            if (!requireConsumablePathWhenPresent()) return@test
+            runSync {
+                val sword = ItemStack(Material.DIAMOND_SWORD)
+                PaperSwordBlocking().applyComponents(sword)
+                SwordComponentCapabilityChecks.assertSafeBlocking(sword)
+            }
+        }
+
+        test("owned faulty sword components are repaired and cleared issue 976") {
+            if (!requireConsumablePathWhenPresent()) return@test
+            runSync { SwordComponentCapabilityChecks.repairsFaultyComponents() }
+        }
+
+        test("reload with sword blocking disabled clears stored faulty components issue 976") {
+            if (!requireConsumablePathWhenPresent()) return@test
+            runSync {
+                player.inventory.setItemInMainHand(SwordComponentCapabilityChecks.faultySword())
+                player.inventory.setItem(2, SwordComponentCapabilityChecks.faultySword())
+            }
+            withSwordBlockingDisabled {
+                runSync {
+                    listOf(player.inventory.itemInMainHand, player.inventory.getItem(2)).forEach {
+                        hasConsumableComponent(it) shouldBe false
+                        hasConsumableRemoval(it) shouldBe false
+                    }
+                }
+            }
+        }
+
+        listOf(false, true).forEach { stale ->
+            test("survival sword survives sustained native use stale=$stale issue 976") {
+                if (!requireConsumablePathWhenPresent()) return@test
+                withPacketEventsClientVersion(player, "V_1_21_11") {
+                    try {
+                        runSync {
+                            SwordNativeUseChecks.stop(player)
+                            player.gameMode = GameMode.SURVIVAL
+                            player.inventory.setItemInMainHand(
+                                if (stale) {
+                                    SwordComponentCapabilityChecks.faultySword()
+                                } else {
+                                    ItemStack(Material.DIAMOND_SWORD)
+                                },
+                            )
+                        }
+                        // Only the interaction is synthetic. Item use and consumption advance through real server ticks.
+                        rightClickMainHand(player)
+                        val startAge =
+                            runSync {
+                                player.isHandRaised shouldBe true
+                                player.ticksLived
+                            }
+                        repeat(60) {
+                            if (runSync { player.ticksLived - startAge < 45 }) delayTicks(1)
+                        }
+                        runSync {
+                            (player.ticksLived - startAge >= 45) shouldBe true
+                            player.inventory.itemInMainHand.type shouldBe Material.DIAMOND_SWORD
+                            player.inventory.itemInMainHand.amount shouldBe 1
+                            swordBlocking.isPaperSwordBlocking(player) shouldBe true
+                            (
+                                SwordNativeUseChecks.activeStack(player) ===
+                                    SwordNativeUseChecks.heldStack(player.inventory.itemInMainHand)
+                            ) shouldBe true
+                        }
+                    } finally {
+                        runSync { SwordNativeUseChecks.stop(player) }
+                    }
                 }
             }
         }

@@ -11,6 +11,86 @@ import org.bukkit.inventory.ItemStack
 
 /** Modern-only assertions loaded after the component capability check. Fixtures here are synthetic stacks. */
 internal object SwordComponentCapabilityChecks {
+    fun faultySword(marked: Boolean = true): ItemStack =
+        ItemStack(Material.DIAMOND_SWORD).also {
+            it.setData(
+                CONSUMABLE,
+                checkNotNull(ItemStack(Material.BREAD).getData(CONSUMABLE))
+                    .toBuilder()
+                    .animation(ItemUseAnimation.BLOCK)
+                    .build(),
+            )
+            if (marked) {
+                val meta = it.itemMeta
+                meta.persistentDataContainer.set(
+                    org.bukkit.NamespacedKey("oldcombatmechanics", "sword_consumable"),
+                    org.bukkit.persistence.PersistentDataType.BYTE,
+                    1.toByte(),
+                )
+                it.itemMeta = meta
+            }
+        }
+
+    fun assertSafeBlocking(stack: ItemStack) {
+        val component = checkNotNull(stack.getData(CONSUMABLE))
+        component.consumeSeconds() shouldBe 2_592_000f
+        component.animation() shouldBe ItemUseAnimation.BLOCK
+        component.sound().asString() shouldBe "minecraft:intentionally_empty"
+        component.hasConsumeParticles() shouldBe false
+        component.consumeEffects().isEmpty() shouldBe true
+    }
+
+    private fun previousLegacySword(): ItemStack =
+        faultySword().also {
+            it.setData(
+                CONSUMABLE,
+                Consumable
+                    .consumable()
+                    .consumeSeconds(2_592_000f)
+                    .animation(ItemUseAnimation.BLOCK)
+                    .build(),
+            )
+        }
+
+    fun repairsFaultyComponents() {
+        val adapter = PaperSwordBlocking()
+        val sword = faultySword()
+        adapter.applyComponents(sword)
+        assertSafeBlocking(sword)
+        adapter.clearComponents(sword)
+        sword.isDataOverridden(CONSUMABLE) shouldBe false
+        val stale = faultySword()
+        adapter.clearComponents(stale)
+        stale.isDataOverridden(CONSUMABLE) shouldBe false
+        val previousLegacy = previousLegacySword()
+        adapter.applyComponents(previousLegacy) shouldBe true
+        assertSafeBlocking(previousLegacy)
+        adapter.applyComponents(previousLegacy) shouldBe false
+        adapter.clearComponents(previousLegacy)
+        previousLegacy.isDataOverridden(CONSUMABLE) shouldBe false
+        val previousLegacyCleanup = previousLegacySword()
+        adapter.clearComponents(previousLegacyCleanup)
+        previousLegacyCleanup.isDataOverridden(CONSUMABLE) shouldBe false
+        val foreign = faultySword(false)
+        val original = foreign.clone()
+        adapter.applyComponents(foreign)
+        adapter.clearComponents(foreign)
+        foreign shouldBe original
+        val changed = faultySword()
+        changed.setData(CONSUMABLE, checkNotNull(changed.getData(CONSUMABLE)).toBuilder().consumeSeconds(4f).build())
+        val changedComponent = changed.getData(CONSUMABLE)
+        adapter.applyComponents(changed)
+        adapter.clearComponents(changed)
+        changed.getData(CONSUMABLE) shouldBe changedComponent
+        val removed = faultySword()
+        removed.unsetData(CONSUMABLE)
+        val removalBefore = removed.isDataOverridden(CONSUMABLE)
+        adapter.applyComponents(removed)
+        adapter.clearComponents(removed)
+        removed.hasData(CONSUMABLE) shouldBe false
+        removed.isDataOverridden(CONSUMABLE) shouldBe removalBefore
+    }
+
     fun hasComponent(stack: ItemStack?): Boolean = stack != null && stack.hasData(CONSUMABLE)
 
     fun hasRemoval(stack: ItemStack?): Boolean =
@@ -107,9 +187,19 @@ internal object SwordComponentCapabilityChecks {
         val original = item.clone()
         apply.invoke(adapter, item)
         item.hasData(CONSUMABLE) shouldBe true
+        assertSafeBlocking(item)
         clear.invoke(adapter, item) shouldBe true
         item shouldBe original
         item.isDataOverridden(CONSUMABLE) shouldBe false
+        val previous = previousLegacySword().ensureServerConversions()
+        apply.invoke(adapter, previous) shouldBe true
+        assertSafeBlocking(previous)
+        apply.invoke(adapter, previous) shouldBe false
+        clear.invoke(adapter, previous) shouldBe true
+        previous.isDataOverridden(CONSUMABLE) shouldBe false
+        val stale = previousLegacySword().ensureServerConversions()
+        clear.invoke(adapter, stale) shouldBe true
+        stale.isDataOverridden(CONSUMABLE) shouldBe false
     }
 
     fun worksWithoutNativeDiscovery(player: Player) {
