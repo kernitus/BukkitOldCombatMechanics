@@ -215,6 +215,147 @@ class AttackRangeIntegrationTest :
             }
         }
 
+        fun requireRangeApi(): Boolean {
+            try {
+                Class.forName("io.papermc.paper.datacomponent.item.AttackRange")
+            } catch (_: ClassNotFoundException) {
+                println("Skipping: public attack range API absent")
+                return false
+            }
+            attackRangeApiAvailable shouldBe true
+            return true
+        }
+
+        fun clearThroughDrop(
+            player: Player,
+            item: ItemStack,
+        ): ItemStack {
+            val drop = player.world.dropItem(player.location, item)
+            try {
+                Bukkit.getPluginManager().callEvent(PlayerDropItemEvent(player, drop))
+                return drop.itemStack.clone()
+            } finally {
+                drop.remove()
+            }
+        }
+
+        listOf(
+            "foreign override",
+            "explicit removal",
+            "owned serialised item",
+            "later foreign override",
+            "later foreign removal",
+            "unmarked matching values",
+            "malformed ownership",
+            "wrong marker type",
+            "unrelated metadata",
+            "changed minimum",
+            "changed maximum",
+            "changed creative minimum",
+            "changed creative maximum",
+            "changed margin",
+            "changed mob factor",
+        ).forEach { scenario ->
+            test("attack range ownership preserves $scenario") {
+                if (!requireRangeApi()) return@test
+                val actors = spawnActors()
+                try {
+                    withModuleState(enabled = true) {
+                        runSync {
+                            AttackRangeOwnershipChecks.runCase(
+                                scenario,
+                                { applyToItemMethod!!.invoke(attackRangeModule, actors.player, it) },
+                                { clearThroughDrop(actors.player, it) },
+                            )
+                        }
+                    }
+                } finally {
+                    cleanup(actors)
+                }
+            }
+        }
+
+        test("disabled attack range cleanup preserves foreign components") {
+            if (!requireRangeApi()) return@test
+            val actors = spawnActors()
+            try {
+                withModuleState(enabled = false) {
+                    runSync {
+                        AttackRangeOwnershipChecks.runCase(
+                            "foreign override",
+                            { applyToItemMethod!!.invoke(attackRangeModule, actors.player, it) },
+                            { clearThroughDrop(actors.player, it) },
+                        )
+                    }
+                }
+            } finally {
+                cleanup(actors)
+            }
+        }
+
+        test("attack range ownership follows changed configuration and cleans stored items") {
+            if (!requireRangeApi()) return@test
+            val actors = spawnActors()
+            try {
+                withModuleState(enabled = true, maxRange = 5.0) {
+                    runSync { AttackRangeOwnershipChecks.assertRange(actors.player.inventory.itemInMainHand, 5f) }
+                    withModuleState(enabled = true, maxRange = 6.0) {
+                        runSync {
+                            AttackRangeOwnershipChecks.assertRange(actors.player.inventory.itemInMainHand, 6f)
+                            actors.player.inventory.setItem(
+                                2,
+                                actors.player.inventory.itemInMainHand
+                                    .clone(),
+                            )
+                        }
+                        withModuleState(enabled = false) {
+                            runSync {
+                                listOf(
+                                    actors.player.inventory.itemInMainHand,
+                                    actors.player.inventory.getItem(2),
+                                ).forEach {
+                                    it shouldBe ItemStack(Material.IRON_SWORD)
+                                }
+                            }
+                        }
+                    }
+                }
+            } finally {
+                cleanup(actors)
+            }
+        }
+
+        test("disabled attack range cleans saved owned items on join and hotbar selection") {
+            if (!requireRangeApi()) return@test
+            val actors = spawnActors()
+            try {
+                lateinit var saved: ItemStack
+                withModuleState(enabled = true) {
+                    runSync {
+                        saved =
+                            actors.player.inventory.itemInMainHand
+                                .clone()
+                    }
+                }
+                withModuleState(enabled = false) {
+                    runSync {
+                        actors.player.inventory.setItem(2, saved.clone())
+                        Bukkit.getPluginManager().callEvent(
+                            org.bukkit.event.player
+                                .PlayerJoinEvent(actors.player, ""),
+                        )
+                        AttackRangeOwnershipChecks.assertClean(checkNotNull(actors.player.inventory.getItem(2)))
+                        actors.player.inventory.setItem(2, saved.clone())
+                        Bukkit.getPluginManager().callEvent(PlayerItemHeldEvent(actors.player, 0, 2))
+                        // Other listeners legitimately add sword-blocking data on this real event dispatch.
+                        AttackRangeOwnershipChecks.assertClean(checkNotNull(actors.player.inventory.getItem(2)))
+                    }
+                }
+            } finally {
+                cleanup(actors)
+            }
+        }
+
         test("extended reach hits just outside vanilla range when module enabled (AttackRange API available)") {
             if (!attackRangeApiAvailable) return@test
             if (attackRangeModule == null) return@test
