@@ -188,3 +188,5 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 - Green phase: only touch production code.
 - Refactor phase: clean-ups only; keep behaviour unchanged and tests green.
 - Validate phase: rerun the narrowest relevant tests and do a human sanity check before declaring done.
+
+- Offhand restrictions check the item entering the offhand: inventory F uses the clicked stack, number keys use the hotbar stack, and cursor checks apply only to placement or cursor swaps (#986). Shield shift-clicks are blocked only when the offhand is empty. Preserve the missing-SWAP_OFFHAND fallback on older APIs. DisableOffhandIntegrationTest uses synthetic events and real inventory views, with a reflective view setter for the InventoryView class-to-interface change and explicit absent-shortcut skips.

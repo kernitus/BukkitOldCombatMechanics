@@ -17,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -74,8 +75,11 @@ public class ModuleDisableOffHand extends OCMModule {
 
         try {
             if (clickType == ClickType.SWAP_OFFHAND) {
-                e.setResult(Event.Result.DENY);
-                sendDeniedMessage(player);
+                // The clicked stack enters the offhand; the cursor is unrelated to this swap.
+                if (isItemBlocked(e.getCurrentItem())) {
+                    e.setResult(Event.Result.DENY);
+                    sendDeniedMessage(player);
+                }
                 return;
             }
         } catch (NoSuchFieldError ignored) {
@@ -98,14 +102,26 @@ public class ModuleDisableOffHand extends OCMModule {
                 && currentItem.getType() == Material.SHIELD
                 && isItemBlocked(currentItem)
                 && e.getSlot() != OFFHAND_SLOT
+                && player.getInventory().getItemInOffHand().getType() == Material.AIR
                 && e.isShiftClick()) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
 
-        if (e.getSlot() == OFFHAND_SLOT &&
-                ((clickType == ClickType.NUMBER_KEY && isItemBlocked(clickedInventory.getItem(e.getHotbarButton())))
-                        || isItemBlocked(e.getCursor()))) {
+        if (e.getSlot() != OFFHAND_SLOT)
+            return;
+
+        final ItemStack incoming;
+        if (clickType == ClickType.NUMBER_KEY) {
+            incoming = clickedInventory.getItem(e.getHotbarButton());
+        } else {
+            final InventoryAction action = e.getAction();
+            if (action != InventoryAction.PLACE_ALL && action != InventoryAction.PLACE_ONE
+                    && action != InventoryAction.PLACE_SOME && action != InventoryAction.SWAP_WITH_CURSOR)
+                return; // Taking or dropping an item does not put the cursor into the offhand.
+            incoming = e.getCursor();
+        }
+        if (isItemBlocked(incoming)) {
             e.setResult(Event.Result.DENY);
             sendDeniedMessage(player);
         }
