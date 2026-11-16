@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.8.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.8.0...v2.8.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **attack-range:** preserve foreign item components during updates and cleanup ([2e432a1](https://github.com/kernitus/BukkitOldCombatMechanics/commit/2e432a1f001a32e32b3ec8b18d5aecf709f3205a))
+* **offhand:** respect item restrictions during inventory transfers ([#986](https://github.com/kernitus/BukkitOldCombatMechanics/issues/986)) ([5572303](https://github.com/kernitus/BukkitOldCombatMechanics/commit/5572303470588383b4ce06ef107e777917544df0))
+* **sword-blocking:** prevent swords being consumed while blocking ([#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976)) ([ca3d03d](https://github.com/kernitus/BukkitOldCombatMechanics/commit/ca3d03d83e1dc037ff5dd0e0ad708f4aec91e5e6))
+
 ## [2.8.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.7.0...v2.8.0) (2026-10-26)
 
 This release requires Paper or a compatible fork and adds projectile launch options, golden apple cooldown indicators and improved damage tooltips, alongside combat and compatibility fixes.
