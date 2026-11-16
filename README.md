@@ -40,7 +40,7 @@ Fine‑tune Minecraft combat, movement, and item balance without breaking your s
   </a>
 </p>
 
-SpigotMC and BukkitDev are download venues; their listings do not imply support for plain Spigot or CraftBukkit in current development builds.
+SpigotMC and BukkitDev are download venues; their listings do not imply support for plain Spigot or CraftBukkit from version 2.8.0 onwards.
 
 <hr/>
 
@@ -107,9 +107,9 @@ Features are grouped in `module`s as listed below, and can be individually confi
 - **Burn delay:** adjust fire tick delay
 
 ## 🔌 Compatibility & Testing
-- Current development builds require Paper or a compatible fork such as Purpur, with the required Paper capabilities. Plain Spigot and CraftBukkit are rejected before configuration or combat modules initialise. Folia support is not claimed.
+- Version 2.8.0 onwards requires Paper or a compatible fork such as Purpur, with the required Paper capabilities. Plain Spigot and CraftBukkit are rejected before configuration or combat modules initialise. Folia support is not claimed.
 - The supported Minecraft range remains 1.9 to latest. Paper 1.9.4 represents the 1.9 family in validation. Targeted checks include Paper 1.9.4, 1.12, 1.19.2, 1.21.11 and 26.3.
-- The Paper requirement is unreleased. Version 2.7.0 is the latest published release advertising Spigot support; the first stable release requiring Paper has not yet been assigned.
+- Version 2.8.0 was the first stable release requiring Paper. Version 2.7.0 is the last release advertising Spigot support.
 - Plugin classes retain Java 8 bytecode. Run the Java version required by your chosen server; modern Paper requires a newer JVM. Building OCM requires JDK 25, independently of the server JVM.
 - Supported public APIs take priority, with optional capabilities detected independently. Legacy adapters remain where public APIs cannot preserve the required behaviour. See the [public API audit](.agents/skills/compatibility-strategy/references/public-api-audit.md).
 - PacketEvents remains bundled for packet-dependent features. If it fails, OCM reports the affected attack-sound suppression, sweep-particle suppression or sword client detection with bounded warnings while unrelated combat features remain available.

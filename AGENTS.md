@@ -29,8 +29,8 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 ## Repo overview
 
 - Project: OldCombatMechanics, a Paper plugin with compatible-fork support.
-- Branch context: working from `kotlin-tests`.
-- Build tool: Gradle wrapper, currently 9.8.2.
+- Release development targets `master`; prepare release notes against the current Release Please branch.
+- Build tool: Gradle wrapper, currently 9.9.1.
 - JDKs used locally: 8, 11, 17, 25.
 - Main integration tests live in `src/integrationTest/kotlin` and are packaged into `OldCombatMechanics-<version>-tests.jar`.
 - Entrypoint test plugin class: `kernitus.plugin.OldCombatMechanics.OCMTestMain`.
@@ -61,9 +61,9 @@ This file holds always-on repository guidance and routing hints. Detailed workfl
 
 ## Current project state
 
-- The Paper-only boundary is unreleased. Published 2.7.0 still advertises Spigot support; `2.7.1-SNAPSHOT` does not establish the next stable release number. Local external-documentation handoff: `docs/paper-support-handoff.md`. No Folia support is claimed.
+- Published 2.8.0 is the first stable Paper-only release. Version 2.7.0 is the last release advertising Spigot support. Local external-documentation handoff: `docs/paper-support-handoff.md`. No Folia support is claimed.
 
-- The `Unreleased` section in `CHANGELOG.md` contains curated changes since 2.7.0, including the Paper requirement, #968 fix, modern cooldown and immunity corrections, explosion armour wear and remaining legacy limitations; its stable release number remains unassigned. Copy this prose into the matching Release Please PR section after its final automatic refresh, preserving the parsed structure and issue-reporting footer. The #976 resource-pack visual report remains unverified. Retain the historical 2.7.0 notes and their sweep and Bukkit 1.9 cooldown limitations.
+- The 2.8.1 section in `CHANGELOG.md` contains curated sword consumption, offhand transfer and attack-range ownership fixes since 2.8.0. Copy this prose into Release Please PR #994 after its final automatic refresh, preserving the parsed structure and issue-reporting footer. The #976 reporter confirmed that the fixed build no longer consumes swords; separate resource-pack rendering checks remain unverified. Preserve historical release notes and their legacy limitations.
 - Legacy fake players have dedicated 1.9 and 1.12 implementations; use focused native-flight validation when changing legacy projectiles.
 - Java 8 compatibility is required for main code. Avoid APIs such as records, pattern matching, `Stream.toList()`, and `Set.of`/`List.of` in Java 8-targeted code.
 - Compilation requires JDK 25 and the pinned Paper API. Main Java/Kotlin compilation targets Java 8 (`options.release.set(8)`, Kotlin `jvmTarget = 1.8`).

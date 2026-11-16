@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.8.1](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.8.0...v2.8.1) (2026-11-16)
+
+
+This release fixes sword blocking, offhand inventory transfers and compatibility with custom attack-range components. Paper or a compatible fork remains required.
+
+### Fixes
+
+- Fixed swords being consumed while blocking on modern Paper. Blocking is silent, produces no eating particles and repairs affected swords created by earlier OCM builds. [#976](https://github.com/kernitus/BukkitOldCombatMechanics/issues/976).
+- Fixed `disable-offhand` blocking permitted items when using the swap-hand shortcut inside an inventory. Inventory clicks and drags now respect the configured item restrictions. [#986](https://github.com/kernitus/BukkitOldCombatMechanics/issues/986).
+- Attack-range updates and cleanup now preserve custom item components supplied by other plugins. OCM restores the material's default range only while the item still carries OCM's unchanged range settings.
+
+Report issues on [GitHub](https://github.com/kernitus/BukkitOldCombatMechanics/issues).
+
 ## [2.8.0](https://github.com/kernitus/BukkitOldCombatMechanics/compare/v2.7.0...v2.8.0) (2026-10-26)
 
 This release requires Paper or a compatible fork and adds projectile launch options, golden apple cooldown indicators and improved damage tooltips, alongside combat and compatibility fixes.
